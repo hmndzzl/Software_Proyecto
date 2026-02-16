@@ -35,3 +35,27 @@ Identificar las deficiencias en el proceso de asignación de tareas de la Parroq
 * Implementar un sistema visualmente intuitivo que motive el cumplimiento de los servicios.
 
 ---
+
+## Estructura de Carpetas
+
+```text
+Proyecto Grupo 3
+ ┣ Avances1
+ ┃ ┗ Avances Proyecto Grupo 3.pdf
+ ┣ Avances2
+ ┃ ┗
+ ┣ Corte1
+ ┃ ┣ gestión tiempos
+ ┃ ┃ ┣ Formulario LOGT - Diego Calderon 241263.pdf
+ ┃ ┃ ┣ Formulario LOGT - Hugo Mendez.pdf
+ ┃ ┃ ┣ Formulario LOGT - Javier Alvarado.pdf
+ ┃ ┃ ┣ Formulario LOGT - Miguel Rosas 241274.pdf
+ ┃ ┃ ┗ Formulario LOGT Software - Pedro Caso.pdf
+ ┃ ┣ Enlace Trabajo de Word colaborativo.txt
+ ┃ ┣ Enlace a presentación de canvas.txt
+ ┃ ┗ Primer Corte del Proyecto - Grupo 3.pdf
+ ┣ Corte2
+ ┃ ┗
+ ┗ Scrum
+   ┗
+```
