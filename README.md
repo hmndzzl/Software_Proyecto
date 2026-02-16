@@ -39,7 +39,7 @@ Identificar las deficiencias en el proceso de asignación de tareas de la Parroq
 ## Estructura de Carpetas
 
 ```text
-Proyecto Grupo 3
+Software_Proyecto
  ┣ Avances1
  ┃ ┗ Avances Proyecto Grupo 3.pdf
  ┣ Avances2
@@ -57,5 +57,6 @@ Proyecto Grupo 3
  ┣ Corte2
  ┃ ┗
  ┗ Scrum
-   ┗
+ ┃ ┗
+ ┗ README.md
 ```
