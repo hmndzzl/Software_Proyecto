@@ -56,7 +56,7 @@ Software_Proyecto
  ┃ ┗ Primer Corte del Proyecto - Grupo 3.pdf
  ┣ Corte2
  ┃ ┗
- ┗ Scrum
+ ┣ Scrum
  ┃ ┗
  ┗ README.md
 ```
