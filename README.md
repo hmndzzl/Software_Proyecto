@@ -43,7 +43,11 @@ Software_Proyecto
  ┣ Avances1
  ┃ ┗ Avances Proyecto Grupo 3.pdf
  ┣ Avances2
- ┃ ┗
+ ┃ ┣ Lluvia-de-ideas-op5 - Pedro Caso.png
+ ┃ ┣ lluvia-ideas-op3.png
+ ┃ ┣ ideas-mas-votadas.png
+ ┃ ┣ lluvia-ideas-op4-DiegoCalderon.png
+ ┃ ┗ storyboard-op4.jpeg
  ┣ Corte1
  ┃ ┣ gestión tiempos
  ┃ ┃ ┣ Formulario LOGT - Diego Calderon 241263.pdf
