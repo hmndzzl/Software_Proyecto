@@ -47,7 +47,8 @@ Software_Proyecto
  ┃ ┣ lluvia-ideas-op3.png
  ┃ ┣ ideas-mas-votadas.png
  ┃ ┣ lluvia-ideas-op4-DiegoCalderon.png
- ┃ ┗ storyboard-op4.jpeg
+ ┃ ┣ storyboard-op4.jpeg
+ ┃ ┗ Avances Segundo Corte del Proyecto - Grupo 3.pdf
  ┣ Corte1
  ┃ ┣ gestión tiempos
  ┃ ┃ ┣ Formulario LOGT - Diego Calderon 241263.pdf
