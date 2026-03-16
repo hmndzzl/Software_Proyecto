@@ -51,7 +51,7 @@ Software_Proyecto
  ┃ ┣ Avances Segundo Corte del Proyecto - Grupo 3.pdf
  ┃ ┗ UML-casos.png
  ┣ Avances3
- ┃ ┗
+ ┃ ┗ patrones-de-diseño-grupo3.pdf
  ┣ Corte1
  ┃ ┣ gestion_tiempos
  ┃ ┃ ┣ Formulario LOGT - Diego Calderon 241263.pdf
