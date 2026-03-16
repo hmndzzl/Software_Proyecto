@@ -48,9 +48,12 @@ Software_Proyecto
  ┃ ┣ ideas-mas-votadas.png
  ┃ ┣ lluvia-ideas-op4-DiegoCalderon.png
  ┃ ┣ storyboard-op4.jpeg
- ┃ ┗ Avances Segundo Corte del Proyecto - Grupo 3.pdf
+ ┃ ┣ Avances Segundo Corte del Proyecto - Grupo 3.pdf
+ ┃ ┗ UML-casos.png
+ ┣ Avances3
+ ┃ ┗
  ┣ Corte1
- ┃ ┣ gestión tiempos
+ ┃ ┣ gestion_tiempos
  ┃ ┃ ┣ Formulario LOGT - Diego Calderon 241263.pdf
  ┃ ┃ ┣ Formulario LOGT - Hugo Mendez.pdf
  ┃ ┃ ┣ Formulario LOGT - Javier Alvarado.pdf
@@ -60,8 +63,19 @@ Software_Proyecto
  ┃ ┣ Enlace a presentación de canvas.txt
  ┃ ┗ Primer Corte del Proyecto - Grupo 3.pdf
  ┣ Corte2
- ┃ ┗
+ ┃ ┣ gestion_tiempos2
+ ┃ ┃ ┣ Formulario LOGT - Corte 2 - Javier Alvarado.pdf
+ ┃ ┃ ┣ Formulario LOGT - Corte 2 - Miguel Rosas 241274.pdf
+ ┃ ┃ ┣ Formulario LOGT2 - Diego Calderon 241263.pdf
+ ┃ ┃ ┣ Formulario LOGT2 - Hugo Mendez.pdf
+ ┃ ┃ ┗Formulario LOGT2 Software - Pedro Caso.pdf
+ ┃ ┣ enlace-word.txt
+ ┃ ┗ Segundo Corte del Proyecto - Grupo 3.pdf
  ┣ Scrum
+ ┃ ┗
+ ┣ Corte3
+ ┃ ┣ gestion_tiempos3
+ ┃ ┃ ┗
  ┃ ┗
  ┗ README.md
 ```
