@@ -1,8 +1,6 @@
--- MySQL dump 10.13  Distrib 8.0.18, for Win64 (x86_64)
---
--- Host: localhost    Database: parroquia_db
--- ------------------------------------------------------
--- Server version	12.2.2-MariaDB
+-- Parroquia San Pedro Nolasco
+-- Schema adaptado para MariaDB 11
+-- Grupo 3 - Ingeniería en Software 1 - UVG 2026
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -15,306 +13,35 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
---
--- Table structure for table `asignacion_tarea`
---
+-- ----------------------------
+-- Tablas sin dependencias (catálogos)
+-- ----------------------------
 
-DROP TABLE IF EXISTS `asignacion_tarea`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `asignacion_tarea` (
-  `tarea_id` int(11) NOT NULL,
-  `persona_id` int(11) NOT NULL,
-  PRIMARY KEY (`tarea_id`,`persona_id`),
-  KEY `persona_id` (`persona_id`),
-  CONSTRAINT `1` FOREIGN KEY (`tarea_id`) REFERENCES `tarea` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `2` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `rol`;
+CREATE TABLE `rol` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `detalle` varchar(200) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_rol_detalle` (`detalle`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `asignacion_tarea`
---
-
-LOCK TABLES `asignacion_tarea` WRITE;
-/*!40000 ALTER TABLE `asignacion_tarea` DISABLE KEYS */;
-/*!40000 ALTER TABLE `asignacion_tarea` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `coordinador_ministro`
---
-
-DROP TABLE IF EXISTS `coordinador_ministro`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `coordinador_ministro` (
-  `coordinador_id` int(11) NOT NULL,
-  `ministro_id` int(11) NOT NULL,
-  PRIMARY KEY (`coordinador_id`,`ministro_id`),
-  KEY `ministro_id` (`ministro_id`),
-  CONSTRAINT `1` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `2` FOREIGN KEY (`ministro_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+DROP TABLE IF EXISTS `estado_reserva`;
+CREATE TABLE `estado_reserva` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `detalle` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_estado_reserva_detalle` (`detalle`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `coordinador_ministro`
---
-
-LOCK TABLES `coordinador_ministro` WRITE;
-/*!40000 ALTER TABLE `coordinador_ministro` DISABLE KEYS */;
-/*!40000 ALTER TABLE `coordinador_ministro` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `espacio`
---
 
 DROP TABLE IF EXISTS `espacio`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `espacio` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `capacidad` int(11) DEFAULT NULL CHECK (`capacidad` > 0),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `espacio`
---
-
-LOCK TABLES `espacio` WRITE;
-/*!40000 ALTER TABLE `espacio` DISABLE KEYS */;
-/*!40000 ALTER TABLE `espacio` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `estado_reserva`
---
-
-DROP TABLE IF EXISTS `estado_reserva`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `estado_reserva` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `detalle` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `detalle` (`detalle`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `estado_reserva`
---
-
-LOCK TABLES `estado_reserva` WRITE;
-/*!40000 ALTER TABLE `estado_reserva` DISABLE KEYS */;
-/*!40000 ALTER TABLE `estado_reserva` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `evento`
---
-
-DROP TABLE IF EXISTS `evento`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `evento` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `encargado_id` int(11) NOT NULL,
-  `reserva_id` int(11) NOT NULL,
-  `descripcion` text NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `reserva_id` (`reserva_id`),
-  KEY `encargado_id` (`encargado_id`),
-  CONSTRAINT `1` FOREIGN KEY (`encargado_id`) REFERENCES `persona` (`id`),
-  CONSTRAINT `2` FOREIGN KEY (`reserva_id`) REFERENCES `reserva` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `evento`
---
-
-LOCK TABLES `evento` WRITE;
-/*!40000 ALTER TABLE `evento` DISABLE KEYS */;
-/*!40000 ALTER TABLE `evento` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `grupo`
---
-
-DROP TABLE IF EXISTS `grupo`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `grupo` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(200) NOT NULL,
-  `coordinador_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `nombre` (`nombre`),
-  UNIQUE KEY `coordinador_id` (`coordinador_id`),
-  CONSTRAINT `1` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `grupo`
---
-
-LOCK TABLES `grupo` WRITE;
-/*!40000 ALTER TABLE `grupo` DISABLE KEYS */;
-/*!40000 ALTER TABLE `grupo` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `notificacion`
---
-
-DROP TABLE IF EXISTS `notificacion`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `notificacion` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `mensaje` text NOT NULL,
-  `fecha` date NOT NULL,
-  `grupo_id` int(11) NULL,
-  PRIMARY KEY (`id`),
-  KEY `grupo_id` (`grupo_id`),
-  CONSTRAINT `notificacion_grupo_fk` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `notificacion`
---
-
-LOCK TABLES `notificacion` WRITE;
-/*!40000 ALTER TABLE `notificacion` DISABLE KEYS */;
-/*!40000 ALTER TABLE `notificacion` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `persona`
---
-
-DROP TABLE IF EXISTS `persona`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `persona` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) NOT NULL,
-  `correo` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `rol_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `correo` (`correo`),
-  KEY `rol_id` (`rol_id`),
-  CONSTRAINT `1` FOREIGN KEY (`rol_id`) REFERENCES `rol` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `persona`
---
-
-LOCK TABLES `persona` WRITE;
-/*!40000 ALTER TABLE `persona` DISABLE KEYS */;
-/*!40000 ALTER TABLE `persona` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `persona_notificacion`
---
-
-DROP TABLE IF EXISTS `persona_notificacion`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `persona_notificacion` (
-  `persona_id` int(11) NOT NULL,
-  `notificacion_id` int(11) NOT NULL,
-  PRIMARY KEY (`persona_id`,`notificacion_id`),
-  KEY `notificacion_id` (`notificacion_id`),
-  CONSTRAINT `1` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `2` FOREIGN KEY (`notificacion_id`) REFERENCES `notificacion` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `persona_notificacion`
---
-
-LOCK TABLES `persona_notificacion` WRITE;
-/*!40000 ALTER TABLE `persona_notificacion` DISABLE KEYS */;
-/*!40000 ALTER TABLE `persona_notificacion` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `reserva`
---
-
-DROP TABLE IF EXISTS `reserva`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `reserva` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `fecha` date NOT NULL,
-  `hora_inicio` time NOT NULL,
-  `hora_fin` time NOT NULL,
-  `espacio_id` int(11) DEFAULT NULL,
-  `estado_reserva_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `espacio_id` (`espacio_id`),
-  KEY `estado_reserva_id` (`estado_reserva_id`),
-  CONSTRAINT `1` FOREIGN KEY (`espacio_id`) REFERENCES `espacio` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `2` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `reserva`
---
-
-LOCK TABLES `reserva` WRITE;
-/*!40000 ALTER TABLE `reserva` DISABLE KEYS */;
-/*!40000 ALTER TABLE `reserva` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `rol`
---
-
-DROP TABLE IF EXISTS `rol`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `rol` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `detalle` varchar(200) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `detalle` (`detalle`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `rol`
---
-
-LOCK TABLES `rol` WRITE;
-/*!40000 ALTER TABLE `rol` DISABLE KEYS */;
-/*!40000 ALTER TABLE `rol` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `tarea`
---
 
 DROP TABLE IF EXISTS `tarea`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tarea` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
@@ -323,49 +50,132 @@ CREATE TABLE `tarea` (
   `descripcion` text NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `tarea`
---
+-- ----------------------------
+-- Persona (depende de rol)
+-- ----------------------------
 
-LOCK TABLES `tarea` WRITE;
-/*!40000 ALTER TABLE `tarea` DISABLE KEYS */;
-/*!40000 ALTER TABLE `tarea` ENABLE KEYS */;
-UNLOCK TABLES;
+DROP TABLE IF EXISTS `persona`;
+CREATE TABLE `persona` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  `correo` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `rol_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_persona_correo` (`correo`),
+  KEY `fk_persona_rol_idx` (`rol_id`),
+  CONSTRAINT `fk_persona_rol` FOREIGN KEY (`rol_id`) REFERENCES `rol` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
---
--- Table structure for table `telefono`
---
+-- ----------------------------
+-- Tablas que dependen de persona
+-- ----------------------------
 
 DROP TABLE IF EXISTS `telefono`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `telefono` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `numero` varchar(50) NOT NULL,
   `persona_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `numero` (`numero`),
-  KEY `persona_id` (`persona_id`),
-  CONSTRAINT `1` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`)
+  UNIQUE KEY `uq_telefono_numero` (`numero`),
+  KEY `fk_telefono_persona_idx` (`persona_id`),
+  CONSTRAINT `fk_telefono_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `telefono`
---
+DROP TABLE IF EXISTS `grupo`;
+CREATE TABLE `grupo` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(200) NOT NULL,
+  `coordinador_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_grupo_nombre` (`nombre`),
+  UNIQUE KEY `uq_grupo_coordinador` (`coordinador_id`),
+  CONSTRAINT `fk_grupo_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
-LOCK TABLES `telefono` WRITE;
-/*!40000 ALTER TABLE `telefono` DISABLE KEYS */;
-/*!40000 ALTER TABLE `telefono` ENABLE KEYS */;
-UNLOCK TABLES;
+DROP TABLE IF EXISTS `coordinador_ministro`;
+CREATE TABLE `coordinador_ministro` (
+  `coordinador_id` int(11) NOT NULL,
+  `ministro_id` int(11) NOT NULL,
+  PRIMARY KEY (`coordinador_id`,`ministro_id`),
+  KEY `fk_coord_min_ministro_idx` (`ministro_id`),
+  CONSTRAINT `fk_coord_min_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_coord_min_ministro` FOREIGN KEY (`ministro_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
---
--- Dumping routines for database 'parroquia_db'
---
+DROP TABLE IF EXISTS `asignacion_tarea`;
+CREATE TABLE `asignacion_tarea` (
+  `tarea_id` int(11) NOT NULL,
+  `persona_id` int(11) NOT NULL,
+  PRIMARY KEY (`tarea_id`,`persona_id`),
+  KEY `fk_asig_tarea_persona_idx` (`persona_id`),
+  CONSTRAINT `fk_asig_tarea_tarea` FOREIGN KEY (`tarea_id`) REFERENCES `tarea` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_asig_tarea_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- ----------------------------
+-- Notificacion (depende de grupo)
+-- ----------------------------
+
+DROP TABLE IF EXISTS `notificacion`;
+CREATE TABLE `notificacion` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mensaje` text NOT NULL,
+  `fecha` date NOT NULL,
+  `grupo_id` int(11) NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_notificacion_grupo_idx` (`grupo_id`),
+  CONSTRAINT `fk_notificacion_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+DROP TABLE IF EXISTS `persona_notificacion`;
+CREATE TABLE `persona_notificacion` (
+  `persona_id` int(11) NOT NULL,
+  `notificacion_id` int(11) NOT NULL,
+  PRIMARY KEY (`persona_id`,`notificacion_id`),
+  KEY `fk_pn_notificacion_idx` (`notificacion_id`),
+  CONSTRAINT `fk_pn_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pn_notificacion` FOREIGN KEY (`notificacion_id`) REFERENCES `notificacion` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- ----------------------------
+-- Reserva (depende de espacio y estado_reserva)
+-- ----------------------------
+
+DROP TABLE IF EXISTS `reserva`;
+CREATE TABLE `reserva` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fecha` date NOT NULL,
+  `hora_inicio` time NOT NULL,
+  `hora_fin` time NOT NULL,
+  `espacio_id` int(11) DEFAULT NULL,
+  `estado_reserva_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_reserva_espacio_idx` (`espacio_id`),
+  KEY `fk_reserva_estado_idx` (`estado_reserva_id`),
+  CONSTRAINT `fk_reserva_espacio` FOREIGN KEY (`espacio_id`) REFERENCES `espacio` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_reserva_estado` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- ----------------------------
+-- Evento (depende de persona y reserva)
+-- ----------------------------
+
+DROP TABLE IF EXISTS `evento`;
+CREATE TABLE `evento` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `encargado_id` int(11) NOT NULL,
+  `reserva_id` int(11) NOT NULL,
+  `descripcion` text NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_evento_reserva` (`reserva_id`),
+  KEY `fk_evento_encargado_idx` (`encargado_id`),
+  CONSTRAINT `fk_evento_encargado` FOREIGN KEY (`encargado_id`) REFERENCES `persona` (`id`),
+  CONSTRAINT `fk_evento_reserva` FOREIGN KEY (`reserva_id`) REFERENCES `reserva` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
@@ -373,5 +183,3 @@ UNLOCK TABLES;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-03-16  0:44:34
