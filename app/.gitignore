@@ -1,0 +1,30 @@
+# Variables de entorno
+.env
+.env.local
+.env.development
+.env.production
+
+# Docker Compose real
+docker-compose.yml
+
+# Dependencias
+node_modules/
+
+# Builds
+frontend/dist/
+backend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Docker
+mariadb_data/
