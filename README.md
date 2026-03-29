@@ -1,4 +1,3 @@
-
 # Plataforma Administrativa - Parroquia San Pedro Nolasco
 
 ## Equipo de Trabajo (Grupo 3)
@@ -10,28 +9,6 @@
 | Javier Sebastián Alvarado Monzón | 24546 |
 | Hugo Méndez Lee | 241265 |
 | José Miguel Rosas Guerra | 241274 |
-
----
-
-## Descripción del Problema
-
-La parroquia depende significativamente del servicio comunitario para sus actividades litúrgicas y sociales. Sin embargo, el sistema de organización actual presenta varios retos:
-
-- **Asignación Manual:** Los coordinadores utilizan hojas de Excel y mensajes de WhatsApp, lo cual es tedioso y propenso a errores humanos.
-- **Falta de Visibilidad:** Los voluntarios a menudo no revisan los métodos actuales, lo que genera fallos en la asistencia.
-- **Conflictos de Reservas:** La gestión de salones se realiza mediante llamadas y memoria, provocando duplicidad en el uso de espacios.
-
----
-
-## Objetivos
-
-**General:** Modernizar y centralizar la gestión administrativa de la Parroquia San Pedro Nolasco, optimizando la coordinación de sus voluntarios y el uso de sus instalaciones.
-
-**Específicos:**
-- Analizar los puntos críticos del sistema actual basado en Excel.
-- Definir perfiles de usuario (sacerdotes, coordinadores, ministros) para entender sus necesidades reales.
-- Centralizar la comunicación de roles y la disponibilidad de salones en una sola plataforma accesible.
-- Implementar un sistema visualmente intuitivo que motive el cumplimiento de los servicios.
 
 ---
 
@@ -55,18 +32,20 @@ La parroquia depende significativamente del servicio comunitario para sus activi
 
 ## Instalación y Despliegue
 
-**1. Clonar el repositorio**
+**1. Clonar el repositorio y cambiar a develop**
 ```bash
 git clone https://github.com/hmndzzl/Software_Proyecto.git
-cd Software_Proyecto
+cd Software_Proyecto/app
+git checkout develop
 ```
 
-**2. Colocar el archivo `.env` en la raíz del proyecto**
+**2. Colocar el archivo `.env` dentro de `/app`**
 
 Solicitar el archivo `.env` al líder del equipo y colocarlo en:
 ```
 Software_Proyecto/
-└── .env   ← aquí
+└── app/
+    └── .env   ← aquí
 ```
 
 **3. Copiar el archivo de Docker Compose**
@@ -92,41 +71,30 @@ docker compose up --build -d
 ---
 
 ## Estructura del Proyecto
-
 ```
 Software_Proyecto/
-├── frontend/               # React + Vite + TypeScript
-│   ├── src/
-│   ├── Dockerfile
-│   └── package.json
-├── backend/                # Express + TypeScript
-│   ├── src/
-│   ├── Dockerfile
-│   └── package.json
-├── database/
-│   └── init/
-│       ├── 01_schema.sql   # Estructura de la base de datos
-│       └── 02_seeds.sql    # Datos iniciales
-├── .env.example
-├── .gitignore
-├── docker-compose.example.yml
-└── README.md
+└── app/
+    ├── frontend/                   # React + Vite + TypeScript
+    │   ├── src/
+    │   ├── Dockerfile
+    │   └── package.json
+    ├── backend/                    # Express + TypeScript
+    │   ├── src/
+    │   ├── Dockerfile
+    │   └── package.json
+    ├── database/
+    │   └── init/
+    │       ├── 01_schema.sql       # Estructura de la base de datos
+    │       └── 02_seeds.sql        # Datos iniciales
+    ├── .env.example
+    ├── .gitignore
+    ├── docker-compose.example.yml
+    └── README.md
 ```
-
----
-
-## Documentación del Proyecto
-
-| Entrega | Documento |
-|---|---|
-| Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
-| Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
-| Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
 
 ---
 
 ## Flujo de Trabajo con Git
-
 ```
 main        ← código estable únicamente
 └── develop ← rama de integración
