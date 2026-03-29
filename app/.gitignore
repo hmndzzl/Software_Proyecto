@@ -28,3 +28,7 @@ Thumbs.db
 
 # Docker
 mariadb_data/
+
+# Temp
+*.tmp
+*.docx
