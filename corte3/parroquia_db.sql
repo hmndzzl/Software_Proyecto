@@ -95,10 +95,10 @@ UNLOCK TABLES;
 -- Table structure for table `estado`
 --
 
-DROP TABLE IF EXISTS `estado`;
+DROP TABLE IF EXISTS `estado_reserva`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `estado` (
+CREATE TABLE `estado_reserva` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `detalle` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
@@ -110,9 +110,9 @@ CREATE TABLE `estado` (
 -- Dumping data for table `estado`
 --
 
-LOCK TABLES `estado` WRITE;
-/*!40000 ALTER TABLE `estado` DISABLE KEYS */;
-/*!40000 ALTER TABLE `estado` ENABLE KEYS */;
+LOCK TABLES `estado_reserva` WRITE;
+/*!40000 ALTER TABLE `estado_reserva` DISABLE KEYS */;
+/*!40000 ALTER TABLE `estado_reserva` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -182,7 +182,10 @@ CREATE TABLE `notificacion` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `mensaje` text NOT NULL,
   `fecha` date NOT NULL,
-  PRIMARY KEY (`id`)
+  `grupo_id` int(11) NULL,
+  PRIMARY KEY (`id`),
+  KEY `grupo_id` (`grupo_id`),
+  CONSTRAINT `notificacion_grupo_fk` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -263,12 +266,12 @@ CREATE TABLE `reserva` (
   `hora_inicio` time NOT NULL,
   `hora_fin` time NOT NULL,
   `espacio_id` int(11) DEFAULT NULL,
-  `estado_id` int(11) NOT NULL,
+  `estado_reserva_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `espacio_id` (`espacio_id`),
-  KEY `estado_id` (`estado_id`),
+  KEY `estado_reserva_id` (`estado_reserva_id`),
   CONSTRAINT `1` FOREIGN KEY (`espacio_id`) REFERENCES `espacio` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `2` FOREIGN KEY (`estado_id`) REFERENCES `estado` (`id`)
+  CONSTRAINT `2` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
