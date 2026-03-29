@@ -119,9 +119,9 @@ Software_Proyecto/
 
 | Entrega | Documento |
 |---|---|
-| Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./Corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
-| Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./Corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
-| Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./Corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
 
 ---
 
