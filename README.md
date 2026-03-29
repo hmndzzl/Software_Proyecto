@@ -1,4 +1,3 @@
-
 # Plataforma Administrativa - Parroquia San Pedro Nolasco
 
 ## Equipo de Trabajo (Grupo 3)
@@ -58,15 +57,16 @@ La parroquia depende significativamente del servicio comunitario para sus activi
 **1. Clonar el repositorio**
 ```bash
 git clone https://github.com/hmndzzl/Software_Proyecto.git
-cd Software_Proyecto
+cd Software_Proyecto/app
 ```
 
-**2. Colocar el archivo `.env` en la raíz del proyecto**
+**2. Colocar el archivo `.env` dentro de `/app`**
 
 Solicitar el archivo `.env` al líder del equipo y colocarlo en:
 ```
 Software_Proyecto/
-└── .env   ← aquí
+└── app/
+    └── .env   ← aquí
 ```
 
 **3. Copiar el archivo de Docker Compose**
@@ -91,25 +91,32 @@ docker compose up --build -d
 
 ---
 
-## Estructura del Proyecto
-
+## Estructura del Repositorio
 ```
 Software_Proyecto/
-├── frontend/               # React + Vite + TypeScript
-│   ├── src/
-│   ├── Dockerfile
-│   └── package.json
-├── backend/                # Express + TypeScript
-│   ├── src/
-│   ├── Dockerfile
-│   └── package.json
-├── database/
-│   └── init/
-│       ├── 01_schema.sql   # Estructura de la base de datos
-│       └── 02_seeds.sql    # Datos iniciales
-├── .env.example
-├── .gitignore
-├── docker-compose.example.yml
+├── app/                            # Código fuente de la aplicación
+│   ├── frontend/                   # React + Vite + TypeScript
+│   │   ├── src/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── backend/                    # Express + TypeScript
+│   │   ├── src/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── database/
+│   │   └── init/
+│   │       ├── 01_schema.sql       # Estructura de la base de datos
+│   │       └── 02_seeds.sql        # Datos iniciales
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── docker-compose.example.yml
+│   └── README.md
+├── Avances1/
+├── Avances2/
+├── Avances3/
+├── Corte1/
+├── Corte2/
+├── Corte3/
 └── README.md
 ```
 
@@ -119,14 +126,13 @@ Software_Proyecto/
 
 | Entrega | Documento |
 |---|---|
-| Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
-| Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
-| Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./Corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./Corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./Corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
 
 ---
 
 ## Flujo de Trabajo con Git
-
 ```
 main        ← código estable únicamente
 └── develop ← rama de integración
