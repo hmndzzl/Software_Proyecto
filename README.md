@@ -80,6 +80,11 @@ Software_Proyecto/
     │   └── package.json
     ├── backend/                    # Express + TypeScript
     │   ├── src/
+    │   │   ├── config/             # Configuración (BD, etc.)
+    │   │   ├── controllers/        # Lógica de los endpoints
+    │   │   ├── routes/             # Definición de rutas Express
+    │   │   ├── utils/              # Utilidades (ej. HTTP status)
+    │   │   └── app.ts              # Archivo principal
     │   ├── Dockerfile
     │   └── package.json
     ├── database/
