@@ -101,7 +101,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Usuario registrado exitosamente',
-      // result.insertId da el ID del nuevo registro
     });
 
   } catch (error) {
