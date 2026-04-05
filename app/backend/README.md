@@ -1,8 +1,8 @@
-# Backend API - Módulo de Autenticación ([HU-01])
+# Backend API - Módulo de Autenticación
 
 Este documento resume la implementación de la **Historia de Usuario 01 (Endpoint de autenticación con Express)**, desarrollada sobre la rama `feature/login-backend`. El diseño sigue una arquitectura por capas modular y segura.
 
-## 📋 Resumen de Cambios
+## Resumen de Cambios
 
 Se construyó la base estructural para el manejo de sesiones y seguridad de la aplicación, implementando el registro de usuarios y el inicio de sesión utilizando `JSON Web Tokens (JWT)` y encriptación de contraseñas.
 
@@ -21,13 +21,13 @@ Se desarrollaron dos lógicas principales:
 ### 4. Refactorización y Buenas Prácticas (`src/utils/httpStatus.ts`)
 - Creación de un `enum` nativo en TypeScript para el manejo semántico de los Códigos de Estado HTTP (ej. `HttpStatus.OK`, `HttpStatus.UNAUTHORIZED`), eliminando *magic numbers* y favoreciendo el mantenimiento a largo plazo.
 
-## 🛠️ Tecnologías y Librerías Utilizadas
+## Tecnologías y Librerías Utilizadas
 * **Express & Node.js**: Infraestructura base.
 * **bcryptjs**: Hashing de credenciales unidireccional.
 * **jsonwebtoken**: Generación y verificación de tokens.
 * **mysql2**: Conector a la DB con soporte a promesas para evitar *callback hell*.
 
-## 🧪 Pruebas (Instrucciones)
+## Pruebas (Instrucciones)
 Las pruebas pueden realizarse con Thunder Client, Postman o cURL apuntando a `http://localhost:<PORT>/api/auth`:
 1. `POST /register`: Requiere cuerpo JSON con `nombre`, `correo`, `password` y `rol_id`.
 2. `POST /login`: Requiere cuerpo JSON con `correo` y `password`. Devuelve token de sesión HTTP 200.
