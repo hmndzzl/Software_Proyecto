@@ -1,7 +1,5 @@
 /**
  * Enumeración con los códigos de estado HTTP más comunes.
- * Usar esto en lugar de números mágicos (hardcodeados) mejora 
- * significativamente la legibilidad y mantenimiento del código.
  */
 export enum HttpStatus {
   OK = 200,

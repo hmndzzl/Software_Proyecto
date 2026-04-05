@@ -69,3 +69,43 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
   }
 };
+
+// controlador registro
+export const register = async (req: Request, res: Response): Promise<void> => {
+  const { nombre, correo, password, rol_id } = req.body;
+
+  try {
+    if (!nombre || !correo || !password || !rol_id) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Faltan campos obligatorios' });
+      return;
+    }
+
+    // Verificar si el correo ya existe en la base de datos
+    const [existingUsers] = await pool.execute<RowDataPacket[]>(
+      'SELECT id FROM persona WHERE correo = ?',
+      [correo]
+    );
+
+    if (existingUsers.length > 0) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El correo ya está registrado' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Guardar en la base de datos con la contraseña ya encriptada
+    const [result] = await pool.execute(
+      'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)',
+      [nombre, correo, hashedPassword, rol_id]
+    );
+
+    res.status(HttpStatus.CREATED).json({
+      mensaje: 'Usuario registrado exitosamente',
+      // result.insertId da el ID del nuevo registro
+    });
+
+  } catch (error) {
+    console.error('Error en el controlador de registro:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
+  }
+};
