@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { checkDbConnection } from './config/db';
 import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
+import personaRoutes from './routes/persona.routes';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 // Rutas 
 app.use('/api/auth', authRoutes);
 app.use('/api/tareas', tareaRoutes);
+app.use('/api/personas', personaRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {
