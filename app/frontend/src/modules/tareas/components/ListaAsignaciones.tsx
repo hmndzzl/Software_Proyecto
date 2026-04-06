@@ -19,47 +19,34 @@ export default function ListaAsignaciones() {
 
   // useEffect que hace la petición a la API cuando se carga el componente
   useEffect(() => {
-    // CÓDIGO PARA CONECTAR AL BACKEND DESCOMENTAR CUANDO SE TENGAN LOS ENDPOINTS
-    /*
-    fetch('http://localhost:3001/api/asignaciones') // VERIFICAR RUTA DEL ENDPOINT
+    // Petición al endpoint de tareas
+    fetch('http://localhost:3001/api/tareas')
       .then((res) => {
         if (!res.ok) throw new Error('Error al obtener los datos');
         return res.json();
       })
       .then((data) => {
-        setAsignaciones(data);
+        // Transformar datos a estructura plana para tabla
+        const asignacionesFormateadas: Asignacion[] = data.flatMap((tarea: any) => 
+          tarea.asignados.map((asignado: any) => ({
+            tarea_id: tarea.id,
+            persona_id: asignado.persona_id,
+            descripcion_tarea: tarea.descripcion,
+            // Se Extrae solo la parte de la fecha (YYYY-MM-DD)
+            fecha: tarea.fecha.split('T')[0], 
+            hora_inicio: tarea.hora_inicio,
+            hora_fin: tarea.hora_fin,
+            nombre_persona: asignado.nombre
+          }))
+        );
+
+        setAsignaciones(asignacionesFormateadas);
         setCargando(false);
       })
       .catch((err) => {
         setError(err.message);
         setCargando(false);
       });
-    */
-
-    // DATOS SIMULADOS PARA PRUEBAS (ELIMINAR CUANDO SE TENGAN LOS ENDPOINTS)
-    setTimeout(() => {
-      setAsignaciones([
-        {
-          tarea_id: 1,
-          persona_id: 1,
-          descripcion_tarea: 'Limpieza del altar',
-          fecha: '2026-03-20',
-          hora_inicio: '08:00:00',
-          hora_fin: '10:00:00',
-          nombre_persona: 'Diego Calderón'
-        },
-        {
-          tarea_id: 2,
-          persona_id: 2,
-          descripcion_tarea: 'Lectura de salmos',
-          fecha: '2026-03-21',
-          hora_inicio: '09:00:00',
-          hora_fin: '09:30:00',
-          nombre_persona: 'Pedro Caso'
-        }
-      ]);
-      setCargando(false);
-    }, 1000); // Simula un retraso de red de 1 segundo
   }, []);
 
   // Renderizado condicional para estados de carga y error
