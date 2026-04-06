@@ -1,27 +1,30 @@
-import express from 'express'
-import cors from 'cors'
-import dotenv from 'dotenv'
-import { checkDbConnection } from './config/db'
-import authRoutes from './routes/auth.routes'
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { checkDbConnection } from './config/db';
+import authRoutes from './routes/auth.routes';
+import tareaRoutes from './routes/tarea.routes';
 
-dotenv.config()
+dotenv.config();
 
-const app = express()
-const PORT = process.env.PORT || 3001
+const app = express();
+const PORT = process.env.PORT || 3001;
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
-// Conectamos las rutas de autenticación bajo el prefijo /api/auth
-app.use('/api/auth', authRoutes)
+// Rutas 
+app.use('/api/auth', authRoutes);
+app.use('/api/tareas', tareaRoutes);
+
+// Ruta de salud para verificar que el backend está funcionando
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // Verificamos la conexión a BD al arrancar
-checkDbConnection()
-
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' })
-})
+checkDbConnection();
 
 app.listen(PORT, () => {
-  console.log(`Backend corriendo en puerto ${PORT}`)
-})
+  console.log(`Backend corriendo en puerto ${PORT}`);
+});
