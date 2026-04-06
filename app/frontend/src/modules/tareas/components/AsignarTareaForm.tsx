@@ -24,21 +24,22 @@ export default function AsignarTareaForm() {
   // useEffect para cargar datos al iniciar el componente
   
   useEffect(() => {
-    // ESPERANDO ENDPOINTS DEL BACKEND
-
+    // Petición al endpoint de tareas
     fetch('http://localhost:3001/api/tareas')
-      .then(res => res.json())
-      .then(data => setTareas(data));
-      
+      .then(res => {
+        if (!res.ok) throw new Error('Error al cargar las tareas');
+        return res.json();
+      })
+      .then(data => setTareas(data))
+      .catch(error => console.error(error));
+
+    // ESPERANDO ENDPOINT DEL BACKEND
+    /*
     fetch('http://localhost:3001/api/personas')
       .then(res => res.json())
       .then(data => setPersonas(data));
-
+    */
     // DATOS SIMULADOS PARA PRUEBAS (ELIMINAR):
-    setTareas([
-      { id: 1, descripcion: 'Limpieza del altar' },
-      { id: 2, descripcion: 'Lectura de salmos' }
-    ]);
     setPersonas([
       { id: 1, nombre: 'Diego Calderón' },
       { id: 2, nombre: 'Pedro Caso' }
@@ -54,9 +55,9 @@ export default function AsignarTareaForm() {
       return;
     }
 
-    try { // Enviar datos al backend 
-      
-      const response = await fetch('http://localhost:3001/api/asignaciones', {
+    try { 
+      // Enviar la asignación al backend
+      const response = await fetch('http://localhost:3001/api/tareas/asignar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,19 +65,21 @@ export default function AsignarTareaForm() {
           persona_id: parseInt(personaSeleccionada)
         })
       });
-      if (response.ok) setMensaje('¡Asignación guardada con éxito!');
-      
-      
-      // SIMULACIÓN DE GUARDADO (ELIMINAR):
-      console.log(`Asignando tarea ${tareaSeleccionada} a persona ${personaSeleccionada}`);
-      setMensaje('¡Asignación guardada con éxito!');
-      
-      // Limpiar formulario
-      setTareaSeleccionada('');
-      setPersonaSeleccionada('');
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMensaje('¡Asignación guardada con éxito!');
+        // Limpiar formulario después de guardar exitosamente
+        setTareaSeleccionada('');
+        setPersonaSeleccionada('');
+      } else {
+        // Mostrar error devuelto por el backend 
+        setMensaje(data.mensaje || 'Error al guardar la asignación.');
+      }
       
     } catch (error) {
-      setMensaje('Hubo un error al guardar la asignación.');
+      setMensaje('Hubo un error de red al intentar guardar la asignación.');
     }
   };
 
@@ -89,7 +92,7 @@ export default function AsignarTareaForm() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         
-        {Selector de Tareas}
+        {/* Selector de Tareas */}
         <div>
           <label htmlFor="tarea">Seleccionar Tarea:</label>
           <select 
@@ -107,7 +110,7 @@ export default function AsignarTareaForm() {
           </select>
         </div>
 
-        {Selector de Personas (Ministros)}
+        {/* Selector de Personas (Ministros) */}
         <div>
           <label htmlFor="persona">Seleccionar Ministro:</label>
           <select 
