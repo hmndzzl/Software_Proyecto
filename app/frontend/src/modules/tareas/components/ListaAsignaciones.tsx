@@ -19,10 +19,20 @@ export default function ListaAsignaciones() {
 
   // useEffect que hace la petición a la API cuando se carga el componente
   useEffect(() => {
+    const token = localStorage.getItem('token');
     // Petición al endpoint de tareas
-    fetch('http://localhost:3001/api/tareas')
+    fetch('http://localhost:3001/api/tareas', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then((res) => {
-        if (!res.ok) throw new Error('Error al obtener los datos');
+        if (!res.ok) {
+           // Si el token es inválido o no existe, el res.ok será false
+           throw new Error('No autorizado o error al obtener los datos');
+        }
         return res.json();
       })
       .then((data) => {
