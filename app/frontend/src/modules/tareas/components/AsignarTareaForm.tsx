@@ -25,7 +25,7 @@ export default function AsignarTareaForm() {
   
   useEffect(() => {
     // ESPERANDO ENDPOINTS DEL BACKEND
-    /*
+
     fetch('http://localhost:3001/api/tareas')
       .then(res => res.json())
       .then(data => setTareas(data));
@@ -33,7 +33,7 @@ export default function AsignarTareaForm() {
     fetch('http://localhost:3001/api/personas')
       .then(res => res.json())
       .then(data => setPersonas(data));
-    */
+
     // DATOS SIMULADOS PARA PRUEBAS (ELIMINAR):
     setTareas([
       { id: 1, descripcion: 'Limpieza del altar' },
@@ -55,8 +55,7 @@ export default function AsignarTareaForm() {
     }
 
     try { // Enviar datos al backend 
-      //ESPERANDO ENDPOINT DE ASIGNACIONES EN EL BACKEND
-      /*
+      
       const response = await fetch('http://localhost:3001/api/asignaciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +65,7 @@ export default function AsignarTareaForm() {
         })
       });
       if (response.ok) setMensaje('¡Asignación guardada con éxito!');
-      */
+      
       
       // SIMULACIÓN DE GUARDADO (ELIMINAR):
       console.log(`Asignando tarea ${tareaSeleccionada} a persona ${personaSeleccionada}`);
@@ -90,7 +89,7 @@ export default function AsignarTareaForm() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         
-        {/* Selector de Tareas */}
+        {Selector de Tareas}
         <div>
           <label htmlFor="tarea">Seleccionar Tarea:</label>
           <select 
@@ -108,7 +107,7 @@ export default function AsignarTareaForm() {
           </select>
         </div>
 
-        {/* Selector de Personas (Ministros) */}
+        {Selector de Personas (Ministros)}
         <div>
           <label htmlFor="persona">Seleccionar Ministro:</label>
           <select 
