@@ -39,20 +39,35 @@ export default function MinistrosPage() {
   if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>Ministros</h2>
+    <div className="page-container">
+      <div className="content-container">
+        <div className="card">
+          <h2 className="card-title">Ministros</h2>
 
-      {ministros.length === 0 ? (
-        <p>No hay ministros registrados.</p>
-      ) : (
-        <ul>
-          {ministros.map((m) => (
-            <li key={m.id}>
-              {m.nombre} - {m.correo}
-            </li>
-          ))}
-        </ul>
-      )}
+          {ministros.length === 0 ? (
+            <p>No hay ministros registrados.</p>
+          ) : (
+            <div className="table-container">
+              <table className="styled-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ministros.map((m) => (
+                    <tr key={m.id}>
+                      <td>{m.nombre}</td>
+                      <td>{m.correo}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

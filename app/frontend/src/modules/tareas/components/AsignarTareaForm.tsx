@@ -85,21 +85,22 @@ export default function AsignarTareaForm() {
 
   // Interfaz visual (JSX)
   return (
-    <div style={{ maxWidth: '400px', margin: '20px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h2>Asignar Tarea a Ministro</h2>
+    <div>
+      <h3 style={{ marginBottom: '16px' }}>Asignar Tarea a Ministro</h3>
       
-      {mensaje && <p style={{ color: mensaje.includes('éxito') ? 'green' : 'red' }}>{mensaje}</p>}
+      {mensaje && <p className={mensaje.includes('éxito') ? '' : 'error-text'} style={{ color: mensaje.includes('éxito') ? '#2e7d32' : undefined, marginBottom: '16px', fontWeight: 600 }}>{mensaje}</p>}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         
         {/* Selector de Tareas */}
-        <div>
-          <label htmlFor="tarea">Seleccionar Tarea:</label>
+        <div className="input-wrapper" style={{ marginBottom: '0' }}>
+          <label htmlFor="tarea" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>Seleccionar Tarea:</label>
           <select 
             id="tarea" 
+            className="login-input"
             value={tareaSeleccionada} 
             onChange={(e) => setTareaSeleccionada(e.target.value)}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            style={{ paddingLeft: '14px' }}
           >
             <option value="">-- Elige una tarea --</option>
             {tareas.map((tarea) => (
@@ -111,13 +112,14 @@ export default function AsignarTareaForm() {
         </div>
 
         {/* Selector de Personas (Ministros) */}
-        <div>
-          <label htmlFor="persona">Seleccionar Ministro:</label>
+        <div className="input-wrapper" style={{ marginBottom: '0' }}>
+          <label htmlFor="persona" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>Seleccionar Ministro:</label>
           <select 
             id="persona" 
+            className="login-input"
             value={personaSeleccionada} 
             onChange={(e) => setPersonaSeleccionada(e.target.value)}
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            style={{ paddingLeft: '14px' }}
           >
             <option value="">-- Elige un ministro --</option>
             {personas.map((persona) => (
@@ -128,7 +130,7 @@ export default function AsignarTareaForm() {
           </select>
         </div>
 
-        <button type="submit" style={{ padding: '10px', backgroundColor: '#0056b3', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+        <button type="submit" className="btn-primary" style={{ marginTop: '16px' }}>
           Guardar Asignación
         </button>
       </form>
