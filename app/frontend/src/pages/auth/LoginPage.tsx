@@ -1,14 +1,37 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './LoginPage.css';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: lógica de login
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await axios.post('http://localhost:3001/api/auth/login', {
+        correo: email,
+        password,
+      });
+
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+
+      navigate('/');
+    } catch (err: any) {
+      const mensaje = err.response?.data?.mensaje || 'Error al iniciar sesión';
+      setError(mensaje);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,8 +93,10 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <button type="submit" className="login-btn">
-            Login
+          {error && <p className="login-error">{error}</p>}
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'Iniciando sesión...' : 'Login'}
           </button>
         </form>
 
