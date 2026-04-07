@@ -11,7 +11,7 @@ interface Persona {
   nombre: string;
 }
 
-export default function AsignarTareaForm() {
+export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { refreshKey?: number, onAsignacionExitosa?: () => void }) {
   // Estados para guardar las listas del backend
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -21,11 +21,17 @@ export default function AsignarTareaForm() {
   const [personaSeleccionada, setPersonaSeleccionada] = useState<string>('');
   const [mensaje, setMensaje] = useState<string>('');
 
-  // useEffect para cargar datos al iniciar el componente
-  
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    const fetchOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    };
+
     // Petición al endpoint de tareas
-    fetch('http://localhost:3001/api/tareas')
+    fetch('http://localhost:3001/api/tareas', fetchOptions)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar las tareas');
         return res.json();
@@ -33,18 +39,17 @@ export default function AsignarTareaForm() {
       .then(data => setTareas(data))
       .catch(error => console.error(error));
 
-    // ESPERANDO ENDPOINT DEL BACKEND
-    /*
-    fetch('http://localhost:3001/api/personas')
-      .then(res => res.json())
-      .then(data => setPersonas(data));
-    */
-    // DATOS SIMULADOS PARA PRUEBAS (ELIMINAR):
-    setPersonas([
-      { id: 1, nombre: 'Diego Calderón' },
-      { id: 2, nombre: 'Pedro Caso' }
-    ]);
-  }, []);
+    // Petición al endpoint de personas
+    fetch('http://localhost:3001/api/personas', fetchOptions)
+      .then(res => {
+        if (!res.ok) throw new Error('Error al cargar los ministros');
+        return res.json();
+      })
+      .then(data => {
+        setPersonas(data);
+      })
+      .catch(error => console.error(error));
+  }, [refreshKey]);
 
   // Función del botón  "Asignar"
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +64,10 @@ export default function AsignarTareaForm() {
       // Enviar la asignación al backend
       const response = await fetch('http://localhost:3001/api/tareas/asignar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify({
           tarea_id: parseInt(tareaSeleccionada),
           persona_id: parseInt(personaSeleccionada)
@@ -73,10 +81,12 @@ export default function AsignarTareaForm() {
         // Limpiar formulario después de guardar exitosamente
         setTareaSeleccionada('');
         setPersonaSeleccionada('');
+        if (onAsignacionExitosa) onAsignacionExitosa();
       } else {
         // Mostrar error devuelto por el backend 
         setMensaje(data.mensaje || 'Error al guardar la asignación.');
       }
+
       
     } catch (error) {
       setMensaje('Hubo un error de red al intentar guardar la asignación.');

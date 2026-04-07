@@ -11,7 +11,7 @@ interface Asignacion {
   nombre_persona: string;
 }
 
-export default function ListaAsignaciones() {
+export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number }) {
   // Estados para manejar los datos, la carga y los errores
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [cargando, setCargando] = useState<boolean>(true);
@@ -57,7 +57,7 @@ export default function ListaAsignaciones() {
         setError(err.message);
         setCargando(false);
       });
-  }, []);
+  }, [refreshKey]);
 
   // Renderizado condicional para estados de carga y error
   if (cargando) return <p style={{ textAlign: 'center' }}>Cargando asignaciones...</p>;
