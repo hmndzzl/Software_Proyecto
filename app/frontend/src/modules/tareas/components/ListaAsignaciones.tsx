@@ -65,40 +65,36 @@ export default function ListaAsignaciones() {
 
   // Interfaz Visual
   return (
-    <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
-      <h2 style={{ borderBottom: '2px solid #ccc', paddingBottom: '10px' }}>
-        Asignaciones Actuales
-      </h2>
+    <div>
+      <h3 style={{ marginBottom: '16px' }}>Asignaciones Actuales</h3>
       
       {asignaciones.length === 0 ? (
         <p>No hay tareas asignadas en este momento.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#0056b3', color: 'white' }}>
-              <th style={{ padding: '12px', textAlign: 'left' }}>Tarea</th>
-              <th style={{ padding: '12px', textAlign: 'left' }}>Ministro Asignado</th>
-              <th style={{ padding: '12px', textAlign: 'left' }}>Fecha</th>
-              <th style={{ padding: '12px', textAlign: 'left' }}>Horario</th>
-            </tr>
-          </thead>
-          <tbody>
-            {asignaciones.map((asignacion) => (
-              <tr 
-                // Usa una combinación de IDs como Key única ya que es una tabla compuesta
-                key={`${asignacion.tarea_id}-${asignacion.persona_id}`} 
-                style={{ borderBottom: '1px solid #ddd', backgroundColor: '#fff' }}
-              >
-                <td style={{ padding: '12px' }}>{asignacion.descripcion_tarea}</td>
-                <td style={{ padding: '12px' }}><strong>{asignacion.nombre_persona}</strong></td>
-                <td style={{ padding: '12px' }}>{asignacion.fecha}</td>
-                <td style={{ padding: '12px' }}>
-                  {asignacion.hora_inicio} - {asignacion.hora_fin}
-                </td>
+        <div className="table-container">
+          <table className="styled-table">
+            <thead>
+              <tr>
+                <th>Tarea</th>
+                <th>Ministro Asignado</th>
+                <th>Fecha</th>
+                <th>Horario</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {asignaciones.map((asignacion) => (
+                <tr key={`${asignacion.tarea_id}-${asignacion.persona_id}`}>
+                  <td>{asignacion.descripcion_tarea}</td>
+                  <td><strong>{asignacion.nombre_persona}</strong></td>
+                  <td>{asignacion.fecha}</td>
+                  <td>
+                    {asignacion.hora_inicio} - {asignacion.hora_fin}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
