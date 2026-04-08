@@ -12,28 +12,6 @@
 
 ---
 
-## Descripción del Problema
-
-La parroquia depende significativamente del servicio comunitario para sus actividades litúrgicas y sociales. Sin embargo, el sistema de organización actual presenta varios retos:
-
-- **Asignación Manual:** Los coordinadores utilizan hojas de Excel y mensajes de WhatsApp, lo cual es tedioso y propenso a errores humanos.
-- **Falta de Visibilidad:** Los voluntarios a menudo no revisan los métodos actuales, lo que genera fallos en la asistencia.
-- **Conflictos de Reservas:** La gestión de salones se realiza mediante llamadas y memoria, provocando duplicidad en el uso de espacios.
-
----
-
-## Objetivos
-
-**General:** Modernizar y centralizar la gestión administrativa de la Parroquia San Pedro Nolasco, optimizando la coordinación de sus voluntarios y el uso de sus instalaciones.
-
-**Específicos:**
-- Analizar los puntos críticos del sistema actual basado en Excel.
-- Definir perfiles de usuario (sacerdotes, coordinadores, ministros) para entender sus necesidades reales.
-- Centralizar la comunicación de roles y la disponibilidad de salones en una sola plataforma accesible.
-- Implementar un sistema visualmente intuitivo que motive el cumplimiento de los servicios.
-
----
-
 ## Stack Tecnológico
 
 | Capa | Tecnología |
@@ -54,10 +32,11 @@ La parroquia depende significativamente del servicio comunitario para sus activi
 
 ## Instalación y Despliegue
 
-**1. Clonar el repositorio**
+**1. Clonar el repositorio y cambiar a develop**
 ```bash
 git clone https://github.com/hmndzzl/Software_Proyecto.git
 cd Software_Proyecto/app
+git checkout develop
 ```
 
 **2. Colocar el archivo `.env` dentro de `/app`**
@@ -89,35 +68,43 @@ docker compose up --build -d
 | Backend | http://localhost:3001 |
 | Base de datos | localhost:3306 |
 
+> **Nota para visualizar la página:** Al entrar a la URL del frontend (`http://localhost:5173`), visualizarás la vista de **Login**. Inicia sesión (puedes revisar el archivo `app/database/init/02_seeds.sql` para consultar usuarios de prueba disponibles). Tras iniciar exitosamente, serás redirigido al Dashboard, desde el cual podrás utilizar el **Navbar** unificado y acceder al módulo actual de **Tareas**.
+
 ---
 
-## Estructura del Repositorio
+## Estructura del Proyecto
 ```
 Software_Proyecto/
-├── app/                            # Código fuente de la aplicación
-│   ├── frontend/                   # React + Vite + TypeScript
-│   │   ├── src/
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   ├── backend/                    # Express + TypeScript
-│   │   ├── src/
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   ├── database/
-│   │   └── init/
-│   │       ├── 01_schema.sql       # Estructura de la base de datos
-│   │       └── 02_seeds.sql        # Datos iniciales
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── docker-compose.example.yml
-│   └── README.md
-├── Avances1/
-├── Avances2/
-├── Avances3/
-├── Corte1/
-├── Corte2/
-├── Corte3/
-└── README.md
+└── app/
+    ├── frontend/                   # React + Vite + TypeScript
+    │   ├── src/
+    │   │   ├── api/                # Llamadas a la API backend
+    │   │   ├── components/         # Componentes compartidos (Navbar, etc.)
+    │   │   ├── context/            # Contextos de React (ej. AuthContext)
+    │   │   ├── modules/            # Módulos específicos (ej. tareas)
+    │   │   ├── pages/              # Páginas principales (Login, Dashboard)
+    │   │   └── types/              # Definiciones de tipos TypeScript
+    │   ├── Dockerfile
+    │   └── package.json
+    ├── backend/                    # Express + TypeScript
+    │   ├── src/
+    │   │   ├── config/             # Configuración (BD, etc.)
+    │   │   ├── controllers/        # Lógica de los endpoints
+    │   │   ├── middlewares/        # Middlewares (ej. Autenticación)
+    │   │   ├── routes/             # Definición de rutas Express
+    │   │   ├── types/              # Tipos TypeScript
+    │   │   ├── utils/              # Utilidades
+    │   │   └── app.ts              # Archivo principal
+    │   ├── Dockerfile
+    │   └── package.json
+    ├── database/
+    │   └── init/
+    │       ├── 01_schema.sql       # Estructura de la base de datos
+    │       └── 02_seeds.sql        # Datos iniciales
+    ├── .env.example
+    ├── .gitignore
+    ├── docker-compose.example.yml
+    └── README.md
 ```
 
 ---
@@ -129,6 +116,15 @@ Software_Proyecto/
 | Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./Corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
 | Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./Corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
 | Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./Corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+
+
+## Estado Actual y Funcionalidades
+Actualmente el proyecto cuenta con la base estructural completada y probada:
+- **Autenticación y Redirección:** Flujo de login funcional conectado al backend con redirección segura al Dashboard tras autenticarse.
+- **Navegación:** Se cuenta con un Navbar estandarizado. 
+- **Módulos Frontend:** Módulo inicial de "Tareas" en desarrollo, con la visualización básica de asignaciones.
+- **Diseño Estandarizado:** CSS consistente entre módulos y componentes reutilizables.
+- **Entorno de Pruebas:** Funcionalidad backend y frontend verificada mediante Testing de estabilidad en la aplicación.
 
 ---
 
