@@ -68,6 +68,8 @@ docker compose up --build -d
 | Backend | http://localhost:3001 |
 | Base de datos | localhost:3306 |
 
+> **Nota para visualizar la página:** Al entrar a la URL del frontend (`http://localhost:5173`), visualizarás la vista de **Login**. Inicia sesión (puedes revisar el archivo `app/database/init/02_seeds.sql` para consultar usuarios de prueba disponibles). Tras iniciar exitosamente, serás redirigido al Dashboard, desde el cual podrás utilizar el **Navbar** unificado y acceder al módulo actual de **Tareas**.
+
 ---
 
 ## Estructura del Proyecto
@@ -76,14 +78,22 @@ Software_Proyecto/
 └── app/
     ├── frontend/                   # React + Vite + TypeScript
     │   ├── src/
+    │   │   ├── api/                # Llamadas a la API backend
+    │   │   ├── components/         # Componentes compartidos (Navbar, etc.)
+    │   │   ├── context/            # Contextos de React (ej. AuthContext)
+    │   │   ├── modules/            # Módulos específicos (ej. tareas)
+    │   │   ├── pages/              # Páginas principales (Login, Dashboard)
+    │   │   └── types/              # Definiciones de tipos TypeScript
     │   ├── Dockerfile
     │   └── package.json
     ├── backend/                    # Express + TypeScript
     │   ├── src/
     │   │   ├── config/             # Configuración (BD, etc.)
     │   │   ├── controllers/        # Lógica de los endpoints
+    │   │   ├── middlewares/        # Middlewares (ej. Autenticación)
     │   │   ├── routes/             # Definición de rutas Express
-    │   │   ├── utils/              # Utilidades (ej. HTTP status)
+    │   │   ├── types/              # Tipos TypeScript
+    │   │   ├── utils/              # Utilidades
     │   │   └── app.ts              # Archivo principal
     │   ├── Dockerfile
     │   └── package.json
@@ -96,6 +106,16 @@ Software_Proyecto/
     ├── docker-compose.example.yml
     └── README.md
 ```
+
+---
+
+## Estado Actual y Funcionalidades
+Actualmente el proyecto cuenta con la base estructural completada y probada:
+- **Autenticación y Redirección:** Flujo de login funcional conectado al backend con redirección segura al Dashboard tras autenticarse.
+- **Navegación:** Se cuenta con un Navbar estandarizado. 
+- **Módulos Frontend:** Módulo inicial de "Tareas" en desarrollo, con la visualización básica de asignaciones.
+- **Diseño Estandarizado:** CSS consistente entre módulos y componentes reutilizables.
+- **Entorno de Pruebas:** Funcionalidad backend y frontend verificada mediante Testing de estabilidad en la aplicación.
 
 ---
 
