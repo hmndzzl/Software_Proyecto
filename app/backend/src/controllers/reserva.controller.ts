@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
 
-// Estados asumidos:
+// Estados:
 // 1 = pendiente
 // 2 = aprobada
 // 3 = rechazada
@@ -22,9 +22,7 @@ export const crearReserva = async (req: Request, res: Response) => {
       });
     }
 
-    // Aquí NO validamos conflicto con pendientes ni aprobadas,
-    // porque bajo esta lógica varias solicitudes pueden existir
-    // y el bloqueo real ocurre al aprobar.
+
 
     const [resultado]: any = await db.query(
       `
