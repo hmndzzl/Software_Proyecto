@@ -22,11 +22,9 @@ export const crearReserva = async (req: Request, res: Response) => {
       });
     }
 
-
-
     const [resultado]: any = await db.query(
       `
-      INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_id)
+      INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id)
       VALUES (?, ?, ?, ?, 1)
       `,
       [fecha, hora_inicio, hora_fin, espacio_id]
@@ -123,7 +121,6 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
 
     const reserva = rows[0];
 
-    // Si se quiere aprobar, ahí sí validamos conflicto
     if (Number(estado_id) === 2) {
       const [conflictos]: any = await db.query(
         `
@@ -131,7 +128,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
         FROM reserva
         WHERE espacio_id = ?
           AND fecha = ?
-          AND estado_id = 2
+          AND estado_reserva_id = 2
           AND id <> ?
           AND (
             hora_inicio < ?
@@ -157,7 +154,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     await db.query(
       `
       UPDATE reserva
-      SET estado_id = ?
+      SET estado_reserva_id = ?
       WHERE id = ?
       `,
       [estado_id, id]
