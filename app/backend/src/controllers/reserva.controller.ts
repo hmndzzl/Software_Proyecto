@@ -39,7 +39,11 @@ export const crearReserva = async (req: Request, res: Response) => {
 export const obtenerReservas = async (_req: Request, res: Response) => {
   try {
     const [reservas]: any = await db.query(`
-      SELECT * FROM reserva ORDER BY fecha ASC, hora_inicio ASC
+      SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
+             e.nombre AS espacio_nombre
+      FROM reserva r
+      LEFT JOIN espacio e ON e.id = r.espacio_id
+      ORDER BY r.fecha ASC, r.hora_inicio ASC
     `);
 
     return res.status(HttpStatus.OK).json(reservas);
