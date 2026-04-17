@@ -16,6 +16,7 @@ export default function Navbar() {
         <Link to="/ministros" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Ministros</Link>
         <Link to="/tareas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Tareas</Link>
         <Link to="/reservas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Reservas</Link>
+        <Link to="/grupos" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Grupos</Link>
         <Link to="/espacios" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Espacios</Link>
       </div>
       <div>
