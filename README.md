@@ -109,6 +109,15 @@ Software_Proyecto/
 
 ---
 
+## Documentación del Proyecto
+
+| Entrega | Documento |
+|---|---|
+| Corte 1 | [Primer Corte del Proyecto - Grupo 3.pdf](./corte1/Primer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 2 | [Segundo Corte del Proyecto - Grupo 3.pdf](./corte2/Segundo%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+| Corte 3 | [Tercer Corte del Proyecto - Grupo 3.pdf](./corte3/Tercer%20Corte%20del%20Proyecto%20-%20Grupo%203.pdf) |
+
+
 ## Estado Actual y Funcionalidades
 Actualmente el proyecto cuenta con la base estructural completada y probada:
 - **Autenticación y Redirección:** Flujo de login funcional conectado al backend con redirección segura al Dashboard tras autenticarse.
