@@ -1,0 +1,35 @@
+.header {
+  margin-bottom: 32px;
+}
+
+.titulo {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #222;
+}
+
+.subtitulo {
+  color: #888;
+  font-size: 14px;
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.mensaje {
+  text-align: center;
+  color: #888;
+  padding: 40px 0;
+}
+
+.error {
+  text-align: center;
+  color: #d32f2f;
+  padding: 40px 0;
+  font-weight: 600;
+}
