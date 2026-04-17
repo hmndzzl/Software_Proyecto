@@ -16,15 +16,15 @@ INSERT INTO `estado_reserva` (`detalle`) VALUES
   ('Rechazada');
 
 -- Usuarios de prueba
--- Contraseña "admin123"  → $2a$10$lRbAN6.ib/1XfAC/VwPoOu.dvBM8p0zVkvQnAbVScTSrI5JTajDj2
+-- Contraseña "admin123"    → $2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK
 -- Contraseña "password123" → $2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O
 INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`) VALUES
   -- Equipo de desarrollo (Admin, rol_id=5)
-  ('Diego Calderon',  'diego@parroquia.com',   '$2a$10$lRbAN6.ib/1XfAC/VwPoOu.dvBM8p0zVkvQnAbVScTSrI5JTajDj2', 5),
-  ('Pedro Caso',      'pedro@parroquia.com',   '$2a$10$lRbAN6.ib/1XfAC/VwPoOu.dvBM8p0zVkvQnAbVScTSrI5JTajDj2', 5),
-  ('Javier Alvarado', 'javier@parroquia.com',  '$2a$10$lRbAN6.ib/1XfAC/VwPoOu.dvBM8p0zVkvQnAbVScTSrI5JTajDj2', 5),
-  ('Hugo Mendez',     'hugo@parroquia.com',    '$2a$10$lRbAN6.ib/1XfAC/VwPoOu.dvBM8p0zVkvQnAbVScTSrI5JTajDj2', 5),
-  ('Miguel Rosas',    'miguel@parroquia.com',  '$2a$10$lRbAN6.ib/1XfAC/VwPoOu.dvBM8p0zVkvQnAbVScTSrI5JTajDj2', 5),
+  ('Diego Calderon',  'diego@parroquia.com',   '$2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK', 5),
+  ('Pedro Caso',      'pedro@parroquia.com',   '$2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK', 5),
+  ('Javier Alvarado', 'javier@parroquia.com',  '$2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK', 5),
+  ('Hugo Mendez',     'hugo@parroquia.com',    '$2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK', 5),
+  ('Miguel Rosas',    'miguel@parroquia.com',  '$2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK', 5),
   -- Usuarios de prueba por rol
   ('Padre Test',           'sacerdote@parroquia.com',   '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 1),
   ('Coord Ministros Test', 'coord.min@parroquia.com',   '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 2),
