@@ -36,15 +36,20 @@ export const crearReserva = async (req: Request, res: Response) => {
   }
 };
 
-export const obtenerReservas = async (_req: Request, res: Response) => {
+export const obtenerReservas = async (req: Request, res: Response) => {
   try {
+    const { espacio_id } = req.query;
+    const filtro = espacio_id ? 'WHERE r.espacio_id = ?' : '';
+    const params = espacio_id ? [Number(espacio_id)] : [];
+
     const [reservas]: any = await db.query(`
       SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
              e.nombre AS espacio_nombre
       FROM reserva r
       LEFT JOIN espacio e ON e.id = r.espacio_id
+      ${filtro}
       ORDER BY r.fecha ASC, r.hora_inicio ASC
-    `);
+    `, params);
 
     return res.status(HttpStatus.OK).json(reservas);
   } catch (error) {
