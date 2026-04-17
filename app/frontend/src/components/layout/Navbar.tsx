@@ -15,7 +15,6 @@ export default function Navbar() {
         <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Panel de Control</h1>
         <Link to="/ministros" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Ministros</Link>
         <Link to="/tareas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Tareas</Link>
-        <Link to="/reservas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Reservas</Link>
       </div>
       <div>
         <button 

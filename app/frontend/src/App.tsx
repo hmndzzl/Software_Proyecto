@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import LoginPage from './pages/auth/LoginPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
-import ReservasPage from './pages/reservas/ReservasPage';
 import Navbar from './components/layout/Navbar';
 
 function AppContent() {
@@ -16,8 +15,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/ministros" element={<MinistrosPage />} />
         <Route path="/tareas" element={<TareasPage />} />
-        <Route path="/reservas" element={<ReservasPage />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/tareas" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
