@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ROLE_HIERARCHY } from '../config/roles';
+import { HttpStatus } from '../utils/httpStatus';
 
 export interface JwtPayload {
   id: number;
@@ -24,13 +25,13 @@ export function requireRole(...allowedRoles: number[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const userRolId = req.user?.rol_id;
     if (userRolId === undefined) {
-      res.status(403).json({ mensaje: 'Acceso denegado: permisos insuficientes' });
+      res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Acceso denegado: permisos insuficientes' });
       return;
     }
     const effectiveRoles = ROLE_HIERARCHY[userRolId] ?? [userRolId];
     const hasAccess = allowedRoles.some(role => effectiveRoles.includes(role));
     if (!hasAccess) {
-      res.status(403).json({ mensaje: 'Acceso denegado: permisos insuficientes' });
+      res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Acceso denegado: permisos insuficientes' });
       return;
     }
     next();
@@ -41,7 +42,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ mensaje: 'Token no proporcionado' });
+    res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Token no proporcionado' });
     return;
   }
 
@@ -53,6 +54,6 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     req.user = decoded;
     next();
   } catch {
-    res.status(401).json({ mensaje: 'Token inválido o expirado' });
+    res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Token inválido o expirado' });
   }
 }
