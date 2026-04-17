@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EspacioCard, { Espacio } from '../../modules/espacios/components/EspacioCard';
+import styles from './EspaciosPage.module.css';
 
 export default function EspaciosPage() {
   const [espacios, setEspacios] = useState<Espacio[]>([]);
@@ -35,42 +36,20 @@ export default function EspaciosPage() {
       <div className="content-container">
         <div className="card">
 
-          {/* Encabezado */}
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px 0', color: '#222' }}>
-              Espacios de la Parroquia
-            </h2>
-            <p style={{ color: '#888', fontSize: '14px', margin: 0 }}>
-              Consulta los salones y áreas disponibles para reservar.
-            </p>
+          <div className={styles.header}>
+            <h2 className={styles.titulo}>Espacios de la Parroquia</h2>
+            <p className={styles.subtitulo}>Consulta los salones y áreas disponibles para reservar.</p>
           </div>
 
-          {/* Estados de carga y error */}
-          {cargando && (
-            <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>
-              Cargando espacios...
-            </p>
-          )}
+          {cargando && <p className={styles.mensaje}>Cargando espacios...</p>}
+          {error && <p className={styles.error}>Error: {error}</p>}
 
-          {error && (
-            <p style={{ textAlign: 'center', color: '#d32f2f', padding: '40px 0', fontWeight: 600 }}>
-              Error: {error}
-            </p>
-          )}
-
-          {/* Grid de tarjetas */}
           {!cargando && !error && espacios.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>
-              No hay espacios registrados.
-            </p>
+            <p className={styles.mensaje}>No hay espacios registrados.</p>
           )}
 
           {!cargando && !error && espacios.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: '24px',
-            }}>
+            <div className={styles.grid}>
               {espacios.map((espacio) => (
                 <EspacioCard
                   key={espacio.id}
