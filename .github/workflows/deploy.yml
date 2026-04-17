@@ -1,0 +1,31 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: parroquia
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            cd ~/Software_Proyecto
+            # Pull latest changes
+            git pull origin main
+            # Build and deploy
+            docker compose down
+            docker compose up -d --build
+            # Esperar que los servicios inicien
+            echo "Waiting for services to start..."
+            sleep 15
+            # Mostrar estado
+            docker compose ps
+            # Limpiar imágenes viejas
+            docker image prune -f
