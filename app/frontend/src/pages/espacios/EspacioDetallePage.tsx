@@ -32,6 +32,34 @@ export default function EspacioDetallePage() {
       });
   }, [id]);
 
+  // Early returns para estados transitorios — el return principal garantiza datos completos
+  if (cargando) {
+    return (
+      <div className="page-container">
+        <div className="content-container">
+          <div className="card">
+            <p className={styles.mensaje}>Cargando...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !espacio) {
+    return (
+      <div className="page-container">
+        <div className="content-container">
+          <div className="card">
+            <button className={styles.backBtn} onClick={() => navigate('/espacios')}>
+              ← Volver a Espacios
+            </button>
+            <p className={styles.error}>{error || 'Espacio no encontrado'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       <div className="content-container">
@@ -41,33 +69,26 @@ export default function EspacioDetallePage() {
             ← Volver a Espacios
           </button>
 
-          {cargando && <p className={styles.mensaje}>Cargando...</p>}
-          {error && <p className={styles.error}>{error}</p>}
+          {/* Banner — área para imagen futura */}
+          <div className={styles.banner}>🏛️</div>
 
-          {espacio && (
-            <>
-              {/* Banner — área para imagen futura */}
-              <div className={styles.banner}>🏛️</div>
+          <h2 className={styles.nombre}>{espacio.nombre}</h2>
 
-              <h2 className={styles.nombre}>{espacio.nombre}</h2>
+          <p className={styles.capacidad}>
+            <span>👥</span>
+            {espacio.capacidad != null
+              ? `Capacidad: ${espacio.capacidad} personas`
+              : 'Capacidad no definida'}
+          </p>
 
-              <p className={styles.capacidad}>
-                <span>👥</span>
-                {espacio.capacidad != null
-                  ? `Capacidad: ${espacio.capacidad} personas`
-                  : 'Capacidad no definida'}
-              </p>
-
-              {/* Reservas del día — se implementará en próximos sprints */}
-              <div className={styles.infoBox}>
-                <h3 className={styles.infoBoxTitulo}>Disponibilidad y reservas</h3>
-                <p className={styles.infoBoxTexto}>
-                  La visualización de reservas activas y disponibilidad del espacio
-                  estará disponible en próximos sprints.
-                </p>
-              </div>
-            </>
-          )}
+          {/* Reservas del día — se implementará en próximos sprints */}
+          <div className={styles.infoBox}>
+            <h3 className={styles.infoBoxTitulo}>Disponibilidad y reservas</h3>
+            <p className={styles.infoBoxTexto}>
+              La visualización de reservas activas y disponibilidad del espacio
+              estará disponible en próximos sprints.
+            </p>
+          </div>
 
         </div>
       </div>

@@ -31,6 +31,31 @@ export default function EspaciosPage() {
       });
   }, []);
 
+  // Early returns para estados transitorios
+  if (cargando) {
+    return (
+      <div className="page-container">
+        <div className="content-container">
+          <div className="card">
+            <p className={styles.mensaje}>Cargando espacios...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container">
+        <div className="content-container">
+          <div className="card">
+            <p className={styles.error}>Error: {error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       <div className="content-container">
@@ -41,14 +66,9 @@ export default function EspaciosPage() {
             <p className={styles.subtitulo}>Consulta los salones y áreas disponibles para reservar.</p>
           </div>
 
-          {cargando && <p className={styles.mensaje}>Cargando espacios...</p>}
-          {error && <p className={styles.error}>Error: {error}</p>}
-
-          {!cargando && !error && espacios.length === 0 && (
+          {espacios.length === 0 ? (
             <p className={styles.mensaje}>No hay espacios registrados.</p>
-          )}
-
-          {!cargando && !error && espacios.length > 0 && (
+          ) : (
             <div className={styles.grid}>
               {espacios.map((espacio) => (
                 <EspacioCard
