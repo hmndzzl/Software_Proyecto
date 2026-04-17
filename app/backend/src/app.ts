@@ -34,3 +34,9 @@ checkDbConnection();
 app.listen(PORT, () => {
   console.log(`Backend corriendo en puerto ${PORT}`);
 });
+
+// Importar al inicio junto con las otras rutas
+import grupoRoutes from './routes/grupo.routes';
+
+// Registrar la ruta junto con las otras
+app.use('/api/grupos', grupoRoutes);
