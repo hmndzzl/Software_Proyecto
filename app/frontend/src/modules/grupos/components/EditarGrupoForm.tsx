@@ -26,7 +26,10 @@ export default function EditarGrupoForm({
     fetch(`${import.meta.env.VITE_API_URL}/api/personas`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Error al cargar coordinadores');
+        return res.json();
+      })
       .then(data => setPersonas(data))
       .catch(() => setMensaje('Error al cargar la lista de coordinadores.'));
   }, []);
