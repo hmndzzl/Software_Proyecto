@@ -3,6 +3,8 @@ import LoginPage from './pages/auth/LoginPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
 import ReservasPage from './pages/reservas/ReservasPage';
+import EspaciosPage from './pages/espacios/EspaciosPage';
+import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
 import Navbar from './components/layout/Navbar';
 
 function AppContent() {
@@ -17,6 +19,8 @@ function AppContent() {
         <Route path="/ministros" element={<MinistrosPage />} />
         <Route path="/tareas" element={<TareasPage />} />
         <Route path="/reservas" element={<ReservasPage />} />
+        <Route path="/espacios" element={<EspaciosPage />} />
+        <Route path="/espacios/:id" element={<EspacioDetallePage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
