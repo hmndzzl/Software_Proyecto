@@ -21,7 +21,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   useEffect(() => {
     const token = localStorage.getItem('token');
     // Petición al endpoint de tareas
-    fetch(`${import.meta.env.VITE_API_URL}/api/tareas`, {
+    fetch('http://localhost:3001/api/tareas', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

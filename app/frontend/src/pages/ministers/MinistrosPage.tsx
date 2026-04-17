@@ -14,7 +14,7 @@ export default function MinistrosPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
 
-    fetch(`${import.meta.env.VITE_API_URL}/api/personas`, {
+    fetch('http://localhost:3001/api/personas', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -31,7 +31,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
     };
 
     // Petición al endpoint de tareas
-    fetch(`${import.meta.env.VITE_API_URL}/api/tareas`, fetchOptions)
+    fetch('http://localhost:3001/api/tareas', fetchOptions)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar las tareas');
         return res.json();
@@ -40,7 +40,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
       .catch(error => console.error(error));
 
     // Petición al endpoint de personas
-    fetch(`${import.meta.env.VITE_API_URL}/api/personas`, fetchOptions)
+    fetch('http://localhost:3001/api/personas', fetchOptions)
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar los ministros');
         return res.json();
@@ -62,7 +62,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
 
     try { 
       // Enviar la asignación al backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tareas/asignar`, {
+      const response = await fetch('http://localhost:3001/api/tareas/asignar', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
