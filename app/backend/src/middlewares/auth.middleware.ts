@@ -15,6 +15,16 @@ declare global {
   }
 }
 
+export function requireRole(...roles: number[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.rol_id)) {
+      res.status(403).json({ mensaje: 'Acceso denegado: permisos insuficientes' });
+      return;
+    }
+    next();
+  };
+}
+
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
