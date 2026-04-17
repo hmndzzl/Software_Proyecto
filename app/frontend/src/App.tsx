@@ -3,6 +3,7 @@ import LoginPage from './pages/auth/LoginPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
 import ReservasPage from './pages/reservas/ReservasPage';
+import GruposPage from './pages/grupos/gruposPage';
 import Navbar from './components/layout/Navbar';
 
 function AppContent() {
@@ -17,6 +18,7 @@ function AppContent() {
         <Route path="/ministros" element={<MinistrosPage />} />
         <Route path="/tareas" element={<TareasPage />} />
         <Route path="/reservas" element={<ReservasPage />} />
+        <Route path="/grupos" element={<GruposPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
