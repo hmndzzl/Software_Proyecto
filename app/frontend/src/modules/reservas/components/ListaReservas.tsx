@@ -31,30 +31,60 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Obtener usuario del localStorage para verificar permisos
+  const usuarioInfo = localStorage.getItem('usuario');
+  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const esAdminOSacerdote = usuario && (usuario.rol_id === 1 || usuario.rol_id === 5);
+
+  const fetchReservas = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setReservas(data);
+      } else {
+        setError('Error al cargar las reservas.');
+      }
+    } catch {
+      setError('Error de red al obtener las reservas.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchReservas = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setReservas(data);
-        } else {
-          setError('Error al cargar las reservas.');
-        }
-      } catch {
-        setError('Error de red al obtener las reservas.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReservas();
   }, [refreshKey]);
+
+  const cambiarEstado = async (id: number, nuevoEstado: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas/${id}/estado`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ estado_id: nuevoEstado })
+      });
+      
+      if (response.ok) {
+        // Recargar la lista tras el cambio
+        fetchReservas();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al cambiar el estado de la reserva');
+      }
+    } catch (error) {
+      alert('Error de red al cambiar el estado de la reserva');
+    }
+  };
 
   const formatFecha = (fecha: string) => {
     const [year, month, day] = fecha.split('T')[0].split('-');
@@ -85,6 +115,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <th>Hora Inicio</th>
                 <th>Hora Fin</th>
                 <th>Estado</th>
+                {esAdminOSacerdote && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -108,6 +139,42 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                     </span>
                   </td>
+                  {esAdminOSacerdote && (
+                    <td>
+                      {r.estado_reserva_id === 1 && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            onClick={() => cambiarEstado(r.id, 2)}
+                            style={{ 
+                              padding: '4px 8px', 
+                              backgroundColor: '#2e7d32', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Aprobar
+                          </button>
+                          <button 
+                            onClick={() => cambiarEstado(r.id, 3)}
+                            style={{ 
+                              padding: '4px 8px', 
+                              backgroundColor: '#c0392b', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Rechazar
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
