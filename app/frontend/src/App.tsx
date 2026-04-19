@@ -4,6 +4,7 @@ import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
 import ReservasPage from './pages/reservas/ReservasPage';
 import GruposPage from './pages/grupos/gruposPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 import EspaciosPage from './pages/espacios/EspaciosPage';
 import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
 import Navbar from './components/layout/Navbar';
@@ -17,13 +18,14 @@ function AppContent() {
       {showNavbar && <Navbar />}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/ministros" element={<MinistrosPage />} />
         <Route path="/tareas" element={<TareasPage />} />
         <Route path="/reservas" element={<ReservasPage />} />
         <Route path="/grupos" element={<GruposPage />} />
         <Route path="/espacios" element={<EspaciosPage />} />
         <Route path="/espacios/:id" element={<EspacioDetallePage />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
