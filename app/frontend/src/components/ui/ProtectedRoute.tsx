@@ -22,25 +22,6 @@ interface Props {
   allowedRoles: number[];
 }
 
-function getHomeByRole(rolId: number): string {
-  switch (rolId) {
-    case ROLES.ADMIN:
-    case ROLES.SACERDOTE:
-      return '/ministros';
-
-    case ROLES.COORDINADOR_MINISTROS:
-      return '/tareas';
-
-    case ROLES.COORDINADOR_GRUPOS:
-      return '/reservas';
-
-    case ROLES.MINISTRO:
-      return '/tareas';
-
-    default:
-      return '/login';
-  }
-}
 
 export default function ProtectedRoute({ children, allowedRoles }: Props) {
   const token = localStorage.getItem('token');
@@ -71,9 +52,9 @@ export default function ProtectedRoute({ children, allowedRoles }: Props) {
   const effectiveRoles = ROLE_HIERARCHY[userRolId] ?? [userRolId];
   const hasAccess = allowedRoles.some((role) => effectiveRoles.includes(role));
 
-  if (!hasAccess) {
-    return <Navigate to={getHomeByRole(userRolId)} replace />;
-  }
+if (!hasAccess) {
+  return <Navigate to="/dashboard" replace />;
+}
 
   return <>{children}</>;
 }
