@@ -25,29 +25,7 @@ export default function LoginPage() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
 
-      const usuario = response.data.usuario;
-
-      switch (usuario.rol_id) {
-        case 5:
-        case 1:
-          navigate('/tareas');
-          break;
-
-        case 2:
-          navigate('/tareas');
-          break;
-
-        case 3:
-          navigate('/reservas');
-          break;
-
-        case 4:
-          navigate('/tareas');
-          break;
-
-        default:
-          navigate('/login');
-      }
+      navigate('/dashboard');
 
     } catch (err: any) {
       const mensaje = err.response?.data?.mensaje || 'Error al iniciar sesión';
