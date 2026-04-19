@@ -23,7 +23,7 @@ export default function EditarGrupoForm({
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch(`${import.meta.env.VITE_API_URL}/api/personas`, {
+    fetch(`${import.meta.env.VITE_API_URL}/api/personas/coordinadores-grupo`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {

@@ -4,9 +4,14 @@ import ListaGrupos from '../../modules/grupos/components/ListaGrupos';
 import EditarGrupoForm from '../../modules/grupos/components/EditarGrupoForm';
 import { Grupo } from '../../types';
 
+const ROLES_CREAR_GRUPO = [1, 3, 5]; // Sacerdote, Coordinador de Grupos, Admin
+
 export default function GruposPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<Grupo | null>(null);
+
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const puedeCrear = ROLES_CREAR_GRUPO.includes(usuario?.rol_id);
 
   const handleDataChanged = () => {
     setRefreshKey(prev => prev + 1);
@@ -20,7 +25,7 @@ export default function GruposPage() {
           <h2 className="card-title">Gestión de Grupos Parroquiales</h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', marginBottom: '40px' }}>
-            <CrearGrupoForm onGrupoCreado={handleDataChanged} />
+            {puedeCrear && <CrearGrupoForm onGrupoCreado={handleDataChanged} />}
             {grupoSeleccionado && (
               <EditarGrupoForm
                 grupo={grupoSeleccionado}
