@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
 import personaRoutes from './routes/persona.routes';
 import reservaRoutes from './routes/reserva.routes';
+import espacioRoutes from './routes/espacio.routes';
+import grupoRoutes from './routes/grupo.routes';
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tareas', tareaRoutes);
 app.use('/api/personas', personaRoutes);
 app.use('/api/reservas', reservaRoutes);
+app.use('/api/espacios', espacioRoutes);
+app.use('/api/grupos', grupoRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {

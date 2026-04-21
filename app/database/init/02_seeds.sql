@@ -9,6 +9,16 @@ INSERT INTO `rol` (`detalle`) VALUES
   ('Ministro'),
   ('Admin');
 
+-- Espacios físicos de la parroquia
+INSERT INTO `espacio` (`nombre`, `capacidad`) VALUES
+  ('Templo Principal',      500),
+  ('Salón Parroquial',      150),
+  ('Sala de Catequesis A',   30),
+  ('Sala de Catequesis B',   30),
+  ('Sala de Reuniones',      20),
+  ('Patio Central',         200),
+  ('Capilla Lateral',        80);
+
 -- Estados de reserva
 INSERT INTO `estado_reserva` (`detalle`) VALUES
   ('Pendiente'),
