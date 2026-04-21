@@ -1,0 +1,149 @@
+.backBtn {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  padding: 0;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backBtn:hover {
+  color: #333;
+}
+
+.banner {
+  height: 160px;
+  background: linear-gradient(135deg, #FFD900 0%, #FFC200 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  margin-bottom: 32px;
+  user-select: none;
+}
+
+.nombre {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #222;
+}
+
+.capacidad {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seccion {
+  margin-top: 28px;
+}
+
+.seccionTitulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 16px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* Reservas */
+.reservaItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background-color: #fafafa;
+  border: 1px solid #f0f0f0;
+  margin-bottom: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.reservaHorario {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.reservaFecha {
+  font-size: 13px;
+  color: #888;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badgePendiente  { color: #b45309; background-color: #fef9c3; }
+.badgeConfirmada { color: #2e7d32; background-color: #dcfce7; }
+.badgeRechazada  { color: #c0392b; background-color: #fde8e8; }
+
+/* Próximos sprints */
+.infoBox {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border-left: 4px solid #FFD900;
+}
+
+.infoBoxTitulo {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  color: #444;
+}
+
+.infoBoxLista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.infoBoxLista li {
+  font-size: 13px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.infoBoxLista li::before {
+  content: '○';
+  color: #FFB800;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.mensaje {
+  text-align: center;
+  color: #888;
+  padding: 40px 0;
+}
+
+.error {
+  text-align: center;
+  color: #d32f2f;
+  padding: 40px 0;
+  font-weight: 600;
+}
