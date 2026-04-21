@@ -35,6 +35,11 @@ export default function EspacioDetallePage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
+  // Obtener usuario del localStorage para verificar permisos administrativos
+  const usuarioInfo = localStorage.getItem('usuario');
+  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const esAdminOSacerdote = usuario && (usuario.rol_id === 1 || usuario.rol_id === 5);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -58,6 +63,35 @@ export default function EspacioDetallePage() {
         setCargando(false);
       });
   }, [id]);
+
+  const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas/${reservaId}/estado`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ estado_id: nuevoEstado })
+      });
+
+      if (response.ok) {
+        // Recargar la lista de reservas para ver el estado actualizado
+        const resReservas = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas?espacio_id=${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (resReservas.ok) {
+          setReservas(await resReservas.json());
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al cambiar el estado de la reserva');
+      }
+    } catch (error) {
+      alert('Error de red al cambiar el estado de la reserva');
+    }
+  };
 
   if (cargando) {
     return (
@@ -121,9 +155,27 @@ export default function EspacioDetallePage() {
                       {formatHora(r.hora_inicio)} — {formatHora(r.hora_fin)}
                     </p>
                   </div>
-                  <span className={`${styles.badge} ${ESTADO_CLASS[r.estado_reserva_id] ?? ''}`}>
-                    {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className={`${styles.badge} ${ESTADO_CLASS[r.estado_reserva_id] ?? ''}`}>
+                      {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
+                    </span>
+                    {esAdminOSacerdote && r.estado_reserva_id === 1 && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => cambiarEstado(r.id, 2)}
+                          style={{ padding: '4px 8px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                        >
+                          Aprobar
+                        </button>
+                        <button 
+                          onClick={() => cambiarEstado(r.id, 3)}
+                          style={{ padding: '4px 8px', backgroundColor: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))
             )}
