@@ -17,10 +17,11 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
             cd ~/Software_Proyecto
-            # Pull latest changes
-            git pull origin main
-            # Build and deploy
-            docker compose down
+            # Forzar sincronización con GitHub sin conflictos
+            git fetch origin main
+            git reset --hard origin/main
+            # Build y deploy
+            docker compose down -v
             docker compose up -d --build
             # Esperar que los servicios inicien
             echo "Waiting for services to start..."
