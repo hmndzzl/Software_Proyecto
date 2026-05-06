@@ -1,40 +1,19 @@
 import { Link } from 'react-router-dom';
+import './NotFoundPage.css';
 
 const NotFoundPage = () => {
   return (
-    <main style={{
-      minHeight: '70vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem'
-    }}>
-      <section style={{
-        maxWidth: '520px',
-        textAlign: 'center'
-      }}>
-        <h1 style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>404</h1>
+    <main className="not-found-page">
+      <section className="not-found-card">
+        <p className="not-found-label">Error 404</p>
 
-        <h2 style={{ marginBottom: '1rem' }}>
-          Página no encontrada
-        </h2>
+        <h1 className="not-found-title">Página no encontrada</h1>
 
-        <p style={{ marginBottom: '1.5rem', color: '#666' }}>
+        <p className="not-found-text">
           La ruta que intentaste abrir no existe o fue movida.
         </p>
 
-        <Link
-          to="/dashboard"
-          style={{
-            display: 'inline-block',
-            padding: '0.75rem 1.25rem',
-            borderRadius: '8px',
-            backgroundColor: '#2563eb',
-            color: 'white',
-            textDecoration: 'none',
-            fontWeight: 600
-          }}
-        >
+        <Link to="/dashboard" className="not-found-button">
           Volver al dashboard
         </Link>
       </section>
