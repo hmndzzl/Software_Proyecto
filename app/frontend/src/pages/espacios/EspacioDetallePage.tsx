@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import styles from './EspacioDetallePage.module.css';
+import { ROLES, usuarioTieneRol } from '../../utils/roles';
 
 interface Reserva {
   id: number;
@@ -35,10 +36,10 @@ export default function EspacioDetallePage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // Obtener usuario del localStorage para verificar permisos administrativos
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
-  const esAdminOSacerdote = usuario && (usuario.rol_id === 1 || usuario.rol_id === 5);
+  const esAdminOSacerdote = usuarioTieneRol([
+    ROLES.ADMIN,
+    ROLES.SACERDOTE,
+  ]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

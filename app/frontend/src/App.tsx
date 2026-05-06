@@ -13,7 +13,7 @@ import NotFoundPage from './pages/not_found_page/NotFoundPage';
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = location.pathname !== '/login';
+  const showNavbar = location.pathname !== '/login' && location.pathname !== '*';
 
   return (
     <>
