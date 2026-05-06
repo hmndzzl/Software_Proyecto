@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Grupo } from '../../../types';
+import { ROLES, usuarioTieneRol } from '../../../utils/roles';
 
 export default function ListaGrupos({
   refreshKey,
@@ -11,6 +12,11 @@ export default function ListaGrupos({
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const puedeEditar = usuarioTieneRol([
+    ROLES.SACERDOTE,
+    ROLES.COORDINADOR_GRUPOS,
+  ]);
 
   useEffect(() => {
     const fetchGrupos = async () => {
@@ -55,7 +61,7 @@ export default function ListaGrupos({
                 <th>#</th>
                 <th>Nombre</th>
                 <th>Coordinador</th>
-                <th>Acciones</th>
+                {puedeEditar && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -64,25 +70,27 @@ export default function ListaGrupos({
                   <td>{g.id}</td>
                   <td>{g.nombre}</td>
                   <td>{g.nombre_coordinador}</td>
-                  <td>
-                    {onEditar && (
-                      <button
-                        onClick={() => onEditar(g)}
-                        style={{
-                          backgroundColor: 'transparent',
-                          border: '1px solid #ccc',
-                          borderRadius: '50px',
-                          padding: '6px 14px',
-                          fontWeight: 600,
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          color: '#333'
-                        }}
-                      >
-                        Editar
-                      </button>
-                    )}
-                  </td>
+                  {puedeEditar && (
+                    <td>
+                      {onEditar && (
+                        <button
+                          onClick={() => onEditar(g)}
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid #ccc',
+                            borderRadius: '50px',
+                            padding: '6px 14px',
+                            fontWeight: 600,
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            color: '#333'
+                          }}
+                        >
+                          Editar
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
