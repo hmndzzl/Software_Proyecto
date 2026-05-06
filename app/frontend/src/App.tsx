@@ -9,6 +9,7 @@ import EspaciosPage from './pages/espacios/EspaciosPage';
 import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
 import Navbar from './components/layout/Navbar';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
+import NotFoundPage from './pages/not_found_page/NotFoundPage';
 
 function AppContent() {
   const location = useLocation();
@@ -110,7 +111,8 @@ function AppContent() {
         />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
+
       </Routes>
     </>
   );
