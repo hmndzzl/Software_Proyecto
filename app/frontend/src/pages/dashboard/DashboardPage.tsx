@@ -1,12 +1,157 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FC } from 'react';
 import { Link } from 'react-router-dom';
+import { ROLES } from '../../components/ui/ProtectedRoute';
+import styles from './DashboardPage.module.css';
 
-interface StatCard {
-  label: string;
-  value: number | string;
-  loading: boolean;
+/* ──────────────────────────────────────────
+   Role helpers (mirrors ProtectedRoute.tsx)
+   ────────────────────────────────────────── */
+const ROLE_HIERARCHY: Record<number, number[]> = {
+  [ROLES.ADMIN]:                [ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.MINISTRO],
+  [ROLES.SACERDOTE]:            [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.MINISTRO],
+  [ROLES.COORDINADOR_MINISTROS]:[ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO],
+  [ROLES.COORDINADOR_GRUPOS]:   [ROLES.COORDINADOR_GRUPOS],
+  [ROLES.MINISTRO]:             [ROLES.MINISTRO],
+};
+
+const ROLE_LABELS: Record<number, string> = {
+  [ROLES.SACERDOTE]:            'Sacerdote',
+  [ROLES.COORDINADOR_MINISTROS]:'Coordinador de Ministros',
+  [ROLES.COORDINADOR_GRUPOS]:   'Coordinador de Grupos',
+  [ROLES.MINISTRO]:             'Ministro',
+  [ROLES.ADMIN]:                'Administrador',
+};
+
+function canAccess(userRolId: number, allowedRoles: number[]): boolean {
+  const effective = ROLE_HIERARCHY[userRolId] ?? [userRolId];
+  return allowedRoles.some(r => effective.includes(r));
 }
 
+/* ──────────────────────────────────────────
+   SVG Icons (Feather icon style)
+   ────────────────────────────────────────── */
+function IconGrupos() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  );
+}
+
+function IconMinistros() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  );
+}
+
+function IconEspacios() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9,22 9,12 15,12 15,22"/>
+    </svg>
+  );
+}
+
+function IconReservas() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  );
+}
+
+function IconTareas() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9,11 12,14 22,4"/>
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+  );
+}
+
+/* ──────────────────────────────────────────
+   Data definitions
+   ────────────────────────────────────────── */
+interface StatDef {
+  key: string;
+  label: string;
+  cardClass: string;
+  Icon: FC;
+  apiPath: string;
+  filter?: (data: any[]) => number;
+  allowedRoles: number[];
+}
+
+const ALL_STATS: StatDef[] = [
+  {
+    key: 'grupos',
+    label: 'Grupos Parroquiales',
+    cardClass: 'statCardGrupos',
+    Icon: IconGrupos,
+    apiPath: '/api/grupos',
+    allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_GRUPOS],
+  },
+  {
+    key: 'ministros',
+    label: 'Ministros',
+    cardClass: 'statCardMinistros',
+    Icon: IconMinistros,
+    apiPath: '/api/personas',
+    allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS],
+  },
+  {
+    key: 'espacios',
+    label: 'Espacios',
+    cardClass: 'statCardEspacios',
+    Icon: IconEspacios,
+    apiPath: '/api/espacios',
+    allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS],
+  },
+  {
+    key: 'reservas',
+    label: 'Reservas Pendientes',
+    cardClass: 'statCardReservas',
+    Icon: IconReservas,
+    apiPath: '/api/reservas',
+    filter: (data: any[]) => data.filter((r: any) => r.estado_reserva_id === 1).length,
+    allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS],
+  },
+];
+
+interface AccesoDef {
+  label: string;
+  to: string;
+  cardClass: string;
+  Icon: FC;
+  allowedRoles: number[];
+}
+
+const ALL_ACCESOS: AccesoDef[] = [
+  { label: 'Ministros', to: '/ministros', cardClass: 'accesoCardMinistros', Icon: IconMinistros, allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS] },
+  { label: 'Tareas',    to: '/tareas',    cardClass: 'accesoCardTareas',    Icon: IconTareas,    allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO] },
+  { label: 'Reservas',  to: '/reservas',  cardClass: 'accesoCardReservas',  Icon: IconReservas,  allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS] },
+  { label: 'Grupos',    to: '/grupos',    cardClass: 'accesoCardGrupos',    Icon: IconGrupos,    allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_GRUPOS] },
+  { label: 'Espacios',  to: '/espacios',  cardClass: 'accesoCardEspacios',  Icon: IconEspacios,  allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS] },
+];
+
+/* ──────────────────────────────────────────
+   Component
+   ────────────────────────────────────────── */
 interface TareaProxima {
   id: number;
   fecha: string;
@@ -14,59 +159,53 @@ interface TareaProxima {
   descripcion: string;
 }
 
-const ACCESOS = [
-  { label: 'Ministros',  to: '/ministros',  color: '#fff9e6', border: '#FFD900' },
-  { label: 'Tareas',     to: '/tareas',     color: '#f0f9ff', border: '#60b8e0' },
-  { label: 'Reservas',   to: '/reservas',   color: '#f0fff4', border: '#68d391' },
-  { label: 'Grupos',     to: '/grupos',     color: '#fef3f2', border: '#fc8181' },
-  { label: 'Espacios',   to: '/espacios',   color: '#f5f0ff', border: '#b794f4' },
-];
-
 export default function DashboardPage() {
   const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const token = localStorage.getItem('token');
+  const token   = localStorage.getItem('token');
+  const rolId   = Number(usuario?.rol_id);
 
-  const [stats, setStats] = useState({
-    grupos:    { value: 0, loading: true },
-    ministros: { value: 0, loading: true },
-    espacios:  { value: 0, loading: true },
-    pendientes:{ value: 0, loading: true },
-  });
+  const visibleStats   = ALL_STATS.filter(s => canAccess(rolId, s.allowedRoles));
+  const visibleAccesos = ALL_ACCESOS.filter(a => canAccess(rolId, a.allowedRoles));
+  const showTareas     = canAccess(rolId, [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO]);
+
+  const [statValues, setStatValues] = useState<Record<string, { value: number | string; loading: boolean }>>(
+    () => Object.fromEntries(visibleStats.map(s => [s.key, { value: 0, loading: true }]))
+  );
   const [tareasProximas, setTareasProximas] = useState<TareaProxima[]>([]);
-  const [tareasLoading, setTareasLoading] = useState(true);
+  const [tareasLoading, setTareasLoading]   = useState(true);
 
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
-    const base = import.meta.env.VITE_API_URL;
-    const hoy = new Date().toISOString().split('T')[0];
+    const base    = import.meta.env.VITE_API_URL;
+    const hoy     = new Date().toISOString().split('T')[0];
 
-    const fetchStat = (url: string, key: keyof typeof stats, filter?: (d: any[]) => number) =>
-      fetch(`${base}${url}`, { headers })
+    visibleStats.forEach(stat => {
+      fetch(`${base}${stat.apiPath}`, { headers })
         .then(r => { if (!r.ok) throw new Error(); return r.json(); })
         .then((data: any[]) => {
-          const value = filter ? filter(data) : data.length;
-          setStats(prev => ({ ...prev, [key]: { value, loading: false } }));
+          const value = stat.filter ? stat.filter(data) : data.length;
+          setStatValues(prev => ({ ...prev, [stat.key]: { value, loading: false } }));
         })
-        .catch(() => setStats(prev => ({ ...prev, [key]: { value: '—', loading: false } })));
+        .catch(() =>
+          setStatValues(prev => ({ ...prev, [stat.key]: { value: '—', loading: false } }))
+        );
+    });
 
-    fetchStat('/api/grupos',   'grupos');
-    fetchStat('/api/personas', 'ministros');
-    fetchStat('/api/espacios', 'espacios');
-    fetchStat('/api/reservas', 'pendientes', (data) =>
-      data.filter((r: any) => r.estado_reserva_id === 1).length
-    );
-
-    fetch(`${base}/api/tareas`, { headers })
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((data: TareaProxima[]) => {
-        const proximas = data
-          .filter(t => t.fecha >= hoy)
-          .sort((a, b) => a.fecha.localeCompare(b.fecha))
-          .slice(0, 5);
-        setTareasProximas(proximas);
-      })
-      .catch(() => {})
-      .finally(() => setTareasLoading(false));
+    if (showTareas) {
+      fetch(`${base}/api/tareas`, { headers })
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then((data: TareaProxima[]) => {
+          const proximas = data
+            .filter(t => t.fecha >= hoy)
+            .sort((a, b) => a.fecha.localeCompare(b.fecha))
+            .slice(0, 5);
+          setTareasProximas(proximas);
+        })
+        .catch(() => {})
+        .finally(() => setTareasLoading(false));
+    } else {
+      setTareasLoading(false);
+    }
   }, []);
 
   const formatFecha = (fecha: string) => {
@@ -76,119 +215,90 @@ export default function DashboardPage() {
 
   const formatHora = (hora: string) => hora.substring(0, 5);
 
-  const STAT_CARDS: (StatCard & { accent: string })[] = [
-    { label: 'Grupos Parroquiales', ...stats.grupos,    accent: '#fc8181' },
-    { label: 'Ministros',          ...stats.ministros, accent: '#FFD900' },
-    { label: 'Espacios',           ...stats.espacios,  accent: '#b794f4' },
-    { label: 'Reservas Pendientes',...stats.pendientes, accent: '#68d391' },
-  ];
-
   return (
     <div className="page-container">
-      <div className="content-container">
+      <div className={`content-container ${styles.dashboard}`}>
 
         {/* Bienvenida */}
-        <div style={{ marginBottom: '28px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111', marginBottom: '4px' }}>
+        <div className={styles.header}>
+          <h2 className={styles.welcomeTitle}>
             Bienvenido, {usuario?.nombre ?? 'Usuario'}
           </h2>
-          <p style={{ color: '#777', fontSize: '14px' }}>
-            Panel de administración — Parroquia San Pedro Nolasco
+          <p className={styles.welcomeSub}>
+            {ROLE_LABELS[rolId] ?? 'Usuario'} — Parroquia San Pedro Nolasco
           </p>
         </div>
 
-        {/* Tarjetas de resumen */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          {STAT_CARDS.map(card => (
-            <div key={card.label} style={{
-              backgroundColor: '#fff',
-              borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              borderTop: `4px solid ${card.accent}`,
-            }}>
-              <p style={{ fontSize: '13px', color: '#777', fontWeight: 600, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                {card.label}
-              </p>
-              <p style={{ fontSize: '36px', fontWeight: 700, color: '#111' }}>
-                {card.loading ? '...' : card.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Fila inferior: Próximas tareas + Accesos rápidos */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-
-          {/* Próximas tareas */}
-          <div className="card" style={{ padding: '28px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
-              Próximas Tareas
-            </h3>
-            {tareasLoading && <p style={{ color: '#999', fontSize: '14px' }}>Cargando...</p>}
-            {!tareasLoading && tareasProximas.length === 0 && (
-              <p style={{ color: '#999', fontSize: '14px' }}>No hay tareas próximas.</p>
-            )}
-            {!tareasLoading && tareasProximas.map(t => (
-              <div key={t.id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '10px 0',
-                borderBottom: '1px solid #f5f5f5',
-                gap: '12px',
-              }}>
-                <span style={{ fontSize: '14px', color: '#333', fontWeight: 600, flex: 1 }}>
-                  {t.descripcion}
-                </span>
-                <span style={{
-                  fontSize: '12px',
-                  color: '#555',
-                  backgroundColor: '#f5f5f5',
-                  padding: '4px 10px',
-                  borderRadius: '50px',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {formatFecha(t.fecha)} · {formatHora(t.hora_inicio)}
-                </span>
-              </div>
-            ))}
-            <Link to="/tareas" style={{ display: 'inline-block', marginTop: '16px', fontSize: '13px', color: '#555', fontWeight: 600, textDecoration: 'none' }}>
-              Ver todas las tareas →
-            </Link>
-          </div>
-
-          {/* Accesos rápidos */}
-          <div className="card" style={{ padding: '28px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>
-              Accesos Rápidos
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {ACCESOS.map(a => (
-                <Link
-                  key={a.to}
-                  to={a.to}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '16px',
-                    backgroundColor: a.color,
-                    border: `1.5px solid ${a.border}`,
-                    borderRadius: '12px',
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    color: '#333',
-                    textAlign: 'center',
-                    transition: 'opacity 0.15s',
-                  }}
+        {/* Tarjetas de resumen (visibilidad por rol) */}
+        {visibleStats.length > 0 && (
+          <div className={styles.statsGrid}>
+            {visibleStats.map(stat => {
+              const sv = statValues[stat.key] ?? { value: 0, loading: true };
+              return (
+                <div
+                  key={stat.key}
+                  className={`${styles.statCard} ${styles[stat.cardClass]}`}
                 >
-                  {a.label}
-                </Link>
-              ))}
-            </div>
+                  <div className={styles.statIconWrap}>
+                    <stat.Icon />
+                  </div>
+                  <p className={styles.statValue}>
+                    {sv.loading ? '...' : sv.value}
+                  </p>
+                  <p className={styles.statLabel}>{stat.label}</p>
+                </div>
+              );
+            })}
           </div>
+        )}
+
+        {/* Fila inferior */}
+        <div className={styles.bottomGrid}>
+
+          {/* Próximas Tareas (sólo roles con acceso a /tareas) */}
+          {showTareas && (
+            <div className={`card ${styles.cardBody}`}>
+              <h3 className={styles.cardTitle}>Próximas Tareas</h3>
+              {tareasLoading && (
+                <p className={styles.emptyText}>Cargando...</p>
+              )}
+              {!tareasLoading && tareasProximas.length === 0 && (
+                <p className={styles.emptyText}>No hay tareas próximas.</p>
+              )}
+              {!tareasLoading && tareasProximas.map(t => (
+                <div key={t.id} className={styles.tareaRow}>
+                  <span className={styles.tareaDesc}>{t.descripcion}</span>
+                  <span className={styles.tareaBadge}>
+                    {formatFecha(t.fecha)} · {formatHora(t.hora_inicio)}
+                  </span>
+                </div>
+              ))}
+              <Link to="/tareas" className={styles.verTodas}>
+                Ver todas las tareas →
+              </Link>
+            </div>
+          )}
+
+          {/* Accesos Rápidos (filtrados por rol) */}
+          {visibleAccesos.length > 0 && (
+            <div className={`card ${styles.cardBody}`}>
+              <h3 className={styles.cardTitle}>Accesos Rápidos</h3>
+              <div className={styles.accesosGrid}>
+                {visibleAccesos.map(a => (
+                  <Link
+                    key={a.to}
+                    to={a.to}
+                    className={`${styles.accesoCard} ${styles[a.cardClass]}`}
+                  >
+                    <span className={styles.accesoIcon}>
+                      <a.Icon />
+                    </span>
+                    <span>{a.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
