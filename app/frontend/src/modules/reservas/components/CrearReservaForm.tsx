@@ -83,7 +83,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>
-          <label htmlFor="espacio_id" className={styles.label}>Espacio:</label>
+          <label htmlFor="espacio_id" className={`${styles.label} ${styles.required}`}>Espacio:</label>
           <select
             id="espacio_id"
             className={styles.input}
@@ -100,7 +100,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="fecha" className={styles.label}>Fecha:</label>
+          <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
             type="date"
             id="fecha"
@@ -112,7 +112,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
 
         <div className={styles.fieldRow}>
           <div className={styles.field}>
-            <label htmlFor="hora_inicio" className={styles.label}>Hora de Inicio:</label>
+            <label htmlFor="hora_inicio" className={`${styles.label} ${styles.required}`}>Hora de Inicio:</label>
             <input
               type="time"
               id="hora_inicio"
@@ -123,7 +123,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="hora_fin" className={styles.label}>Hora de Fin:</label>
+            <label htmlFor="hora_fin" className={`${styles.label} ${styles.required}`}>Hora de Fin:</label>
             <input
               type="time"
               id="hora_fin"
@@ -135,7 +135,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="titulo" className={styles.label}>Título del Evento:</label>
+          <label htmlFor="titulo" className={`${styles.label} ${styles.required}`}>Título del Evento:</label>
           <input
             type="text"
             id="titulo"
@@ -147,7 +147,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="descripcion" className={styles.label}>Descripción del Evento:</label>
+          <label htmlFor="descripcion" className={`${styles.label} ${styles.required}`}>Descripción del Evento:</label>
           <input
             type="text"
             id="descripcion"
