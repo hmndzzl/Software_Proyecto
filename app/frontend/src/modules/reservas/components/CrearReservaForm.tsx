@@ -13,6 +13,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [espacioId, setEspacioId] = useState('');
+  const [descripcion, setDescripcion] = useState('');
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +33,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fecha || !horaInicio || !horaFin || !espacioId) {
+    if (!fecha || !horaInicio || !horaFin || !espacioId || !descripcion) {
       setMensaje('Por favor completa todos los campos.');
       return;
     }
@@ -50,13 +51,15 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
         fecha,
         hora_inicio: horaInicio,
         hora_fin: horaFin,
-        espacio_id: Number(espacioId)
+        espacio_id: Number(espacioId),
+        descripcion
       });
       setMensaje('¡Solicitud de reserva enviada para aprobación!');
       setFecha('');
       setHoraInicio('');
       setHoraFin('');
       setEspacioId('');
+      setDescripcion('');
       if (onReservaCreada) onReservaCreada();
     } catch (error: any) {
       setMensaje(error.response?.data?.message || 'Error de red al intentar crear la reserva.');
@@ -126,6 +129,18 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
               onChange={(e) => setHoraFin(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="descripcion" className={styles.label}>Descripción del Evento:</label>
+          <input
+            type="text"
+            id="descripcion"
+            className={styles.input}
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            placeholder="Ej. Misa del Día de la Madre"
+          />
         </div>
 
         <button type="submit" className="btn-primary" disabled={loading}>
