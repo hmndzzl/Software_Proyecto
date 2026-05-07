@@ -50,5 +50,13 @@ services:
       timeout: 5s
       retries: 5
 
+  adminer:
+    image: adminer
+    ports:
+      - "${ADMINER_PORT}:8080"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
 volumes:
   mariadb_data:
