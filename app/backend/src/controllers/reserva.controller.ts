@@ -3,11 +3,11 @@ import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 
 export const crearReserva = async (req: Request, res: Response) => {
-  const { fecha, hora_inicio, hora_fin, espacio_id, descripcion } = req.body;
+  const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
 
-  if (!fecha || !hora_inicio || !hora_fin || !espacio_id || !descripcion) {
+  if (!fecha || !hora_inicio || !hora_fin || !espacio_id || !titulo || !descripcion) {
     return res.status(HttpStatus.BAD_REQUEST).json({
-      message: 'Faltan campos obligatorios (fecha, hora_inicio, hora_fin, espacio_id, descripcion)'
+      message: 'Faltan campos obligatorios (fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion)'
     });
   }
 
@@ -32,8 +32,8 @@ export const crearReserva = async (req: Request, res: Response) => {
     const reservaId = resResult.insertId;
 
     await conn.query(
-      `INSERT INTO evento (descripcion, encargado_id, reserva_id) VALUES (?, ?, ?)`,
-      [descripcion, solicitante_id, reservaId]
+      `INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id) VALUES (?, ?, ?, ?)`,
+      [titulo, descripcion, solicitante_id, reservaId]
     );
 
     await conn.commit();

@@ -13,6 +13,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [espacioId, setEspacioId] = useState('');
+  const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [mensaje, setMensaje] = useState('');
@@ -33,7 +34,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fecha || !horaInicio || !horaFin || !espacioId || !descripcion) {
+    if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo || !descripcion) {
       setMensaje('Por favor completa todos los campos.');
       return;
     }
@@ -52,6 +53,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
         hora_inicio: horaInicio,
         hora_fin: horaFin,
         espacio_id: Number(espacioId),
+        titulo,
         descripcion
       });
       setMensaje('¡Solicitud de reserva enviada para aprobación!');
@@ -59,6 +61,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
       setHoraInicio('');
       setHoraFin('');
       setEspacioId('');
+      setTitulo('');
       setDescripcion('');
       if (onReservaCreada) onReservaCreada();
     } catch (error: any) {
@@ -132,6 +135,18 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
         </div>
 
         <div className={styles.field}>
+          <label htmlFor="titulo" className={styles.label}>Título del Evento:</label>
+          <input
+            type="text"
+            id="titulo"
+            className={styles.input}
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Ej. Misa del Día de la Madre"
+          />
+        </div>
+
+        <div className={styles.field}>
           <label htmlFor="descripcion" className={styles.label}>Descripción del Evento:</label>
           <input
             type="text"
@@ -139,7 +154,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
             className={styles.input}
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Ej. Misa del Día de la Madre"
+            placeholder="Ej. Celebración en honor a la Virgen, con coro y procesión"
           />
         </div>
 
