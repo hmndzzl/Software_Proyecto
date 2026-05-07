@@ -9,6 +9,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import EspaciosPage from './pages/espacios/EspaciosPage';
 import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
 import EventosPage from './pages/eventos/EventosPage';
+import MisReservasPage from './pages/mis-reservas/MisReservasPage';
 import Navbar from './components/layout/Navbar';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
 import NotFoundPage from './pages/not_found_page/NotFoundPage';
@@ -125,6 +126,23 @@ function AppContent() {
               ]}
             >
               <EventosPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mis-reservas"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                ROLES.ADMIN,
+                ROLES.SACERDOTE,
+                ROLES.COORDINADOR_MINISTROS,
+                ROLES.COORDINADOR_GRUPOS,
+                ROLES.MINISTRO,
+              ]}
+            >
+              <MisReservasPage />
             </ProtectedRoute>
           }
         />
