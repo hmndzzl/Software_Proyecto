@@ -24,16 +24,8 @@ export default function ListaEventos({
       setLoading(true);
       setError('');
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${BASE}/api/eventos`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setEventos(data);
-        } else {
-          setError('Error al cargar los eventos.');
-        }
+        const res = await apiClient.get('/api/eventos');
+        setEventos(res.data);
       } catch {
         setError('Error de red al obtener los eventos.');
       } finally {

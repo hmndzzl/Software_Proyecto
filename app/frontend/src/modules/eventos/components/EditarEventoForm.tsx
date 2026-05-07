@@ -40,20 +40,10 @@ export default function EditarEventoForm({
     if (!confirm(`¿Estás seguro de que deseas eliminar el evento "${evento.descripcion}"?`)) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE}/api/eventos/${evento.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        if (onEventoActualizado) onEventoActualizado();
-      } else {
-        const data = await response.json();
-        setMensaje(data.mensaje || 'Error al eliminar el evento.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar eliminar el evento.');
+      await apiClient.delete(`/api/eventos/${evento.id}`);
+      if (onEventoActualizado) onEventoActualizado();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar eliminar el evento.');
     }
   };
 
