@@ -18,10 +18,12 @@ export const crearReserva = async (req: Request, res: Response) => {
       });
     }
 
+    const solicitante_id = req.user!.id;
+
     const [resultado]: any = await db.query(
-      `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id)
-       VALUES (?, ?, ?, ?, 1)`,
-      [fecha, hora_inicio, hora_fin, espacio_id]
+      `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
+       VALUES (?, ?, ?, ?, 1, ?)`,
+      [fecha, hora_inicio, hora_fin, espacio_id, solicitante_id]
     );
 
     return res.status(HttpStatus.CREATED).json({
