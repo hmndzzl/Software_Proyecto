@@ -151,11 +151,14 @@ CREATE TABLE `reserva` (
   `hora_fin` time NOT NULL,
   `espacio_id` int(11) DEFAULT NULL,
   `estado_reserva_id` int(11) NOT NULL,
+  `solicitante_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_reserva_espacio_idx` (`espacio_id`),
   KEY `fk_reserva_estado_idx` (`estado_reserva_id`),
+  KEY `fk_reserva_solicitante_idx` (`solicitante_id`),
   CONSTRAINT `fk_reserva_espacio` FOREIGN KEY (`espacio_id`) REFERENCES `espacio` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_reserva_estado` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`)
+  CONSTRAINT `fk_reserva_estado` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`),
+  CONSTRAINT `fk_reserva_solicitante` FOREIGN KEY (`solicitante_id`) REFERENCES `persona` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- ----------------------------
