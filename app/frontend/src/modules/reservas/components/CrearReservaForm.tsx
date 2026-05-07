@@ -70,29 +70,19 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
       <h3 style={{ marginBottom: '16px' }}>Solicitar Reserva</h3>
 
       {mensaje && (
-        <p
-          className={mensaje.includes('aprobación') ? '' : 'error-text'}
-          style={{
-            color: mensaje.includes('aprobación') ? '#2e7d32' : undefined,
-            marginBottom: '16px',
-            fontWeight: 600
-          }}
-        >
+        <p className={`${styles.message} ${mensaje.includes('aprobación') ? styles.messageSuccess : styles.messageError}`}>
           {mensaje}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="espacio_id" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Espacio:
-          </label>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="espacio_id" className={styles.label}>Espacio:</label>
           <select
             id="espacio_id"
-            className="login-input"
+            className={styles.input}
             value={espacioId}
             onChange={(e) => setEspacioId(e.target.value)}
-            style={{ paddingLeft: '14px', cursor: 'pointer' }}
           >
             <option value="">-- Selecciona un espacio --</option>
             {espacios.map((esp) => (
@@ -103,51 +93,42 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
           </select>
         </div>
 
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="fecha" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Fecha:
-          </label>
+        <div className={styles.field}>
+          <label htmlFor="fecha" className={styles.label}>Fecha:</label>
           <input
             type="date"
             id="fecha"
-            className="login-input"
+            className={styles.input}
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <div className="input-wrapper" style={{ marginBottom: '0', flex: 1 }}>
-            <label htmlFor="hora_inicio" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-              Hora de Inicio:
-            </label>
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <label htmlFor="hora_inicio" className={styles.label}>Hora de Inicio:</label>
             <input
               type="time"
               id="hora_inicio"
-              className="login-input"
+              className={styles.input}
               value={horaInicio}
               onChange={(e) => setHoraInicio(e.target.value)}
-              style={{ paddingLeft: '14px' }}
             />
           </div>
 
-          <div className="input-wrapper" style={{ marginBottom: '0', flex: 1 }}>
-            <label htmlFor="hora_fin" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-              Hora de Fin:
-            </label>
+          <div className={styles.field}>
+            <label htmlFor="hora_fin" className={styles.label}>Hora de Fin:</label>
             <input
               type="time"
               id="hora_fin"
-              className="login-input"
+              className={styles.input}
               value={horaFin}
               onChange={(e) => setHoraFin(e.target.value)}
-              style={{ paddingLeft: '14px' }}
             />
           </div>
         </div>
 
-        <button type="submit" className="btn-primary" style={{ marginTop: '16px' }} disabled={loading}>
+        <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Enviando...' : 'Solicitar Reserva'}
         </button>
       </form>
