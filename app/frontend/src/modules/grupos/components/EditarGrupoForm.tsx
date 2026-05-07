@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Grupo, Persona } from '../../../types';
 import apiClient from '../../../api/client';
+import styles from '../../../styles/Form.module.css';
 
 export default function EditarGrupoForm({
   grupo,

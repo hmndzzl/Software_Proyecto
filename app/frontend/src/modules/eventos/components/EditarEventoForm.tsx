@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Evento } from '../../../types';
 import apiClient from '../../../api/client';
+import styles from '../../../styles/Form.module.css';
 
 export default function EditarEventoForm({
   evento,
