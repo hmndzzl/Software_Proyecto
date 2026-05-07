@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../../api/client';
 
 // Combinación de la tabla 'tarea' y la tabla 'persona'
 interface Asignacion {
@@ -19,31 +20,17 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
 
   // useEffect que hace la petición a la API cuando se carga el componente
   useEffect(() => {
-    const token = localStorage.getItem('token');
     // Petición al endpoint de tareas
-    fetch(`${import.meta.env.VITE_API_URL}/api/tareas`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    })
+    apiClient.get('/api/tareas')
       .then((res) => {
-        if (!res.ok) {
-           // Si el token es inválido o no existe, el res.ok será false
-           throw new Error('No autorizado o error al obtener los datos');
-        }
-        return res.json();
-      })
-      .then((data) => {
         // Transformar datos a estructura plana para tabla
-        const asignacionesFormateadas: Asignacion[] = data.flatMap((tarea: any) => 
+        const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea: any) =>
           tarea.asignados.map((asignado: any) => ({
             tarea_id: tarea.id,
             persona_id: asignado.persona_id,
             descripcion_tarea: tarea.descripcion,
             // Se Extrae solo la parte de la fecha (YYYY-MM-DD)
-            fecha: tarea.fecha.split('T')[0], 
+            fecha: tarea.fecha.split('T')[0],
             hora_inicio: tarea.hora_inicio,
             hora_fin: tarea.hora_fin,
             nombre_persona: asignado.nombre
@@ -53,8 +40,8 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
         setAsignaciones(asignacionesFormateadas);
         setCargando(false);
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch(() => {
+        setError('Error al obtener los datos');
         setCargando(false);
       });
   }, [refreshKey]);

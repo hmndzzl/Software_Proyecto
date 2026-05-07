@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../../api/client';
 import EspacioCard, { Espacio } from '../../modules/espacios/components/EspacioCard';
 import styles from './EspaciosPage.module.css';
 
@@ -10,23 +11,13 @@ export default function EspaciosPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch(`${import.meta.env.VITE_API_URL}/api/espacios`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    apiClient.get('/api/espacios')
       .then((res) => {
-        if (!res.ok) throw new Error('Error al cargar los espacios');
-        return res.json();
-      })
-      .then((data) => {
-        setEspacios(data);
+        setEspacios(res.data);
         setCargando(false);
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch(() => {
+        setError('Error al cargar los espacios');
         setCargando(false);
       });
   }, []);

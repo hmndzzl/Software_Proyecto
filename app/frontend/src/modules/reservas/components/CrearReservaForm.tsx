@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../../api/client';
 
 interface Espacio {
   id: number;
@@ -18,14 +19,8 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   useEffect(() => {
     const fetchEspacios = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/espacios`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setEspacios(data);
-        }
+        const response = await apiClient.get('/api/espacios');
+        setEspacios(response.data);
       } catch {
         // silencioso, el select quedará vacío
       }
@@ -50,35 +45,20 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
     setMensaje('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          fecha,
-          hora_inicio: horaInicio,
-          hora_fin: horaFin,
-          espacio_id: Number(espacioId)
-        })
+      await apiClient.post('/api/reservas', {
+        fecha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        espacio_id: Number(espacioId)
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Solicitud de reserva enviada para aprobación!');
-        setFecha('');
-        setHoraInicio('');
-        setHoraFin('');
-        setEspacioId('');
-        if (onReservaCreada) onReservaCreada();
-      } else {
-        setMensaje(data.message || 'Error al crear la reserva.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar crear la reserva.');
+      setMensaje('¡Solicitud de reserva enviada para aprobación!');
+      setFecha('');
+      setHoraInicio('');
+      setHoraFin('');
+      setEspacioId('');
+      if (onReservaCreada) onReservaCreada();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.message || 'Error de red al intentar crear la reserva.');
     } finally {
       setLoading(false);
     }

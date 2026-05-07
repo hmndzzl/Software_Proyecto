@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Grupo } from '../../../types';
+import apiClient from '../../../api/client';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
 
 export default function ListaGrupos({
@@ -23,16 +24,8 @@ export default function ListaGrupos({
       setLoading(true);
       setError('');
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/grupos`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setGrupos(data);
-        } else {
-          setError('Error al cargar los grupos.');
-        }
+        const response = await apiClient.get('/api/grupos');
+        setGrupos(response.data);
       } catch {
         setError('Error de red al obtener los grupos.');
       } finally {

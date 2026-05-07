@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ReservaDisponible } from '../../../types';
-
-const BASE = import.meta.env.VITE_API_URL;
+import apiClient from '../../../api/client';
 
 const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
 const fmtH = (h: string) => h.substring(0, 5);
@@ -15,12 +14,8 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
   const reservaSeleccionada = reservas.find(r => String(r.id) === reservaId) ?? null;
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch(`${BASE}/api/eventos/reservas-disponibles`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(setReservas)
+    apiClient.get('/api/eventos/reservas-disponibles')
+      .then(r => setReservas(r.data))
       .catch(() => setMensaje('Error al cargar reservas disponibles.'));
   }, []);
 
@@ -33,25 +28,13 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE}/api/eventos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ descripcion, reserva_id: parseInt(reservaId) }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Evento creado con éxito!');
-        setDescripcion('');
-        setReservaId('');
-        if (onEventoCreado) onEventoCreado();
-      } else {
-        setMensaje(data.mensaje || 'Error al crear el evento.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar crear el evento.');
+      await apiClient.post('/api/eventos', { descripcion, reserva_id: parseInt(reservaId) });
+      setMensaje('¡Evento creado con éxito!');
+      setDescripcion('');
+      setReservaId('');
+      if (onEventoCreado) onEventoCreado();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar crear el evento.');
     }
   };
 

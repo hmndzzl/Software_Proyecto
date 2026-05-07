@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/auth/LoginPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
@@ -139,7 +140,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

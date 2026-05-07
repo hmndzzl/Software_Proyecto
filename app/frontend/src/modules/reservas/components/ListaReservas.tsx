@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import apiClient from '../../../api/client';
 
 interface Reserva {
   id: number;
@@ -41,16 +42,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setReservas(data);
-      } else {
-        setError('Error al cargar las reservas.');
-      }
+      const response = await apiClient.get('/api/reservas');
+      setReservas(response.data);
     } catch {
       setError('Error de red al obtener las reservas.');
     } finally {
@@ -64,25 +57,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   const cambiarEstado = async (id: number, nuevoEstado: number) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas/${id}/estado`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
-        body: JSON.stringify({ estado_id: nuevoEstado })
-      });
-      
-      if (response.ok) {
-        // Recargar la lista tras el cambio
-        fetchReservas();
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Error al cambiar el estado de la reserva');
-      }
-    } catch (error) {
-      alert('Error de red al cambiar el estado de la reserva');
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: nuevoEstado });
+      // Recargar la lista tras el cambio
+      fetchReservas();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error al cambiar el estado de la reserva');
     }
   };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../../api/client';
 
 // Definir las interfaces para los datos del backend
 interface Tarea {
@@ -22,32 +23,14 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
   const [mensaje, setMensaje] = useState<string>('');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const fetchOptions = {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
-    };
-
     // Petición al endpoint de tareas
-    fetch(`${import.meta.env.VITE_API_URL}/api/tareas`, fetchOptions)
-      .then(res => {
-        if (!res.ok) throw new Error('Error al cargar las tareas');
-        return res.json();
-      })
-      .then(data => setTareas(data))
+    apiClient.get('/api/tareas')
+      .then(res => setTareas(res.data))
       .catch(error => console.error(error));
 
     // Petición al endpoint de personas
-    fetch(`${import.meta.env.VITE_API_URL}/api/personas`, fetchOptions)
-      .then(res => {
-        if (!res.ok) throw new Error('Error al cargar los ministros');
-        return res.json();
-      })
-      .then(data => {
-        setPersonas(data);
-      })
+    apiClient.get('/api/personas')
+      .then(res => setPersonas(res.data))
       .catch(error => console.error(error));
   }, [refreshKey]);
 
@@ -60,36 +43,19 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
       return;
     }
 
-    try { 
+    try {
       // Enviar la asignación al backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tareas/asignar`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          tarea_id: parseInt(tareaSeleccionada),
-          persona_id: parseInt(personaSeleccionada)
-        })
+      await apiClient.post('/api/tareas/asignar', {
+        tarea_id: parseInt(tareaSeleccionada),
+        persona_id: parseInt(personaSeleccionada)
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Asignación guardada con éxito!');
-        // Limpiar formulario después de guardar exitosamente
-        setTareaSeleccionada('');
-        setPersonaSeleccionada('');
-        if (onAsignacionExitosa) onAsignacionExitosa();
-      } else {
-        // Mostrar error devuelto por el backend 
-        setMensaje(data.mensaje || 'Error al guardar la asignación.');
-      }
-
-      
-    } catch (error) {
-      setMensaje('Hubo un error de red al intentar guardar la asignación.');
+      setMensaje('¡Asignación guardada con éxito!');
+      // Limpiar formulario después de guardar exitosamente
+      setTareaSeleccionada('');
+      setPersonaSeleccionada('');
+      if (onAsignacionExitosa) onAsignacionExitosa();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Hubo un error de red al intentar guardar la asignación.');
     }
   };
 

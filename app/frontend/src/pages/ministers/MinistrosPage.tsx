@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import apiClient from '../../api/client';
 
 interface Ministro {
   id: number;
@@ -12,25 +13,13 @@ export default function MinistrosPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    fetch(`${import.meta.env.VITE_API_URL}/api/personas`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    apiClient.get('/api/personas')
       .then((res) => {
-        if (!res.ok) throw new Error('Error al obtener ministros');
-        return res.json();
-      })
-      .then((data) => {
-        setMinistros(data);
+        setMinistros(res.data);
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch(() => {
+        setError('Error al obtener ministros');
         setLoading(false);
       });
   }, []);
