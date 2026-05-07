@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ReservaDisponible } from '../../../types';
 import apiClient from '../../../api/client';
+import styles from '../../../styles/Form.module.css';
 
 const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
 const fmtH = (h: string) => h.substring(0, 5);

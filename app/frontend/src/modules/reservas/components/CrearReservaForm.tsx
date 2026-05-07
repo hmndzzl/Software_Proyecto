@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import styles from '../../../styles/Form.module.css';
 
 interface Espacio {
   id: number;
