@@ -20,6 +20,7 @@ export default function Navbar() {
         <Link to="/reservas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Reservas</Link>
         <Link to="/grupos" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Grupos</Link>
         <Link to="/espacios" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Espacios</Link>
+        <Link to="/eventos" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Eventos</Link>
       </div>
       <div>
         <button 
