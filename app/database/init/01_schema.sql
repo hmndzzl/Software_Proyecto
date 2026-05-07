@@ -168,6 +168,7 @@ CREATE TABLE `reserva` (
 DROP TABLE IF EXISTS `evento`;
 CREATE TABLE `evento` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(255) NOT NULL,
   `encargado_id` int(11) NOT NULL,
   `reserva_id` int(11) NOT NULL,
   `descripcion` text NOT NULL,
