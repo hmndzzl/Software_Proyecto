@@ -62,39 +62,30 @@ export default function EditarGrupoForm({
       <h3 style={{ marginBottom: '16px' }}>Editar Grupo</h3>
 
       {mensaje && (
-        <p
-          className={mensaje.includes('éxito') ? '' : 'error-text'}
-          style={{ color: mensaje.includes('éxito') ? '#2e7d32' : undefined, marginBottom: '16px', fontWeight: 600 }}
-        >
+        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
           {mensaje}
         </p>
       )}
 
-      <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="edit-nombre" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Nombre del Grupo:
-          </label>
+      <form onSubmit={handleUpdate} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="edit-nombre" className={styles.label}>Nombre del Grupo:</label>
           <input
             type="text"
             id="edit-nombre"
-            className="login-input"
+            className={styles.input}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           />
         </div>
 
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="edit-coordinador" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Coordinador:
-          </label>
+        <div className={styles.field}>
+          <label htmlFor="edit-coordinador" className={styles.label}>Coordinador:</label>
           <select
             id="edit-coordinador"
-            className="login-input"
+            className={styles.input}
             value={coordinadorId}
             onChange={(e) => setCoordinadorId(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           >
             <option value="">-- Elige un coordinador --</option>
             {personas.map((p) => (
@@ -105,41 +96,15 @@ export default function EditarGrupoForm({
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div className={styles.buttonRow}>
           <button type="submit" className="btn-primary">
             Guardar Cambios
           </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            style={{
-              backgroundColor: '#fde8e8',
-              border: '1px solid #c0392b',
-              borderRadius: '50px',
-              padding: '12px 20px',
-              fontWeight: 700,
-              fontSize: '12px',
-              cursor: 'pointer',
-              color: '#c0392b'
-            }}
-          >
+          <button type="button" onClick={handleDelete} className={styles.btnDanger}>
             Eliminar
           </button>
           {onCancelar && (
-            <button
-              type="button"
-              onClick={onCancelar}
-              style={{
-                backgroundColor: 'transparent',
-                border: '1px solid #ccc',
-                borderRadius: '50px',
-                padding: '12px 20px',
-                fontWeight: 600,
-                fontSize: '12px',
-                cursor: 'pointer',
-                color: '#333'
-              }}
-            >
+            <button type="button" onClick={onCancelar} className={styles.btnSecondary}>
               Cancelar
             </button>
           )}

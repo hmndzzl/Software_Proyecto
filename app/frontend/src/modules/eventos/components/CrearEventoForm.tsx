@@ -44,38 +44,29 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
       <h3 style={{ marginBottom: '16px' }}>Crear Nuevo Evento</h3>
 
       {mensaje && (
-        <p
-          className={mensaje.includes('éxito') ? '' : 'error-text'}
-          style={{ color: mensaje.includes('éxito') ? '#2e7d32' : undefined, marginBottom: '16px', fontWeight: 600 }}
-        >
+        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
           {mensaje}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Descripción:
-          </label>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label className={styles.label}>Descripción:</label>
           <input
             type="text"
-            className="login-input"
+            className={styles.input}
             value={descripcion}
             onChange={e => setDescripcion(e.target.value)}
-            style={{ paddingLeft: '14px' }}
             placeholder="Ej. Misa de Navidad"
           />
         </div>
 
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Reserva (confirmada, sin evento):
-          </label>
+        <div className={styles.field}>
+          <label className={styles.label}>Reserva (confirmada, sin evento):</label>
           <select
-            className="login-input"
+            className={styles.input}
             value={reservaId}
             onChange={e => setReservaId(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           >
             <option value="">-- Elige una reserva --</option>
             {reservas.map(r => (
@@ -85,22 +76,19 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
             ))}
           </select>
           {reservas.length === 0 && (
-            <p style={{ fontSize: '12px', color: '#999', marginTop: '6px' }}>
-              No hay reservas confirmadas disponibles.
-            </p>
+            <p className={styles.fieldNote}>No hay reservas confirmadas disponibles.</p>
           )}
         </div>
 
-        {/* Muestra automáticamente el encargado según la reserva elegida */}
         {reservaSeleccionada && (
-          <div style={{ backgroundColor: '#f5f5f5', borderRadius: '12px', padding: '12px 16px', fontSize: '14px' }}>
-            <span style={{ fontWeight: 600, color: '#555' }}>Encargado: </span>
-            <span style={{ color: '#111' }}>{reservaSeleccionada.nombre_solicitante}</span>
-            <span style={{ fontSize: '12px', color: '#999', marginLeft: '8px' }}>(solicitante de la reserva)</span>
+          <div className={styles.infoBox}>
+            <span className={styles.infoBoxLabel}>Encargado:</span>
+            <span>{reservaSeleccionada.nombre_solicitante}</span>
+            <span className={styles.infoBoxNote}>(solicitante de la reserva)</span>
           </div>
         )}
 
-        <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>
+        <button type="submit" className="btn-primary">
           Crear Evento
         </button>
       </form>

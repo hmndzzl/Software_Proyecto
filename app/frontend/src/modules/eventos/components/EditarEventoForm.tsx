@@ -53,70 +53,37 @@ export default function EditarEventoForm({
       <h3 style={{ marginBottom: '16px' }}>Editar Evento</h3>
 
       {mensaje && (
-        <p
-          className={mensaje.includes('éxito') ? '' : 'error-text'}
-          style={{ color: mensaje.includes('éxito') ? '#2e7d32' : undefined, marginBottom: '16px', fontWeight: 600 }}
-        >
+        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
           {mensaje}
         </p>
       )}
 
-      {/* Encargado de solo lectura */}
-      <div style={{ backgroundColor: '#f5f5f5', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', marginBottom: '16px' }}>
-        <span style={{ fontWeight: 600, color: '#555' }}>Encargado: </span>
-        <span style={{ color: '#111' }}>{evento.nombre_encargado}</span>
-        <span style={{ fontSize: '12px', color: '#999', marginLeft: '8px' }}>(solicitante de la reserva)</span>
+      <div className={styles.infoBox} style={{ marginBottom: '16px' }}>
+        <span className={styles.infoBoxLabel}>Encargado:</span>
+        <span>{evento.nombre_encargado}</span>
+        <span className={styles.infoBoxNote}>(solicitante de la reserva)</span>
       </div>
 
-      <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Descripción:
-          </label>
+      <form onSubmit={handleUpdate} className={styles.form}>
+        <div className={styles.field}>
+          <label className={styles.label}>Descripción:</label>
           <input
             type="text"
-            className="login-input"
+            className={styles.input}
             value={descripcion}
             onChange={e => setDescripcion(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div className={styles.buttonRow}>
           <button type="submit" className="btn-primary">
             Guardar Cambios
           </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            style={{
-              backgroundColor: '#fde8e8',
-              border: '1px solid #c0392b',
-              borderRadius: '50px',
-              padding: '12px 20px',
-              fontWeight: 700,
-              fontSize: '12px',
-              cursor: 'pointer',
-              color: '#c0392b',
-            }}
-          >
+          <button type="button" onClick={handleDelete} className={styles.btnDanger}>
             Eliminar
           </button>
           {onCancelar && (
-            <button
-              type="button"
-              onClick={onCancelar}
-              style={{
-                backgroundColor: 'transparent',
-                border: '1px solid #ccc',
-                borderRadius: '50px',
-                padding: '12px 20px',
-                fontWeight: 600,
-                fontSize: '12px',
-                cursor: 'pointer',
-                color: '#333',
-              }}
-            >
+            <button type="button" onClick={onCancelar} className={styles.btnSecondary}>
               Cancelar
             </button>
           )}

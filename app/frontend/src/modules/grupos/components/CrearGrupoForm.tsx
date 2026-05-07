@@ -39,40 +39,31 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
       <h3 style={{ marginBottom: '16px' }}>Crear Nuevo Grupo</h3>
 
       {mensaje && (
-        <p
-          className={mensaje.includes('éxito') ? '' : 'error-text'}
-          style={{ color: mensaje.includes('éxito') ? '#2e7d32' : undefined, marginBottom: '16px', fontWeight: 600 }}
-        >
+        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
           {mensaje}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="nombre" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Nombre del Grupo:
-          </label>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="nombre" className={styles.label}>Nombre del Grupo:</label>
           <input
             type="text"
             id="nombre"
-            className="login-input"
+            className={styles.input}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-            style={{ paddingLeft: '14px' }}
             placeholder="Ej. Coro Parroquial"
           />
         </div>
 
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="coordinador" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Coordinador:
-          </label>
+        <div className={styles.field}>
+          <label htmlFor="coordinador" className={styles.label}>Coordinador:</label>
           <select
             id="coordinador"
-            className="login-input"
+            className={styles.input}
             value={coordinadorId}
             onChange={(e) => setCoordinadorId(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           >
             <option value="">-- Elige un coordinador --</option>
             {personas.map((p) => (
@@ -83,7 +74,7 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
           </select>
         </div>
 
-        <button type="submit" className="btn-primary" style={{ marginTop: '16px' }}>
+        <button type="submit" className="btn-primary">
           Crear Grupo
         </button>
       </form>
