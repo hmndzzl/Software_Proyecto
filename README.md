@@ -355,6 +355,9 @@ DB_ROOT_PASSWORD=
 # JWT
 JWT_SECRET=
 JWT_EXPIRES_IN=
+
+# Adminer
+ADMINER_PORT=
 ```
 
 ### 3. Copiar el archivo Docker Compose
@@ -405,6 +408,49 @@ docker compose up --build -d # reconstruye imágenes y recarga seeds
 | API REST (backend) | http://localhost:3001 |
 | Health check | http://localhost:3001/health |
 | Base de datos (MariaDB) | localhost:3306 |
+| Adminer (interfaz web BD) | http://localhost:8080 |
+
+---
+
+## Acceso a la Base de Datos con Adminer
+
+Adminer es una interfaz web para explorar y consultar MariaDB directamente desde el navegador. Se levanta automáticamente con `docker compose up`.
+
+### 1. Abrir Adminer
+
+Con los contenedores corriendo, navegar a:
+
+```
+http://localhost:8080
+```
+
+> El puerto puede cambiarse modificando `ADMINER_PORT` en `app/.env`.
+
+### 2. Iniciar sesión
+
+Ingresar los siguientes datos en el formulario de login:
+
+| Campo | Valor |
+|---|---|
+| Sistema | MySQL |
+| Servidor | `mariadb` |
+| Usuario | *(ver `DB_USER` en `app/.env`)*  |
+| Contraseña | *(ver `DB_PASSWORD` en `app/.env`)* |
+| Base de datos | *(ver `DB_NAME` en `app/.env`)* |
+
+> Usar `mariadb` como servidor (nombre del servicio Docker), **no** `localhost`. Adminer corre dentro de la red Docker y se comunica con MariaDB por su nombre de servicio.
+
+### 3. Acceso con usuario root (acceso completo)
+
+Para operaciones administrativas se puede ingresar con root:
+
+| Campo | Valor |
+|---|---|
+| Sistema | MySQL |
+| Servidor | `mariadb` |
+| Usuario | `root` |
+| Contraseña | *(ver `DB_ROOT_PASSWORD` en `app/.env`)* |
+| Base de datos | *(dejar vacío para ver todas las bases)* |
 
 ---
 
@@ -437,29 +483,35 @@ npm start      # Ejecuta el JS compilado
 
 ## Dockerización
 
-El proyecto utiliza tres contenedores orquestados con Docker Compose:
+El proyecto utiliza cuatro contenedores orquestados con Docker Compose:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                  Docker Compose                      │
-│                                                      │
-│  ┌──────────────┐   ┌──────────────┐                 │
-│  │   frontend   │   │   backend    │                 │
-│  │  React+Vite  │──▶│  Express+TS  │                 │
-│  │  :5173       │   │  :3001       │                 │
-│  └──────────────┘   └──────┬───────┘                 │
-│                            │ depends_on (healthcheck) │
-│                     ┌──────▼───────┐                 │
-│                     │   mariadb    │                 │
-│                     │  MariaDB 11  │                 │
-│                     │  :3306       │                 │
-│                     └──────────────┘                 │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                     Docker Compose                        │
+│                                                           │
+│  ┌──────────────┐   ┌──────────────┐                      │
+│  │   frontend   │   │   backend    │                      │
+│  │  React+Vite  │──▶│  Express+TS  │                      │
+│  │  :5173       │   │  :3001       │                      │
+│  └──────────────┘   └──────┬───────┘                      │
+│                            │ depends_on (healthcheck)      │
+│                     ┌──────▼───────┐                      │
+│                     │   mariadb    │◀──┐                   │
+│                     │  MariaDB 11  │   │ depends_on        │
+│                     │  :3306       │   │ (healthcheck)     │
+│                     └──────────────┘   │                   │
+│                                  ┌─────┴──────┐            │
+│                                  │  adminer   │            │
+│                                  │  web GUI   │            │
+│                                  │  :8080     │            │
+│                                  └────────────┘            │
+└──────────────────────────────────────────────────────────┘
 ```
 
 - **frontend**: construido desde `app/frontend/Dockerfile`. Vite sirve la SPA con hot-reload en desarrollo.
 - **backend**: construido desde `app/backend/Dockerfile`. ts-node-dev recarga el servidor al guardar cambios.
 - **mariadb**: imagen oficial `mariadb:11`. Monta `./database/init/` en `/docker-entrypoint-initdb.d/` para ejecutar los scripts SQL al primer inicio. Incluye healthcheck para que el backend espere a que la BD esté lista antes de arrancar.
+- **adminer**: interfaz web para explorar y consultar MariaDB desde el navegador. Accesible en `http://localhost:8080`. Espera a que MariaDB esté saludable antes de arrancar.
 - **Volumen persistente** (`mariadb_data`): los datos de la base de datos sobreviven reinicios del contenedor. Solo `docker compose down -v` los elimina.
 
 ---
