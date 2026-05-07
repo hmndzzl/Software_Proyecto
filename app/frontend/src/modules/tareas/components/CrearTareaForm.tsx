@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import apiClient from '../../../api/client';
 
 export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () => void }) {
   const [descripcion, setDescripcion] = useState('');
@@ -16,35 +17,20 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tareas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          descripcion,
-          fecha,
-          hora_inicio: horaInicio,
-          hora_fin: horaFin
-        })
+      await apiClient.post('/api/tareas', {
+        descripcion,
+        fecha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Tarea creada con éxito!');
-        setDescripcion('');
-        setFecha('');
-        setHoraInicio('');
-        setHoraFin('');
-        if (onTareaCreada) onTareaCreada();
-      } else {
-        setMensaje(data.mensaje || 'Error al crear la tarea.');
-      }
-    } catch (error) {
-      setMensaje('Error de red al intentar crear la tarea.');
+      setMensaje('¡Tarea creada con éxito!');
+      setDescripcion('');
+      setFecha('');
+      setHoraInicio('');
+      setHoraFin('');
+      if (onTareaCreada) onTareaCreada();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar crear la tarea.');
     }
   };
 

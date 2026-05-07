@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Evento } from '../../../types';
-
-const BASE = import.meta.env.VITE_API_URL;
+import apiClient from '../../../api/client';
 
 export default function EditarEventoForm({
   evento,
@@ -29,23 +28,11 @@ export default function EditarEventoForm({
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${BASE}/api/eventos/${evento.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ descripcion }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Evento actualizado con éxito!');
-        if (onEventoActualizado) onEventoActualizado();
-      } else {
-        setMensaje(data.mensaje || 'Error al actualizar el evento.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar actualizar el evento.');
+      await apiClient.put(`/api/eventos/${evento.id}`, { descripcion });
+      setMensaje('¡Evento actualizado con éxito!');
+      if (onEventoActualizado) onEventoActualizado();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar actualizar el evento.');
     }
   };
 

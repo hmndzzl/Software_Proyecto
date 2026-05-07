@@ -1,5 +1,6 @@
 import { useEffect, useState, type FC } from 'react';
 import { Link } from 'react-router-dom';
+import apiClient from '../../api/client';
 import { ROLES } from '../../components/ui/ProtectedRoute';
 import styles from './DashboardPage.module.css';
 
@@ -161,7 +162,6 @@ interface TareaProxima {
 
 export default function DashboardPage() {
   const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const token   = localStorage.getItem('token');
   const rolId   = Number(usuario?.rol_id);
 
   const visibleStats   = ALL_STATS.filter(s => canAccess(rolId, s.allowedRoles));
@@ -175,13 +175,11 @@ export default function DashboardPage() {
   const [tareasLoading, setTareasLoading]   = useState(true);
 
   useEffect(() => {
-    const headers = { Authorization: `Bearer ${token}` };
-    const base    = import.meta.env.VITE_API_URL;
-    const hoy     = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toISOString().split('T')[0];
 
     visibleStats.forEach(stat => {
-      fetch(`${base}${stat.apiPath}`, { headers })
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      apiClient.get(stat.apiPath)
+        .then(r => r.data)
         .then((data: any[]) => {
           const value = stat.filter ? stat.filter(data) : data.length;
           setStatValues(prev => ({ ...prev, [stat.key]: { value, loading: false } }));
@@ -192,8 +190,8 @@ export default function DashboardPage() {
     });
 
     if (showTareas) {
-      fetch(`${base}/api/tareas`, { headers })
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      apiClient.get('/api/tareas')
+        .then(r => r.data)
         .then((data: TareaProxima[]) => {
           const proximas = data
             .filter(t => t.fecha >= hoy)

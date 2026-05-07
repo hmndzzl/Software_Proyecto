@@ -1,13 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar() {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    navigate('/login');
-  };
+  const { logout } = useAuth();
 
   return (
     <nav style={{ backgroundColor: '#fff', padding: '16px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -24,7 +19,7 @@ export default function Navbar() {
       </div>
       <div>
         <button 
-          onClick={handleLogout}
+          onClick={logout}
           style={{ backgroundColor: 'transparent', border: '1px solid #ccc', borderRadius: '50px', padding: '8px 16px', fontWeight: 600, cursor: 'pointer', color: '#333' }}
         >
           Cerrar Sesión

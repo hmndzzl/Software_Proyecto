@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { loginApi } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setAuth } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,16 +19,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
-        correo: email,
-        password,
-      });
-
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
-
+      const data = await loginApi(email, password);
+      setAuth(data.token, data.usuario);
       navigate('/dashboard');
-
     } catch (err: any) {
       const mensaje = err.response?.data?.mensaje || 'Error al iniciar sesión';
       setError(mensaje);

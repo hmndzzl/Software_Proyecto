@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Grupo, Persona } from '../../../types';
+import apiClient from '../../../api/client';
 
 export default function EditarGrupoForm({
   grupo,
@@ -22,15 +23,8 @@ export default function EditarGrupoForm({
   }, [grupo]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch(`${import.meta.env.VITE_API_URL}/api/personas/coordinadores-grupo`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Error al cargar coordinadores');
-        return res.json();
-      })
-      .then(data => setPersonas(data))
+    apiClient.get('/api/personas/coordinadores-grupo')
+      .then(res => setPersonas(res.data))
       .catch(() => setMensaje('Error al cargar la lista de coordinadores.'));
   }, []);
 
@@ -43,26 +37,11 @@ export default function EditarGrupoForm({
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/grupos/${grupo.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ nombre, coordinador_id: parseInt(coordinadorId) })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Grupo actualizado con éxito!');
-        if (onGrupoActualizado) onGrupoActualizado();
-      } else {
-        setMensaje(data.mensaje || 'Error al actualizar el grupo.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar actualizar el grupo.');
+      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_id: parseInt(coordinadorId) });
+      setMensaje('¡Grupo actualizado con éxito!');
+      if (onGrupoActualizado) onGrupoActualizado();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar actualizar el grupo.');
     }
   };
 
@@ -70,20 +49,10 @@ export default function EditarGrupoForm({
     if (!confirm(`¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"?`)) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/grupos/${grupo.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        if (onGrupoActualizado) onGrupoActualizado();
-      } else {
-        const data = await response.json();
-        setMensaje(data.mensaje || 'Error al eliminar el grupo.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar eliminar el grupo.');
+      await apiClient.delete(`/api/grupos/${grupo.id}`);
+      if (onGrupoActualizado) onGrupoActualizado();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar eliminar el grupo.');
     }
   };
 

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Evento } from '../../../types';
 import { usuarioTieneRol, ROLES } from '../../../utils/roles';
-
-const BASE = import.meta.env.VITE_API_URL;
+import apiClient from '../../../api/client';
 
 const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
 const fmtH = (h: string) => h.substring(0, 5);

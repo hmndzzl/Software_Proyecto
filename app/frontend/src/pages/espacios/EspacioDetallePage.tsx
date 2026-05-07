@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import apiClient from '../../api/client';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import styles from './EspacioDetallePage.module.css';
 import { ROLES, usuarioTieneRol } from '../../utils/roles';
@@ -42,55 +43,29 @@ export default function EspacioDetallePage() {
   ]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-
     Promise.all([
-      fetch(`${import.meta.env.VITE_API_URL}/api/espacios/${id}`, { headers }),
-      fetch(`${import.meta.env.VITE_API_URL}/api/reservas?espacio_id=${id}`, { headers }),
+      apiClient.get(`/api/espacios/${id}`),
+      apiClient.get(`/api/reservas?espacio_id=${id}`),
     ])
-      .then(async ([resEspacio, resReservas]) => {
-        if (!resEspacio.ok) throw new Error('Espacio no encontrado');
-        const [dataEspacio, dataReservas] = await Promise.all([
-          resEspacio.json(),
-          resReservas.ok ? resReservas.json() : [],
-        ]);
-        setEspacio(dataEspacio);
-        setReservas(dataReservas);
+      .then(([resEspacio, resReservas]) => {
+        setEspacio(resEspacio.data);
+        setReservas(resReservas.data);
         setCargando(false);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(err.response?.data?.message || 'Espacio no encontrado');
         setCargando(false);
       });
   }, [id]);
 
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas/${reservaId}/estado`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ estado_id: nuevoEstado })
-      });
-
-      if (response.ok) {
-        // Recargar la lista de reservas para ver el estado actualizado
-        const resReservas = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas?espacio_id=${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (resReservas.ok) {
-          setReservas(await resReservas.json());
-        }
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Error al cambiar el estado de la reserva');
-      }
-    } catch (error) {
-      alert('Error de red al cambiar el estado de la reserva');
+      await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
+      // Recargar la lista de reservas para ver el estado actualizado
+      const resReservas = await apiClient.get(`/api/reservas?espacio_id=${id}`);
+      setReservas(resReservas.data);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error al cambiar el estado de la reserva');
     }
   };
 
