@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   crearReserva,
   obtenerReservas,
+  obtenerMisReservas,
   obtenerReservaPorId,
   cambiarEstadoReserva
 } from '../controllers/reserva.controller';
@@ -12,6 +13,7 @@ const router = Router();
 
 router.post('/', authMiddleware, crearReserva);
 router.get('/', authMiddleware, obtenerReservas);
+router.get('/mis-reservas', authMiddleware, obtenerMisReservas);
 router.get('/:id', authMiddleware, obtenerReservaPorId);
 
 // Endpoint para modificar el estado de la reserva tras la decisión del administrador o sacerdote

@@ -53,6 +53,32 @@ export const crearReserva = async (req: Request, res: Response) => {
   }
 };
 
+export const obtenerMisReservas = async (req: Request, res: Response) => {
+  try {
+    const solicitante_id = req.user!.id;
+
+    const [reservas]: any = await db.query(
+      `SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
+              esp.nombre AS espacio_nombre,
+              ev.id      AS evento_id,
+              ev.descripcion AS evento_descripcion
+       FROM reserva r
+       LEFT JOIN espacio esp ON esp.id = r.espacio_id
+       LEFT JOIN evento  ev  ON ev.reserva_id = r.id
+       WHERE r.solicitante_id = ?
+       ORDER BY r.fecha DESC, r.hora_inicio DESC`,
+      [solicitante_id]
+    );
+
+    return res.status(HttpStatus.OK).json(reservas);
+  } catch (error) {
+    console.error('Error al obtener mis reservas:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      message: 'Error interno al obtener tus reservas'
+    });
+  }
+};
+
 export const obtenerReservas = async (req: Request, res: Response) => {
   try {
     const { espacio_id } = req.query;
