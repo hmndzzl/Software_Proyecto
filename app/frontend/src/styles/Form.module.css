@@ -1,0 +1,125 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 16px;
+}
+
+.fieldRow > .field {
+  flex: 1;
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 50px;
+  border: 1.5px solid #e0e0e0;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  box-sizing: border-box;
+  background-color: #fafafa;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  appearance: none;
+}
+
+.input:focus {
+  border-color: #FFD900;
+}
+
+.fieldNote {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.infoBox {
+  background-color: #f5f5f5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #111;
+}
+
+.infoBoxLabel {
+  font-weight: 600;
+  color: #555;
+  margin-right: 4px;
+}
+
+.infoBoxNote {
+  font-size: 12px;
+  color: #999;
+  margin-left: 8px;
+}
+
+.message {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.messageSuccess {
+  color: #2e7d32;
+}
+
+.messageError {
+  color: #c0392b;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.btnSecondary {
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: 1px solid #ccc;
+  background-color: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.btnSecondary:hover {
+  border-color: #999;
+}
+
+.btnDanger {
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: 1px solid #c0392b;
+  background-color: #fde8e8;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c0392b;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnDanger:hover {
+  background-color: #fcc;
+}
