@@ -3,38 +3,53 @@ import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 
 export const crearReserva = async (req: Request, res: Response) => {
+  const { fecha, hora_inicio, hora_fin, espacio_id, descripcion } = req.body;
+
+  if (!fecha || !hora_inicio || !hora_fin || !espacio_id || !descripcion) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'Faltan campos obligatorios (fecha, hora_inicio, hora_fin, espacio_id, descripcion)'
+    });
+  }
+
+  if (hora_inicio >= hora_fin) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'La hora de inicio debe ser menor que la hora de fin'
+    });
+  }
+
+  const solicitante_id = req.user!.id;
+  const conn = await db.getConnection();
+
   try {
-    const { fecha, hora_inicio, hora_fin, espacio_id } = req.body;
+    await conn.beginTransaction();
 
-    if (!fecha || !hora_inicio || !hora_fin || !espacio_id) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Faltan campos obligatorios'
-      });
-    }
-
-    if (hora_inicio >= hora_fin) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'La hora de inicio debe ser menor que la hora de fin'
-      });
-    }
-
-    const solicitante_id = req.user!.id;
-
-    const [resultado]: any = await db.query(
+    const [resResult]: any = await conn.query(
       `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
        VALUES (?, ?, ?, ?, 1, ?)`,
       [fecha, hora_inicio, hora_fin, espacio_id, solicitante_id]
     );
 
+    const reservaId = resResult.insertId;
+
+    await conn.query(
+      `INSERT INTO evento (descripcion, encargado_id, reserva_id) VALUES (?, ?, ?)`,
+      [descripcion, solicitante_id, reservaId]
+    );
+
+    await conn.commit();
+
     return res.status(HttpStatus.CREATED).json({
-      message: 'Solicitud de reserva creada y enviada para aprobación',
-      reservaId: resultado.insertId
+      message: 'Solicitud de reserva y evento creados correctamente',
+      reservaId
     });
   } catch (error) {
+    await conn.rollback();
     console.error('Error al crear reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al crear la reserva'
     });
+  } finally {
+    conn.release();
   }
 };
 
