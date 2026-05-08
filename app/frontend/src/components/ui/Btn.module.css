@@ -1,0 +1,83 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--radius-btn);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition), opacity var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+/* ── Tamaños ── */
+.sm { height: 36px; padding: 0 14px; font-size: 12.5px; }
+.md { height: 44px; padding: 0 18px; font-size: 13.5px; }
+.lg { height: 52px; padding: 0 22px; font-size: 14.5px; }
+
+/* ── Kinds ── */
+.primary {
+  background: var(--color-rojo);
+  color: var(--color-crema);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: .14em;
+  box-shadow: var(--shadow-btn-primary);
+}
+.primary:not(:disabled):hover { background: var(--color-rojoDk); }
+
+.gold {
+  background: var(--color-oro);
+  color: #3d2a05;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: .14em;
+  box-shadow: var(--shadow-btn-gold);
+}
+.gold:not(:disabled):hover { background: #d99e24; }
+
+.ok {
+  background: var(--color-ok);
+  color: var(--color-blanco);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.ok:not(:disabled):hover { background: #246040; }
+
+.bad {
+  background: var(--color-bad);
+  color: var(--color-blanco);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.bad:not(:disabled):hover { background: #7d2424; }
+
+.ghost {
+  background: transparent;
+  color: var(--color-carbon);
+  border-color: var(--color-line);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.ghost:not(:disabled):hover { border-color: var(--color-muted); background: rgba(0,0,0,.03); }
+
+.cream {
+  background: var(--color-blanco);
+  color: var(--color-carbon);
+  border-color: var(--color-line);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.cream:not(:disabled):hover { background: var(--color-crema); border-color: var(--color-muted); }

@@ -1,0 +1,60 @@
+.card {
+  background: var(--color-blanco);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* CardHead */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--color-lineSoft);
+  gap: 12px;
+}
+
+.headLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headBar {
+  width: 4px;
+  height: 22px;
+  background: var(--color-oro);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.headTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  color: var(--color-carbon);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.headHint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Card body padding utility */
+.body {
+  padding: 20px 24px;
+}
