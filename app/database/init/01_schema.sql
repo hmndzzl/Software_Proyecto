@@ -123,9 +123,13 @@ CREATE TABLE `notificacion` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `mensaje` text NOT NULL,
   `fecha` date NOT NULL,
+  `tipo` ENUM('global','grupo','individual') NOT NULL DEFAULT 'global',
+  `remitente_id` int(11) NULL,
   `grupo_id` int(11) NULL,
   PRIMARY KEY (`id`),
+  KEY `fk_notificacion_remitente_idx` (`remitente_id`),
   KEY `fk_notificacion_grupo_idx` (`grupo_id`),
+  CONSTRAINT `fk_notificacion_remitente` FOREIGN KEY (`remitente_id`) REFERENCES `persona` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_notificacion_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
