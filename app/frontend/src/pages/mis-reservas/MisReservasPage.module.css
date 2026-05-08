@@ -1,0 +1,52 @@
+.resumenContainer {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.resumenCard {
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.resumenCardPendiente  { background-color: #fef9c3; }
+.resumenCardConfirmada { background-color: #dcfce7; }
+.resumenCardRechazada  { background-color: #fde8e8; }
+
+.resumenCount {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.resumenLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.resumenPendiente  { color: #b45309; }
+.resumenConfirmada { color: #2e7d32; }
+.resumenRechazada  { color: #c0392b; }
+
+.textoInfo  { color: #555; font-size: 14px; }
+.textoVacio { color: #777; font-size: 14px; }
+
+.celdaEvento { font-weight: 600; }
+.sinEvento   { color: #aaa; font-style: italic; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badgePendiente  { color: #b45309; background-color: #fef9c3; }
+.badgeConfirmada { color: #2e7d32; background-color: #dcfce7; }
+.badgeRechazada  { color: #c0392b; background-color: #fde8e8; }

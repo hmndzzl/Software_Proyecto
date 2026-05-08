@@ -1,0 +1,65 @@
+.seccionTitulo {
+  margin-bottom: 16px;
+}
+
+.textoInfo  { color: #555; font-size: 14px; }
+.textoVacio { color: #777; font-size: 14px; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badgePendiente  { color: #b45309; background-color: #fef9c3; }
+.badgeConfirmada { color: #2e7d32; background-color: #dcfce7; }
+.badgeRechazada  { color: #c0392b; background-color: #fde8e8; }
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btnAprobar {
+  padding: 4px 8px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.btnAprobar:hover { background-color: #1b5e20; }
+
+.btnRechazar {
+  padding: 4px 8px;
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.btnRechazar:hover { background-color: #922b21; }
+
+.btnEditar {
+  padding: 4px 8px;
+  background-color: #1565c0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.btnEditar:hover { background-color: #0d47a1; }
