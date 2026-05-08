@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
+import { ROLES } from '../config/roles';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
@@ -79,7 +80,9 @@ export const editarReserva = async (req: Request, res: Response) => {
       return res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
     }
 
-    if (rows[0].solicitante_id !== req.user!.id) {
+    const esSolicitante = rows[0].solicitante_id === req.user!.id;
+    const esPrivilegiado = [ROLES.ADMIN, ROLES.SACERDOTE].includes(req.user!.rol_id);
+    if (!esSolicitante && !esPrivilegiado) {
       conn.release();
       return res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
     }
