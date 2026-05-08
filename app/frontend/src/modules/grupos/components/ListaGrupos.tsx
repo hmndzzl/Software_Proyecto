@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Grupo } from '../../../types';
 import apiClient from '../../../api/client';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
+import { CardHead } from '../../../components/ui/Card';
 import styles from './ListaGrupos.module.css';
 
 export default function ListaGrupos({
@@ -38,7 +39,7 @@ export default function ListaGrupos({
 
   return (
     <div>
-      <h3 className={styles.seccionTitulo}>Lista de Grupos</h3>
+      <CardHead title="Lista de Grupos" hint={!loading && grupos.length > 0 ? `${grupos.length} grupos` : undefined} />
 
       {loading && <p className={styles.textoInfo}>Cargando grupos...</p>}
       {error && <p className="error-text">{error}</p>}

@@ -1,3 +1,4 @@
+/* ── Formulario ── */
 .form {
   display: flex;
   flex-direction: column;
@@ -7,7 +8,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .fieldRow {
@@ -19,137 +20,158 @@
   flex: 1;
 }
 
+/* ── Sección ── */
 .sectionTitle {
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: 14px;
   font-weight: 700;
-  color: #222;
-  margin: 0 0 16px 0;
+  letter-spacing: .1em;
+  color: var(--color-carbon);
+  margin: 0 0 14px 0;
+  text-transform: uppercase;
 }
 
 .editSection {
-  border-top: 1px solid #eee;
-  padding-top: 24px;
-  margin-top: 8px;
+  border-top: 1px solid var(--color-lineSoft);
+  padding-top: 20px;
+  margin-top: 6px;
 }
 
+/* ── Labels ── */
 .label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: var(--color-tierra);
+  text-transform: uppercase;
 }
 
 .required::after {
   content: ' *';
-  color: #c0392b;
+  color: var(--color-rojo);
 }
 
+/* ── Inputs ── */
 .input {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: 50px;
-  border: 1.5px solid #e0e0e0;
-  font-size: 14px;
-  color: #333;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-carbon);
   outline: none;
   box-sizing: border-box;
-  background-color: #fafafa;
-  font-family: inherit;
-  transition: border-color 0.2s;
+  background-color: var(--color-blanco);
+  transition: border-color var(--transition), box-shadow var(--transition);
   appearance: none;
 }
 
+.input::placeholder { color: var(--color-muted); }
+
 .input:focus {
-  border-color: #FFD900;
+  border-color: var(--color-rojo);
+  box-shadow: 0 0 0 3px rgba(157,47,56,.1);
 }
 
+/* ── Notas y ayuda ── */
 .fieldNote {
-  font-size: 12px;
-  color: #999;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  font-style: italic;
   margin-top: 2px;
 }
 
+/* ── Info box ── */
 .infoBoxMargin {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .infoBox {
-  background-color: #f5f5f5;
-  border-radius: 12px;
+  background-color: var(--color-cremaDk);
+  border-radius: var(--radius-input);
   padding: 12px 16px;
+  font-family: var(--font-body);
   font-size: 14px;
-  color: #111;
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
 }
 
 .infoBoxLabel {
+  font-family: var(--font-body);
   font-weight: 600;
-  color: #555;
+  color: var(--color-ink);
   margin-right: 4px;
 }
 
 .infoBoxNote {
-  font-size: 12px;
-  color: #999;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  font-style: italic;
   margin-left: 8px;
 }
 
+/* ── Mensajes ── */
 .message {
-  font-size: 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.messageSuccess {
-  color: #2e7d32;
-}
+.messageSuccess { color: var(--color-ok); }
+.messageError   { color: var(--color-bad); }
 
-.messageError {
-  color: #c0392b;
-}
-
+/* ── Botones inline (legacy — prefer Btn component) ── */
 .buttonRow {
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 6px;
   flex-wrap: wrap;
 }
 
 .btnSecondary {
-  padding: 12px 20px;
-  border-radius: 50px;
-  border: 1px solid #ccc;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-line);
   background-color: transparent;
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-carbon);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color var(--transition);
 }
 
-.btnSecondary:hover {
-  border-color: #999;
-}
+.btnSecondary:hover { border-color: var(--color-muted); }
 
 .btnDanger {
-  padding: 12px 20px;
-  border-radius: 50px;
-  border: 1px solid #c0392b;
-  background-color: #fde8e8;
-  font-size: 12px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-bad);
+  background-color: var(--color-badBg);
+  font-family: var(--font-body);
+  font-size: 13px;
   font-weight: 700;
-  color: #c0392b;
+  color: var(--color-bad);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition);
 }
 
-.btnDanger:hover {
-  background-color: #fcc;
-}
+.btnDanger:hover { background-color: var(--color-badBgHover); }
 
+/* ── Modal ── */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
+  background-color: rgba(26,14,8,.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -157,37 +179,42 @@
 }
 
 .modalCard {
-  background: #fff;
-  border-radius: 16px;
-  padding: 32px;
+  background: var(--color-blanco);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  padding: 28px 32px;
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 40px rgba(60,40,20,.16);
 }
 
 .modalTitle {
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 700;
-  color: #222;
+  letter-spacing: .1em;
+  color: var(--color-carbon);
+  text-transform: uppercase;
   margin: 0 0 20px 0;
 }
 
 .modalWarning {
-  background-color: #fef9c3;
-  border-left: 4px solid #b45309;
-  border-radius: 8px;
+  background-color: var(--color-warnBg);
+  border-left: 4px solid var(--color-warn);
+  border-radius: var(--radius-input);
   padding: 10px 14px;
+  font-family: var(--font-body);
   font-size: 13px;
-  color: #b45309;
+  color: var(--color-warn);
   font-weight: 600;
   margin-bottom: 16px;
 }
 
 .modalActions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
   justify-content: flex-end;
 }

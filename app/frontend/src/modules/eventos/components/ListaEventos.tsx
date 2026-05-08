@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Evento } from '../../../types';
 import { usuarioTieneRol, ROLES } from '../../../utils/roles';
 import apiClient from '../../../api/client';
+import { CardHead } from '../../../components/ui/Card';
 import styles from './ListaEventos.module.css';
 
 const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
@@ -38,7 +39,7 @@ export default function ListaEventos({
 
   return (
     <div>
-      <h3 className={styles.seccionTitulo}>Lista de Eventos</h3>
+      <CardHead title="Lista de Eventos" hint={!loading && eventos.length > 0 ? `${eventos.length} eventos` : undefined} />
 
       {loading && <p className={styles.textoInfo}>Cargando eventos...</p>}
       {error   && <p className="error-text">{error}</p>}

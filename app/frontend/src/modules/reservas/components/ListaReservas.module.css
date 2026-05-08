@@ -1,65 +1,67 @@
-.seccionTitulo {
-  margin-bottom: 16px;
-}
+.textoInfo  { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; padding: 16px 24px; }
+.textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 
-.textoInfo  { color: #555; font-size: 14px; }
-.textoVacio { color: #777; font-size: 14px; }
+/* Badges — usan Badge component ahora, estas son legacy */
+.badge           { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-badge); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.badgePendiente  { background: var(--color-warnBg); color: var(--color-warn); }
+.badgeConfirmada { background: var(--color-okBg);   color: var(--color-ok);   }
+.badgeRechazada  { background: var(--color-badBg);  color: var(--color-bad);  }
 
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 50px;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.badgePendiente  { color: #b45309; background-color: #fef9c3; }
-.badgeConfirmada { color: #2e7d32; background-color: #dcfce7; }
-.badgeRechazada  { color: #c0392b; background-color: #fde8e8; }
-
+/* Acciones en tabla */
 .acciones {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .btnAprobar {
-  padding: 4px 8px;
-  background-color: #2e7d32;
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--color-ok);
+  color: var(--color-blanco);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-btn);
   cursor: pointer;
+  font-family: var(--font-body);
   font-size: 12px;
-  font-family: inherit;
+  font-weight: 600;
+  transition: background-color var(--transition);
 }
-
-.btnAprobar:hover { background-color: #1b5e20; }
+.btnAprobar:hover { background: var(--color-okDk); }
 
 .btnRechazar {
-  padding: 4px 8px;
-  background-color: #c0392b;
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--color-bad);
+  color: var(--color-blanco);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-btn);
   cursor: pointer;
+  font-family: var(--font-body);
   font-size: 12px;
-  font-family: inherit;
+  font-weight: 600;
+  transition: background-color var(--transition);
 }
-
-.btnRechazar:hover { background-color: #922b21; }
+.btnRechazar:hover { background: var(--color-badDk); }
 
 .btnEditar {
-  padding: 4px 8px;
-  background-color: #1565c0;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--color-blanco);
+  color: var(--color-carbon);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-btn);
   cursor: pointer;
+  font-family: var(--font-body);
   font-size: 12px;
-  font-family: inherit;
+  font-weight: 600;
+  transition: border-color var(--transition), background-color var(--transition);
 }
-
-.btnEditar:hover { background-color: #0d47a1; }
+.btnEditar:hover { border-color: var(--color-muted); background: var(--color-crema); }
