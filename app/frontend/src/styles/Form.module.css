@@ -19,6 +19,19 @@
   flex: 1;
 }
 
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 16px 0;
+}
+
+.editSection {
+  border-top: 1px solid #eee;
+  padding-top: 24px;
+  margin-top: 8px;
+}
+
 .label {
   display: block;
   font-size: 14px;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CrearReservaForm from '../../modules/reservas/components/CrearReservaForm';
 import ListaReservas from '../../modules/reservas/components/ListaReservas';
+import styles from './ReservasPage.module.css';
 
 export default function ReservasPage() {
   const [refreshKey, setRefreshKey] = useState(0);

@@ -3,6 +3,7 @@ import ListaEventos from '../../modules/eventos/components/ListaEventos';
 import EditarEventoForm from '../../modules/eventos/components/EditarEventoForm';
 import { Evento } from '../../types';
 import { usuarioTieneRol, ROLES } from '../../utils/roles';
+import styles from './EventosPage.module.css';
 
 export default function EventosPage() {
   const [refreshKey, setRefreshKey]                 = useState(0);
