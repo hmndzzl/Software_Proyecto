@@ -81,7 +81,7 @@ export const editarReserva = async (req: Request, res: Response) => {
     }
 
     const esSolicitante = rows[0].solicitante_id === req.user!.id;
-    const esPrivilegiado = [ROLES.ADMIN, ROLES.SACERDOTE].includes(req.user!.rol_id);
+    const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
     if (!esSolicitante && !esPrivilegiado) {
       conn.release();
       return res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
