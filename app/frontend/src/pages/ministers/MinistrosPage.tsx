@@ -25,7 +25,7 @@ export default function MinistrosPage() {
   }, []);
 
   if (loading) return <p>Cargando ministros...</p>;
-  if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
+  if (error) return <p className="error-text">Error: {error}</p>;
 
   return (
     <div className="page-container">

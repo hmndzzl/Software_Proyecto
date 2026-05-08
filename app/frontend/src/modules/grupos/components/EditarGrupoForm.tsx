@@ -58,8 +58,8 @@ export default function EditarGrupoForm({
   };
 
   return (
-    <div style={{ borderTop: '1px solid #eee', paddingTop: '24px', marginTop: '8px' }}>
-      <h3 style={{ marginBottom: '16px' }}>Editar Grupo</h3>
+    <div className={styles.editSection}>
+      <h3 className={styles.sectionTitle}>Editar Grupo</h3>
 
       {mensaje && (
         <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>

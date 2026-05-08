@@ -1,0 +1,22 @@
+.seccionTitulo {
+  margin-bottom: 16px;
+}
+
+.textoInfo  { color: #555; font-size: 14px; }
+.textoVacio { color: #777; font-size: 14px; }
+
+.btnEditar {
+  background-color: transparent;
+  border: 1px solid #ccc;
+  border-radius: 50px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  color: #333;
+  font-family: inherit;
+}
+
+.btnEditar:hover {
+  border-color: #999;
+}
