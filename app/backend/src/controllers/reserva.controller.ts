@@ -87,9 +87,12 @@ export const obtenerReservas = async (req: Request, res: Response) => {
 
     const [reservas]: any = await db.query(`
       SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
-             e.nombre AS espacio_nombre
+             e.nombre AS espacio_nombre,
+             ev.titulo AS evento_titulo,
+             ev.descripcion AS evento_descripcion
       FROM reserva r
       LEFT JOIN espacio e ON e.id = r.espacio_id
+      LEFT JOIN evento ev ON ev.reserva_id = r.id
       ${filtro}
       ORDER BY r.fecha ASC, r.hora_inicio ASC
     `, params);

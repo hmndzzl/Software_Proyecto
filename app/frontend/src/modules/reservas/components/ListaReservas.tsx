@@ -8,6 +8,8 @@ interface Reserva {
   hora_fin: string;
   espacio_nombre: string | null;
   estado_reserva_id: number;
+  evento_titulo: string | null;
+  evento_descripcion: string | null;
 }
 
 const ESTADO_LABEL: Record<number, string> = {
@@ -93,6 +95,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <th>Fecha</th>
                 <th>Hora Inicio</th>
                 <th>Hora Fin</th>
+                <th>Título del Evento</th>
+                <th>Descripción</th>
                 <th>Estado</th>
                 {esAdminOSacerdote && <th>Acciones</th>}
               </tr>
@@ -105,6 +109,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{formatFecha(r.fecha)}</td>
                   <td>{formatHora(r.hora_inicio)}</td>
                   <td>{formatHora(r.hora_fin)}</td>
+                  <td>{r.evento_titulo ?? '—'}</td>
+                  <td>{r.evento_descripcion ?? '—'}</td>
                   <td>
                     <span style={{
                       display: 'inline-block',
