@@ -270,7 +270,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                           </button>
                         </>
                       )}
-                      {usuario && r.solicitante_id === usuario.id && (
+                      {usuario && (esAdminOSacerdote || r.solicitante_id === usuario.id) && (
                         <button
                           onClick={() => abrirEdicion(r)}
                           style={{ padding: '4px 8px', backgroundColor: '#1565c0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
