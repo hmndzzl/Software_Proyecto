@@ -41,7 +41,7 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px' }}>Crear Nuevo Evento</h3>
+      <h3 className={styles.sectionTitle}>Crear Nuevo Evento</h3>
 
       {mensaje && (
         <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>

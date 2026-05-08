@@ -139,22 +139,16 @@ export default function EspacioDetallePage() {
                       {formatHora(r.hora_inicio)} — {formatHora(r.hora_fin)}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className={styles.reservaAcciones}>
                     <span className={`${styles.badge} ${ESTADO_CLASS[r.estado_reserva_id] ?? ''}`}>
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                     </span>
                     {esAdminOSacerdote && r.estado_reserva_id === 1 && (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          onClick={() => cambiarEstado(r.id, 2)}
-                          style={{ padding: '4px 8px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-                        >
+                      <div className={styles.reservaBotones}>
+                        <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, 2)}>
                           Aprobar
                         </button>
-                        <button 
-                          onClick={() => cambiarEstado(r.id, 3)}
-                          style={{ padding: '4px 8px', backgroundColor: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-                        >
+                        <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, 3)}>
                           Rechazar
                         </button>
                       </div>
