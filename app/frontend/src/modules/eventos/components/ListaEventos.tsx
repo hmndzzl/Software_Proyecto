@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Evento } from '../../../types';
 import { usuarioTieneRol, ROLES } from '../../../utils/roles';
 import apiClient from '../../../api/client';
+import styles from './ListaEventos.module.css';
 
 const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
 const fmtH = (h: string) => h.substring(0, 5);
@@ -37,13 +38,13 @@ export default function ListaEventos({
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px' }}>Lista de Eventos</h3>
+      <h3 className={styles.seccionTitulo}>Lista de Eventos</h3>
 
-      {loading && <p style={{ color: '#555', fontSize: '14px' }}>Cargando eventos...</p>}
+      {loading && <p className={styles.textoInfo}>Cargando eventos...</p>}
       {error   && <p className="error-text">{error}</p>}
 
       {!loading && !error && eventos.length === 0 && (
-        <p style={{ color: '#777', fontSize: '14px' }}>No hay eventos registrados.</p>
+        <p className={styles.textoVacio}>No hay eventos registrados.</p>
       )}
 
       {!loading && eventos.length > 0 && (
@@ -72,19 +73,7 @@ export default function ListaEventos({
                   {puedeEditar && (
                     <td>
                       {onEditar && (
-                        <button
-                          onClick={() => onEditar(ev)}
-                          style={{
-                            backgroundColor: 'transparent',
-                            border: '1px solid #ccc',
-                            borderRadius: '50px',
-                            padding: '6px 14px',
-                            fontWeight: 600,
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            color: '#333',
-                          }}
-                        >
+                        <button className={styles.btnEditar} onClick={() => onEditar(ev)}>
                           Editar
                         </button>
                       )}

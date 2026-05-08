@@ -69,6 +69,10 @@
   margin-top: 2px;
 }
 
+.infoBoxMargin {
+  margin-bottom: 16px;
+}
+
 .infoBox {
   background-color: #f5f5f5;
   border-radius: 12px;
