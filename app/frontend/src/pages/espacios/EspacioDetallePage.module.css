@@ -109,6 +109,43 @@
 .badgeConfirmada { color: #2e7d32; background-color: #dcfce7; }
 .badgeRechazada  { color: #c0392b; background-color: #fde8e8; }
 
+.reservaAcciones {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reservaBotones {
+  display: flex;
+  gap: 8px;
+}
+
+.btnAprobar {
+  padding: 4px 8px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.btnAprobar:hover { background-color: #1b5e20; }
+
+.btnRechazar {
+  padding: 4px 8px;
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.btnRechazar:hover { background-color: #922b21; }
+
 /* Próximos sprints */
 .infoBox {
   background-color: #f9f9f9;

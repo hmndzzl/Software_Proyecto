@@ -36,7 +36,7 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px' }}>Crear Nuevo Grupo</h3>
+      <h3 className={styles.sectionTitle}>Crear Nuevo Grupo</h3>
 
       {mensaje && (
         <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>

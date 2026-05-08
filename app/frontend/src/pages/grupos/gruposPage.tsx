@@ -3,8 +3,9 @@ import CrearGrupoForm from '../../modules/grupos/components/CrearGrupoForm';
 import ListaGrupos from '../../modules/grupos/components/ListaGrupos';
 import EditarGrupoForm from '../../modules/grupos/components/EditarGrupoForm';
 import { Grupo } from '../../types';
+import styles from './gruposPage.module.css';
 
-const ROLES_CREAR_GRUPO = [1, 3, 5]; // Sacerdote, Coordinador de Grupos, Admin
+const ROLES_CREAR_GRUPO = [1, 3, 5];
 
 export default function GruposPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -24,7 +25,7 @@ export default function GruposPage() {
         <div className="card">
           <h2 className="card-title">Gestión de Grupos Parroquiales</h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', marginBottom: '40px' }}>
+          <div className={styles.formsGrid}>
             {puedeCrear && <CrearGrupoForm onGrupoCreado={handleDataChanged} />}
             {grupoSeleccionado && (
               <EditarGrupoForm

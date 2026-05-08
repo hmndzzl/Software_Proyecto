@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ListaAsignaciones from '../../modules/tareas/components/ListaAsignaciones';
 import AsignarTareaForm from '../../modules/tareas/components/AsignarTareaForm';
 import CrearTareaForm from '../../modules/tareas/components/CrearTareaForm';
+import styles from './TareasPage.module.css';
 
 export default function TareasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -19,14 +20,14 @@ export default function TareasPage() {
       <div className="content-container">
         <div className="card">
           <h2 className="card-title">Gestión de Tareas</h2>
-          
+
           {!esMinistro && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', marginBottom: '40px' }}>
+            <div className={styles.formsGrid}>
               <CrearTareaForm onTareaCreada={handleDataChanged} />
               <AsignarTareaForm refreshKey={refreshKey} onAsignacionExitosa={handleDataChanged} />
             </div>
           )}
-          
+
           <ListaAsignaciones refreshKey={refreshKey} />
         </div>
       </div>

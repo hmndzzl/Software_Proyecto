@@ -1,28 +1,26 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const { logout } = useAuth();
 
   return (
-    <nav style={{ backgroundColor: '#fff', padding: '16px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-        <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#111' }}>Panel de Control</h1>
+    <nav className={styles.nav}>
+      <div className={styles.links}>
+        <Link to="/dashboard" className={styles.logoLink}>
+          <h1 className={styles.logo}>Panel de Control</h1>
         </Link>
-        <Link to="/ministros" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Ministros</Link>
-        <Link to="/tareas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Tareas</Link>
-        <Link to="/reservas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Reservas</Link>
-        <Link to="/grupos" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Grupos</Link>
-        <Link to="/espacios" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Espacios</Link>
-        <Link to="/eventos" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Eventos</Link>
-        <Link to="/mis-reservas" style={{ textDecoration: 'none', color: '#555', fontWeight: 600, fontSize: '14px' }}>Mis Reservas</Link>
+        <Link to="/ministros"   className={styles.link}>Ministros</Link>
+        <Link to="/tareas"      className={styles.link}>Tareas</Link>
+        <Link to="/reservas"    className={styles.link}>Reservas</Link>
+        <Link to="/grupos"      className={styles.link}>Grupos</Link>
+        <Link to="/espacios"    className={styles.link}>Espacios</Link>
+        <Link to="/eventos"     className={styles.link}>Eventos</Link>
+        <Link to="/mis-reservas" className={styles.link}>Mis Reservas</Link>
       </div>
       <div>
-        <button 
-          onClick={logout}
-          style={{ backgroundColor: 'transparent', border: '1px solid #ccc', borderRadius: '50px', padding: '8px 16px', fontWeight: 600, cursor: 'pointer', color: '#333' }}
-        >
+        <button onClick={logout} className={styles.btnLogout}>
           Cerrar Sesión
         </button>
       </div>
