@@ -3,6 +3,8 @@ import ListaEventos from '../../modules/eventos/components/ListaEventos';
 import EditarEventoForm from '../../modules/eventos/components/EditarEventoForm';
 import { Evento } from '../../types';
 import { usuarioTieneRol, ROLES } from '../../utils/roles';
+import PageHeader from '../../components/ui/PageHeader';
+import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import styles from './EventosPage.module.css';
 
 export default function EventosPage() {
@@ -11,33 +13,38 @@ export default function EventosPage() {
 
   const puedeEditar = usuarioTieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
 
-  const handleDataChanged = () => {
-    setRefreshKey(prev => prev + 1);
+  const handleChanged = () => {
+    setRefreshKey(k => k + 1);
     setEventoSeleccionado(null);
   };
 
   return (
-    <div className="page-container">
-      <div className="content-container">
-        <div className="card">
-          <h2 className="card-title">Gestión de Eventos</h2>
+    <div className={styles.page}>
+      <PageHeader
+        kicker="Calendario Pastoral"
+        title="Gestión de Eventos"
+        subtitle="Calendario completo de eventos y actividades litúrgicas de la parroquia."
+      />
 
-          {eventoSeleccionado && (
-            <div className={styles.formWrapper}>
-              <EditarEventoForm
-                evento={eventoSeleccionado}
-                onEventoActualizado={handleDataChanged}
-                onCancelar={() => setEventoSeleccionado(null)}
-              />
-            </div>
-          )}
+      {eventoSeleccionado && (
+        <Card>
+          <CardHead title="Editar Evento" />
+          <CardBody>
+            <EditarEventoForm
+              evento={eventoSeleccionado}
+              onEventoActualizado={handleChanged}
+              onCancelar={() => setEventoSeleccionado(null)}
+            />
+          </CardBody>
+        </Card>
+      )}
 
-          <ListaEventos
-            refreshKey={refreshKey}
-            onEditar={puedeEditar ? setEventoSeleccionado : undefined}
-          />
-        </div>
-      </div>
+      <Card>
+        <ListaEventos
+          refreshKey={refreshKey}
+          onEditar={puedeEditar ? setEventoSeleccionado : undefined}
+        />
+      </Card>
     </div>
   );
 }
