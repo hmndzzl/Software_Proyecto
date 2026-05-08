@@ -1,3 +1,5 @@
-.formWrapper {
-  margin-bottom: 32px;
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
 }

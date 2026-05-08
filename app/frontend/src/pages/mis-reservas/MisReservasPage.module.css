@@ -1,52 +1,46 @@
-.resumenContainer {
+.page {
   display: flex;
-  gap: 16px;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--gap-card);
 }
 
-.resumenCard {
-  border-radius: 12px;
-  padding: 12px 20px;
+/* KPI chips */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap-sm);
+}
+
+.kpiChip {
+  border-radius: var(--radius-card);
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 100px;
+  gap: 4px;
+  border: 1px solid rgba(0,0,0,.04);
 }
 
-.resumenCardPendiente  { background-color: #fef9c3; }
-.resumenCardConfirmada { background-color: #dcfce7; }
-.resumenCardRechazada  { background-color: #fde8e8; }
-
-.resumenCount {
-  font-size: 24px;
+.kpiNum {
+  font-family: var(--font-display);
+  font-size: 48px;
   font-weight: 700;
+  line-height: 1;
 }
 
-.resumenLabel {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.resumenPendiente  { color: #b45309; }
-.resumenConfirmada { color: #2e7d32; }
-.resumenRechazada  { color: #c0392b; }
-
-.textoInfo  { color: #555; font-size: 14px; }
-.textoVacio { color: #777; font-size: 14px; }
-
-.celdaEvento { font-weight: 600; }
-.sinEvento   { color: #aaa; font-style: italic; }
-
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 50px;
-  font-size: 12px;
+.kpiLabel {
+  font-family: var(--font-display);
+  font-size: 10.5px;
   font-weight: 700;
-  white-space: nowrap;
+  letter-spacing: .18em;
+  text-transform: uppercase;
 }
 
-.badgePendiente  { color: #b45309; background-color: #fef9c3; }
-.badgeConfirmada { color: #2e7d32; background-color: #dcfce7; }
-.badgeRechazada  { color: #c0392b; background-color: #fde8e8; }
+/* Tabla */
+.mono  { font-family: var(--font-mono); font-size: 13px; }
+.bold  { font-weight: 600; }
+.muted { color: var(--color-muted); font-style: italic; }
+
+/* Estados */
+.msg      { font-family: var(--font-body); font-size: 14px; color: var(--color-muted); font-style: italic; padding: 20px 24px; }
+.msgError { color: var(--color-bad); font-style: normal; font-weight: 600; }
