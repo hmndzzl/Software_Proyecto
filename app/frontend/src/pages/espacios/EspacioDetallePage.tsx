@@ -11,6 +11,8 @@ interface Reserva {
   hora_inicio: string;
   hora_fin: string;
   estado_reserva_id: number;
+  evento_titulo: string | null;
+  evento_descripcion: string | null;
 }
 
 const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
@@ -126,6 +128,12 @@ export default function EspacioDetallePage() {
               reservas.map((r) => (
                 <div key={r.id} className={styles.reservaItem}>
                   <div>
+                    {r.evento_titulo && (
+                      <p className={styles.reservaEvento}>{r.evento_titulo}</p>
+                    )}
+                    {r.evento_descripcion && (
+                      <p className={styles.reservaEventoDesc}>{r.evento_descripcion}</p>
+                    )}
                     <p className={styles.reservaFecha}>{formatFecha(r.fecha)}</p>
                     <p className={styles.reservaHorario}>
                       {formatHora(r.hora_inicio)} — {formatHora(r.hora_fin)}
