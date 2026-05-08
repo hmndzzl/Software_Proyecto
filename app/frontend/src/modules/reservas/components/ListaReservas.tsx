@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
+import styles from '../../../styles/Form.module.css';
+
+interface Espacio {
+  id: number;
+  nombre: string;
+}
 
 interface Reserva {
   id: number;
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
+  espacio_id: number | null;
   espacio_nombre: string | null;
   estado_reserva_id: number;
+  solicitante_id: number;
   evento_titulo: string | null;
   evento_descripcion: string | null;
 }
@@ -32,10 +40,20 @@ const ESTADO_BG: Record<number, string> = {
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Obtener usuario del localStorage para verificar permisos
+
+  const [editando, setEditando] = useState<Reserva | null>(null);
+  const [editFecha, setEditFecha] = useState('');
+  const [editHoraInicio, setEditHoraInicio] = useState('');
+  const [editHoraFin, setEditHoraFin] = useState('');
+  const [editEspacioId, setEditEspacioId] = useState('');
+  const [editTitulo, setEditTitulo] = useState('');
+  const [editDescripcion, setEditDescripcion] = useState('');
+  const [editMensaje, setEditMensaje] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+
   const usuarioInfo = localStorage.getItem('usuario');
   const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
   const esAdminOSacerdote = usuario && (usuario.rol_id === 1 || usuario.rol_id === 5);
@@ -55,15 +73,60 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   useEffect(() => {
     fetchReservas();
+    apiClient.get('/api/espacios').then(res => setEspacios(res.data)).catch(() => {});
   }, [refreshKey]);
 
   const cambiarEstado = async (id: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: nuevoEstado });
-      // Recargar la lista tras el cambio
       fetchReservas();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al cambiar el estado de la reserva');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al cambiar el estado de la reserva');
+    }
+  };
+
+  const abrirEdicion = (r: Reserva) => {
+    setEditando(r);
+    setEditFecha(r.fecha.split('T')[0]);
+    setEditHoraInicio(r.hora_inicio.substring(0, 5));
+    setEditHoraFin(r.hora_fin.substring(0, 5));
+    setEditEspacioId(r.espacio_id ? String(r.espacio_id) : '');
+    setEditTitulo(r.evento_titulo ?? '');
+    setEditDescripcion(r.evento_descripcion ?? '');
+    setEditMensaje('');
+  };
+
+  const cerrarEdicion = () => {
+    setEditando(null);
+    setEditMensaje('');
+  };
+
+  const guardarEdicion = async () => {
+    if (!editFecha || !editHoraInicio || !editHoraFin || !editEspacioId || !editTitulo || !editDescripcion) {
+      setEditMensaje('Por favor completa todos los campos.');
+      return;
+    }
+    if (editHoraInicio >= editHoraFin) {
+      setEditMensaje('La hora de inicio debe ser menor que la hora de fin.');
+      return;
+    }
+    setEditLoading(true);
+    setEditMensaje('');
+    try {
+      await apiClient.put(`/api/reservas/${editando!.id}`, {
+        fecha: editFecha,
+        hora_inicio: editHoraInicio,
+        hora_fin: editHoraFin,
+        espacio_id: Number(editEspacioId),
+        titulo: editTitulo,
+        descripcion: editDescripcion,
+      });
+      cerrarEdicion();
+      fetchReservas();
+    } catch (err: any) {
+      setEditMensaje(err.response?.data?.message || 'Error al guardar los cambios.');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -77,6 +140,71 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   return (
     <div>
       <h3 style={{ marginBottom: '16px' }}>Lista de Reservas</h3>
+
+      {editando && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h4 className={styles.modalTitle}>Editar Reserva #{editando.id}</h4>
+
+            {editando.estado_reserva_id !== 1 && (
+              <div className={styles.modalWarning}>
+                Esta reserva volverá a estado <strong>Pendiente</strong> para re-aprobación.
+              </div>
+            )}
+
+            {editMensaje && (
+              <p className={`${styles.message} ${styles.messageError}`}>{editMensaje}</p>
+            )}
+
+            <div className={styles.form}>
+              <div className={styles.field}>
+                <label className={`${styles.label} ${styles.required}`}>Espacio:</label>
+                <select className={styles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
+                  <option value="">-- Selecciona un espacio --</option>
+                  {espacios.map(esp => (
+                    <option key={esp.id} value={esp.id}>{esp.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <label className={`${styles.label} ${styles.required}`}>Fecha:</label>
+                <input type="date" className={styles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
+              </div>
+
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={`${styles.label} ${styles.required}`}>Hora de Inicio:</label>
+                  <input type="time" className={styles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
+                </div>
+                <div className={styles.field}>
+                  <label className={`${styles.label} ${styles.required}`}>Hora de Fin:</label>
+                  <input type="time" className={styles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={`${styles.label} ${styles.required}`}>Título del Evento:</label>
+                <input type="text" className={styles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
+              </div>
+
+              <div className={styles.field}>
+                <label className={`${styles.label} ${styles.required}`}>Descripción del Evento:</label>
+                <input type="text" className={styles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className={styles.btnSecondary} onClick={cerrarEdicion} disabled={editLoading}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={guardarEdicion} disabled={editLoading}>
+                {editLoading ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading && <p style={{ color: '#555', fontSize: '14px' }}>Cargando reservas...</p>}
       {error && <p className="error-text">{error}</p>}
@@ -98,7 +226,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <th>Título del Evento</th>
                 <th>Descripción</th>
                 <th>Estado</th>
-                {esAdminOSacerdote && <th>Acciones</th>}
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -124,42 +252,34 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                     </span>
                   </td>
-                  {esAdminOSacerdote && (
-                    <td>
-                      {r.estado_reserva_id === 1 && (
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button 
+                  <td>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {esAdminOSacerdote && r.estado_reserva_id === 1 && (
+                        <>
+                          <button
                             onClick={() => cambiarEstado(r.id, 2)}
-                            style={{ 
-                              padding: '4px 8px', 
-                              backgroundColor: '#2e7d32', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '4px', 
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
+                            style={{ padding: '4px 8px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
                           >
                             Aprobar
                           </button>
-                          <button 
+                          <button
                             onClick={() => cambiarEstado(r.id, 3)}
-                            style={{ 
-                              padding: '4px 8px', 
-                              backgroundColor: '#c0392b', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '4px', 
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
+                            style={{ padding: '4px 8px', backgroundColor: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
                           >
                             Rechazar
                           </button>
-                        </div>
+                        </>
                       )}
-                    </td>
-                  )}
+                      {usuario && r.solicitante_id === usuario.id && (
+                        <button
+                          onClick={() => abrirEdicion(r)}
+                          style={{ padding: '4px 8px', backgroundColor: '#1565c0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                        >
+                          Editar
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

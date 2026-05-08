@@ -53,6 +53,65 @@ export const crearReserva = async (req: Request, res: Response) => {
   }
 };
 
+export const editarReserva = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
+
+  if (!fecha || !hora_inicio || !hora_fin || !espacio_id || !titulo || !descripcion) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'Faltan campos obligatorios (fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion)'
+    });
+  }
+
+  if (hora_inicio >= hora_fin) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'La hora de inicio debe ser menor que la hora de fin'
+    });
+  }
+
+  const conn = await db.getConnection();
+
+  try {
+    const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ?', [id]);
+
+    if (!rows || rows.length === 0) {
+      conn.release();
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
+    }
+
+    if (rows[0].solicitante_id !== req.user!.id) {
+      conn.release();
+      return res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
+    }
+
+    await conn.beginTransaction();
+
+    await conn.query(
+      `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = 1 WHERE id = ?`,
+      [fecha, hora_inicio, hora_fin, espacio_id, id]
+    );
+
+    await conn.query(
+      `UPDATE evento SET titulo = ?, descripcion = ? WHERE reserva_id = ?`,
+      [titulo, descripcion, id]
+    );
+
+    await conn.commit();
+
+    return res.status(HttpStatus.OK).json({
+      message: 'Reserva actualizada. Vuelve a estado Pendiente para re-aprobación.'
+    });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error al editar reserva:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      message: 'Error interno al editar la reserva'
+    });
+  } finally {
+    conn.release();
+  }
+};
+
 export const obtenerMisReservas = async (req: Request, res: Response) => {
   try {
     const solicitante_id = req.user!.id;
@@ -87,6 +146,7 @@ export const obtenerReservas = async (req: Request, res: Response) => {
 
     const [reservas]: any = await db.query(`
       SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
+             r.espacio_id, r.solicitante_id,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
              ev.descripcion AS evento_descripcion

@@ -128,3 +128,49 @@
 .btnDanger:hover {
   background-color: #fcc;
 }
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 20px 0;
+}
+
+.modalWarning {
+  background-color: #fef9c3;
+  border-left: 4px solid #b45309;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #b45309;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
