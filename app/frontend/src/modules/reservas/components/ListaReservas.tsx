@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
+import { CardHead } from '../.././../components/ui/Card';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -134,7 +135,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div>
-      <h3 className={styles.seccionTitulo}>Lista de Reservas</h3>
+      <CardHead title="Lista de Reservas" hint={!loading ? `${reservas.length} registradas` : undefined} />
 
       {editando && (
         <div className={formStyles.modalOverlay}>

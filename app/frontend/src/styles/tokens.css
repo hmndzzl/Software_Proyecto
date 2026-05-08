@@ -16,11 +16,14 @@
 
   /* ── Estados semánticos ── */
   --color-ok:      #2f7a4d;
+  --color-okDk:    #246040;
   --color-okBg:    #e3f1e7;
   --color-warn:    #a47403;
   --color-warnBg:  #fbeec4;
   --color-bad:     #9d2f2f;
+  --color-badDk:   #7d2424;
   --color-badBg:   #f4d9d9;
+  --color-badBgHover: #f2c2c2;
   --color-info:    #2c5d8a;
   --color-infoBg:  #deecf6;
 

@@ -1,7 +1,4 @@
-.seccionTitulo {
-  margin-bottom: 16px;
-}
-
-.textoInfo    { color: #555; font-size: 14px; text-align: center; }
-.textoError   { color: #c0392b; font-size: 14px; text-align: center; }
-.textoVacio   { color: #777; font-size: 14px; }
+.textoInfo  { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; padding: 16px 24px; }
+.textoError { font-family: var(--font-body); color: var(--color-bad); font-size: 14px; font-weight: 600; padding: 16px 24px; }
+.textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
+.seccionTitulo { margin-bottom: 14px; }
