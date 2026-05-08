@@ -31,17 +31,13 @@ a {
   text-decoration: none;
 }
 
-/* ── Layout shell — las páginas usan AppShell, no estos wrappers ── */
+/* ── Legacy page wrappers — se irán eliminando en Fase 6 ── */
 .page-container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .content-container {
-  padding: var(--main-py) var(--main-px);
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
 }
 
