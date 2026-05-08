@@ -73,7 +73,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px' }}>Solicitar Reserva</h3>
+      <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
 
       {mensaje && (
         <p className={`${styles.message} ${mensaje.includes('aprobación') ? styles.messageSuccess : styles.messageError}`}>

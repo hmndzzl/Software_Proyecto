@@ -16,7 +16,7 @@ export default function ReservasPage() {
         <div className="card">
           <h2 className="card-title">Gestión de Reservas</h2>
 
-          <div style={{ marginBottom: '40px' }}>
+          <div className={styles.formWrapper}>
             <CrearReservaForm onReservaCreada={handleReservaCreada} />
           </div>
 

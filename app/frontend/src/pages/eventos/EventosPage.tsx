@@ -23,7 +23,7 @@ export default function EventosPage() {
           <h2 className="card-title">Gestión de Eventos</h2>
 
           {eventoSeleccionado && (
-            <div style={{ marginBottom: '32px' }}>
+            <div className={styles.formWrapper}>
               <EditarEventoForm
                 evento={eventoSeleccionado}
                 onEventoActualizado={handleDataChanged}

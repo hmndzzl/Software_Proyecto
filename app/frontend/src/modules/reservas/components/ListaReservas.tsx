@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
-import styles from '../../../styles/Form.module.css';
+import styles from './ListaReservas.module.css';
+import formStyles from '../../../styles/Form.module.css';
 
 interface Espacio {
   id: number;
@@ -26,16 +27,10 @@ const ESTADO_LABEL: Record<number, string> = {
   3: 'Rechazada'
 };
 
-const ESTADO_COLOR: Record<number, string> = {
-  1: '#b45309',
-  2: '#2e7d32',
-  3: '#c0392b'
-};
-
-const ESTADO_BG: Record<number, string> = {
-  1: '#fef9c3',
-  2: '#dcfce7',
-  3: '#fde8e8'
+const ESTADO_BADGE_CLASS: Record<number, string> = {
+  1: styles.badgePendiente,
+  2: styles.badgeConfirmada,
+  3: styles.badgeRechazada,
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
@@ -139,27 +134,27 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px' }}>Lista de Reservas</h3>
+      <h3 className={styles.seccionTitulo}>Lista de Reservas</h3>
 
       {editando && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalCard}>
-            <h4 className={styles.modalTitle}>Editar Reserva #{editando.id}</h4>
+        <div className={formStyles.modalOverlay}>
+          <div className={formStyles.modalCard}>
+            <h4 className={formStyles.modalTitle}>Editar Reserva #{editando.id}</h4>
 
             {editando.estado_reserva_id !== 1 && (
-              <div className={styles.modalWarning}>
+              <div className={formStyles.modalWarning}>
                 Esta reserva volverá a estado <strong>Pendiente</strong> para re-aprobación.
               </div>
             )}
 
             {editMensaje && (
-              <p className={`${styles.message} ${styles.messageError}`}>{editMensaje}</p>
+              <p className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>
             )}
 
-            <div className={styles.form}>
-              <div className={styles.field}>
-                <label className={`${styles.label} ${styles.required}`}>Espacio:</label>
-                <select className={styles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
+            <div className={formStyles.form}>
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
+                <select className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
                   <option value="">-- Selecciona un espacio --</option>
                   {espacios.map(esp => (
                     <option key={esp.id} value={esp.id}>{esp.nombre}</option>
@@ -167,35 +162,35 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 </select>
               </div>
 
-              <div className={styles.field}>
-                <label className={`${styles.label} ${styles.required}`}>Fecha:</label>
-                <input type="date" className={styles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
+                <input type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
               </div>
 
-              <div className={styles.fieldRow}>
-                <div className={styles.field}>
-                  <label className={`${styles.label} ${styles.required}`}>Hora de Inicio:</label>
-                  <input type="time" className={styles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
+              <div className={formStyles.fieldRow}>
+                <div className={formStyles.field}>
+                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
+                  <input type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
                 </div>
-                <div className={styles.field}>
-                  <label className={`${styles.label} ${styles.required}`}>Hora de Fin:</label>
-                  <input type="time" className={styles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
+                <div className={formStyles.field}>
+                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
+                  <input type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
                 </div>
               </div>
 
-              <div className={styles.field}>
-                <label className={`${styles.label} ${styles.required}`}>Título del Evento:</label>
-                <input type="text" className={styles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Título del Evento:</label>
+                <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
               </div>
 
-              <div className={styles.field}>
-                <label className={`${styles.label} ${styles.required}`}>Descripción del Evento:</label>
-                <input type="text" className={styles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
+                <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
               </div>
             </div>
 
-            <div className={styles.modalActions}>
-              <button className={styles.btnSecondary} onClick={cerrarEdicion} disabled={editLoading}>
+            <div className={formStyles.modalActions}>
+              <button className={formStyles.btnSecondary} onClick={cerrarEdicion} disabled={editLoading}>
                 Cancelar
               </button>
               <button className="btn-primary" onClick={guardarEdicion} disabled={editLoading}>
@@ -206,11 +201,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         </div>
       )}
 
-      {loading && <p style={{ color: '#555', fontSize: '14px' }}>Cargando reservas...</p>}
+      {loading && <p className={styles.textoInfo}>Cargando reservas...</p>}
       {error && <p className="error-text">{error}</p>}
 
       {!loading && !error && reservas.length === 0 && (
-        <p style={{ color: '#777', fontSize: '14px' }}>No hay reservas registradas.</p>
+        <p className={styles.textoVacio}>No hay reservas registradas.</p>
       )}
 
       {!loading && reservas.length > 0 && (
@@ -240,41 +235,24 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.evento_titulo ?? '—'}</td>
                   <td>{r.evento_descripcion ?? '—'}</td>
                   <td>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '4px 12px',
-                      borderRadius: '50px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: ESTADO_COLOR[r.estado_reserva_id] ?? '#333',
-                      backgroundColor: ESTADO_BG[r.estado_reserva_id] ?? '#f0f0f0'
-                    }}>
+                    <span className={`${styles.badge} ${ESTADO_BADGE_CLASS[r.estado_reserva_id] ?? ''}`}>
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className={styles.acciones}>
                       {esAdminOSacerdote && r.estado_reserva_id === 1 && (
                         <>
-                          <button
-                            onClick={() => cambiarEstado(r.id, 2)}
-                            style={{ padding: '4px 8px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-                          >
+                          <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, 2)}>
                             Aprobar
                           </button>
-                          <button
-                            onClick={() => cambiarEstado(r.id, 3)}
-                            style={{ padding: '4px 8px', backgroundColor: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-                          >
+                          <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, 3)}>
                             Rechazar
                           </button>
                         </>
                       )}
                       {usuario && (esAdminOSacerdote || r.solicitante_id === usuario.id) && (
-                        <button
-                          onClick={() => abrirEdicion(r)}
-                          style={{ padding: '4px 8px', backgroundColor: '#1565c0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
-                        >
+                        <button className={styles.btnEditar} onClick={() => abrirEdicion(r)}>
                           Editar
                         </button>
                       )}

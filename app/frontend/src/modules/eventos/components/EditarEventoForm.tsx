@@ -49,8 +49,8 @@ export default function EditarEventoForm({
   };
 
   return (
-    <div style={{ borderTop: '1px solid #eee', paddingTop: '24px', marginTop: '8px' }}>
-      <h3 style={{ marginBottom: '16px' }}>Editar Evento</h3>
+    <div className={styles.editSection}>
+      <h3 className={styles.sectionTitle}>Editar Evento</h3>
 
       {mensaje && (
         <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
@@ -58,7 +58,7 @@ export default function EditarEventoForm({
         </p>
       )}
 
-      <div className={styles.infoBox} style={{ marginBottom: '16px' }}>
+      <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
         <span className={styles.infoBoxLabel}>Encargado:</span>
         <span>{evento.nombre_encargado}</span>
         <span className={styles.infoBoxNote}>(solicitante de la reserva)</span>
