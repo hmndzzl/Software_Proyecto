@@ -120,7 +120,7 @@ export const obtenerMisReservas = async (req: Request, res: Response) => {
     const solicitante_id = req.user!.id;
 
     const [reservas]: any = await db.query(
-      `SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
+      `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS espacio_nombre,
               ev.id      AS evento_id,
               ev.descripcion AS evento_descripcion
