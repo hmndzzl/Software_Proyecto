@@ -22,6 +22,22 @@ export const crearReserva = async (req: Request, res: Response) => {
   const conn = await db.getConnection();
 
   try {
+    const [conflictos]: any = await conn.query(
+      `SELECT * FROM reserva
+       WHERE espacio_id = ?
+         AND fecha = ?
+         AND estado_reserva_id = 2
+         AND (hora_inicio < ? AND hora_fin > ?)`,
+      [espacio_id, fecha, hora_fin, hora_inicio]
+    );
+
+    if (conflictos.length > 0) {
+      conn.release();
+      return res.status(HttpStatus.CONFLICT).json({
+        message: 'No se puede crear la reserva porque ya existe una reserva aprobada para este espacio en el mismo horario'
+      });
+    }
+
     await conn.beginTransaction();
 
     const [resResult]: any = await conn.query(
