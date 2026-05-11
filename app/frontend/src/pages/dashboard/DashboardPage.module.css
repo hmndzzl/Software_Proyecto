@@ -1,0 +1,230 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
+}
+
+/* ── KPI Cards ── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--gap-sm);
+}
+
+.statCard {
+  background: var(--color-blanco);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.statBar {
+  height: 4px;
+  background: var(--stat-accent, var(--color-tierra));
+}
+
+.statBody {
+  padding: 18px 20px 20px;
+}
+
+.statRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.statKicker {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: var(--color-tierra);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.statChip {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-chip);
+  background: var(--color-crema);
+  border: 1px solid var(--color-lineSoft);
+  color: var(--stat-accent, var(--color-tierra));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statNumber {
+  font-family: var(--font-display);
+  font-size: 50px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--color-carbon);
+  line-height: 1;
+  margin: 0 0 6px 0;
+}
+
+.statHint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.statLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-rojo);
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+.statLink:hover { opacity: .75; }
+
+/* ── Variantes de color por stat ── */
+.statGrupos    { --stat-accent: var(--color-tierra); }
+.statMinistros { --stat-accent: var(--color-rojo);   }
+.statEspacios  { --stat-accent: var(--color-oro);    }
+.statReservas  { --stat-accent: var(--color-rojo);   }
+
+/* ── Grid inferior ── */
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--gap-card);
+  align-items: start;
+}
+
+/* ── Tareas ── */
+.tareasList {
+  padding: 4px 0;
+}
+
+.tareaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-lineSoft);
+}
+
+.tareaRow:last-child { border-bottom: none; }
+
+.tareaIconChip {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-crema);
+  border: 1px solid var(--color-line);
+  color: var(--color-tierra);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tareaInfo { flex: 1; min-width: 0; }
+
+.tareaDesc {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-carbon);
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tareaMeta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.tareaVerTodas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-rojo);
+  text-decoration: none;
+  border-top: 1px solid var(--color-lineSoft);
+  transition: background-color var(--transition);
+}
+.tareaVerTodas:hover { background: var(--color-crema); }
+
+.emptyText {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-muted);
+  font-style: italic;
+  padding: 20px 24px;
+}
+
+/* ── Accesos rápidos ── */
+.accesosGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.accesoTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 16px 8px;
+  background: var(--color-crema);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-chip);
+  text-decoration: none;
+  transition: background-color var(--transition), border-color var(--transition), transform var(--transition);
+  cursor: pointer;
+}
+
+.accesoTile:hover {
+  background: var(--color-blanco);
+  border-color: var(--color-muted);
+  transform: translateY(-1px);
+}
+
+.accesoIconBadge {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-lineSoft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-tierra);
+}
+
+.accesoLabel {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--color-ink);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.accesoBtn {
+  margin: 0 20px 20px;
+}

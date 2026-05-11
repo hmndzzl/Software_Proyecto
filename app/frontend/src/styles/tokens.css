@@ -1,0 +1,61 @@
+:root {
+  /* ── Paleta principal ── */
+  --color-rojo:     #9D2F38;
+  --color-rojoDk:   #7d2530;
+  --color-oro:      #F2AF29;
+  --color-oroSoft:  #fbe6b3;
+  --color-tierra:   #8B5A2D;
+  --color-crema:    #F3F1E9;
+  --color-cremaDk:  #ECE7DA;
+  --color-blanco:   #FFFFFF;
+  --color-carbon:   #1A1A1A;
+  --color-ink:      #3a3530;
+  --color-muted:    #7a6f63;
+  --color-line:     #E4DECF;
+  --color-lineSoft: #EFE9DB;
+
+  /* ── Estados semánticos ── */
+  --color-ok:      #2f7a4d;
+  --color-okDk:    #246040;
+  --color-okBg:    #e3f1e7;
+  --color-warn:    #a47403;
+  --color-warnBg:  #fbeec4;
+  --color-bad:     #9d2f2f;
+  --color-badDk:   #7d2424;
+  --color-badBg:   #f4d9d9;
+  --color-badBgHover: #f2c2c2;
+  --color-info:    #2c5d8a;
+  --color-infoBg:  #deecf6;
+
+  /* ── Tipografía ── */
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Noto Serif', serif;
+  --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Sombras ── */
+  --shadow-card:        0 1px 0 rgba(0,0,0,.02), 0 4px 16px rgba(60,40,20,.04);
+  --shadow-topbar:      0 1px 0 rgba(0,0,0,.08), 0 6px 20px rgba(157,47,56,.18);
+  --shadow-btn-primary: 0 4px 14px rgba(157,47,56,.28);
+  --shadow-btn-gold:    0 4px 14px rgba(242,175,41,.32);
+  --shadow-sidebar-active: 0 1px 0 #E4DECF, 0 2px 6px rgba(157,47,56,.06);
+
+  /* ── Bordes ── */
+  --radius-card:  12px;
+  --radius-input: 8px;
+  --radius-btn:   8px;
+  --radius-badge: 20px;
+  --radius-chip:  10px;
+
+  /* ── Espaciado layout ── */
+  --main-px:  44px;
+  --main-py:  36px;
+  --gap-card: 22px;
+  --gap-sm:   18px;
+
+  /* ── Dimensiones shell ── */
+  --topbar-h:    72px;
+  --sidebar-w:   260px;
+
+  /* ── Transiciones ── */
+  --transition: 150ms ease-out;
+}

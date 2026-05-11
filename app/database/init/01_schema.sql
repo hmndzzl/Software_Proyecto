@@ -123,9 +123,13 @@ CREATE TABLE `notificacion` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `mensaje` text NOT NULL,
   `fecha` date NOT NULL,
+  `tipo` ENUM('global','grupo','individual') NOT NULL DEFAULT 'global',
+  `remitente_id` int(11) NULL,
   `grupo_id` int(11) NULL,
   PRIMARY KEY (`id`),
+  KEY `fk_notificacion_remitente_idx` (`remitente_id`),
   KEY `fk_notificacion_grupo_idx` (`grupo_id`),
+  CONSTRAINT `fk_notificacion_remitente` FOREIGN KEY (`remitente_id`) REFERENCES `persona` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_notificacion_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -151,11 +155,14 @@ CREATE TABLE `reserva` (
   `hora_fin` time NOT NULL,
   `espacio_id` int(11) DEFAULT NULL,
   `estado_reserva_id` int(11) NOT NULL,
+  `solicitante_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_reserva_espacio_idx` (`espacio_id`),
   KEY `fk_reserva_estado_idx` (`estado_reserva_id`),
+  KEY `fk_reserva_solicitante_idx` (`solicitante_id`),
   CONSTRAINT `fk_reserva_espacio` FOREIGN KEY (`espacio_id`) REFERENCES `espacio` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_reserva_estado` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`)
+  CONSTRAINT `fk_reserva_estado` FOREIGN KEY (`estado_reserva_id`) REFERENCES `estado_reserva` (`id`),
+  CONSTRAINT `fk_reserva_solicitante` FOREIGN KEY (`solicitante_id`) REFERENCES `persona` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- ----------------------------
@@ -165,6 +172,7 @@ CREATE TABLE `reserva` (
 DROP TABLE IF EXISTS `evento`;
 CREATE TABLE `evento` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(255) NOT NULL,
   `encargado_id` int(11) NOT NULL,
   `reserva_id` int(11) NOT NULL,
   `descripcion` text NOT NULL,

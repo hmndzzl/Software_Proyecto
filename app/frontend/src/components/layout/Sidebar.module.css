@@ -1,0 +1,133 @@
+.sidebar {
+  width: var(--sidebar-w);
+  height: 100%;
+  background-color: var(--color-crema);
+  border-right: 1px solid var(--color-line);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.header {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--color-line);
+  flex-shrink: 0;
+}
+
+.kicker {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  color: var(--color-tierra);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted);
+  letter-spacing: .02em;
+}
+
+/* ── Nav ── */
+.nav {
+  flex: 1;
+  padding: 10px 0;
+  overflow-y: auto;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 46px;
+  padding: 0 20px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--color-ink);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.navLink:hover {
+  background-color: rgba(0,0,0,.03);
+  color: var(--color-carbon);
+}
+
+.navLink.active {
+  background-color: var(--color-blanco);
+  color: var(--color-rojo);
+  font-weight: 600;
+  border-left-color: var(--color-rojo);
+  box-shadow: var(--shadow-sidebar-active);
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--color-tierra);
+  transition: color var(--transition);
+}
+
+.navLink.active .navIcon {
+  color: var(--color-rojo);
+}
+
+.navLabel {
+  flex: 1;
+}
+
+/* ── Botón NUEVO REGISTRO ── */
+.btnNuevo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  margin: 10px 16px 14px;
+  border-radius: 10px;
+  border: none;
+  background-color: var(--color-rojo);
+  color: var(--color-crema);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--shadow-btn-primary);
+  transition: background-color var(--transition);
+  flex-shrink: 0;
+}
+
+.btnNuevo:hover {
+  background-color: var(--color-rojoDk);
+}
+
+/* ── Footer ── */
+.footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.footerLink {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted);
+  text-decoration: none;
+  transition: color var(--transition);
+  padding: 3px 0;
+}
+
+.footerLink:hover {
+  color: var(--color-ink);
+}

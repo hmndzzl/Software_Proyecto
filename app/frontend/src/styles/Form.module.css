@@ -1,0 +1,220 @@
+/* ── Formulario ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 16px;
+}
+
+.fieldRow > .field {
+  flex: 1;
+}
+
+/* ── Sección ── */
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--color-carbon);
+  margin: 0 0 14px 0;
+  text-transform: uppercase;
+}
+
+.editSection {
+  border-top: 1px solid var(--color-lineSoft);
+  padding-top: 20px;
+  margin-top: 6px;
+}
+
+/* ── Labels ── */
+.label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: var(--color-tierra);
+  text-transform: uppercase;
+}
+
+.required::after {
+  content: ' *';
+  color: var(--color-rojo);
+}
+
+/* ── Inputs ── */
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-carbon);
+  outline: none;
+  box-sizing: border-box;
+  background-color: var(--color-blanco);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  appearance: none;
+}
+
+.input::placeholder { color: var(--color-muted); }
+
+.input:focus {
+  border-color: var(--color-rojo);
+  box-shadow: 0 0 0 3px rgba(157,47,56,.1);
+}
+
+/* ── Notas y ayuda ── */
+.fieldNote {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* ── Info box ── */
+.infoBoxMargin {
+  margin-bottom: 14px;
+}
+
+.infoBox {
+  background-color: var(--color-cremaDk);
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+}
+
+.infoBoxLabel {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-right: 4px;
+}
+
+.infoBoxNote {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  font-style: italic;
+  margin-left: 8px;
+}
+
+/* ── Mensajes ── */
+.message {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.messageSuccess { color: var(--color-ok); }
+.messageError   { color: var(--color-bad); }
+
+/* ── Botones inline (legacy — prefer Btn component) ── */
+.buttonRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.btnSecondary {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-line);
+  background-color: transparent;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-carbon);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.btnSecondary:hover { border-color: var(--color-muted); }
+
+.btnDanger {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-bad);
+  background-color: var(--color-badBg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-bad);
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.btnDanger:hover { background-color: var(--color-badBgHover); }
+
+/* ── Modal ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(26,14,8,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: var(--color-blanco);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(60,40,20,.16);
+}
+
+.modalTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--color-carbon);
+  text-transform: uppercase;
+  margin: 0 0 20px 0;
+}
+
+.modalWarning {
+  background-color: var(--color-warnBg);
+  border-left: 4px solid var(--color-warn);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-warn);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
