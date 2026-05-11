@@ -1,0 +1,28 @@
+.shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--color-crema);
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-crema);
+}
+
+.content {
+  flex: 1;
+  padding: var(--main-py) var(--main-px);
+}

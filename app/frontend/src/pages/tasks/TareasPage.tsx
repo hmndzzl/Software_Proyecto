@@ -2,34 +2,45 @@ import { useState } from 'react';
 import ListaAsignaciones from '../../modules/tareas/components/ListaAsignaciones';
 import AsignarTareaForm from '../../modules/tareas/components/AsignarTareaForm';
 import CrearTareaForm from '../../modules/tareas/components/CrearTareaForm';
+import PageHeader from '../../components/ui/PageHeader';
+import { Card, CardHead, CardBody } from '../../components/ui/Card';
+import styles from './TareasPage.module.css';
 
 export default function TareasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleDataChanged = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const usuarioGuardado = localStorage.getItem('usuario');
-  const usuario = usuarioGuardado ? JSON.parse(usuarioGuardado) : null;
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
   const esMinistro = usuario?.rol_id === 4;
 
   return (
-    <div className="page-container">
-      <div className="content-container">
-        <div className="card">
-          <h2 className="card-title">Gestión de Tareas</h2>
-          
-          {!esMinistro && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', marginBottom: '40px' }}>
-              <CrearTareaForm onTareaCreada={handleDataChanged} />
-              <AsignarTareaForm refreshKey={refreshKey} onAsignacionExitosa={handleDataChanged} />
-            </div>
-          )}
-          
-          <ListaAsignaciones refreshKey={refreshKey} />
+    <div className={styles.page}>
+      <PageHeader
+        kicker="Asignaciones"
+        title="Gestión de Tareas"
+        subtitle="Crea, asigna y supervisa las tareas del ministerio parroquial."
+      />
+
+      {!esMinistro && (
+        <div className={styles.formsGrid}>
+          <Card>
+            <CardHead title="Crear Nueva Tarea" />
+            <CardBody>
+              <CrearTareaForm onTareaCreada={() => setRefreshKey(k => k + 1)} />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHead title="Asignar Tarea a Ministro" />
+            <CardBody>
+              <AsignarTareaForm refreshKey={refreshKey} onAsignacionExitosa={() => setRefreshKey(k => k + 1)} />
+            </CardBody>
+          </Card>
         </div>
-      </div>
+      )}
+
+      <Card>
+        <ListaAsignaciones refreshKey={refreshKey} />
+      </Card>
     </div>
   );
 }

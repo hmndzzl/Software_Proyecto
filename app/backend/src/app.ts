@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { checkDbConnection } from './config/db';
 import authRoutes from './routes/auth.routes';
@@ -8,14 +9,19 @@ import personaRoutes from './routes/persona.routes';
 import reservaRoutes from './routes/reserva.routes';
 import espacioRoutes from './routes/espacio.routes';
 import grupoRoutes from './routes/grupo.routes';
+import eventoRoutes from './routes/evento.routes';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // Rutas 
 app.use('/api/auth', authRoutes);
@@ -24,6 +30,7 @@ app.use('/api/personas', personaRoutes);
 app.use('/api/reservas', reservaRoutes);
 app.use('/api/espacios', espacioRoutes);
 app.use('/api/grupos', grupoRoutes);
+app.use('/api/eventos', eventoRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {

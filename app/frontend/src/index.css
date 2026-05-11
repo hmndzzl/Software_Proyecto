@@ -1,84 +1,108 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+@import './styles/tokens.css';
 
-/* Global Resets */
-* {
+/* ── Reset ── */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-body {
-  font-family: 'Montserrat', sans-serif;
-  background-color: #f5f5f5;
-  color: #333;
+/* ── Base ── */
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Global Utilities */
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-crema);
+  color: var(--color-carbon);
+  line-height: 1.5;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Legacy page wrappers — se irán eliminando en Fase 6 ── */
 .page-container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .content-container {
-  padding: 40px 20px;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
 }
 
+/* ── Auth (login no tiene sidebar) ── */
 .auth-page {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f5f5f5;
+  align-items: stretch;
+  background-color: var(--color-crema);
   overflow: hidden;
 }
 
-/* Cards */
+/* ── Card global (legacy — prefer Card.module.css) ── */
 .card {
-  background-color: #fff;
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
+  background-color: var(--color-blanco);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  margin-bottom: var(--gap-card);
 }
 
 .card-title {
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 700;
-  color: #111;
-  margin-bottom: 24px;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 12px;
+  letter-spacing: .14em;
+  color: var(--color-carbon);
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-lineSoft);
+  text-transform: uppercase;
 }
 
-/* Buttons */
+/* ── Botón primario global (legacy — prefer Btn component) ── */
 .btn-primary {
-  padding: 12px 24px;
-  border-radius: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-btn);
   border: none;
-  background-color: #FFD900;
-  color: #111;
-  font-size: 14px;
+  background-color: var(--color-rojo);
+  color: var(--color-crema);
+  font-family: var(--font-display);
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: .14em;
   cursor: pointer;
-  letter-spacing: 0.5px;
-  transition: opacity 0.2s;
+  transition: background-color var(--transition);
 }
 
-.btn-primary:active {
-  opacity: 0.8;
+.btn-primary:hover {
+  background-color: var(--color-rojoDk);
 }
 
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* Tables */
+/* ── Tablas globales ── */
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -87,38 +111,40 @@ body {
 .styled-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.styled-table th,
-.styled-table td {
-  padding: 14px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
 }
 
 .styled-table th {
-  background-color: #f9f9f9;
-  color: #555;
-  font-weight: 600;
-  font-size: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+  background-color: var(--color-crema);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .styled-table td {
+  padding: 14px;
+  text-align: left;
+  font-family: var(--font-body);
   font-size: 14px;
-  color: #333;
+  color: var(--color-ink);
+  border-bottom: 1px solid var(--color-lineSoft);
 }
 
 .styled-table tr:hover td {
-  background-color: #fafafa;
+  background-color: var(--color-crema);
 }
 
-/* Error message */
+/* ── Mensajes de error globales ── */
 .error-text {
-  color: #e74c3c;
+  color: var(--color-bad);
+  font-family: var(--font-body);
   font-size: 14px;
-  text-align: center;
+  font-weight: 600;
   margin-top: 8px;
   margin-bottom: 16px;
-  font-weight: 600;
 }

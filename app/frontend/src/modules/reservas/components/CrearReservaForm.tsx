@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../../api/client';
+import styles from '../../../styles/Form.module.css';
 
 interface Espacio {
   id: number;
@@ -11,6 +13,8 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [espacioId, setEspacioId] = useState('');
+  const [titulo, setTitulo] = useState('');
+  const [descripcion, setDescripcion] = useState('');
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,14 +22,8 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   useEffect(() => {
     const fetchEspacios = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/espacios`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setEspacios(data);
-        }
+        const response = await apiClient.get('/api/espacios');
+        setEspacios(response.data);
       } catch {
         // silencioso, el select quedará vacío
       }
@@ -36,7 +34,7 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fecha || !horaInicio || !horaFin || !espacioId) {
+    if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo || !descripcion) {
       setMensaje('Por favor completa todos los campos.');
       return;
     }
@@ -50,35 +48,24 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
     setMensaje('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reservas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          fecha,
-          hora_inicio: horaInicio,
-          hora_fin: horaFin,
-          espacio_id: Number(espacioId)
-        })
+      await apiClient.post('/api/reservas', {
+        fecha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        espacio_id: Number(espacioId),
+        titulo,
+        descripcion
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje('¡Solicitud de reserva enviada para aprobación!');
-        setFecha('');
-        setHoraInicio('');
-        setHoraFin('');
-        setEspacioId('');
-        if (onReservaCreada) onReservaCreada();
-      } else {
-        setMensaje(data.message || 'Error al crear la reserva.');
-      }
-    } catch {
-      setMensaje('Error de red al intentar crear la reserva.');
+      setMensaje('¡Solicitud de reserva enviada para aprobación!');
+      setFecha('');
+      setHoraInicio('');
+      setHoraFin('');
+      setEspacioId('');
+      setTitulo('');
+      setDescripcion('');
+      if (onReservaCreada) onReservaCreada();
+    } catch (error: any) {
+      setMensaje(error.response?.data?.message || 'Error de red al intentar crear la reserva.');
     } finally {
       setLoading(false);
     }
@@ -86,32 +73,22 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px' }}>Solicitar Reserva</h3>
+      <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
 
       {mensaje && (
-        <p
-          className={mensaje.includes('aprobación') ? '' : 'error-text'}
-          style={{
-            color: mensaje.includes('aprobación') ? '#2e7d32' : undefined,
-            marginBottom: '16px',
-            fontWeight: 600
-          }}
-        >
+        <p className={`${styles.message} ${mensaje.includes('aprobación') ? styles.messageSuccess : styles.messageError}`}>
           {mensaje}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="espacio_id" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Espacio:
-          </label>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="espacio_id" className={`${styles.label} ${styles.required}`}>Espacio:</label>
           <select
             id="espacio_id"
-            className="login-input"
+            className={styles.input}
             value={espacioId}
             onChange={(e) => setEspacioId(e.target.value)}
-            style={{ paddingLeft: '14px', cursor: 'pointer' }}
           >
             <option value="">-- Selecciona un espacio --</option>
             {espacios.map((esp) => (
@@ -122,51 +99,66 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
           </select>
         </div>
 
-        <div className="input-wrapper" style={{ marginBottom: '0' }}>
-          <label htmlFor="fecha" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-            Fecha:
-          </label>
+        <div className={styles.field}>
+          <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
             type="date"
             id="fecha"
-            className="login-input"
+            className={styles.input}
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            style={{ paddingLeft: '14px' }}
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <div className="input-wrapper" style={{ marginBottom: '0', flex: 1 }}>
-            <label htmlFor="hora_inicio" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-              Hora de Inicio:
-            </label>
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <label htmlFor="hora_inicio" className={`${styles.label} ${styles.required}`}>Hora de Inicio:</label>
             <input
               type="time"
               id="hora_inicio"
-              className="login-input"
+              className={styles.input}
               value={horaInicio}
               onChange={(e) => setHoraInicio(e.target.value)}
-              style={{ paddingLeft: '14px' }}
             />
           </div>
 
-          <div className="input-wrapper" style={{ marginBottom: '0', flex: 1 }}>
-            <label htmlFor="hora_fin" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
-              Hora de Fin:
-            </label>
+          <div className={styles.field}>
+            <label htmlFor="hora_fin" className={`${styles.label} ${styles.required}`}>Hora de Fin:</label>
             <input
               type="time"
               id="hora_fin"
-              className="login-input"
+              className={styles.input}
               value={horaFin}
               onChange={(e) => setHoraFin(e.target.value)}
-              style={{ paddingLeft: '14px' }}
             />
           </div>
         </div>
 
-        <button type="submit" className="btn-primary" style={{ marginTop: '16px' }} disabled={loading}>
+        <div className={styles.field}>
+          <label htmlFor="titulo" className={`${styles.label} ${styles.required}`}>Título del Evento:</label>
+          <input
+            type="text"
+            id="titulo"
+            className={styles.input}
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Ej. Misa del Día de la Madre"
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="descripcion" className={`${styles.label} ${styles.required}`}>Descripción del Evento:</label>
+          <input
+            type="text"
+            id="descripcion"
+            className={styles.input}
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            placeholder="Ej. Celebración en honor a la Virgen, con coro y procesión"
+          />
+        </div>
+
+        <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Enviando...' : 'Solicitar Reserva'}
         </button>
       </form>
