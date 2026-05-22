@@ -1,3 +1,4 @@
+import Btn from '../../components/ui/Btn';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import NotificacionRow from '../../modules/notificaciones/components/NotificacionRow';
@@ -5,7 +6,8 @@ import { useNotificaciones } from '../../modules/notificaciones/hooks/useNotific
 import styles from './NotificacionesPage.module.css';
 
 export default function NotificacionesPage() {
-  const { notificaciones, cargando, error, marcarLeida } = useNotificaciones();
+  const { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas } = useNotificaciones();
+  const hayNoLeidas = notificaciones.some((n) => !n.leida);
 
   if (cargando) {
     return (
@@ -34,7 +36,17 @@ export default function NotificacionesPage() {
       />
 
       <Card>
-        <CardHead title="MIS NOTIFICACIONES" hint={`${notificaciones.length} notificaciones`} />
+        <CardHead
+          title="MIS NOTIFICACIONES"
+          hint={`${notificaciones.length} notificaciones`}
+          right={
+            hayNoLeidas ? (
+              <Btn kind="gold" size="sm" onClick={marcarTodasLeidas}>
+                Marcar todas como leídas
+              </Btn>
+            ) : undefined
+          }
+        />
         <CardBody>
           {notificaciones.length === 0 ? (
             <p className={styles.empty}>No tienes notificaciones.</p>
