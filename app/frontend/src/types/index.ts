@@ -22,6 +22,18 @@ export interface Evento {
   nombre_espacio: string | null;
 }
 
+export type NotificacionTipo = 'global' | 'grupo' | 'individual';
+
+export interface Notificacion {
+  id: number;
+  mensaje: string;
+  fecha: string;
+  tipo: NotificacionTipo;
+  remitente_id: number | null;
+  grupo_id: number | null;
+  leida: boolean;
+}
+
 export interface ReservaDisponible {
   id: number;
   fecha: string;
