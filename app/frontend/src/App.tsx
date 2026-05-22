@@ -12,8 +12,9 @@ import GruposPage        from './pages/grupos/gruposPage';
 import EspaciosPage      from './pages/espacios/EspaciosPage';
 import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
 import EventosPage       from './pages/eventos/EventosPage';
-import MisReservasPage   from './pages/mis-reservas/MisReservasPage';
-import NotFoundPage      from './pages/not_found_page/NotFoundPage';
+import MisReservasPage       from './pages/mis-reservas/MisReservasPage';
+import NotificacionesPage    from './pages/notificaciones/NotificacionesPage';
+import NotFoundPage          from './pages/not_found_page/NotFoundPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -116,6 +117,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <MisReservasPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notificaciones"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <NotificacionesPage />
             </ProtectedRoute>
           }
         />
