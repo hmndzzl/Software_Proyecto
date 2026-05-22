@@ -1,6 +1,7 @@
 import Badge from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
 import type { Notificacion } from '../../../types';
+import { formatFecha } from '../../../utils/date';
 import styles from './NotificacionRow.module.css';
 
 interface Props {
@@ -13,7 +14,7 @@ export default function NotificacionRow({ notificacion, onMarcarLeida }: Props) 
 
   return (
     <tr className={`${styles.row} ${!leida ? styles.rowUnread : ''}`}>
-      <td className={styles.tdFecha}>{fecha}</td>
+      <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
       <td className={styles.tdMensaje}>{mensaje}</td>
       <td className={styles.tdTipo}>
         <span className={styles.tipo}>{tipo}</span>
