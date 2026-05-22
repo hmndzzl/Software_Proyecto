@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// /:id/leida antes de /:id para que Express no confunda "leida" con un id numérico
+
 router.get('/', getNotificaciones);
 router.put('/:id/leida', marcarLeida);
 router.post('/', requireRole(ROLES.SACERDOTE, ROLES.ADMIN), createNotificacion);

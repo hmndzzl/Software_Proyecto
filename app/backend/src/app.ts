@@ -10,6 +10,7 @@ import reservaRoutes from './routes/reserva.routes';
 import espacioRoutes from './routes/espacio.routes';
 import grupoRoutes from './routes/grupo.routes';
 import eventoRoutes from './routes/evento.routes';
+import notificacionRoutes from './routes/notificacion.routes';
 
 dotenv.config();
 
@@ -28,7 +29,7 @@ if (process.env.CORS_ORIGIN) {
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (origin && allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('No permitido por CORS'));
@@ -36,6 +37,8 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -47,6 +50,7 @@ app.use('/api/reservas', reservaRoutes);
 app.use('/api/espacios', espacioRoutes);
 app.use('/api/grupos', grupoRoutes);
 app.use('/api/eventos', eventoRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {
