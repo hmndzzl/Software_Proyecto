@@ -1,0 +1,60 @@
+.row {
+  border-bottom: 1px solid var(--color-lineSoft);
+  transition: background-color var(--transition);
+}
+
+.row:hover {
+  background: var(--color-cremaDk);
+}
+
+.rowUnread {
+  background: #fef9ec;
+  border-left: 3px solid var(--color-oro);
+}
+
+.rowUnread:hover {
+  background: #fdf3d0;
+}
+
+.tdFecha {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-muted);
+  white-space: nowrap;
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.tdMensaje {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-carbon);
+  line-height: 1.5;
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.tdTipo {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.tipo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.tdEstado {
+  padding: 14px 16px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.tdAccion {
+  padding: 14px 16px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
