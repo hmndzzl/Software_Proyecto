@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
-import type { NotificacionConLeida } from '../types/notificacion.types';
+import type { NotificacionConLeida, NotificacionCreateInput } from '../types/notificacion.types';
 
 export const getNotificaciones = async (req: Request, res: Response): Promise<void> => {
   const personaId = req.user!.id;
@@ -44,5 +44,53 @@ export const marcarLeida = async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Error en marcarLeida:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al marcar notificación como leída' });
+  }
+};
+
+export const createNotificacion = async (req: Request, res: Response): Promise<void> => {
+  const remitenteId = req.user!.id;
+  const { mensaje, tipo, grupo_id, destinatarios } = req.body as NotificacionCreateInput;
+
+  if (!mensaje || !tipo || !destinatarios || destinatarios.length === 0) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      mensaje: 'Campos requeridos: mensaje, tipo, destinatarios (array no vacío)',
+    });
+    return;
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    const [result] = await conn.execute<ResultSetHeader>(
+      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, grupo_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      [mensaje, fecha, tipo, remitenteId, grupo_id ?? null]
+    );
+
+    const notificacionId = result.insertId;
+
+    for (const personaId of destinatarios) {
+      await conn.execute(
+        `INSERT IGNORE INTO persona_notificacion (persona_id, notificacion_id, leida)
+         VALUES (?, ?, 0)`,
+        [personaId, notificacionId]
+      );
+    }
+
+    await conn.commit();
+
+    res.status(HttpStatus.CREATED).json({
+      mensaje: 'Notificación creada exitosamente',
+      id: notificacionId,
+      destinatarios: destinatarios.length,
+    });
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error en createNotificacion:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al crear notificación' });
+  } finally {
+    conn.release();
   }
 };
