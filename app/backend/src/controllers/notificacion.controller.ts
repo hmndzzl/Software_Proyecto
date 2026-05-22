@@ -94,3 +94,23 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
     conn.release();
   }
 };
+
+export const deleteNotificacion = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'DELETE FROM notificacion WHERE id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+
+    res.status(HttpStatus.NO_CONTENT).send();
+  } catch (error) {
+    console.error('Error en deleteNotificacion:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar notificación' });
+  }
+};
