@@ -68,11 +68,37 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px 6px;
+  padding: 6px 14px 6px 10px;
   background: var(--color-cremaDk);
   position: sticky;
   top: 0;
   z-index: 1;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.grupoToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  flex: 1;
+  text-align: left;
+}
+
+.grupoToggle:hover .grupoLabel { color: var(--color-rojoDk); }
+
+.chevron {
+  color: var(--color-tierra);
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+  transform: rotate(0deg);
+}
+
+.chevronAbierto {
+  transform: rotate(90deg);
 }
 
 .grupoLabel {
@@ -82,9 +108,15 @@
   letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--color-tierra);
+  transition: color var(--transition);
 }
 
-.grupoActions { display: flex; gap: 6px; }
+.grupoCount {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-muted);
+  margin-left: 4px;
+}
 
 /* ── Item de persona ── */
 .item {

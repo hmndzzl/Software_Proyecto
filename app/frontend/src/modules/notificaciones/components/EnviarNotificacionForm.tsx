@@ -15,12 +15,13 @@ const esAdminOSacerdote = () => usuarioTieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
 const esCoordMin        = () => usuarioTieneRol([ROLES.COORDINADOR_MINISTROS]);
 
 export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props) {
-  const [mensaje,       setMensaje]       = useState('');
-  const [tipo,          setTipo]          = useState<NotificacionTipo>('individual');
-  const [destinatarios, setDestinatarios] = useState<DestinatarioInfo[]>([]);
-  const [seleccionados, setSeleccionados] = useState<number[]>([]);
-  const [enviando,      setEnviando]      = useState(false);
-  const [error,         setError]         = useState<string | null>(null);
+  const [mensaje,        setMensaje]        = useState('');
+  const [tipo,           setTipo]           = useState<NotificacionTipo>('individual');
+  const [destinatarios,  setDestinatarios]  = useState<DestinatarioInfo[]>([]);
+  const [seleccionados,  setSeleccionados]  = useState<number[]>([]);
+  const [enviando,       setEnviando]       = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
+  const [gruposAbiertos, setGruposAbiertos] = useState<Set<string>>(new Set());
 
   const puedeEnviarGlobal = esAdminOSacerdote();
   const soloIndividual    = esCoordMin();
@@ -28,9 +29,21 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
   useEffect(() => {
     if (tipo === 'global') return;
     apiClient.get<DestinatarioInfo[]>('/api/notificaciones/destinatarios')
-      .then(({ data }) => setDestinatarios(data))
+      .then(({ data }) => {
+        setDestinatarios(data);
+        // Abrir todos los grupos por defecto
+        const roles = new Set(data.map((d) => d.rol_nombre));
+        setGruposAbiertos(roles);
+      })
       .catch(() => setDestinatarios([]));
   }, [tipo]);
+
+  const toggleGrupo = (rolNombre: string) =>
+    setGruposAbiertos((prev) => {
+      const next = new Set(prev);
+      next.has(rolNombre) ? next.delete(rolNombre) : next.add(rolNombre);
+      return next;
+    });
 
   // Agrupar destinatarios por rol
   const grupos = useMemo(() => {
@@ -127,23 +140,44 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
               <p className={styles.listaVacia}>Sin destinatarios disponibles.</p>
             ) : (
               grupos.map(([rolNombre, miembros]) => {
-                const ids = miembros.map((m) => m.id);
-                const todosSeleccionados = ids.every((id) => seleccionados.includes(id));
+                const ids             = miembros.map((m) => m.id);
+                const todosSelec      = ids.every((id) => seleccionados.includes(id));
+                const algunoSelec     = ids.some((id) => seleccionados.includes(id));
+                const abierto         = gruposAbiertos.has(rolNombre);
+                const selecEnGrupo    = ids.filter((id) => seleccionados.includes(id)).length;
                 return (
                   <div key={rolNombre} className={styles.grupo}>
                     <div className={styles.grupoHeader}>
-                      <span className={styles.grupoLabel}>{rolNombre}</span>
-                      <div className={styles.grupoActions}>
-                        <button
-                          type="button"
-                          className={styles.linkBtn}
-                          onClick={() => todosSeleccionados ? deseleccionarGrupo(ids) : seleccionarGrupo(ids)}
+                      {/* Toggle colapso */}
+                      <button
+                        type="button"
+                        className={styles.grupoToggle}
+                        onClick={() => toggleGrupo(rolNombre)}
+                      >
+                        <svg
+                          width="13" height="13" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                          className={`${styles.chevron} ${abierto ? styles.chevronAbierto : ''}`}
                         >
-                          {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos'}
-                        </button>
-                      </div>
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                        <span className={styles.grupoLabel}>{rolNombre}</span>
+                        <span className={styles.grupoCount}>
+                          {selecEnGrupo}/{miembros.length}
+                        </span>
+                      </button>
+
+                      {/* Seleccionar/quitar todo el grupo */}
+                      <button
+                        type="button"
+                        className={styles.linkBtn}
+                        onClick={() => (todosSelec || algunoSelec) ? deseleccionarGrupo(ids) : seleccionarGrupo(ids)}
+                      >
+                        {todosSelec ? 'Quitar todos' : algunoSelec ? 'Quitar selección' : 'Seleccionar todos'}
+                      </button>
                     </div>
-                    {miembros.map((d) => (
+
+                    {abierto && miembros.map((d) => (
                       <label
                         key={d.id}
                         className={`${styles.item} ${seleccionados.includes(d.id) ? styles.itemSelected : ''}`}
