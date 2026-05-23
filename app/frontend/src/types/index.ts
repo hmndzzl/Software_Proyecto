@@ -30,8 +30,16 @@ export interface Notificacion {
   fecha: string;
   tipo: NotificacionTipo;
   remitente_id: number | null;
+  remitente_nombre: string | null;
   grupo_id: number | null;
   leida: boolean;
+}
+
+export interface DestinatarioInfo {
+  id: number;
+  nombre: string;
+  rol_id: number;
+  rol_nombre: string;
 }
 
 export interface ReservaDisponible {
