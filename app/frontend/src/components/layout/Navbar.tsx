@@ -19,7 +19,10 @@ export default function Navbar() {
         <Link to="/eventos"     className={styles.link}>Eventos</Link>
         <Link to="/mis-reservas" className={styles.link}>Mis Reservas</Link>
       </div>
-      <div>
+      <div className={styles.actions}>
+        <Link to="/perfil" className={styles.btnPerfil}>
+          Mi Perfil
+        </Link>
         <button onClick={logout} className={styles.btnLogout}>
           Cerrar Sesión
         </button>
