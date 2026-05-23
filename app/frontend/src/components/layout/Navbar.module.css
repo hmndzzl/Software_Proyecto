@@ -35,6 +35,28 @@
   color: #111;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btnPerfil {
+  text-decoration: none;
+  color: #555;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnPerfil:hover {
+  color: #111;
+  border-color: #ddd;
+}
+
 .btnLogout {
   background-color: transparent;
   border: 1px solid #ccc;

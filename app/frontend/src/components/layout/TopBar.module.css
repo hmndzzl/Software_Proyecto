@@ -200,6 +200,20 @@
 }
 
 /* ── Usuario ── */
+.userLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 4px 8px;
+  transition: background-color var(--transition);
+}
+
+.userLink:hover {
+  background: rgba(255,255,255,.1);
+}
+
 .user {
   display: flex;
   align-items: center;
