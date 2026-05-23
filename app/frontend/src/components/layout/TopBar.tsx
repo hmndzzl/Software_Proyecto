@@ -144,8 +144,8 @@ export default function TopBar() {
 
         <div className={styles.divider} />
 
-        {/* Usuario */}
-        <div className={styles.user}>
+        {/* Usuario — clic navega a /perfil */}
+        <Link to="/perfil" className={styles.userLink}>
           <div className={styles.avatar}>{initials}</div>
           {usuario?.nombre && (
             <div className={styles.userInfo}>
@@ -153,7 +153,7 @@ export default function TopBar() {
               <span className={styles.userRole}>{rolLabel}</span>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Cerrar sesión */}
         <button onClick={logout} className={styles.btnLogout}>
