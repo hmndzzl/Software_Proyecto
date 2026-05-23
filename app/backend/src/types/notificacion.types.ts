@@ -11,6 +11,14 @@ export interface Notificacion {
 
 export interface NotificacionConLeida extends Notificacion {
   leida: boolean;
+  remitente_nombre: string | null;
+}
+
+export interface DestinatarioInfo {
+  id: number;
+  nombre: string;
+  rol_id: number;
+  rol_nombre: string;
 }
 
 export interface NotificacionCreateInput {

@@ -16,6 +16,9 @@ export default function NotificacionRow({ notificacion, onMarcarLeida }: Props) 
     <tr className={`${styles.row} ${!leida ? styles.rowUnread : ''}`}>
       <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
       <td className={styles.tdMensaje}>{mensaje}</td>
+      <td className={styles.tdRemitente}>
+        {notificacion.remitente_nombre ?? <span className={styles.sistema}>Sistema</span>}
+      </td>
       <td className={styles.tdTipo}>
         <span className={styles.tipo}>{tipo}</span>
       </td>

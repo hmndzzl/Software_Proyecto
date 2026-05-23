@@ -41,6 +41,10 @@ INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`) VALUES
   ('Coord Grupos Test',    'coord.grupos@parroquia.com','$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3),
   ('Ministro Test',        'ministro@parroquia.com',    '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4);
 
+-- Relación coordinador-ministro (CoordMin id=7 coordina a Ministro id=9)
+INSERT INTO `coordinador_ministro` (`coordinador_id`, `ministro_id`) VALUES
+  (7, 9);
+
 -- Notificaciones de prueba
 -- persona IDs: 1-5=Admin equipo, 6=Sacerdote, 7=CoordMin, 8=CoordGrupos, 9=Ministro
 -- notif 1 (id=1): leida=1 para todos  → todos tienen al menos una leída
