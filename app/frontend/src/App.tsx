@@ -14,6 +14,7 @@ import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
 import EventosPage       from './pages/eventos/EventosPage';
 import MisReservasPage       from './pages/mis-reservas/MisReservasPage';
 import NotificacionesPage    from './pages/notificaciones/NotificacionesPage';
+import PerfilPage            from './pages/perfil/PerfilPage';
 import NotFoundPage          from './pages/not_found_page/NotFoundPage';
 
 const ALL_ROLES = [
@@ -126,6 +127,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <NotificacionesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <PerfilPage />
             </ProtectedRoute>
           }
         />
