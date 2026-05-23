@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
+import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 
@@ -156,7 +157,8 @@ export const deleteTarea = async (req: Request, res: Response): Promise<void> =>
 };
 
 // manejo de asignación de tarea a ministro con POST /api/tareas/asignar
-// Asigna un ministro a una tarea. INSERT IGNORE evita error si ya existe
+// Asigna un ministro a una tarea e inserta notificación individual automáticamente.
+// INSERT IGNORE evita error si la asignación ya existe.
 export const asignarTarea = async (req: Request, res: Response): Promise<void> => {
   const { tarea_id, persona_id } = req.body;
 
@@ -165,9 +167,11 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     return;
   }
 
+  let conn: PoolConnection | null = null;
   try {
+    // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, descripcion FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -182,10 +186,36 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    await pool.execute(
+    const descripcionTarea: string = (tareas[0] as any).descripcion;
+    const remitenteId: number = req.user!.id;
+    const hoy = new Date().toISOString().split('T')[0];
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    // 1. Insertar asignación (IGNORE si ya existe)
+    const [asignResult] = await conn.execute<ResultSetHeader>(
       'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
       [tarea_id, persona_id]
     );
+
+    // 2. Solo notificar si la asignación fue nueva (affectedRows > 0)
+    if (asignResult.affectedRows > 0) {
+      const mensaje = `Se te asignó la tarea: ${descripcionTarea}`;
+
+      const [notifResult] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id)
+         VALUES (?, ?, 'individual', ?)`,
+        [mensaje, hoy, remitenteId]
+      );
+
+      await conn.execute(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [persona_id, notifResult.insertId]
+      );
+    }
+
+    await conn.commit();
 
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Asignación realizada correctamente',
@@ -193,8 +223,11 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       persona_id,
     });
   } catch (error) {
+    if (conn) await conn.rollback();
     console.error('Error en asignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al realizar la asignación' });
+  } finally {
+    if (conn) conn.release();
   }
 };
 
