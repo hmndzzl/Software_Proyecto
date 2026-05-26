@@ -3,19 +3,20 @@ import { AuthProvider } from './context/AuthContext';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
 
-import LoginPage         from './pages/auth/LoginPage';
-import DashboardPage     from './pages/dashboard/DashboardPage';
-import MinistrosPage     from './pages/ministers/MinistrosPage';
-import TareasPage        from './pages/tasks/TareasPage';
-import ReservasPage      from './pages/reservas/ReservasPage';
-import GruposPage        from './pages/grupos/gruposPage';
-import EspaciosPage      from './pages/espacios/EspaciosPage';
+import LoginPage from './pages/auth/LoginPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import MinistrosPage from './pages/ministers/MinistrosPage';
+import TareasPage from './pages/tasks/TareasPage';
+import ReservasPage from './pages/reservas/ReservasPage';
+import GruposPage from './pages/grupos/gruposPage';
+import EspaciosPage from './pages/espacios/EspaciosPage';
 import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
-import EventosPage       from './pages/eventos/EventosPage';
-import MisReservasPage       from './pages/mis-reservas/MisReservasPage';
-import NotificacionesPage    from './pages/notificaciones/NotificacionesPage';
-import PerfilPage            from './pages/perfil/PerfilPage';
-import NotFoundPage          from './pages/not_found_page/NotFoundPage';
+import EventosPage from './pages/eventos/EventosPage';
+import MisReservasPage from './pages/mis-reservas/MisReservasPage';
+import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
+import PerfilPage from './pages/perfil/PerfilPage';
+import CalendarioPage from './pages/calendario/CalendarioPage';
+import NotFoundPage from './pages/not_found_page/NotFoundPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -109,6 +110,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <EventosPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/calendario"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <CalendarioPage />
             </ProtectedRoute>
           }
         />
