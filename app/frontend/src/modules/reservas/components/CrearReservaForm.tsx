@@ -44,6 +44,28 @@ export default function CrearReservaForm({ onReservaCreada }: { onReservaCreada?
       return;
     }
 
+    const ahora = new Date();
+    const y = ahora.getFullYear();
+    const m = String(ahora.getMonth() + 1).padStart(2, '0');
+    const d = String(ahora.getDate()).padStart(2, '0');
+    const hoyStr = `${y}-${m}-${d}`;
+
+    const hh = String(ahora.getHours()).padStart(2, '0');
+    const mm = String(ahora.getMinutes()).padStart(2, '0');
+    const horaActualStr = `${hh}:${mm}`;
+
+    const fechaSoloFecha = fecha.split('T')[0];
+
+    if (fechaSoloFecha < hoyStr) {
+      setMensaje('La fecha de la reserva no puede estar en el pasado.');
+      return;
+    }
+
+    if (fechaSoloFecha === hoyStr && horaInicio < horaActualStr) {
+      setMensaje('La hora de inicio no puede estar en el pasado.');
+      return;
+    }
+
     setLoading(true);
     setMensaje('');
 
