@@ -23,9 +23,13 @@
 .rechazada  { background: var(--color-badBg);  color: var(--color-bad);  }
 .info       { background: var(--color-infoBg); color: var(--color-info); }
 .neutral    { background: var(--color-cremaDk); color: var(--color-tierra); }
+.ok         { background: var(--color-okBg);   color: var(--color-ok);   }
+.bad        { background: var(--color-badBg);  color: var(--color-bad);  }
 
 .pendiente  .dot { background: #d2a319; }
 .confirmada .dot { background: var(--color-ok); }
 .rechazada  .dot { background: var(--color-bad); }
 .info       .dot { background: var(--color-info); }
 .neutral    .dot { background: var(--color-tierra); }
+.ok         .dot { background: var(--color-ok); }
+.bad        .dot { background: var(--color-bad); }
