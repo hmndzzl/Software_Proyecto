@@ -7,11 +7,50 @@ import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types
 
 // Manejo de get, post, put, delete para tareas y asignaciones
 // Retorna todas las tareas con sus ministros asignados con GET /api/tareas
-export const getTareas = async (_req: Request, res: Response): Promise<void> => {
+export const getTareas = async (req: Request, res: Response): Promise<void> => {
   try {
-    const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT * FROM tarea ORDER BY fecha, hora_inicio'
-    );
+    const { fecha_inicio, fecha_fin, persona_id } = req.query;
+    const tieneParametros = !!(fecha_inicio || fecha_fin || persona_id);
+
+    let tareas: RowDataPacket[];
+
+    if (!tieneParametros) {
+      const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM tarea ORDER BY fecha, hora_inicio'
+      );
+      tareas = rows;
+    } else {
+      let query = `
+        SELECT t.*, p.nombre AS persona_nombre
+        FROM tarea t
+        LEFT JOIN asignacion_tarea at ON at.tarea_id = t.id
+        LEFT JOIN persona p ON p.id = at.persona_id
+      `;
+      const conditions: string[] = [];
+      const values: any[] = [];
+
+      if (fecha_inicio) {
+        conditions.push('t.fecha >= ?');
+        values.push(fecha_inicio);
+      }
+      if (fecha_fin) {
+        conditions.push('t.fecha <= ?');
+        values.push(fecha_fin);
+      }
+      if (persona_id) {
+        conditions.push('at.persona_id = ?');
+        values.push(Number(persona_id));
+      }
+
+      if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      query += ' ORDER BY t.fecha, t.hora_inicio';
+
+      const [rows] = await pool.execute<RowDataPacket[]>(query, values);
+      tareas = rows;
+    }
 
     // Para cada tarea buscamos sus asignados con un JOIN
     const tareasConAsignados: TareaConAsignados[] = await Promise.all(

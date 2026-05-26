@@ -121,7 +121,7 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
 
     // Construir SET dinámico solo con los campos que llegaron
     const campos: string[]  = [];
-    const valores: unknown[] = [];
+    const valores: any[] = [];
 
     if (nombre) {
       campos.push('nombre = ?');
