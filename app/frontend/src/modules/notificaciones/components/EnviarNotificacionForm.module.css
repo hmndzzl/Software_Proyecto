@@ -1,0 +1,176 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Cabecera destinatarios ── */
+.destinatariosHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.destinatariosCount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-rojo);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.linkBtn:hover { opacity: .75; }
+
+.sep { color: var(--color-muted); font-size: 12px; }
+
+/* ── Lista scrolleable ── */
+.lista {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-input);
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--color-blanco);
+}
+
+.listaVacia {
+  padding: 20px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+/* ── Grupo por rol ── */
+.grupo {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.grupo:last-child { border-bottom: none; }
+
+.grupoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px 6px 10px;
+  background: var(--color-cremaDk);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.grupoToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  flex: 1;
+  text-align: left;
+}
+
+.grupoToggle:hover .grupoLabel { color: var(--color-rojoDk); }
+
+.chevron {
+  color: var(--color-tierra);
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+  transform: rotate(0deg);
+}
+
+.chevronAbierto {
+  transform: rotate(90deg);
+}
+
+.grupoLabel {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+  transition: color var(--transition);
+}
+
+.grupoCount {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-muted);
+  margin-left: 4px;
+}
+
+/* ── Item de persona ── */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-lineSoft);
+  transition: background-color var(--transition);
+}
+
+.item:last-child { border-bottom: none; }
+.item:hover { background: var(--color-cremaDk); }
+
+.itemSelected { background: #fef9ec; }
+.itemSelected:hover { background: #fdf3d0; }
+
+.checkbox {
+  accent-color: var(--color-rojo);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.itemNombre {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-carbon);
+}
+
+/* ── Global hint ── */
+.globalHint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-ink);
+  background: #fef9ec;
+  border: 1px solid var(--color-oro);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  margin: 0;
+}
+
+/* ── Error + footer ── */
+.error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-bad);
+  margin: 0;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

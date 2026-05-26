@@ -18,6 +18,30 @@ export const crearReserva = async (req: Request, res: Response) => {
     });
   }
 
+  const ahora = new Date();
+  const y = ahora.getFullYear();
+  const m = String(ahora.getMonth() + 1).padStart(2, '0');
+  const d = String(ahora.getDate()).padStart(2, '0');
+  const hoyStr = `${y}-${m}-${d}`;
+
+  const hh = String(ahora.getHours()).padStart(2, '0');
+  const mm = String(ahora.getMinutes()).padStart(2, '0');
+  const horaActualStr = `${hh}:${mm}`;
+
+  const fechaSoloFecha = fecha.split('T')[0];
+
+  if (fechaSoloFecha < hoyStr) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'La fecha de la reserva no puede estar en el pasado'
+    });
+  }
+
+  if (fechaSoloFecha === hoyStr && hora_inicio < horaActualStr) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'La hora de inicio no puede estar en el pasado'
+    });
+  }
+
   const solicitante_id = req.user!.id;
   const conn = await db.getConnection();
 
@@ -86,6 +110,30 @@ export const editarReserva = async (req: Request, res: Response) => {
     });
   }
 
+  const ahora = new Date();
+  const y = ahora.getFullYear();
+  const m = String(ahora.getMonth() + 1).padStart(2, '0');
+  const d = String(ahora.getDate()).padStart(2, '0');
+  const hoyStr = `${y}-${m}-${d}`;
+
+  const hh = String(ahora.getHours()).padStart(2, '0');
+  const mm = String(ahora.getMinutes()).padStart(2, '0');
+  const horaActualStr = `${hh}:${mm}`;
+
+  const fechaSoloFecha = fecha.split('T')[0];
+
+  if (fechaSoloFecha < hoyStr) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'La fecha de la reserva no puede estar en el pasado'
+    });
+  }
+
+  if (fechaSoloFecha === hoyStr && hora_inicio < horaActualStr) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: 'La hora de inicio no puede estar en el pasado'
+    });
+  }
+
   const conn = await db.getConnection();
 
   try {
@@ -139,6 +187,7 @@ export const obtenerMisReservas = async (req: Request, res: Response) => {
       `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS espacio_nombre,
               ev.id      AS evento_id,
+              ev.titulo  AS evento_titulo,
               ev.descripcion AS evento_descripcion
        FROM reserva r
        LEFT JOIN espacio esp ON esp.id = r.espacio_id

@@ -62,22 +62,9 @@
   line-height: 1.2;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: var(--radius-badge);
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
+.badgeWrap {
   margin-bottom: 8px;
 }
-
-.badgeDisponible { background: var(--color-okBg);   color: var(--color-ok);   }
-.badgeReservado  { background: var(--color-warnBg); color: var(--color-warn); }
-
-.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
 .capacidad {
   display: flex;

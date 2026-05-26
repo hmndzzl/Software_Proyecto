@@ -1,0 +1,43 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
+}
+
+/* Cuadrícula de info actual */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.infoLabel {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: var(--color-tierra);
+  text-transform: uppercase;
+}
+
+.infoValue {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-carbon);
+  font-weight: 500;
+}
+
+/* Mensaje de carga */
+.msg {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-muted);
+  font-style: italic;
+  padding: 4px 0;
+}

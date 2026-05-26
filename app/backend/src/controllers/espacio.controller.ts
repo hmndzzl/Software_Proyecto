@@ -1,12 +1,22 @@
 import { Request, Response } from 'express';
-import db from '../config/db';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import pool from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
+
+interface EspacioRow extends RowDataPacket {
+  id: number;
+  nombre: string;
+  capacidad: number | null;
+  disponible?: 0 | 1;
+}
+
+const getQueryParam = (value: unknown) => (typeof value === 'string' ? value : '');
 
 export const obtenerEspacios = async (req: Request, res: Response) => {
   try {
-    const fecha = req.query.fecha as string;
-    const hora_inicio = req.query.hora_inicio as string;
-    const hora_fin = req.query.hora_fin as string;
+    const fecha = getQueryParam(req.query.fecha);
+    const hora_inicio = getQueryParam(req.query.hora_inicio);
+    const hora_fin = getQueryParam(req.query.hora_fin);
 
     const tieneUnParametro = fecha || hora_inicio || hora_fin;
     const tieneTodosLosParametros = fecha && hora_inicio && hora_fin;
@@ -19,7 +29,7 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
 
     // comportamiento actual si no vienen params
     if (!tieneTodosLosParametros) {
-      const [espacios]: any = await db.query(
+      const [espacios] = await pool.execute<EspacioRow[]>(
         'SELECT * FROM espacio ORDER BY nombre ASC'
       );
 
@@ -32,7 +42,7 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
       });
     }
 
-    const [espacios]: any = await db.query(
+    const [espacios] = await pool.execute<EspacioRow[]>(
       `SELECT 
          e.id,
          e.nombre,
@@ -55,7 +65,12 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
       [fecha, hora_fin, hora_inicio]
     );
 
-    return res.status(HttpStatus.OK).json(espacios);
+    return res.status(HttpStatus.OK).json(
+      espacios.map((espacio) => ({
+        ...espacio,
+        disponible: Boolean(espacio.disponible)
+      }))
+    );
   } catch (error) {
     console.error('Error al obtener espacios:', error);
 
@@ -69,7 +84,7 @@ export const obtenerEspacioPorId = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const [rows]: any = await db.query(
+    const [rows] = await pool.execute<EspacioRow[]>(
       'SELECT * FROM espacio WHERE id = ?',
       [id]
     );
@@ -106,7 +121,7 @@ export const crearEspacio = async (req: Request, res: Response) => {
       });
     }
 
-    const [resultado]: any = await db.query(
+    const [resultado] = await pool.execute<ResultSetHeader>(
       'INSERT INTO espacio (nombre, capacidad) VALUES (?, ?)',
       [nombre, capacidad ?? null]
     );
@@ -141,7 +156,7 @@ export const actualizarEspacio = async (req: Request, res: Response) => {
       });
     }
 
-    const [rows]: any = await db.query(
+    const [rows] = await pool.execute<EspacioRow[]>(
       'SELECT id FROM espacio WHERE id = ?',
       [id]
     );
@@ -152,7 +167,7 @@ export const actualizarEspacio = async (req: Request, res: Response) => {
       });
     }
 
-    await db.query(
+    await pool.execute(
       'UPDATE espacio SET nombre = ?, capacidad = ? WHERE id = ?',
       [nombre, capacidad ?? null, id]
     );
@@ -173,7 +188,7 @@ export const eliminarEspacio = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const [rows]: any = await db.query(
+    const [rows] = await pool.execute<EspacioRow[]>(
       'SELECT id FROM espacio WHERE id = ?',
       [id]
     );
@@ -184,7 +199,7 @@ export const eliminarEspacio = async (req: Request, res: Response) => {
       });
     }
 
-    await db.query(
+    await pool.execute(
       'DELETE FROM espacio WHERE id = ?',
       [id]
     );
