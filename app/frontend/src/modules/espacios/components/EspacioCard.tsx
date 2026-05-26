@@ -5,7 +5,7 @@ export interface Espacio {
   id: number;
   nombre: string;
   capacidad: number | null;
-  disponible?: boolean;
+  disponible?: boolean | 0 | 1;
 }
 
 interface EspacioCardProps {
@@ -14,6 +14,8 @@ interface EspacioCardProps {
 }
 
 export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
+  const estaOcupado = espacio.disponible === false || espacio.disponible === 0;
+
   return (
     <div className={styles.card} onClick={() => onClick(espacio.id)}>
 
@@ -26,8 +28,8 @@ export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
         <h3 className={styles.nombre}>{espacio.nombre}</h3>
 
         <div className={styles.badgeWrap}>
-          <Badge kind={espacio.disponible === false ? 'bad' : 'ok'}>
-            {espacio.disponible === false ? 'Ocupado' : 'Disponible'}
+          <Badge kind={estaOcupado ? 'bad' : 'ok'}>
+            {estaOcupado ? 'Ocupado' : 'Disponible'}
           </Badge>
         </div>
 
