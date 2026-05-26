@@ -15,6 +15,7 @@ interface MiReserva {
   estado_reserva_id: number;
   evento_id: number | null;
   evento_descripcion: string | null;
+  evento_titulo: string | null;
 }
 
 const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
@@ -81,6 +82,7 @@ export default function MisReservasPage() {
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Título del Evento</th>
                   <th>Evento</th>
                   <th>Espacio</th>
                   <th>Fecha</th>
@@ -92,6 +94,7 @@ export default function MisReservasPage() {
                 {reservas.map(r => (
                   <tr key={r.id}>
                     <td className={styles.mono}>{r.id}</td>
+                    <td className={styles.mono}>{r.evento_titulo ?? <span className={styles.muted}>Sin título</span>}</td>
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
                     <td className={styles.mono}>{fmt(r.fecha)}</td>
