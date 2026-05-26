@@ -10,5 +10,25 @@
   gap: var(--gap-sm);
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: var(--gap-sm);
+}
+
+.validation {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-bad);
+}
+
 .msg      { font-family: var(--font-body); font-size: 14px; color: var(--color-muted); font-style: italic; }
 .msgError { color: var(--color-bad); font-style: normal; font-weight: 600; }
+
+@media (max-width: 760px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}

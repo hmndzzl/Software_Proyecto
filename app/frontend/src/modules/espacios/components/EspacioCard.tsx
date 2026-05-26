@@ -1,9 +1,11 @@
 import styles from './EspacioCard.module.css';
+import Badge from '../../../components/ui/Badge';
 
 export interface Espacio {
   id: number;
   nombre: string;
   capacidad: number | null;
+  disponible?: boolean;
 }
 
 interface EspacioCardProps {
@@ -23,10 +25,11 @@ export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
         <p className={styles.tipo}>Espacio parroquial</p>
         <h3 className={styles.nombre}>{espacio.nombre}</h3>
 
-        <span className={`${styles.badge} ${styles.badgeDisponible}`}>
-          <span className={styles.dot} />
-          Disponible
-        </span>
+        <div className={styles.badgeWrap}>
+          <Badge kind={espacio.disponible === false ? 'bad' : 'ok'}>
+            {espacio.disponible === false ? 'Ocupado' : 'Disponible'}
+          </Badge>
+        </div>
 
         {espacio.capacidad != null && (
           <div className={styles.capacidad}>
