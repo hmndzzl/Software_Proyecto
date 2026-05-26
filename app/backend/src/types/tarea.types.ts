@@ -18,6 +18,7 @@ export interface Asignacion {
 // se usa para devolver la info de una tarea junto con las personas asignadas
 export interface TareaConAsignados extends Tarea {
   asignados: AsignadoInfo[];
+  persona_nombre?: string | null;
 }
 
 // se usa para representar la info de una persona asignada a una tarea, junto con su rol
