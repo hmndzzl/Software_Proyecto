@@ -139,6 +139,7 @@ export const obtenerMisReservas = async (req: Request, res: Response) => {
       `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS espacio_nombre,
               ev.id      AS evento_id,
+              ev.titulo  AS evento_titulo,
               ev.descripcion AS evento_descripcion
        FROM reserva r
        LEFT JOIN espacio esp ON esp.id = r.espacio_id
