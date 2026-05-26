@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import styles from './Badge.module.css';
 
-export type BadgeKind = 'pendiente' | 'confirmada' | 'rechazada' | 'info' | 'neutral';
+export type BadgeKind = 'pendiente' | 'confirmada' | 'rechazada' | 'info' | 'neutral' | 'ok' | 'bad';
 
 interface BadgeProps {
   kind: BadgeKind;
