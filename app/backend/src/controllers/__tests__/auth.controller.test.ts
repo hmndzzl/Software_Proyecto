@@ -110,4 +110,38 @@ describe('Auth Controller - Pruebas Unitarias', () => {
   // ----------------------------------------------------
   // 3. Prueba Register (2 casos)
   // ----------------------------------------------------
+  describe('register', () => {
+    it('debería registrar un nuevo usuario exitosamente (201)', async () => {
+      req.body = { nombre: 'Nuevo', correo: 'nuevo@test.com', password: 'pass', rol_id: 2 };
+
+      // La primera llamada verifica si el correo existe (devuelve array vacío, no existe)
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+      // La segunda llamada es el INSERT (devuelve un affectedRows)
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      // Mockeamos el hash de la contraseña
+      (bcrypt.hash as any).mockResolvedValue('hashedpass');
+
+      await register(req as Request, res as Response);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('pass', 10);
+      expect(pool.execute).toHaveBeenCalledTimes(2); // SELECT y luego INSERT
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Usuario registrado exitosamente' });
+    });
+
+    it('debería fallar si el correo ya está registrado (400)', async () => {
+      req.body = { nombre: 'Existe', correo: 'existe@test.com', password: 'pass', rol_id: 2 };
+
+      // Simulamos que ya existe un usuario con ese correo
+      (pool.execute as any).mockResolvedValue([[{ id: 1 }]]);
+
+      await register(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledTimes(1); // Solo hace el SELECT
+      expect(bcrypt.hash).not.toHaveBeenCalled(); // No debe hashear nada si ya existe
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El correo ya está registrado' });
+    });
+  });
 });
