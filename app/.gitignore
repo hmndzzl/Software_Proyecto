@@ -10,9 +10,10 @@ docker-compose.yml
 # Dependencias
 node_modules/
 
-# Builds
+# Builds y Testing
 frontend/dist/
 backend/dist/
+coverage/
 
 # Logs
 *.log
