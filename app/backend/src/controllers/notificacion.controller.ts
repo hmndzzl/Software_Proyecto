@@ -14,10 +14,13 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
               n.evento_id, n.requiere_confirmacion,
               pn.leida, pn.asistencia_confirmada,
               r.nombre AS remitente_nombre,
+              ev.descripcion AS evento_descripcion,
               ev.descripcion AS evento_descripcion
        FROM notificacion n
        INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
        LEFT  JOIN persona r               ON r.id = n.remitente_id
+       LEFT  JOIN evento ev               ON ev.id = n.evento_id
+       -- join evento               ON r.id = n.remitente_id
        LEFT  JOIN evento ev               ON ev.id = n.evento_id
        WHERE pn.persona_id = ?
        ORDER BY n.fecha DESC`,
