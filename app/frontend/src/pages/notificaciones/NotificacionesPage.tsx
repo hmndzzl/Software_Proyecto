@@ -12,7 +12,7 @@ import styles from './NotificacionesPage.module.css';
 const ROLES_PUEDEN_ENVIAR = [ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS];
 
 export default function NotificacionesPage() {
-  const { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, refetch } = useNotificaciones();
+  const { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, confirmarAsistencia, refetch } = useNotificaciones();
   const [modalAbierto, setModalAbierto] = useState(false);
 
   const hayNoLeidas = notificaciones.some((n) => !n.leida);
@@ -95,6 +95,7 @@ export default function NotificacionesPage() {
                     key={n.id}
                     notificacion={n}
                     onMarcarLeida={marcarLeida}
+                    onConfirmarAsistencia={confirmarAsistencia}
                   />
                 ))}
               </tbody>

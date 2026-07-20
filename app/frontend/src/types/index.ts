@@ -33,6 +33,10 @@ export interface Notificacion {
   remitente_nombre: string | null;
   grupo_id: number | null;
   leida: boolean;
+  evento_id: number | null;
+  evento_descripcion: string | null;
+  requiere_confirmacion: boolean;
+  asistencia_confirmada: boolean;
 }
 
 export interface DestinatarioInfo {
