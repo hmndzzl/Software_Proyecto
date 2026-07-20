@@ -3,6 +3,7 @@ import {
   getNotificaciones,
   getDestinatarios,
   marcarLeida,
+  confirmarAsistencia,
   createNotificacion,
   deleteNotificacion,
 } from '../controllers/notificacion.controller';
@@ -17,6 +18,7 @@ router.use(authMiddleware);
 router.get('/destinatarios', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), getDestinatarios);
 router.get('/', getNotificaciones);
 router.put('/:id/leida', marcarLeida);
+router.put('/:id/asistencia', confirmarAsistencia);
 router.post('/', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), createNotificacion);
 router.delete('/:id', requireRole(ROLES.SACERDOTE, ROLES.ADMIN), deleteNotificacion);
 
