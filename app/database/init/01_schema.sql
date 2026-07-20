@@ -115,7 +115,7 @@ CREATE TABLE `asignacion_tarea` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- ----------------------------
--- Notificacion (depende de grupo)
+-- Notificacion (depende de grupo y evento)
 -- ----------------------------
 
 DROP TABLE IF EXISTS `notificacion`;
@@ -126,11 +126,15 @@ CREATE TABLE `notificacion` (
   `tipo` ENUM('global','grupo','individual') NOT NULL DEFAULT 'global',
   `remitente_id` int(11) NULL,
   `grupo_id` int(11) NULL,
+  `evento_id` int(11) NULL,
+  `requiere_confirmacion` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `fk_notificacion_remitente_idx` (`remitente_id`),
   KEY `fk_notificacion_grupo_idx` (`grupo_id`),
+  KEY `fk_notificacion_evento_idx` (`evento_id`),
   CONSTRAINT `fk_notificacion_remitente` FOREIGN KEY (`remitente_id`) REFERENCES `persona` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_notificacion_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_notificacion_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_notificacion_evento` FOREIGN KEY (`evento_id`) REFERENCES `evento` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 DROP TABLE IF EXISTS `persona_notificacion`;
@@ -138,6 +142,7 @@ CREATE TABLE `persona_notificacion` (
   `persona_id` int(11) NOT NULL,
   `notificacion_id` int(11) NOT NULL,
   `leida` tinyint(1) NOT NULL DEFAULT 0,
+  `asistencia_confirmada` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`persona_id`,`notificacion_id`),
   KEY `fk_pn_notificacion_idx` (`notificacion_id`),
   CONSTRAINT `fk_pn_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
