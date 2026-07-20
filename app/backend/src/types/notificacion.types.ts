@@ -7,11 +7,15 @@ export interface Notificacion {
   tipo: NotificacionTipo;
   remitente_id: number | null;
   grupo_id: number | null;
+  evento_id: number | null;
+  requiere_confirmacion: boolean;
 }
 
 export interface NotificacionConLeida extends Notificacion {
   leida: boolean;
   remitente_nombre: string | null;
+  evento_descripcion: string | null;
+  asistencia_confirmada: boolean;
 }
 
 export interface DestinatarioInfo {
@@ -26,4 +30,6 @@ export interface NotificacionCreateInput {
   tipo: NotificacionTipo;
   grupo_id?: number | null;
   destinatarios: number[];
+  evento_id?: number | null;
+  requiere_confirmacion?: boolean;
 }
