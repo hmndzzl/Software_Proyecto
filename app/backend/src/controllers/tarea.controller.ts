@@ -210,7 +210,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, descripcion FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -224,6 +224,21 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
       return;
     }
+
+    const tarea = tareas[0];
+    const [conflictos] = await pool.execute<RowDataPacket[]>(
+      `SELECT 1
+       FROM asignacion_tarea at
+       INNER JOIN tarea t ON t.id = at.tarea_id
+       WHERE at.persona_id = ?
+         AND t.fecha = ?
+         AND t.hora_inicio < ?
+         AND t.hora_fin > ?
+       LIMIT 1`,
+      [persona_id, tarea.fecha, tarea.hora_fin, tarea.hora_inicio]
+    );
+    // conflicto detectado
+    const hayConflicto = conflictos.length > 0;
 
     const descripcionTarea: string = (tareas[0] as any).descripcion;
     const remitenteId: number = req.user!.id;
