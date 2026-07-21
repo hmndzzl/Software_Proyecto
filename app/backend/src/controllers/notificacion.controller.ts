@@ -14,13 +14,10 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
               n.evento_id, n.requiere_confirmacion,
               pn.leida, pn.asistencia_confirmada,
               r.nombre AS remitente_nombre,
-              ev.descripcion AS evento_descripcion,
               ev.descripcion AS evento_descripcion
        FROM notificacion n
        INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
        LEFT  JOIN persona r               ON r.id = n.remitente_id
-       LEFT  JOIN evento ev               ON ev.id = n.evento_id
-       -- join evento               ON r.id = n.remitente_id
        LEFT  JOIN evento ev               ON ev.id = n.evento_id
        WHERE pn.persona_id = ?
        ORDER BY n.fecha DESC`,
@@ -55,6 +52,30 @@ export const marcarLeida = async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Error en marcarLeida:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al marcar notificación como leída' });
+  }
+};
+
+// PUT /api/notificaciones/:id/confirmar
+export const confirmarAsistenciaNotificacion = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET confirmada = 1
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Asistencia confirmada' });
+  } catch (error) {
+    console.error('Error en confirmarAsistenciaNotificacion:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al confirmar asistencia' });
   }
 };
 
