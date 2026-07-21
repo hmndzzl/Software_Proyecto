@@ -210,7 +210,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, descripcion FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -222,6 +222,23 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     );
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
+      return;
+    }
+
+    const tarea = tareas[0];
+    const [conflictos] = await pool.execute<RowDataPacket[]>(
+      `SELECT 1
+       FROM asignacion_tarea at
+       INNER JOIN tarea t ON t.id = at.tarea_id
+       WHERE at.persona_id = ?
+         AND t.fecha = ?
+         AND t.hora_inicio < ?
+         AND t.hora_fin > ?
+       LIMIT 1`,
+      [persona_id, tarea.fecha, tarea.hora_fin, tarea.hora_inicio]
+    );
+    if (conflictos.length > 0) {
+      res.status(HttpStatus.CONFLICT).json({ mensaje: 'El ministro ya tiene una tarea asignada en ese horario' });
       return;
     }
 
