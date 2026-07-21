@@ -79,7 +79,7 @@ export const confirmarAsistenciaNotificacion = async (req: Request, res: Respons
   }
 };
 
-// PUT /api/notificaciones/:id/asistencia — confirma asistencia al evento asociado a la notificación
+// PUT /api/notificaciones/:id/asistencia — validacion de asistencia a eventos — confirma asistencia al evento asociado a la notificación
 export const confirmarAsistencia = async (req: Request, res: Response): Promise<void> => {
   const personaId = req.user!.id;
   const { id } = req.params;
