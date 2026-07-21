@@ -55,6 +55,30 @@ export const marcarLeida = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+// PUT /api/notificaciones/:id/confirmar
+export const confirmarAsistenciaNotificacion = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET confirmada = 1
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Asistencia confirmada' });
+  } catch (error) {
+    console.error('Error en confirmarAsistenciaNotificacion:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al confirmar asistencia' });
+  }
+};
+
 // PUT /api/notificaciones/:id/asistencia — confirma asistencia al evento asociado a la notificación
 export const confirmarAsistencia = async (req: Request, res: Response): Promise<void> => {
   const personaId = req.user!.id;
