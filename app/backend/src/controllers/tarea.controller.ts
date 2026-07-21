@@ -237,8 +237,10 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
        LIMIT 1`,
       [persona_id, tarea.fecha, tarea.hora_fin, tarea.hora_inicio]
     );
-    // conflicto detectado
-    const hayConflicto = conflictos.length > 0;
+    if (conflictos.length > 0) {
+      res.status(HttpStatus.CONFLICT).json({ mensaje: 'El ministro ya tiene una tarea asignada en ese horario' });
+      return;
+    }
 
     const descripcionTarea: string = (tareas[0] as any).descripcion;
     const remitenteId: number = req.user!.id;
