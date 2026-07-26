@@ -8,6 +8,7 @@ interface UseNotificacionesReturn {
   error: string | null;
   marcarLeida: (id: number) => Promise<void>;
   marcarTodasLeidas: () => Promise<void>;
+  confirmarAsistencia: (id: number) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -52,5 +53,16 @@ export function useNotificaciones(): UseNotificacionesReturn {
     setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
   }, [notificaciones]);
 
-  return { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, refetch };
+  const confirmarAsistencia = useCallback(async (id: number) => {
+    try {
+      await apiClient.put(`/api/notificaciones/${id}/asistencia`);
+      setNotificaciones((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: true, leida: true } : n))
+      );
+    } catch {
+      // no interrumpir UI — notif sigue visible para reintentar
+    }
+  }, []);
+
+  return { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, confirmarAsistencia, refetch };
 }
