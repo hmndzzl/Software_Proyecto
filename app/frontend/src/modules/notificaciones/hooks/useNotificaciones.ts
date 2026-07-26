@@ -41,7 +41,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
         prev.map((n) => (n.id === id ? { ...n, leida: true } : n))
       );
     } catch {
-      // no interrumpir UI — notif sigue visible
+      // no interrumpir UI — notificacion sigue visible para reintentar — notif sigue visible
     }
   }, []);
 
@@ -60,7 +60,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
         prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: true, leida: true } : n))
       );
     } catch {
-      // no interrumpir UI — notif sigue visible para reintentar
+      // no interrumpir UI — notificacion sigue visible para reintentar — notif sigue visible para reintentar
     }
   }, []);
 
