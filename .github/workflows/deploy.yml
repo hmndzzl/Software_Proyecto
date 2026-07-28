@@ -1,4 +1,4 @@
-name: Deploy to Azure VM
+name: Deploy to DigitalOcean Droplet
 
 on:
   push:
@@ -12,16 +12,16 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.AZURE_VM_IP }}
-          username: parroquia
-          key: ${{ secrets.AZURE_SSH_KEY }}
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd ~/Software_Proyecto
+            cd ~/Software_Proyecto/app
             # Forzar sincronización con GitHub sin conflictos
             git fetch origin main
             git reset --hard origin/main
             # Build y deploy
-            docker compose down -v
+            docker compose down
             docker compose up -d --build
             # Esperar que los servicios inicien
             echo "Waiting for services to start..."
