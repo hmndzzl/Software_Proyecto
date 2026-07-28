@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import apiClient from '../../../api/client';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
-import type { DestinatarioInfo, NotificacionTipo } from '../../../types';
+import type { DestinatarioInfo, Evento, NotificacionTipo } from '../../../types';
 import Btn from '../../../components/ui/Btn';
 import { Field, SelectUI, TextareaUI } from '../../../components/ui/Field';
+import { formatFecha } from '../../../utils/date';
 import styles from './EnviarNotificacionForm.module.css';
 
 interface Props {
@@ -22,6 +23,9 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
   const [enviando,       setEnviando]       = useState(false);
   const [error,          setError]          = useState<string | null>(null);
   const [gruposAbiertos, setGruposAbiertos] = useState<Set<string>>(new Set());
+  const [requiereConfirmacion, setRequiereConfirmacion] = useState(false);
+  const [eventos,        setEventos]        = useState<Evento[]>([]);
+  const [eventoId,       setEventoId]       = useState('');
 
   const puedeEnviarGlobal = esAdminOSacerdote();
   const soloIndividual    = esCoordMin();
@@ -37,6 +41,12 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
       })
       .catch(() => setDestinatarios([]));
   }, [tipo]);
+
+  useEffect(() => {
+    apiClient.get<Evento[]>('/api/eventos')
+      .then(({ data }) => setEventos(data))
+      .catch(() => setEventos([]));
+  }, []);
 
   const toggleGrupo = (rolNombre: string) =>
     setGruposAbiertos((prev) => {
@@ -78,6 +88,9 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
     if (tipo !== 'global' && seleccionados.length === 0) {
       setError('Selecciona al menos un destinatario.'); return;
     }
+    if (requiereConfirmacion && !eventoId) {
+      setError('Selecciona el evento al que aplica la confirmación de asistencia.'); return;
+    }
 
     setEnviando(true);
     try {
@@ -85,6 +98,8 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
         mensaje: mensaje.trim(),
         tipo,
         destinatarios: tipo === 'global' ? [] : seleccionados,
+        requiere_confirmacion: requiereConfirmacion,
+        evento_id: requiereConfirmacion ? Number(eventoId) : null,
       });
       onEnviada();
     } catch {
@@ -118,6 +133,35 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
           placeholder="Escribe el mensaje de la notificación…"
           rows={3}
         />
+      </Field>
+
+      <Field label="Confirmación de asistencia">
+        <label className={styles.item}>
+          <input
+            type="checkbox"
+            checked={requiereConfirmacion}
+            onChange={(e) => {
+              setRequiereConfirmacion(e.target.checked);
+              if (!e.target.checked) setEventoId('');
+            }}
+            className={styles.checkbox}
+          />
+          <span className={styles.itemNombre}>Requiere confirmación de asistencia</span>
+        </label>
+
+        {requiereConfirmacion && (
+          <SelectUI value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
+            <option value="">-- Elige el evento --</option>
+            {eventos.map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.descripcion} · {formatFecha(ev.fecha)} · {ev.hora_inicio.substring(0, 5)}–{ev.hora_fin.substring(0, 5)}
+              </option>
+            ))}
+          </SelectUI>
+        )}
+        {requiereConfirmacion && eventos.length === 0 && (
+          <p className={styles.listaVacia}>No hay eventos disponibles.</p>
+        )}
       </Field>
 
       {tipo !== 'global' && (

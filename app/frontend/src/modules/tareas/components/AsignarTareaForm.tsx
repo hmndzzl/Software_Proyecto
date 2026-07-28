@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../../../api/client';
+import { formatFecha } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
+
+interface AsignadoInfo {
+  persona_id: number;
+  nombre: string;
+}
 
 interface Tarea {
   id: number;
   descripcion: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  asignados: AsignadoInfo[];
 }
 
 interface Persona {
@@ -28,6 +38,23 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
       .then(res => setPersonas(res.data))
       .catch(error => console.error(error));
   }, [refreshKey]);
+
+  const tareaSeleccionadaObj = tareas.find((t) => String(t.id) === tareaSeleccionada);
+
+  const conflictos = useMemo(() => {
+    if (!tareaSeleccionadaObj || !personaSeleccionada) return [];
+    const personaId = Number(personaSeleccionada);
+
+    return tareas.filter((t) =>
+      t.id !== tareaSeleccionadaObj.id &&
+      t.fecha === tareaSeleccionadaObj.fecha &&
+      t.asignados.some((a) => a.persona_id === personaId) &&
+      t.hora_inicio < tareaSeleccionadaObj.hora_fin &&
+      t.hora_fin > tareaSeleccionadaObj.hora_inicio
+    );
+  }, [tareas, tareaSeleccionadaObj, personaSeleccionada]);
+
+  const nombrePersonaSeleccionada = personas.find((p) => String(p.id) === personaSeleccionada)?.nombre ?? 'Este ministro';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +122,21 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
             ))}
           </select>
         </div>
+
+        {conflictos.length > 0 && tareaSeleccionadaObj && (
+          <div className={styles.modalWarning}>
+            <strong>Conflicto de horario:</strong> {nombrePersonaSeleccionada} ya tiene{' '}
+            {conflictos.length === 1 ? 'otra tarea asignada' : `${conflictos.length} tareas asignadas`} el{' '}
+            {formatFecha(tareaSeleccionadaObj.fecha)} en un horario que se cruza con este:
+            <ul className={styles.conflictList}>
+              {conflictos.map((c) => (
+                <li key={c.id}>
+                  {c.descripcion} · {c.hora_inicio.substring(0, 5)}–{c.hora_fin.substring(0, 5)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <button type="submit" className="btn-primary">
           Guardar Asignación

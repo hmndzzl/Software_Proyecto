@@ -212,6 +212,16 @@
   margin-bottom: 16px;
 }
 
+.conflictList {
+  margin: 6px 0 0 0;
+  padding-left: 18px;
+  font-weight: 400;
+}
+
+.conflictList li {
+  margin-top: 2px;
+}
+
 .modalActions {
   display: flex;
   gap: 10px;
