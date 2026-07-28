@@ -11,11 +11,14 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
-              pn.leida,
-              r.nombre AS remitente_nombre
+              n.evento_id, n.requiere_confirmacion,
+              pn.leida, pn.asistencia_confirmada,
+              r.nombre AS remitente_nombre,
+              ev.descripcion AS evento_descripcion
        FROM notificacion n
        INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
        LEFT  JOIN persona r               ON r.id = n.remitente_id
+       LEFT  JOIN evento ev               ON ev.id = n.evento_id
        WHERE pn.persona_id = ?
        ORDER BY n.fecha DESC`,
       [personaId]
@@ -49,6 +52,68 @@ export const marcarLeida = async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Error en marcarLeida:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al marcar notificación como leída' });
+  }
+};
+
+// PUT /api/notificaciones/:id/confirmar
+export const confirmarAsistenciaNotificacion = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET confirmada = 1
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Asistencia confirmada' });
+  } catch (error) {
+    console.error('Error en confirmarAsistenciaNotificacion:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al confirmar asistencia' });
+  }
+};
+
+// PUT /api/notificaciones/:id/asistencia — confirma asistencia al evento asociado a la notificación
+export const confirmarAsistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [notifs] = await pool.execute<RowDataPacket[]>(
+      `SELECT requiere_confirmacion FROM notificacion WHERE id = ?`,
+      [id]
+    );
+
+    if (notifs.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+    if (!notifs[0].requiere_confirmacion) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Esta notificación no requiere confirmación de asistencia' });
+      return;
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET asistencia_confirmada = 1, leida = 1
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Asistencia confirmada' });
+  } catch (error) {
+    console.error('Error en confirmarAsistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al confirmar asistencia' });
   }
 };
 
@@ -96,7 +161,7 @@ export const getDestinatarios = async (req: Request, res: Response): Promise<voi
 export const createNotificacion = async (req: Request, res: Response): Promise<void> => {
   const remitenteId = req.user!.id;
   const rolId      = req.user!.rol_id;
-  const { mensaje, tipo, grupo_id, destinatarios } = req.body as NotificacionCreateInput;
+  const { mensaje, tipo, grupo_id, destinatarios, evento_id, requiere_confirmacion } = req.body as NotificacionCreateInput;
 
   if (!mensaje || !tipo) {
     res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Campos requeridos: mensaje, tipo' });
@@ -109,15 +174,29 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
     return;
   }
 
+  if (requiere_confirmacion && !evento_id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Selecciona el evento al que aplica la confirmación de asistencia' });
+    return;
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
+    if (evento_id) {
+      const [eventos] = await conn.execute<RowDataPacket[]>('SELECT id FROM evento WHERE id = ?', [evento_id]);
+      if (eventos.length === 0) {
+        await conn.rollback();
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'El evento indicado no existe' });
+        return;
+      }
+    }
+
     const fecha = new Date().toISOString().slice(0, 10);
     const [result] = await conn.execute<ResultSetHeader>(
-      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, grupo_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [mensaje, fecha, tipo, remitenteId, grupo_id ?? null]
+      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, grupo_id, evento_id, requiere_confirmacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [mensaje, fecha, tipo, remitenteId, grupo_id ?? null, evento_id ?? null, requiere_confirmacion ? 1 : 0]
     );
 
     const notificacionId = result.insertId;
