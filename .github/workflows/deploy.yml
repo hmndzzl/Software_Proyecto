@@ -16,7 +16,7 @@ jobs:
           username: root
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd ~/Software_Proyecto
+            cd ~/Software_Proyecto/app
             # Forzar sincronización con GitHub sin conflictos
             git fetch origin main
             git reset --hard origin/main
