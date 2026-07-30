@@ -2,7 +2,7 @@
 
 Sistema web de gestión administrativa para la Parroquia San Pedro Nolasco (Guatemala). Permite administrar grupos parroquiales, espacios físicos, reservas de salones, ministros, tareas, eventos y notificaciones, con control de acceso basado en roles (RBAC).
 
-> **Estado actual: Sprint 4 en curso** — Módulo de notificaciones completo (campana en TopBar con polling, página de bandeja, envío manual por rol). Rediseño completo de la interfaz. Módulo de reservas ampliado.
+> **Estado actual: Sprint 5 completado** — Confirmación de asistencia desde notificaciones (HU-22), validación de conflictos de horario al asignar tareas (HU-08), suite de pruebas unitarias con Vitest (backend y frontend). Sprint 4: notificaciones en tiempo real, calendario semanal de ministros, edición de perfil, disponibilidad dinámica de espacios. Sprint 3: rediseño completo de la interfaz, módulo de reservas ampliado.
 
 ---
 
@@ -28,14 +28,56 @@ Sistema web de gestión administrativa para la Parroquia San Pedro Nolasco (Guat
 | Contenedores | Docker + Docker Compose | — |
 | Autenticación | JWT (jsonwebtoken) doble token | — |
 | CI/CD | GitHub Actions | — |
-| Infraestructura | Azure VM | Ubuntu |
+| Infraestructura | DigitalOcean Droplet | Ubuntu |
+| Pruebas unitarias | Vitest | backend + frontend |
 | Fuentes | Cinzel + Noto Serif | Google Fonts |
 
 ---
 
 ## Funcionalidades Implementadas
 
-### Sprint 3 (en curso)
+### Sprint 5 (completado)
+
+#### HU-22 — Confirmación de Asistencia
+- Ministro confirma asistencia directamente desde la notificación del recordatorio
+- Backend: columnas de confirmación en `persona_notificacion`, `PUT /api/notificaciones/:id/confirmar` y `PUT /api/notificaciones/:id/asistencia`
+- Frontend: botón "Confirmar asistencia" en `NotificacionRow` (dropdown TopBar y `/notificaciones`); Badge "Asistencia confirmada" cuando ya se confirmó
+
+#### HU-08 — Reducir Errores de Asignación
+- Validación de conflicto de horario al asignar una tarea a un ministro: `409 Conflict` si el ministro ya tiene otra tarea asignada que se solapa en fecha/hora (`asignarTarea` en `tarea.controller.ts`)
+- Frontend: `AsignarTareaForm` muestra aviso de conflicto antes de enviar la asignación
+
+#### Pruebas Unitarias
+- Framework: **Vitest** (backend y frontend)
+- `app/backend`: tests de `auth.controller.ts`
+- `app/frontend`: tests de componentes UI (`src/components/ui/__tests__`)
+- `npm test` corre la suite en cada paquete (`app/backend`, `app/frontend`)
+
+#### Migración de infraestructura
+- Despliegue movido de Azure VM a **Droplet de DigitalOcean** (`.github/workflows/deploy.yml`, SSH + `docker compose up -d --build` en cada push a `main`)
+
+---
+
+### Sprint 4 (completado)
+
+#### Notificaciones en tiempo real
+- Campana en `TopBar` con polling cada 60s, badge de no-leídas, dropdown con últimas 5
+- Auto-notificación al asignar una tarea a un ministro
+
+#### Calendario semanal de ministros (HU-03/HU-07)
+- `CalendarioPage` en `/calendario`: grid de 7 columnas (lun-dom), navegación semana anterior/siguiente
+- `GET /api/tareas` ampliado con filtros `fecha_inicio`, `fecha_fin`, `persona_id`
+
+#### Edición de perfil
+- `PerfilPage` en `/perfil`: editar nombre, correo, contraseña (y rol, solo Admin)
+- `PUT /api/personas/:id`
+
+#### Disponibilidad dinámica de espacios (HU-29)
+- Selector de fecha/hora en `EspaciosPage`, badge Disponible/Ocupado calculado por `GET /api/espacios?fecha=&hora_inicio=&hora_fin=`
+
+---
+
+### Sprint 3
 
 #### Módulo de Notificaciones
 - **Campana en TopBar** con badge rojo de no-leídas, polling automático cada 60s
@@ -201,7 +243,7 @@ Software_Proyecto/
 | `tarea` | Tareas asignables (fecha, horario, descripción) |
 | `asignacion_tarea` | N:M tarea ↔ persona |
 | `notificacion` | Notificaciones: `tipo` ENUM(global/grupo/individual), `remitente_id`, `grupo_id` |
-| `persona_notificacion` | N:M persona ↔ notificación + columna `leida TINYINT(1)` |
+| `persona_notificacion` | N:M persona ↔ notificación + `leida`, `confirmada`, `asistencia_confirmada` (HU-22) |
 | `reserva` | Solicitudes de reserva con solicitante |
 | `evento` | 1-to-1 con reserva; tiene `titulo` y `descripcion` |
 
@@ -225,6 +267,8 @@ Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer 
 | GET | `/` | Cualquiera | Lista notificaciones del usuario con `remitente_nombre` |
 | GET | `/destinatarios` | Admin/Sacerdote/CoordMin | Personas a las que puede notificar |
 | PUT | `/:id/leida` | Cualquiera | Marca notificación propia como leída |
+| PUT | `/:id/confirmar` | Cualquiera | Confirma asistencia (HU-22) sobre notificación propia |
+| PUT | `/:id/asistencia` | Cualquiera | Confirma asistencia + marca leída en un solo paso |
 | POST | `/` | Admin/Sacerdote/CoordMin | Crea notificación; global auto-puebla todos |
 | DELETE | `/:id` | Admin/Sacerdote | Elimina notificación (cascade) |
 
@@ -241,7 +285,7 @@ Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer 
 ### Otros módulos
 | Recurso | Prefijo | Notas |
 |---|---|---|
-| Tareas | `/api/tareas` | CRUD + asignación/desasignación |
+| Tareas | `/api/tareas` | CRUD + asignación/desasignación (409 si hay conflicto de horario, HU-08) |
 | Personas | `/api/personas` | GET lista + GET detalle |
 | Espacios | `/api/espacios` | CRUD; CUD solo Sacerdote/Admin |
 | Grupos | `/api/grupos` | CRUD completo |
@@ -321,6 +365,13 @@ cd app/backend  && npm install
 cd app/frontend && npm install
 ```
 
+### Pruebas unitarias
+
+```bash
+cd app/backend  && npm test   # Vitest
+cd app/frontend && npm test   # Vitest
+```
+
 ---
 
 ## Acceso a los Servicios
@@ -338,10 +389,10 @@ cd app/frontend && npm install
 
 ## Despliegue en Producción
 
-GitHub Actions (`.github/workflows/deploy.yml`) despliega automáticamente a Azure VM en cada `push` a `main`:
+GitHub Actions (`.github/workflows/deploy.yml`) despliega automáticamente a un **Droplet de DigitalOcean** en cada `push` a `main`:
 
 ```
-push a main → SSH al VM → git pull → docker compose down → docker compose up --build -d
+push a main → SSH al droplet → git fetch/reset --hard origin/main → docker compose down → docker compose up -d --build
 ```
 
 **Nunca mergear a `main` sin pasar primero por `develop`.**
@@ -375,6 +426,9 @@ git push origin feature/nombre-funcionalidad
 | Corte 3 | `docs/corte3/` |
 | Sprint 1 | `docs/sprint1/` |
 | Sprint 2 | `docs/sprint2/` |
+| Sprint 3 | `docs/sprint3/` |
+| Sprint 4 | `docs/sprint4/` |
+| Sprint 5 | `docs/sprint5/` |
 
 ---
 
