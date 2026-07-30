@@ -7,7 +7,6 @@ import { Field, SelectUI, TextareaUI } from '../../../components/ui/Field';
 import { formatFecha } from '../../../utils/date';
 import styles from './EnviarNotificacionForm.module.css';
 
-// Props del formulario de notificaciones
 interface Props {
   onEnviada: () => void;
   onCancelar: () => void;
