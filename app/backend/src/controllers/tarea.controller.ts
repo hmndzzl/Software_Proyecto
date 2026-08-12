@@ -42,9 +42,7 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
         values.push(Number(persona_id));
       }
 
-      if (conditions.length > 0) {
-        query += ' WHERE ' + conditions.join(' AND ');
-      }
+      query += ' WHERE ' + conditions.join(' AND ');
 
       query += ' ORDER BY t.fecha, t.hora_inicio';
 
