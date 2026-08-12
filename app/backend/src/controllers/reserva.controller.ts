@@ -318,7 +318,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     };
 
     return res.status(HttpStatus.OK).json({
-      message: mensajes[Number(estado_id)] ?? 'Estado actualizado correctamente'
+      message: mensajes[Number(estado_id)]
     });
   } catch (error) {
     console.error('Error al cambiar estado de la reserva:', error);
