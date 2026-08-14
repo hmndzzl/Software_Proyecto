@@ -1,0 +1,53 @@
+.box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--color-badBg);
+  border: 1px solid rgba(157, 47, 47, 0.22);
+  border-left: 4px solid var(--color-bad);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  margin: 8px 0;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--color-bad);
+  margin-top: 1px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-bad);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--color-bad);
+  border-radius: var(--radius-btn);
+  padding: 5px 12px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-bad);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.retry:hover {
+  background: var(--color-bad);
+  color: var(--color-blanco);
+}
