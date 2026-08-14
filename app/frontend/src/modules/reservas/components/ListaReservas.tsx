@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
 import { CardHead } from '../.././../components/ui/Card';
+import LoadingState from '../../../components/ui/LoadingState';
+import ErrorState from '../../../components/ui/ErrorState';
+import EmptyState from '../../../components/ui/EmptyState';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -202,11 +205,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         </div>
       )}
 
-      {loading && <p className={styles.textoInfo}>Cargando reservas...</p>}
-      {error && <p className="error-text">{error}</p>}
+      {loading && <LoadingState label="Cargando reservas..." />}
+      {error && <ErrorState message={error} onRetry={fetchReservas} />}
 
       {!loading && !error && reservas.length === 0 && (
-        <p className={styles.textoVacio}>No hay reservas registradas.</p>
+        <EmptyState message="No hay reservas registradas." />
       )}
 
       {!loading && reservas.length > 0 && (

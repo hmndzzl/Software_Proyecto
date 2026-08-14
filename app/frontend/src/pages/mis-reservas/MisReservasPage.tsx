@@ -4,6 +4,9 @@ import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -35,11 +38,17 @@ export default function MisReservasPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
 
-  useEffect(() => {
+  const cargarReservas = () => {
+    setLoading(true);
+    setError('');
     apiClient.get('/api/reservas/mis-reservas')
       .then(res => setReservas(res.data))
       .catch(() => setError('Error al cargar tus reservas.'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    cargarReservas();
   }, []);
 
   return (
@@ -70,10 +79,10 @@ export default function MisReservasPage() {
           hint={!loading ? `${reservas.length} solicitudes` : undefined}
         />
 
-        {loading && <p className={styles.msg}>Cargando tus reservas...</p>}
-        {error   && <p className={`${styles.msg} ${styles.msgError}`}>{error}</p>}
+        {loading && <LoadingState label="Cargando tus reservas..." />}
+        {error   && <ErrorState message={error} onRetry={cargarReservas} />}
         {!loading && !error && reservas.length === 0 && (
-          <p className={styles.msg}>Aún no tienes reservas registradas.</p>
+          <EmptyState message="Aún no tienes reservas registradas." />
         )}
 
         {!loading && !error && reservas.length > 0 && (
