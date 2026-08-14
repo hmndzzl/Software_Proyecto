@@ -8,10 +8,26 @@ interface Props {
   notificacion: Notificacion;
   onMarcarLeida: (id: number) => void;
   onConfirmarAsistencia: (id: number) => void;
+  onExcusarAsistencia: (notificacion: Notificacion) => void;
 }
 
-export default function NotificacionRow({ notificacion, onMarcarLeida, onConfirmarAsistencia }: Props) {
-  const { id, mensaje, fecha, tipo, leida, requiere_confirmacion, asistencia_confirmada, evento_descripcion } = notificacion;
+export default function NotificacionRow({
+  notificacion,
+  onMarcarLeida,
+  onConfirmarAsistencia,
+  onExcusarAsistencia,
+}: Props) {
+  const {
+    id,
+    mensaje,
+    fecha,
+    tipo,
+    leida,
+    requiere_confirmacion,
+    asistencia_confirmada,
+    motivo_excusa,
+    evento_descripcion,
+  } = notificacion;
 
   return (
     <tr className={`${styles.row} ${!leida ? styles.rowUnread : ''}`}>
@@ -20,6 +36,11 @@ export default function NotificacionRow({ notificacion, onMarcarLeida, onConfirm
         {mensaje}
         {requiere_confirmacion && evento_descripcion && (
           <div className={styles.eventoRef}>Evento: {evento_descripcion}</div>
+        )}
+        {motivo_excusa && (
+          <div style={{ fontSize: '12px', color: 'var(--color-bad)', marginTop: '4px', fontStyle: 'italic' }}>
+            Motivo excusa: "{motivo_excusa}"
+          </div>
         )}
       </td>
       <td className={styles.tdRemitente}>
@@ -43,10 +64,17 @@ export default function NotificacionRow({ notificacion, onMarcarLeida, onConfirm
           {requiere_confirmacion && (
             asistencia_confirmada ? (
               <Badge kind="confirmada">Asistencia confirmada</Badge>
+            ) : motivo_excusa ? (
+              <Badge kind="cancelada" title={`Motivo: ${motivo_excusa}`}>No asistirá</Badge>
             ) : (
-              <Btn kind="ok" size="sm" onClick={() => onConfirmarAsistencia(id)}>
-                Confirmar asistencia
-              </Btn>
+              <>
+                <Btn kind="ok" size="sm" onClick={() => onConfirmarAsistencia(id)}>
+                  Confirmar
+                </Btn>
+                <Btn kind="bad" size="sm" onClick={() => onExcusarAsistencia(notificacion)}>
+                  No podré asistir
+                </Btn>
+              </>
             )
           )}
         </div>
