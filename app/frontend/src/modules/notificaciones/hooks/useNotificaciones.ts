@@ -9,6 +9,7 @@ interface UseNotificacionesReturn {
   marcarLeida: (id: number) => Promise<void>;
   marcarTodasLeidas: () => Promise<void>;
   confirmarAsistencia: (id: number) => Promise<void>;
+  excusarAsistencia: (id: number, motivo: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -64,5 +65,16 @@ export function useNotificaciones(): UseNotificacionesReturn {
     }
   }, []);
 
-  return { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, confirmarAsistencia, refetch };
+  const excusarAsistencia = useCallback(async (id: number, motivo: string) => {
+    await apiClient.put(`/api/notificaciones/${id}/excusar`, { motivo });
+    setNotificaciones((prev) =>
+      prev.map((n) =>
+        n.id === id
+          ? { ...n, asistencia_confirmada: false, motivo_excusa: motivo, leida: true }
+          : n
+      )
+    );
+  }, []);
+
+  return { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, confirmarAsistencia, excusarAsistencia, refetch };
 }
