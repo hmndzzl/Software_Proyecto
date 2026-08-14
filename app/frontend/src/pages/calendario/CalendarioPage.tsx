@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
 import styles from './CalendarioPage.module.css';
 
 interface AsignadoInfo {
@@ -81,7 +83,7 @@ export default function CalendarioPage() {
     return day;
   });
 
-  useEffect(() => {
+  const cargarTareas = () => {
     setLoading(true);
     setError('');
 
@@ -98,6 +100,10 @@ export default function CalendarioPage() {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    cargarTareas();
   }, [currentDate]);
 
   const handlePrevWeek = () => {
@@ -151,8 +157,8 @@ export default function CalendarioPage() {
         </div>
       </div>
 
-      {loading && <p className={styles.msg}>Cargando calendario...</p>}
-      {error && <p className={`${styles.msg} ${styles.msgError}`}>{error}</p>}
+      {loading && <LoadingState label="Cargando calendario..." />}
+      {error && <ErrorState message={error} onRetry={cargarTareas} />}
 
       {!loading && !error && (
         <div className={styles.grid}>
