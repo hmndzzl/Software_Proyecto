@@ -4,6 +4,9 @@ import Btn from '../Btn';
 import Badge from '../Badge';
 import { Card, CardHead, CardBody } from '../Card';
 import { Field, InputUI } from '../Field';
+import Spinner from '../Spinner';
+import ErrorMessage from '../ErrorMessage';
+import ErrorBoundary from '../ErrorBoundary';
 
 describe('UI Components', () => {
 
@@ -85,6 +88,113 @@ describe('UI Components', () => {
     // Verificamos que el input se haya renderizado
     const input = screen.getByPlaceholderText(/escribe aquí.../i);
     expect(input).toBeInTheDocument();
+  });
+
+  // ----------------------------------------------------
+  // 6. Spinner Component
+  // ----------------------------------------------------
+  describe('Spinner', () => {
+    it('debería renderizar sin errores y tener role="status"', () => {
+      render(<Spinner />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+    });
+
+    it('debería mostrar el label cuando se proporciona', () => {
+      render(<Spinner label="Cargando datos..." />);
+      expect(screen.getByText(/cargando datos/i)).toBeInTheDocument();
+    });
+
+    it('debería renderizarse en tamaño sm, md y lg sin errores', () => {
+      const { rerender } = render(<Spinner size="sm" />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+
+      rerender(<Spinner size="md" />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+
+      rerender(<Spinner size="lg" />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+    });
+
+    it('debería renderizarse en modo fullPage sin errores', () => {
+      render(<Spinner fullPage label="Procesando..." />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText(/procesando/i)).toBeInTheDocument();
+    });
+  });
+
+  // ----------------------------------------------------
+  // 7. ErrorMessage Component
+  // ----------------------------------------------------
+  describe('ErrorMessage', () => {
+    it('debería mostrar el mensaje de error con role="alert"', () => {
+      render(<ErrorMessage message="No se pudo conectar al servidor." />);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText(/no se pudo conectar/i)).toBeInTheDocument();
+    });
+
+    it('debería mostrar el botón de reintentar cuando se pasa onRetry', () => {
+      const handleRetry = vi.fn();
+      render(<ErrorMessage message="Error de red." onRetry={handleRetry} />);
+
+      const retryBtn = screen.getByRole('button', { name: /reintentar/i });
+      expect(retryBtn).toBeInTheDocument();
+
+      fireEvent.click(retryBtn);
+      expect(handleRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it('NO debería mostrar el botón de reintentar cuando no se pasa onRetry', () => {
+      render(<ErrorMessage message="Error sin retry." />);
+      expect(screen.queryByRole('button', { name: /reintentar/i })).not.toBeInTheDocument();
+    });
+  });
+
+  // ----------------------------------------------------
+  // 8. ErrorBoundary Component
+  // ----------------------------------------------------
+  describe('ErrorBoundary', () => {
+    // Suprimimos el console.error que React emite al capturar errores en tests
+    const originalConsoleError = console.error;
+    beforeEach(() => { console.error = vi.fn(); });
+    afterEach(() => { console.error = originalConsoleError; });
+
+    it('debería renderizar los hijos cuando no hay error', () => {
+      render(
+        <ErrorBoundary>
+          <p>Contenido normal</p>
+        </ErrorBoundary>
+      );
+      expect(screen.getByText(/contenido normal/i)).toBeInTheDocument();
+    });
+
+    it('debería mostrar la pantalla de error cuando un hijo lanza una excepción', () => {
+      function ComponenteQueExplota() {
+        throw new Error('Explosión de prueba');
+      }
+
+      render(
+        <ErrorBoundary>
+          <ComponenteQueExplota />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText(/algo salió mal/i)).toBeInTheDocument();
+    });
+
+    it('debería renderizar el fallback personalizado si se proporciona', () => {
+      function ComponenteQueExplota() {
+        throw new Error('Error');
+      }
+
+      render(
+        <ErrorBoundary fallback={<p>Fallback personalizado</p>}>
+          <ComponenteQueExplota />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText(/fallback personalizado/i)).toBeInTheDocument();
+    });
   });
 
 });
