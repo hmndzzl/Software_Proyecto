@@ -5,6 +5,8 @@ import { ROLES } from '../../components/ui/ProtectedRoute';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
+import LoadingState from '../../components/ui/LoadingState';
+import EmptyState from '../../components/ui/EmptyState';
 import styles from './DashboardPage.module.css';
 
 /* ── Role helpers ── */
@@ -224,9 +226,9 @@ export default function DashboardPage() {
               right={<Link to="/tareas" style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-rojo)', fontWeight: 600, textDecoration: 'none' }}>Ver todas →</Link>}
             />
             <div className={styles.tareasList}>
-              {tareasLoading && <p className={styles.emptyText}>Cargando...</p>}
+              {tareasLoading && <LoadingState size="sm" label="Cargando..." />}
               {!tareasLoading && tareasProximas.length === 0 && (
-                <p className={styles.emptyText}>No hay tareas próximas.</p>
+                <EmptyState message="No hay tareas próximas." />
               )}
               {!tareasLoading && tareasProximas.map(t => (
                 <div key={t.id} className={styles.tareaRow}>

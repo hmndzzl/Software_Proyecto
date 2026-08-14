@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 import styles from './MinistrosPage.module.css';
 
 interface Ministro {
@@ -28,10 +31,16 @@ export default function MinistrosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
 
-  useEffect(() => {
+  const cargarMinistros = () => {
+    setLoading(true);
+    setError('');
     apiClient.get('/api/personas')
       .then(res => { setMinistros(res.data); setLoading(false); })
       .catch(() => { setError('Error al obtener ministros'); setLoading(false); });
+  };
+
+  useEffect(() => {
+    cargarMinistros();
   }, []);
 
   return (
@@ -48,11 +57,11 @@ export default function MinistrosPage() {
           hint={!loading ? `${ministros.length} personas` : undefined}
         />
 
-        {loading && <p className={styles.msg}>Cargando ministros...</p>}
-        {error   && <p className={`${styles.msg} ${styles.msgError}`}>{error}</p>}
+        {loading && <LoadingState label="Cargando ministros..." />}
+        {error   && <ErrorState message={error} onRetry={cargarMinistros} />}
 
         {!loading && !error && ministros.length === 0 && (
-          <p className={styles.msg}>No hay ministros registrados.</p>
+          <EmptyState message="No hay ministros registrados." />
         )}
 
         {!loading && !error && ministros.length > 0 && (
