@@ -37,6 +37,7 @@ export interface Notificacion {
   evento_descripcion: string | null;
   requiere_confirmacion: boolean;
   asistencia_confirmada: boolean;
+  motivo_excusa: string | null;
 }
 
 export interface DestinatarioInfo {
