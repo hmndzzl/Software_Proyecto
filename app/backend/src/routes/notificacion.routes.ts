@@ -5,6 +5,7 @@ import {
   marcarLeida,
   confirmarAsistenciaNotificacion,
   confirmarAsistencia,
+  excusarAsistencia,
   createNotificacion,
   deleteNotificacion,
 } from '../controllers/notificacion.controller';
@@ -21,6 +22,7 @@ router.get('/', getNotificaciones);
 router.put('/:id/leida', marcarLeida);
 router.put('/:id/confirmar', confirmarAsistenciaNotificacion);
 router.put('/:id/asistencia', confirmarAsistencia);
+router.put('/:id/excusar', excusarAsistencia);
 router.post('/', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), createNotificacion);
 router.delete('/:id', requireRole(ROLES.SACERDOTE, ROLES.ADMIN), deleteNotificacion);
 
