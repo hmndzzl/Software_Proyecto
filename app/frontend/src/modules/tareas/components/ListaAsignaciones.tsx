@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import LoadingState from '../../../components/ui/LoadingState';
+import ErrorState from '../../../components/ui/ErrorState';
+import EmptyState from '../../../components/ui/EmptyState';
 import styles from './ListaAsignaciones.module.css';
 
 interface Asignacion {
@@ -17,7 +20,9 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [cargando, setCargando] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  useEffect(() => {
+  const cargarAsignaciones = () => {
+    setCargando(true);
+    setError('');
     apiClient.get('/api/tareas')
       .then((res) => {
         const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea: any) =>
@@ -38,17 +43,21 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
         setError('Error al obtener los datos');
         setCargando(false);
       });
+  };
+
+  useEffect(() => {
+    cargarAsignaciones();
   }, [refreshKey]);
 
-  if (cargando) return <p className={styles.textoInfo}>Cargando asignaciones...</p>;
-  if (error)    return <p className={styles.textoError}>Error: {error}</p>;
+  if (cargando) return <LoadingState label="Cargando asignaciones..." />;
+  if (error)    return <ErrorState message={error} onRetry={cargarAsignaciones} />;
 
   return (
     <div>
       <h3 className={styles.seccionTitulo}>Asignaciones Actuales</h3>
 
       {asignaciones.length === 0 ? (
-        <p className={styles.textoVacio}>No hay tareas asignadas en este momento.</p>
+        <EmptyState message="No hay tareas asignadas en este momento." />
       ) : (
         <div className="table-container">
           <table className="styled-table">

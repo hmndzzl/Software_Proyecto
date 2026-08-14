@@ -3,6 +3,9 @@ import { Grupo } from '../../../types';
 import apiClient from '../../../api/client';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
 import { CardHead } from '../../../components/ui/Card';
+import LoadingState from '../../../components/ui/LoadingState';
+import ErrorState from '../../../components/ui/ErrorState';
+import EmptyState from '../../../components/ui/EmptyState';
 import styles from './ListaGrupos.module.css';
 
 export default function ListaGrupos({
@@ -21,19 +24,20 @@ export default function ListaGrupos({
     ROLES.COORDINADOR_GRUPOS,
   ]);
 
+  const fetchGrupos = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await apiClient.get('/api/grupos');
+      setGrupos(response.data);
+    } catch {
+      setError('Error de red al obtener los grupos.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchGrupos = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await apiClient.get('/api/grupos');
-        setGrupos(response.data);
-      } catch {
-        setError('Error de red al obtener los grupos.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchGrupos();
   }, [refreshKey]);
 
@@ -41,11 +45,11 @@ export default function ListaGrupos({
     <div>
       <CardHead title="Lista de Grupos" hint={!loading && grupos.length > 0 ? `${grupos.length} grupos` : undefined} />
 
-      {loading && <p className={styles.textoInfo}>Cargando grupos...</p>}
-      {error && <p className="error-text">{error}</p>}
+      {loading && <LoadingState label="Cargando grupos..." />}
+      {error && <ErrorState message={error} onRetry={fetchGrupos} />}
 
       {!loading && !error && grupos.length === 0 && (
-        <p className={styles.textoVacio}>No hay grupos registrados.</p>
+        <EmptyState message="No hay grupos registrados." />
       )}
 
       {!loading && grupos.length > 0 && (

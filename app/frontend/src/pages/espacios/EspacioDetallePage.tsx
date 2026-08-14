@@ -6,6 +6,9 @@ import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 import { ROLES, usuarioTieneRol } from '../../utils/roles';
 import styles from './EspacioDetallePage.module.css';
 
@@ -35,7 +38,9 @@ export default function EspacioDetallePage() {
 
   const esAdminOSacerdote = usuarioTieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
 
-  useEffect(() => {
+  const cargarEspacio = () => {
+    setCargando(true);
+    setError('');
     Promise.all([
       apiClient.get(`/api/espacios/${id}`),
       apiClient.get(`/api/reservas?espacio_id=${id}`),
@@ -49,6 +54,10 @@ export default function EspacioDetallePage() {
         setError(err.response?.data?.message || 'Espacio no encontrado');
         setCargando(false);
       });
+  };
+
+  useEffect(() => {
+    cargarEspacio();
   }, [id]);
 
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
@@ -61,7 +70,7 @@ export default function EspacioDetallePage() {
     }
   };
 
-  if (cargando) return <p className={styles.msg}>Cargando...</p>;
+  if (cargando) return <LoadingState label="Cargando..." />;
 
   if (error || !espacio) {
     return (
@@ -70,7 +79,7 @@ export default function EspacioDetallePage() {
           icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>}>
           Volver a Espacios
         </Btn>
-        <p className={styles.msgError}>{error || 'Espacio no encontrado'}</p>
+        <ErrorState message={error || 'Espacio no encontrado'} onRetry={cargarEspacio} />
       </div>
     );
   }
@@ -123,7 +132,7 @@ export default function EspacioDetallePage() {
           />
 
           {reservas.length === 0 ? (
-            <p className={styles.msg}>No hay reservas para este espacio.</p>
+            <EmptyState message="No hay reservas para este espacio." />
           ) : (
             <div className={styles.reservaList}>
               {reservas.map(r => (

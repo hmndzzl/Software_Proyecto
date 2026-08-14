@@ -3,6 +3,9 @@ import Btn from '../../components/ui/Btn';
 import Modal from '../../components/ui/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 import NotificacionRow from '../../modules/notificaciones/components/NotificacionRow';
 import EnviarNotificacionForm from '../../modules/notificaciones/components/EnviarNotificacionForm';
 import ModalExcusaAsistencia from '../../modules/notificaciones/components/ModalExcusaAsistencia';
@@ -44,7 +47,7 @@ export default function NotificacionesPage() {
     return (
       <div className={styles.page}>
         <PageHeader kicker="Bandeja de entrada" title="Notificaciones" subtitle="Avisos y comunicados dirigidos a tu cuenta." />
-        <Card><CardBody><p className={styles.loadingWrap}>Cargando notificaciones…</p></CardBody></Card>
+        <Card><CardBody><LoadingState label="Cargando notificaciones…" /></CardBody></Card>
       </div>
     );
   }
@@ -53,7 +56,7 @@ export default function NotificacionesPage() {
     return (
       <div className={styles.page}>
         <PageHeader kicker="Bandeja de entrada" title="Notificaciones" subtitle="Avisos y comunicados dirigidos a tu cuenta." />
-        <Card><CardBody><p className={styles.errorWrap}>{error}</p></CardBody></Card>
+        <Card><CardBody><ErrorState message={error} onRetry={refetch} /></CardBody></Card>
       </div>
     );
   }
@@ -93,7 +96,7 @@ export default function NotificacionesPage() {
         />
         <CardBody>
           {notificaciones.length === 0 ? (
-            <p className={styles.empty}>No tienes notificaciones.</p>
+            <EmptyState message="No tienes notificaciones." />
           ) : (
             <table className={styles.table}>
               <thead className={styles.thead}>
