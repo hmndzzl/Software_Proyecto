@@ -1,0 +1,19 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.icon {
+  color: var(--color-muted);
+}
+
+.message {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-muted);
+}
