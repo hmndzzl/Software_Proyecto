@@ -288,6 +288,27 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
 
     const reserva = rows[0];
 
+    const esSolicitante = reserva.solicitante_id === req.user!.id;
+    const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
+
+    if (!esPrivilegiado) {
+      if (!esSolicitante) {
+        return res.status(HttpStatus.FORBIDDEN).json({
+          message: 'No tienes permiso para modificar el estado de esta reserva'
+        });
+      }
+      if (Number(estado_id) !== 3) {
+        return res.status(HttpStatus.FORBIDDEN).json({
+          message: 'Solo puedes cancelar tu propia reserva'
+        });
+      }
+      if (![1, 2].includes(reserva.estado_reserva_id)) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: 'Solo puedes cancelar reservas en estado Pendiente o Confirmada'
+        });
+      }
+    }
+
     if (Number(estado_id) === 2) {
       const [conflictos]: any = await db.query(
         `SELECT * FROM reserva
