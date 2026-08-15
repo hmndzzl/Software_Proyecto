@@ -4,6 +4,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
+import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
@@ -50,6 +51,16 @@ export default function MisReservasPage() {
   useEffect(() => {
     cargarReservas();
   }, []);
+
+  const cancelarReserva = async (id: number) => {
+    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    try {
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: 3 });
+      cargarReservas();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al cancelar la reserva');
+    }
+  };
 
   return (
     <div className={styles.page}>
