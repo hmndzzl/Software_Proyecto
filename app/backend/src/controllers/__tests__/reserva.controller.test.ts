@@ -351,6 +351,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     it('debería retornar 400 si hay choque de horarios al aprobar', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 2 }; // aprobar
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (db.query as any).mockResolvedValueOnce([[{ espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]); // SELECT reserva
       (db.query as any).mockResolvedValueOnce([[{ id: 2 }]]); // SELECT conflicto (found)
 
@@ -362,6 +363,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     it('debería retornar 200 y aprobar correctamente si no hay conflicto', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 2 }; // aprobar
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (db.query as any).mockResolvedValueOnce([[{ espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
       (db.query as any).mockResolvedValueOnce([[]]); // No conflictos
       (db.query as any).mockResolvedValueOnce([{}]); // UPDATE 
@@ -375,6 +377,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     it('debería retornar 200 y actualizar estado correctamente para pendientes (1) sin revisar conflictos', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 1 }; // pendiente
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (db.query as any).mockResolvedValueOnce([[{ espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
       (db.query as any).mockResolvedValueOnce([{}]); // UPDATE 
 
@@ -394,6 +397,75 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       await cambiarEstadoReserva(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+
+    it('debería permitir al solicitante cancelar su propia reserva Pendiente', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1 }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva rechazada correctamente' }));
+    });
+
+    it('debería permitir al solicitante cancelar su propia reserva Confirmada', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 2 }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 403 si el solicitante intenta aprobar su propia reserva (estado_id=2)', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 2 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1 }]]);
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    });
+
+    it('debería retornar 403 si el solicitante intenta volver su reserva a Pendiente (estado_id=1)', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 1 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 2 }]]);
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    });
+
+    it('debería retornar 403 si un usuario intenta cancelar la reserva de otra persona', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 2, estado_reserva_id: 1 }]]);
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    });
+
+    it('debería retornar 400 si el solicitante intenta cancelar una reserva ya Rechazada', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 3 }]]);
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     });
   });
 });

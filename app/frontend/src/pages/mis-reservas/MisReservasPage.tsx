@@ -4,6 +4,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
+import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
@@ -51,6 +52,16 @@ export default function MisReservasPage() {
     cargarReservas();
   }, []);
 
+  const cancelarReserva = async (id: number) => {
+    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    try {
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: 3 });
+      cargarReservas();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al cancelar la reserva');
+    }
+  };
+
   return (
     <div className={styles.page}>
       <PageHeader
@@ -97,6 +108,7 @@ export default function MisReservasPage() {
                   <th>Fecha</th>
                   <th>Horario</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,6 +124,11 @@ export default function MisReservasPage() {
                       <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                         {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                       </Badge>
+                    </td>
+                    <td>
+                      {(r.estado_reserva_id === 1 || r.estado_reserva_id === 2) && (
+                        <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
+                      )}
                     </td>
                   </tr>
                 ))}
