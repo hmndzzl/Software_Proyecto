@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
+import { ESTADOS_RESERVA } from '../config/estadosReserva';
 import { HttpStatus } from '../utils/httpStatus';
 
 export const getEventos = async (_req: Request, res: Response): Promise<void> => {
@@ -62,9 +63,10 @@ export const getReservasDisponibles = async (_req: Request, res: Response): Prom
        JOIN persona p        ON p.id   = r.solicitante_id
        LEFT JOIN espacio esp ON esp.id = r.espacio_id
        LEFT JOIN evento e    ON e.reserva_id = r.id
-       WHERE r.estado_reserva_id = 2
+       WHERE r.estado_reserva_id = ?
          AND e.id IS NULL
-       ORDER BY r.fecha ASC, r.hora_inicio ASC`
+       ORDER BY r.fecha ASC, r.hora_inicio ASC`,
+      [ESTADOS_RESERVA.CONFIRMADA]
     );
     res.status(HttpStatus.OK).json(rows);
   } catch (error) {
@@ -91,7 +93,7 @@ export const createEvento = async (req: Request, res: Response): Promise<void> =
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'La reserva indicada no existe' });
       return;
     }
-    if (reservas[0].estado_reserva_id !== 2) {
+    if (reservas[0].estado_reserva_id !== ESTADOS_RESERVA.CONFIRMADA) {
       res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Solo se pueden asociar eventos a reservas confirmadas' });
       return;
     }

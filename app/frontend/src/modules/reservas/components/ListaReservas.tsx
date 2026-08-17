@@ -4,6 +4,7 @@ import { CardHead } from '../.././../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
+import { ROLES } from '../../../utils/roles';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -55,7 +56,9 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   const usuarioInfo = localStorage.getItem('usuario');
   const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
-  const esAdminOSacerdote = usuario && (usuario.rol_id === 1 || usuario.rol_id === 5);
+  const esAdminOSacerdote = usuario && (
+    usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
+  );
 
   const fetchReservas = async () => {
     setLoading(true);
