@@ -125,7 +125,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
     it('debería hacer rollback y retornar 500 en caso de error', async () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
-      mockConnection.query.mockRejectedValue(new Error('DB Error'));
+      mockConnection.query.mockRejectedValueOnce(new Error('DB Error'));
 
       await crearReserva(req as Request, res as Response);
 
@@ -226,7 +226,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
-      mockConnection.query.mockRejectedValue(new Error('DB Error'));
+      mockConnection.query.mockRejectedValueOnce(new Error('DB Error'));
 
       await editarReserva(req as Request, res as Response);
 
@@ -247,7 +247,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error', async () => {
-      (db.query as any).mockRejectedValue(new Error('DB Error'));
+      (db.query as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await obtenerMisReservas(req as Request, res as Response);
 
@@ -280,7 +280,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error', async () => {
-      (db.query as any).mockRejectedValue(new Error('DB Error'));
+      (db.query as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await obtenerReservas(req as Request, res as Response);
 
@@ -311,7 +311,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error', async () => {
       req.params = { id: '1' };
-      (db.query as any).mockRejectedValue(new Error('DB Error'));
+      (db.query as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await obtenerReservaPorId(req as Request, res as Response);
 
@@ -392,7 +392,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 3 };
-      (db.query as any).mockRejectedValue(new Error('DB Error'));
+      (db.query as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await cambiarEstadoReserva(req as Request, res as Response);
 

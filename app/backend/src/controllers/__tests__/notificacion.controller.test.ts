@@ -69,7 +69,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getNotificaciones(req as Request, res as Response);
 
@@ -99,7 +99,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await marcarLeida(req as Request, res as Response);
 
@@ -153,7 +153,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error', async () => {
       req.user!.rol_id = ROLES.ADMIN;
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getDestinatarios(req as Request, res as Response);
 
@@ -258,7 +258,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
     it('debería hacer rollback y retornar 500 en caso de error', async () => {
       req.body = { mensaje: 'Global', tipo: 'global' };
-      mockConnection.execute.mockRejectedValue(new Error('DB Error'));
+      mockConnection.execute.mockRejectedValueOnce(new Error('DB Error'));
 
       await createNotificacion(req as Request, res as Response);
 
@@ -288,7 +288,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await deleteNotificacion(req as Request, res as Response);
 
