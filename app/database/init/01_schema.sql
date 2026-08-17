@@ -144,6 +144,7 @@ CREATE TABLE `persona_notificacion` (
   `leida` tinyint(1) NOT NULL DEFAULT 0,
   `confirmada` tinyint(1) DEFAULT 0,
   `asistencia_confirmada` tinyint(1) NOT NULL DEFAULT 0,
+  `inasistencia_reportada` tinyint(1) NOT NULL DEFAULT 0,
   `motivo_excusa` text DEFAULT NULL,
   PRIMARY KEY (`persona_id`,`notificacion_id`),
   KEY `fk_pn_notificacion_idx` (`notificacion_id`),
