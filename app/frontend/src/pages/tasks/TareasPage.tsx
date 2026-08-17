@@ -4,13 +4,14 @@ import AsignarTareaForm from '../../modules/tareas/components/AsignarTareaForm';
 import CrearTareaForm from '../../modules/tareas/components/CrearTareaForm';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
+import { ROLES } from '../../utils/roles';
 import styles from './TareasPage.module.css';
 
 export default function TareasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const esMinistro = usuario?.rol_id === 4;
+  const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
 
   return (
     <div className={styles.page}>
