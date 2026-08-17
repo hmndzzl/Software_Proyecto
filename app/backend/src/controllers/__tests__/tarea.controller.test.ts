@@ -108,7 +108,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getTareas(req as Request, res as Response);
 
@@ -142,7 +142,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getTareaById(req as Request, res as Response);
 
@@ -171,7 +171,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await createTarea(req as Request, res as Response);
 
@@ -212,7 +212,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await updateTarea(req as Request, res as Response);
 
@@ -241,7 +241,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await deleteTarea(req as Request, res as Response);
 
@@ -311,7 +311,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D' }]]); 
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); 
       
-      mockConnection.execute.mockRejectedValue(new Error('DB Error'));
+      mockConnection.execute.mockRejectedValueOnce(new Error('DB Error'));
 
       await asignarTarea(req as Request, res as Response);
 
@@ -321,7 +321,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 sin rollback si falla antes de obtener conexión', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error pre-conn')); 
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error pre-conn')); 
 
       await asignarTarea(req as Request, res as Response);
 
@@ -359,7 +359,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await desasignarTarea(req as Request, res as Response);
 

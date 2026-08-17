@@ -57,7 +57,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getEventos(req as Request, res as Response);
 
@@ -90,7 +90,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getEventoById(req as Request, res as Response);
 
@@ -111,7 +111,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getReservasDisponibles(req as Request, res as Response);
 
@@ -186,7 +186,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de otros errores de BD', async () => {
       req.body = { descripcion: 'Hola', reserva_id: 1 };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await createEvento(req as Request, res as Response);
 
@@ -231,7 +231,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { descripcion: 'Nueva desc' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await updateEvento(req as Request, res as Response);
 
@@ -263,7 +263,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await deleteEvento(req as Request, res as Response);
 

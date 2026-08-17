@@ -139,7 +139,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it('debería manejar errores de base de datos (500)', async () => {
       req.body = { correo: 'test@test.com', password: 'password123' };
       
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await login(req as Request, res as Response);
 
@@ -192,7 +192,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it('debería manejar errores de base de datos (500)', async () => {
       req.body = { nombre: 'Error', correo: 'error@test.com', password: 'pass', rol_id: 2 };
 
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await register(req as Request, res as Response);
 

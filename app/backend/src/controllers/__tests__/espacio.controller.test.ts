@@ -88,7 +88,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de base de datos', async () => {
       req.query = {};
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await obtenerEspacios(req as Request, res as Response);
 
@@ -122,7 +122,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de base de datos', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await obtenerEspacioPorId(req as Request, res as Response);
 
@@ -178,7 +178,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de base de datos', async () => {
       req.body = { nombre: 'Sala' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await crearEspacio(req as Request, res as Response);
 
@@ -259,7 +259,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de base de datos', async () => {
       req.params = { id: '1' };
       req.body = { nombre: 'Sala' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await actualizarEspacio(req as Request, res as Response);
 
@@ -298,7 +298,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de base de datos', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await eliminarEspacio(req as Request, res as Response);
 
