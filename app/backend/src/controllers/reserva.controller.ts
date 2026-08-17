@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
+import { ESTADOS_RESERVA } from '../config/estadosReserva';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
@@ -50,9 +51,9 @@ export const crearReserva = async (req: Request, res: Response) => {
       `SELECT * FROM reserva
        WHERE espacio_id = ?
          AND fecha = ?
-         AND estado_reserva_id = 2
+         AND estado_reserva_id = ?
          AND (hora_inicio < ? AND hora_fin > ?)`,
-      [espacio_id, fecha, hora_fin, hora_inicio]
+      [espacio_id, fecha, ESTADOS_RESERVA.CONFIRMADA, hora_fin, hora_inicio]
     );
 
     if (conflictos.length > 0) {
@@ -66,8 +67,8 @@ export const crearReserva = async (req: Request, res: Response) => {
 
     const [resResult]: any = await conn.query(
       `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
-       VALUES (?, ?, ?, ?, 1, ?)`,
-      [fecha, hora_inicio, hora_fin, espacio_id, solicitante_id]
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, solicitante_id]
     );
 
     const reservaId = resResult.insertId;
@@ -154,8 +155,8 @@ export const editarReserva = async (req: Request, res: Response) => {
     await conn.beginTransaction();
 
     await conn.query(
-      `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = 1 WHERE id = ?`,
-      [fecha, hora_inicio, hora_fin, espacio_id, id]
+      `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = ? WHERE id = ?`,
+      [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, id]
     );
 
     await conn.query(
@@ -269,7 +270,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       });
     }
 
-    if (![1, 2, 3].includes(Number(estado_id))) {
+    if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA, ESTADOS_RESERVA.RECHAZADA].includes(Number(estado_id))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'estado_id inválido'
       });
@@ -297,27 +298,27 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
           message: 'No tienes permiso para modificar el estado de esta reserva'
         });
       }
-      if (Number(estado_id) !== 3) {
+      if (Number(estado_id) !== ESTADOS_RESERVA.RECHAZADA) {
         return res.status(HttpStatus.FORBIDDEN).json({
           message: 'Solo puedes cancelar tu propia reserva'
         });
       }
-      if (![1, 2].includes(reserva.estado_reserva_id)) {
+      if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA].includes(reserva.estado_reserva_id)) {
         return res.status(HttpStatus.BAD_REQUEST).json({
           message: 'Solo puedes cancelar reservas en estado Pendiente o Confirmada'
         });
       }
     }
 
-    if (Number(estado_id) === 2) {
+    if (Number(estado_id) === ESTADOS_RESERVA.CONFIRMADA) {
       const [conflictos]: any = await db.query(
         `SELECT * FROM reserva
          WHERE espacio_id = ?
            AND fecha = ?
-           AND estado_reserva_id = 2
+           AND estado_reserva_id = ?
            AND id <> ?
            AND (hora_inicio < ? AND hora_fin > ?)`,
-        [reserva.espacio_id, reserva.fecha, id, reserva.hora_fin, reserva.hora_inicio]
+        [reserva.espacio_id, reserva.fecha, ESTADOS_RESERVA.CONFIRMADA, id, reserva.hora_fin, reserva.hora_inicio]
       );
 
       if (conflictos.length > 0) {
@@ -333,9 +334,9 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     );
 
     const mensajes: Record<number, string> = {
-      1: 'Reserva marcada como pendiente nuevamente',
-      2: 'Reserva aprobada correctamente',
-      3: 'Reserva rechazada correctamente',
+      [ESTADOS_RESERVA.PENDIENTE]: 'Reserva marcada como pendiente nuevamente',
+      [ESTADOS_RESERVA.CONFIRMADA]: 'Reserva aprobada correctamente',
+      [ESTADOS_RESERVA.RECHAZADA]: 'Reserva rechazada correctamente',
     };
 
     return res.status(HttpStatus.OK).json({
