@@ -64,7 +64,7 @@ describe('Persona Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getCoordinadoresGrupo(req as Request, res as Response);
 
@@ -85,7 +85,7 @@ describe('Persona Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getMinistros(req as Request, res as Response);
 
@@ -117,7 +117,7 @@ describe('Persona Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getPersonaById(req as Request, res as Response);
 
@@ -230,7 +230,7 @@ describe('Persona Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { nombre: 'Nuevo Nombre' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await editarPerfil(req as Request, res as Response);
 

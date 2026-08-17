@@ -56,7 +56,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getGrupos(req as Request, res as Response);
 
@@ -89,7 +89,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getGrupoById(req as Request, res as Response);
 
@@ -168,7 +168,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de otros errores de BD', async () => {
       req.body = { nombre: 'Grupo A', coordinador_id: 1 };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await createGrupo(req as Request, res as Response);
 
@@ -264,7 +264,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { nombre: 'Grupo B', coordinador_id: 2 };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await updateGrupo(req as Request, res as Response);
 
@@ -296,7 +296,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValue(new Error('DB Error'));
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await deleteGrupo(req as Request, res as Response);
 
