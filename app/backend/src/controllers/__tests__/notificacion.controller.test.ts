@@ -6,9 +6,11 @@ import { ROLES } from '../../config/roles';
 import {
   getNotificaciones,
   marcarLeida,
+  confirmarAsistenciaNotificacion,
   getDestinatarios,
   createNotificacion,
-  deleteNotificacion
+  deleteNotificacion,
+  reportarInasistencia
 } from '../notificacion.controller';
 
 vi.mock('../../config/db', () => ({
@@ -104,6 +106,32 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       await marcarLeida(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('confirmarAsistenciaNotificacion', () => {
+    it('debería confirmar únicamente una notificación que requiere asistencia', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await confirmarAsistenciaNotificacion(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenLastCalledWith(
+        expect.stringContaining('asistencia_confirmada = 1, leida = 1'),
+        ['10', 1]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería rechazar una notificación que no requiere confirmación', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockResolvedValueOnce([[{ requiere_confirmacion: 0 }]]);
+
+      await confirmarAsistenciaNotificacion(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     });
   });
 
@@ -264,6 +292,55 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
       expect(mockConnection.rollback).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('reportarInasistencia', () => {
+    it('debería retornar 400 si el motivo está vacío', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: '   ' };
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+
+    it('debería registrar la inasistencia y notificar al coordinador en una transacción', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Tengo una emergencia familiar' };
+      mockConnection.execute
+        .mockResolvedValueOnce([[{ id: 10, evento_id: 4, ministro_nombre: 'Ana', evento_nombre: 'Misa dominical' }]])
+        .mockResolvedValueOnce([[{ coordinador_id: 8 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([{ insertId: 11 }])
+        .mockResolvedValueOnce([{}]);
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(mockConnection.beginTransaction).toHaveBeenCalled();
+      expect(mockConnection.execute).toHaveBeenCalledWith(
+        expect.stringContaining('inasistencia_reportada = 1'),
+        ['Tengo una emergencia familiar', '10', 1]
+      );
+      expect(mockConnection.commit).toHaveBeenCalled();
+      expect(mockConnection.release).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ coordinadores_notificados: 1 }));
+    });
+
+    it('debería revertir la transacción si el ministro no tiene coordinador', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Imprevisto' };
+      mockConnection.execute
+        .mockResolvedValueOnce([[{ id: 10, evento_id: 4, ministro_nombre: 'Ana', evento_nombre: 'Misa dominical' }]])
+        .mockResolvedValueOnce([[]]);
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(mockConnection.commit).not.toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     });
   });
 
