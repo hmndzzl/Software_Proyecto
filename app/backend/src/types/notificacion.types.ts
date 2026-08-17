@@ -16,6 +16,8 @@ export interface NotificacionConLeida extends Notificacion {
   remitente_nombre: string | null;
   evento_descripcion: string | null;
   asistencia_confirmada: boolean;
+  inasistencia_reportada: boolean;
+  motivo_excusa: string | null;
 }
 
 export interface DestinatarioInfo {
