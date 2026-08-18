@@ -3,6 +3,9 @@ import { Evento } from '../../../types';
 import { usuarioTieneRol, ROLES } from '../../../utils/roles';
 import apiClient from '../../../api/client';
 import { CardHead } from '../../../components/ui/Card';
+import LoadingState from '../../../components/ui/LoadingState';
+import ErrorState from '../../../components/ui/ErrorState';
+import EmptyState from '../../../components/ui/EmptyState';
 import styles from './ListaEventos.module.css';
 
 const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
@@ -21,19 +24,20 @@ export default function ListaEventos({
 
   const puedeEditar = usuarioTieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
 
+  const fetchEventos = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiClient.get('/api/eventos');
+      setEventos(res.data);
+    } catch {
+      setError('Error de red al obtener los eventos.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchEventos = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const res = await apiClient.get('/api/eventos');
-        setEventos(res.data);
-      } catch {
-        setError('Error de red al obtener los eventos.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEventos();
   }, [refreshKey]);
 
@@ -41,11 +45,11 @@ export default function ListaEventos({
     <div>
       <CardHead title="Lista de Eventos" hint={!loading && eventos.length > 0 ? `${eventos.length} eventos` : undefined} />
 
-      {loading && <p className={styles.textoInfo}>Cargando eventos...</p>}
-      {error   && <p className="error-text">{error}</p>}
+      {loading && <LoadingState label="Cargando eventos..." />}
+      {error   && <ErrorState message={error} onRetry={fetchEventos} />}
 
       {!loading && !error && eventos.length === 0 && (
-        <p className={styles.textoVacio}>No hay eventos registrados.</p>
+        <EmptyState message="No hay eventos registrados." />
       )}
 
       {!loading && eventos.length > 0 && (

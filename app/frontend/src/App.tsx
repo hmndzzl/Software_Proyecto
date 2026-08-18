@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ErrorProvider } from './context/ErrorContext';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import GlobalErrorBanner from './components/ui/GlobalErrorBanner';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
 
@@ -159,11 +162,16 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+            <GlobalErrorBanner />
+          </AuthProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </ErrorProvider>
   );
 }
 

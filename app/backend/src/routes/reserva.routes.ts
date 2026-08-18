@@ -7,8 +7,7 @@ import {
   obtenerReservaPorId,
   cambiarEstadoReserva
 } from '../controllers/reserva.controller';
-import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
-import { ROLES } from '../config/roles';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -18,7 +17,9 @@ router.get('/mis-reservas', authMiddleware, obtenerMisReservas);
 router.get('/:id', authMiddleware, obtenerReservaPorId);
 
 router.put('/:id', authMiddleware, editarReserva);
-// Endpoint para modificar el estado de la reserva tras la decisión del administrador o sacerdote
-router.put('/:id/estado', authMiddleware, requireRole(ROLES.ADMIN, ROLES.SACERDOTE), cambiarEstadoReserva);
+// Endpoint para modificar el estado de la reserva: Admin/Sacerdote pueden aprobar/rechazar
+// cualquier reserva; el solicitante puede cancelar (estado_id=3) su propia reserva
+// Pendiente/Confirmada. Ownership y rol se validan dentro de cambiarEstadoReserva.
+router.put('/:id/estado', authMiddleware, cambiarEstadoReserva);
 
 export default router;

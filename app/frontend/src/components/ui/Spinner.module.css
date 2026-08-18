@@ -1,0 +1,59 @@
+.wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.svg {
+  animation: spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tamaños */
+.sm {
+  width: 20px;
+  height: 20px;
+}
+
+.md {
+  width: 36px;
+  height: 36px;
+}
+
+.lg {
+  width: 52px;
+  height: 52px;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted);
+  letter-spacing: .03em;
+}
+
+/* Variante de página completa */
+.fullPage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(243, 241, 233, 0.82);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
