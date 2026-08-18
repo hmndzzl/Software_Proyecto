@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import pool from '../config/db';
+import { ESTADOS_RESERVA } from '../config/estadosReserva';
 import { HttpStatus } from '../utils/httpStatus';
 
 interface EspacioRow extends RowDataPacket {
@@ -53,7 +54,7 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
              FROM reserva r
              WHERE r.espacio_id = e.id
                AND r.fecha = ?
-               AND r.estado_reserva_id = 2
+               AND r.estado_reserva_id = ?
                AND r.hora_inicio < ?
                AND r.hora_fin > ?
            )
@@ -62,7 +63,7 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
          END AS disponible
        FROM espacio e
        ORDER BY e.nombre ASC`,
-      [fecha, hora_fin, hora_inicio]
+      [fecha, ESTADOS_RESERVA.CONFIRMADA, hora_fin, hora_inicio]
     );
 
     return res.status(HttpStatus.OK).json(

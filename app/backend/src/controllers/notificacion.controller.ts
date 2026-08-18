@@ -12,7 +12,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
               n.evento_id, n.requiere_confirmacion,
-              pn.leida, pn.asistencia_confirmada,
+              pn.leida, pn.asistencia_confirmada, pn.inasistencia_reportada, pn.motivo_excusa,
               r.nombre AS remitente_nombre,
               ev.descripcion AS evento_descripcion
        FROM notificacion n
@@ -60,9 +60,23 @@ export const confirmarAsistenciaNotificacion = async (req: Request, res: Respons
   const personaId = req.user!.id;
   const { id } = req.params;
   try {
+    const [notifs] = await pool.execute<RowDataPacket[]>(
+      'SELECT requiere_confirmacion FROM notificacion WHERE id = ?',
+      [id]
+    );
+
+    if (notifs.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+    if (!notifs[0].requiere_confirmacion) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Esta notificación no requiere confirmación de asistencia' });
+      return;
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET confirmada = 1
+       SET asistencia_confirmada = 1, leida = 1
        WHERE notificacion_id = ? AND persona_id = ?`,
       [id, personaId]
     );
@@ -160,7 +174,7 @@ export const getDestinatarios = async (req: Request, res: Response): Promise<voi
 // CoordMinistros: individual solo a sus ministros
 export const createNotificacion = async (req: Request, res: Response): Promise<void> => {
   const remitenteId = req.user!.id;
-  const rolId      = req.user!.rol_id;
+  const rolId = req.user!.rol_id;
   const { mensaje, tipo, grupo_id, destinatarios, evento_id, requiere_confirmacion } = req.body as NotificacionCreateInput;
 
   if (!mensaje || !tipo) {
@@ -256,6 +270,142 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
   }
 };
 
+// PUT /api/notificaciones/:id/excusar — registra la excusa/motivo de inasistencia al evento
+export const excusarAsistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  const { motivo } = req.body;
+
+  if (!motivo || String(motivo).trim().length === 0) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El motivo de la excusa es requerido' });
+    return;
+  }
+
+  try {
+    const [notifs] = await pool.execute<RowDataPacket[]>(
+      `SELECT requiere_confirmacion FROM notificacion WHERE id = ?`,
+      [id]
+    );
+
+    if (notifs.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+    if (!notifs[0].requiere_confirmacion) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Esta notificación no requiere confirmación/excusa' });
+      return;
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET asistencia_confirmada = 0, leida = 1, motivo_excusa = ?
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [String(motivo).trim(), id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Excusa registrada correctamente', motivo: String(motivo).trim() });
+  } catch (error) {
+    console.error('Error en excusarAsistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al registrar excusa' });
+  }
+};
+
+// PUT /api/notificaciones/:id/no-asistir — registra la inasistencia y avisa al coordinador del ministro
+export const reportarInasistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  const motivo = typeof req.body.motivo === 'string' ? req.body.motivo.trim() : '';
+
+  if (!motivo) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El motivo de la inasistencia es requerido' });
+    return;
+  }
+
+  let conn: Awaited<ReturnType<typeof pool.getConnection>> | null = null;
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [notificaciones] = await conn.execute<RowDataPacket[]>(
+      `SELECT n.id, n.evento_id, p.nombre AS ministro_nombre,
+              COALESCE(e.titulo, e.descripcion, 'evento sin especificar') AS evento_nombre
+       FROM notificacion n
+       INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
+       INNER JOIN persona p ON p.id = pn.persona_id
+       LEFT JOIN evento e ON e.id = n.evento_id
+       WHERE n.id = ?
+         AND pn.persona_id = ?
+         AND n.requiere_confirmacion = 1`,
+      [id, personaId]
+    );
+
+    if (notificaciones.length === 0) {
+      await conn.rollback();
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación de asistencia no encontrada para este usuario' });
+      return;
+    }
+
+    const [coordinadores] = await conn.execute<RowDataPacket[]>(
+      'SELECT coordinador_id FROM coordinador_ministro WHERE ministro_id = ?',
+      [personaId]
+    );
+
+    if (coordinadores.length === 0) {
+      await conn.rollback();
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No se encontró un coordinador de ministros para este ministro' });
+      return;
+    }
+
+    const [actualizacion] = await conn.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET asistencia_confirmada = 0, inasistencia_reportada = 1, motivo_excusa = ?, leida = 1
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [motivo, id, personaId]
+    );
+
+    if (actualizacion.affectedRows === 0) {
+      await conn.rollback();
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    const notificacion = notificaciones[0];
+    const fecha = new Date().toISOString().slice(0, 10);
+    const mensaje = `${notificacion.ministro_nombre} indicó que no podrá asistir a ${notificacion.evento_nombre}. Motivo: ${motivo}`;
+
+    for (const coordinador of coordinadores) {
+      const [notificacionCoordinador] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, evento_id)
+         VALUES (?, ?, 'individual', ?, ?)`,
+        [mensaje, fecha, personaId, notificacion.evento_id]
+      );
+
+      await conn.execute(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)',
+        [coordinador.coordinador_id, notificacionCoordinador.insertId]
+      );
+    }
+
+    await conn.commit();
+    res.status(HttpStatus.OK).json({
+      mensaje: 'Inasistencia registrada y coordinador notificado',
+      motivo,
+      coordinadores_notificados: coordinadores.length,
+    });
+  } catch (error) {
+    if (conn) await conn.rollback();
+    console.error('Error en reportarInasistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al registrar la inasistencia' });
+  } finally {
+    if (conn) conn.release();
+  }
+};
+
 // DELETE /api/notificaciones/:id — solo Admin/Sacerdote
 export const deleteNotificacion = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
@@ -276,3 +426,5 @@ export const deleteNotificacion = async (req: Request, res: Response): Promise<v
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar notificación' });
   }
 };
+
+
