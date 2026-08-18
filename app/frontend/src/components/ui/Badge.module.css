@@ -21,6 +21,7 @@
 .pendiente  { background: var(--color-warnBg); color: var(--color-warn); }
 .confirmada { background: var(--color-okBg);   color: var(--color-ok);   }
 .rechazada  { background: var(--color-badBg);  color: var(--color-bad);  }
+.cancelada  { background: var(--color-badBg);  color: var(--color-bad);  }
 .info       { background: var(--color-infoBg); color: var(--color-info); }
 .neutral    { background: var(--color-cremaDk); color: var(--color-tierra); }
 .ok         { background: var(--color-okBg);   color: var(--color-ok);   }
@@ -29,6 +30,7 @@
 .pendiente  .dot { background: #d2a319; }
 .confirmada .dot { background: var(--color-ok); }
 .rechazada  .dot { background: var(--color-bad); }
+.cancelada  .dot { background: var(--color-bad); }
 .info       .dot { background: var(--color-info); }
 .neutral    .dot { background: var(--color-tierra); }
 .ok         .dot { background: var(--color-ok); }

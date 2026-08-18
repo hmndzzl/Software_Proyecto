@@ -56,6 +56,14 @@ INSERT INTO `notificacion` (`mensaje`, `fecha`, `tipo`, `remitente_id`, `grupo_i
   ('Recordatorio: entregar lista de ministros asignados antes del viernes 23 de mayo.', '2026-05-20', 'individual', 1, NULL);
 
 -- Asignación: todos reciben notif 1 (leída) y notif 2 (no-leída)
+-- Datos para probar confirmación e inasistencia del ministro (persona id=9).
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`) VALUES
+  ('2026-08-23', '09:00:00', '10:30:00', 1, 2, 6);
+
+INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`) VALUES
+  ('Misa dominical de prueba', 6, 1, 'Celebración de prueba para validar la asistencia de ministros.');
+
+
 INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VALUES
   -- Notificación 1 global — leida=1 para los 9 usuarios
   (1, 1, 1), (2, 1, 1), (3, 1, 1), (4, 1, 1), (5, 1, 1),
@@ -64,4 +72,6 @@ INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VA
   (1, 2, 0), (2, 2, 0), (3, 2, 0), (4, 2, 0), (5, 2, 0),
   (6, 2, 0), (7, 2, 0), (8, 2, 0), (9, 2, 0),
   -- Notificación 3 individual → solo CoordMin (id=7)
-  (7, 3, 0);
+  (7, 3, 0),
+  -- NotificaciÃ³n 4 individual â€” Ministro; requiere confirmaciÃ³n
+  (9, 4, 0);

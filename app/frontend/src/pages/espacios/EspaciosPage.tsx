@@ -5,6 +5,9 @@ import EspacioCard, { Espacio } from '../../modules/espacios/components/EspacioC
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardBody, CardHead } from '../../components/ui/Card';
 import { Field, InputUI } from '../../components/ui/Field';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 import styles from './EspaciosPage.module.css';
 
 export default function EspaciosPage() {
@@ -15,7 +18,10 @@ export default function EspaciosPage() {
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [validacion, setValidacion] = useState('');
+  const [retryTick, setRetryTick] = useState(0);
   const navigate = useNavigate();
+
+  const cargarEspacios = () => setRetryTick(t => t + 1);
 
   useEffect(() => {
     const filtros = { fecha, hora_inicio: horaInicio, hora_fin: horaFin };
@@ -59,7 +65,7 @@ export default function EspaciosPage() {
       });
 
     return () => { cancelado = true; };
-  }, [fecha, horaInicio, horaFin]);
+  }, [fecha, horaInicio, horaFin, retryTick]);
 
   return (
     <div className={styles.page}>
@@ -108,11 +114,11 @@ export default function EspaciosPage() {
         </CardBody>
       </Card>
 
-      {cargando && <p className={styles.msg}>Cargando espacios...</p>}
-      {error    && <p className={`${styles.msg} ${styles.msgError}`}>{error}</p>}
+      {cargando && <LoadingState label="Cargando espacios..." />}
+      {error    && <ErrorState message={error} onRetry={cargarEspacios} />}
 
       {!cargando && !error && espacios.length === 0 && (
-        <p className={styles.msg}>No hay espacios registrados.</p>
+        <EmptyState message="No hay espacios registrados." />
       )}
 
       {!cargando && !error && espacios.length > 0 && (

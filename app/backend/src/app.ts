@@ -19,8 +19,6 @@ const PORT = process.env.PORT || 3001;
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://158.23.60.1',
-  'http://158.23.60.1:5173'
 ];
 
 if (process.env.CORS_ORIGIN) {

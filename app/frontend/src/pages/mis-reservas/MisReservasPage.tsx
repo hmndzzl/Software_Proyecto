@@ -4,6 +4,10 @@ import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
+import Btn from '../../components/ui/Btn';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -35,12 +39,28 @@ export default function MisReservasPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
 
-  useEffect(() => {
+  const cargarReservas = () => {
+    setLoading(true);
+    setError('');
     apiClient.get('/api/reservas/mis-reservas')
       .then(res => setReservas(res.data))
       .catch(() => setError('Error al cargar tus reservas.'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    cargarReservas();
   }, []);
+
+  const cancelarReserva = async (id: number) => {
+    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    try {
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: 3 });
+      cargarReservas();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al cancelar la reserva');
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -70,10 +90,10 @@ export default function MisReservasPage() {
           hint={!loading ? `${reservas.length} solicitudes` : undefined}
         />
 
-        {loading && <p className={styles.msg}>Cargando tus reservas...</p>}
-        {error   && <p className={`${styles.msg} ${styles.msgError}`}>{error}</p>}
+        {loading && <LoadingState label="Cargando tus reservas..." />}
+        {error   && <ErrorState message={error} onRetry={cargarReservas} />}
         {!loading && !error && reservas.length === 0 && (
-          <p className={styles.msg}>Aún no tienes reservas registradas.</p>
+          <EmptyState message="Aún no tienes reservas registradas." />
         )}
 
         {!loading && !error && reservas.length > 0 && (
@@ -88,6 +108,7 @@ export default function MisReservasPage() {
                   <th>Fecha</th>
                   <th>Horario</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,6 +124,11 @@ export default function MisReservasPage() {
                       <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                         {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                       </Badge>
+                    </td>
+                    <td>
+                      {(r.estado_reserva_id === 1 || r.estado_reserva_id === 2) && (
+                        <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
+                      )}
                     </td>
                   </tr>
                 ))}
