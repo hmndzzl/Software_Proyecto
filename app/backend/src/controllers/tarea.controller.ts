@@ -20,12 +20,14 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
       );
       tareas = rows;
     } else {
-      let query = `
-        SELECT t.*, p.nombre AS persona_nombre
-        FROM tarea t
-        LEFT JOIN asignacion_tarea at ON at.tarea_id = t.id
-        LEFT JOIN persona p ON p.id = at.persona_id
-      `;
+      // Solo unimos con asignacion_tarea cuando se filtra por persona. Unir siempre
+      // devolvia una fila por cada asignado, duplicando la tarea en el calendario.
+      // La PK (tarea_id, persona_id) garantiza una sola fila por tarea en ese caso.
+      let query = 'SELECT t.* FROM tarea t';
+      if (persona_id) {
+        query += ' JOIN asignacion_tarea at ON at.tarea_id = t.id';
+      }
+
       const conditions: string[] = [];
       const values: any[] = [];
 
@@ -61,7 +63,11 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
            WHERE at2.tarea_id = ?`,
           [tarea.id]
         );
-        return { ...(tarea as any), asignados } as TareaConAsignados;
+        return {
+          ...(tarea as any),
+          asignados,
+          persona_nombre: (asignados[0] as AsignadoInfo | undefined)?.nombre ?? null,
+        } as TareaConAsignados;
       })
     );
 
@@ -116,6 +122,13 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
+  if (hora_inicio >= hora_fin) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      mensaje: 'La hora de inicio debe ser menor que la hora de fin',
+    });
+    return;
+  }
+
   try {
     const [result] = await pool.execute<ResultSetHeader>(
       'INSERT INTO tarea (fecha, hora_inicio, hora_fin, descripcion) VALUES (?, ?, ?, ?)',
@@ -147,6 +160,13 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
   if (!fecha || !hora_inicio || !hora_fin || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
       mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, descripcion',
+    });
+    return;
+  }
+
+  if (hora_inicio >= hora_fin) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      mensaje: 'La hora de inicio debe ser menor que la hora de fin',
     });
     return;
   }
