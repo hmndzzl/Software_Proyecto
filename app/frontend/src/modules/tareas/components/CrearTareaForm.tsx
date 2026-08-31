@@ -17,6 +17,11 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
       return;
     }
 
+    if (horaInicio >= horaFin) {
+      setMensaje('La hora de inicio debe ser menor que la hora de fin.');
+      return;
+    }
+
     try {
       await apiClient.post('/api/tareas', {
         descripcion,
