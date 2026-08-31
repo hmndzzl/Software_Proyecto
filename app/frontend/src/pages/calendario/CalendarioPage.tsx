@@ -63,7 +63,40 @@ const formatRangeText = (mon: Date, sun: Date): string => {
   }
 };
 
-const formatHora = (h: string): string => h.substring(0, 5);
+const formatHora = (h?: string | null): string => (h ? h.substring(0, 5) : '--:--');
+
+// La API puede devolver 'YYYY-MM-DD' o un ISO completo ('YYYY-MM-DDTHH:mm:ss.sssZ').
+// Nos quedamos siempre con la parte de fecha, sin volver a parsear a Date
+// (parsear reintroduciria el desfase de zona horaria).
+const fechaKey = (fecha?: string | null): string => (fecha ? fecha.slice(0, 10) : '');
+
+// Ordena por hora de inicio y, en empate, por hora de fin, para que el orden
+// dentro de la columna no dependa del ORDER BY de la API.
+const compararPorHora = (a: Tarea, b: Tarea): number =>
+  (a.hora_inicio ?? '').localeCompare(b.hora_inicio ?? '') ||
+  (a.hora_fin ?? '').localeCompare(b.hora_fin ?? '');
+
+// Agrupa las tareas por dia en una sola pasada, descartando repetidos por id.
+const agruparPorDia = (tareas: Tarea[]): Map<string, Tarea[]> => {
+  const porDia = new Map<string, Tarea[]>();
+  const vistas = new Set<number>();
+
+  for (const tarea of tareas) {
+    const dia = fechaKey(tarea.fecha);
+    if (!dia || vistas.has(tarea.id)) continue;
+    vistas.add(tarea.id);
+
+    const delDia = porDia.get(dia);
+    if (delDia) {
+      delDia.push(tarea);
+    } else {
+      porDia.set(dia, [tarea]);
+    }
+  }
+
+  porDia.forEach(delDia => delDia.sort(compararPorHora));
+  return porDia;
+};
 
 export default function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
@@ -124,6 +157,8 @@ export default function CalendarioPage() {
 
   const todayStr = formatYYYYMMDD(new Date());
 
+  const tareasPorDia = agruparPorDia(tareas);
+
   return (
     <div className={styles.page}>
       <PageHeader
@@ -166,8 +201,7 @@ export default function CalendarioPage() {
             const dayStr = formatYYYYMMDD(day);
             const isToday = dayStr === todayStr;
 
-            // Filter tasks assigned to this specific date
-            const dayTareas = tareas.filter(t => t.fecha.split('T')[0] === dayStr);
+            const dayTareas = tareasPorDia.get(dayStr) ?? [];
 
             return (
               <div
