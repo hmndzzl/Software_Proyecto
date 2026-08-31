@@ -73,7 +73,9 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
       expect(pool.execute).toHaveBeenCalledTimes(2);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith([{ ...mockTareas[0], asignados: mockAsignados }]);
+      expect(jsonMock).toHaveBeenCalledWith([
+        { ...mockTareas[0], asignados: mockAsignados, persona_nombre: 'Juan' },
+      ]);
     });
 
     it('debería retornar 200 y tareas con filtros (fecha_inicio, fecha_fin, persona_id)', async () => {
@@ -105,6 +107,26 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockResolvedValue([[]]);
       await getTareas(req as Request, res as Response);
       expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('WHERE t.fecha <= ?'), ['2026-08-31']);
+    });
+
+    it('no debe unir con asignacion_tarea al filtrar solo por fechas (evita duplicados)', async () => {
+      req.query = { fecha_inicio: '2026-08-31', fecha_fin: '2026-09-06' };
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query] = (pool.execute as any).mock.calls[0];
+      expect(query).not.toContain('JOIN asignacion_tarea');
+    });
+
+    it('une con asignacion_tarea solo cuando se filtra por persona_id', async () => {
+      req.query = { persona_id: '1' };
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query] = (pool.execute as any).mock.calls[0];
+      expect(query).toContain('JOIN asignacion_tarea');
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
@@ -159,6 +181,15 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     });
 
+    it('debería retornar 400 si hora_inicio >= hora_fin', async () => {
+      req.body = { fecha: '2026-08-12', hora_inicio: '15:40', hora_fin: '15:40', descripcion: 'D' };
+
+      await createTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(pool.execute).not.toHaveBeenCalled();
+    });
+
     it('debería retornar 201 y crear la tarea', async () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
       (pool.execute as any).mockResolvedValueOnce([{ insertId: 5 }]);
@@ -187,6 +218,16 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       await updateTarea(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    });
+
+    it('debería retornar 400 si hora_inicio >= hora_fin', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '16:00', hora_fin: '15:00', descripcion: 'D' };
+
+      await updateTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(pool.execute).not.toHaveBeenCalled();
     });
 
     it('debería retornar 200 al actualizar exitosamente', async () => {
