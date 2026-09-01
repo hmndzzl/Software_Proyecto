@@ -25,7 +25,7 @@ export const getCoordinadoresGrupo = async (_req: Request, res: Response): Promi
 export const getMinistros = async (_req: Request, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo
+      `SELECT p.id, p.nombre, p.correo, p.disponible
        FROM persona p
        INNER JOIN rol r ON r.id = p.rol_id
        WHERE LOWER(TRIM(r.detalle)) = 'ministro'
@@ -46,7 +46,7 @@ export const getPersonaById = async (req: Request, res: Response): Promise<void>
   const { id } = req.params;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, r.detalle AS rol_nombre
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, r.detalle AS rol_nombre
        FROM persona p
        JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
@@ -65,7 +65,40 @@ export const getPersonaById = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// PUT /api/personas/:id — editar perfil propio 
+// PATCH /api/personas/:id/disponibilidad — marca/desmarca a un ministro como disponible
+// No requiere ser el propio usuario, lo gestiona quien coordina ministros.
+export const actualizarDisponibilidad = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { disponible } = req.body;
+
+  if (typeof disponible !== 'boolean') {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El campo disponible (boolean) es requerido' });
+    return;
+  }
+
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'UPDATE persona SET disponible = ? WHERE id = ?',
+      [disponible ? 1 : 0, id]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({
+      mensaje: disponible ? 'Ministro marcado como disponible' : 'Ministro marcado como no disponible',
+      id: Number(id),
+      disponible,
+    });
+  } catch (error) {
+    console.error('Error en actualizarDisponibilidad:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar la disponibilidad' });
+  }
+};
+
+// PUT /api/personas/:id — editar perfil propio
 // Campos editables: nombre, correo, password (opcional).
 // rol_id: solo Admin puede modificarlo.
 export const editarPerfil = async (req: Request, res: Response): Promise<void> => {
