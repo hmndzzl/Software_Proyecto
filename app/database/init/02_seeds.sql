@@ -63,6 +63,11 @@ INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado
 INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`) VALUES
   ('Misa dominical de prueba', 6, 1, 'Celebración de prueba para validar la asistencia de ministros.');
 
+-- Notificación 4 individual — Ministro (id=9); requiere confirmación de asistencia
+-- al evento recién creado (id=1). Debe ir después del INSERT de `evento` porque
+-- referencia evento_id.
+INSERT INTO `notificacion` (`mensaje`, `fecha`, `tipo`, `remitente_id`, `grupo_id`, `evento_id`, `requiere_confirmacion`) VALUES
+  ('Confirma tu asistencia a la Misa dominical de prueba del 23 de agosto.', '2026-08-18', 'individual', 6, NULL, 1, 1);
 
 INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VALUES
   -- Notificación 1 global — leida=1 para los 9 usuarios
@@ -73,5 +78,5 @@ INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VA
   (6, 2, 0), (7, 2, 0), (8, 2, 0), (9, 2, 0),
   -- Notificación 3 individual → solo CoordMin (id=7)
   (7, 3, 0),
-  -- NotificaciÃ³n 4 individual â€” Ministro; requiere confirmaciÃ³n
+  -- Notificación 4 individual — Ministro; requiere confirmación
   (9, 4, 0);

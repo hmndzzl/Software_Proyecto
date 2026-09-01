@@ -43,6 +43,13 @@
   color: var(--color-muted);
 }
 
+.dispoCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .rolBadge {
   display: inline-flex;
   padding: 3px 10px;
