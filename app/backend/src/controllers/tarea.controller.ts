@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
 import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
+import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 
 // Manejo de get, post, put, delete para tareas y asignaciones
@@ -236,7 +237,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     }
 
     const [personas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE id = ?', [persona_id]
+      'SELECT id, disponible FROM persona WHERE id = ?', [persona_id]
     );
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
@@ -244,6 +245,22 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     }
 
     const tarea = tareas[0];
+
+    // Alerta de rotación, no bloquea la asignación, solo informa.
+    // ministro_no_disponible: fue marcado manualmente como no disponible (enfermo, permiso, etc.)
+    // tope_servicios_superado: ya alcanzó/superó el tope de tareas del mes de la tarea asignada
+    const ministroNoDisponible = !personas[0].disponible;
+
+    const [conteoMes] = await pool.execute<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total
+       FROM asignacion_tarea at
+       INNER JOIN tarea t ON t.id = at.tarea_id
+       WHERE at.persona_id = ?
+         AND YEAR(t.fecha) = YEAR(?) AND MONTH(t.fecha) = MONTH(?)`,
+      [persona_id, tarea.fecha, tarea.fecha]
+    );
+    const serviciosPrevios = Number(conteoMes[0].total);
+
     const [conflictos] = await pool.execute<RowDataPacket[]>(
       `SELECT 1
        FROM asignacion_tarea at
@@ -291,10 +308,18 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
 
     await conn.commit();
 
+    const serviciosEnElMes = serviciosPrevios + (asignResult.affectedRows > 0 ? 1 : 0);
+
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Asignación realizada correctamente',
       tarea_id,
       persona_id,
+      alerta: {
+        ministro_no_disponible: ministroNoDisponible,
+        tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
+        servicios_en_el_mes: serviciosEnElMes,
+        tope_servicios_mes: TOPE_SERVICIOS_MES,
+      },
     });
   } catch (error) {
     if (conn) await conn.rollback();
