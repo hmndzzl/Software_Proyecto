@@ -116,9 +116,12 @@ export default function CalendarioPage() {
     return day;
   });
 
-  const cargarTareas = () => {
-    setLoading(true);
-    setError('');
+  // silent=true evita el parpadeo de "Cargando..." cuando el refresco ocurre
+  const cargarTareas = (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
 
     const startStr = formatYYYYMMDD(activeMonday);
     const endStr   = formatYYYYMMDD(activeSunday);
@@ -126,17 +129,33 @@ export default function CalendarioPage() {
     apiClient.get(`/api/tareas?fecha_inicio=${startStr}&fecha_fin=${endStr}`)
       .then(res => {
         setTareas(res.data);
+        if (silent) setError('');
       })
       .catch(() => {
-        setError('Error al cargar las tareas del calendario.');
+        if (!silent) setError('Error al cargar las tareas del calendario.');
       })
       .finally(() => {
-        setLoading(false);
+        if (!silent) setLoading(false);
       });
   };
 
   useEffect(() => {
     cargarTareas();
+
+    // Las tareas pueden crearse/modificarse desde otra pestaña sin que este componente se vuelva a montar, al recuperar el foco o visibilidad, se refresca para no depender de un
+    // recargo manual de la página.
+    const handleRefresh = () => {
+      if (document.visibilityState === 'visible') {
+        cargarTareas(true);
+      }
+    };
+    window.addEventListener('focus', handleRefresh);
+    document.addEventListener('visibilitychange', handleRefresh);
+
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      document.removeEventListener('visibilitychange', handleRefresh);
+    };
   }, [currentDate]);
 
   const handlePrevWeek = () => {
@@ -193,7 +212,7 @@ export default function CalendarioPage() {
       </div>
 
       {loading && <LoadingState label="Cargando calendario..." />}
-      {error && <ErrorState message={error} onRetry={cargarTareas} />}
+      {error && <ErrorState message={error} onRetry={() => cargarTareas()} />}
 
       {!loading && !error && (
         <div className={styles.grid}>
