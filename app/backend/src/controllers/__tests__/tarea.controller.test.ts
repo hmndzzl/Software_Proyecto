@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/httpStatus';
+import { TOPE_SERVICIOS_MES } from '../../config/constants';
 import pool from '../../config/db';
 import {
   getTareas,
@@ -320,9 +321,11 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 201 y asignar creando notificación', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D' }]]); // SELECT tarea
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); // SELECT persona
-      
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]); // SELECT tarea
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]); // SELECT persona
+      (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]); // conteo servicios del mes
+      (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT conflictos de horario - ninguno
+
       mockConnection.execute.mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT asignacion (nueva)
       mockConnection.execute.mockResolvedValueOnce([{ insertId: 10 }]); // INSERT notif
       mockConnection.execute.mockResolvedValueOnce([{}]); // INSERT persona_notif
@@ -331,13 +334,23 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        alerta: {
+          ministro_no_disponible: false,
+          tope_servicios_superado: false,
+          servicios_en_el_mes: 1,
+          tope_servicios_mes: TOPE_SERVICIOS_MES,
+        },
+      }));
     });
 
     it('debería retornar 201 y no crear notificación si la asignación ya existía (IGNORE)', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D' }]]); 
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); 
-      
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ total: 1 }]]); // ya tenía 1 servicio este mes (la propia tarea)
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
       mockConnection.execute.mockResolvedValueOnce([{ affectedRows: 0 }]); // INSERT asignacion (ya existía)
 
       await asignarTarea(req as Request, res as Response);
@@ -345,13 +358,74 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(mockConnection.execute).toHaveBeenCalledTimes(1); // Solo el primer insert
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      // No fue una asignación nueva, el conteo no suma +1
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        alerta: expect.objectContaining({ servicios_en_el_mes: 1 }),
+      }));
+    });
+
+    it('debería marcar ministro_no_disponible en la alerta sin bloquear la asignación', async () => {
+      req.body = { tarea_id: 1, persona_id: 2 };
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 0 }]]); // marcado no disponible
+      (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      mockConnection.execute.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      mockConnection.execute.mockResolvedValueOnce([{ insertId: 10 }]);
+      mockConnection.execute.mockResolvedValueOnce([{}]);
+
+      await asignarTarea(req as Request, res as Response);
+
+      // No bloquea: sigue siendo 201, solo informa vía "alerta"
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        alerta: expect.objectContaining({ ministro_no_disponible: true }),
+      }));
+    });
+
+    it('debería marcar tope_servicios_superado cuando ya alcanzó el tope mensual', async () => {
+      req.body = { tarea_id: 1, persona_id: 2 };
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ total: TOPE_SERVICIOS_MES }]]); // ya al tope antes de esta asignación
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      mockConnection.execute.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      mockConnection.execute.mockResolvedValueOnce([{ insertId: 10 }]);
+      mockConnection.execute.mockResolvedValueOnce([{}]);
+
+      await asignarTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        alerta: expect.objectContaining({
+          tope_servicios_superado: true,
+          servicios_en_el_mes: TOPE_SERVICIOS_MES + 1,
+        }),
+      }));
+    });
+
+    it('debería retornar 409 si hay conflicto de horario, sin llegar a insertar', async () => {
+      req.body = { tarea_id: 1, persona_id: 2 };
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ 1: 1 }]]); // hay conflicto de horario
+
+      await asignarTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+      expect(mockConnection.execute).not.toHaveBeenCalled();
     });
 
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D' }]]); 
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); 
-      
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]);
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
       mockConnection.execute.mockRejectedValueOnce(new Error('DB Error'));
 
       await asignarTarea(req as Request, res as Response);
