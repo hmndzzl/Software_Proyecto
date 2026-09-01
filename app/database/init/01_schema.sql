@@ -62,6 +62,7 @@ CREATE TABLE `persona` (
   `correo` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `rol_id` int(11) NOT NULL,
+  `disponible` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_persona_correo` (`correo`),
   KEY `fk_persona_rol_idx` (`rol_id`),
