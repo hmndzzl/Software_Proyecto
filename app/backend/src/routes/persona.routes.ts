@@ -4,8 +4,10 @@ import {
   getCoordinadoresGrupo,
   getPersonaById,
   editarPerfil,
+  actualizarDisponibilidad,
 } from '../controllers/persona.controller';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
+import { ROLES } from '../config/roles';
 
 const router = Router();
 
@@ -18,5 +20,7 @@ router.get('/', getMinistros);
 // Rutas con parámetro de id
 router.get('/:id', getPersonaById);
 router.put('/:id', editarPerfil);
+// requireRole(COORDINADOR_MINISTROS) también permite Sacerdote/Admin por jerarquía (ver auth.middleware)
+router.patch('/:id/disponibilidad', requireRole(ROLES.COORDINADOR_MINISTROS), actualizarDisponibilidad);
 
 export default router;
