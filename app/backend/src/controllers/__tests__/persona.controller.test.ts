@@ -8,7 +8,8 @@ import {
   getCoordinadoresGrupo,
   getMinistros,
   getPersonaById,
-  editarPerfil
+  editarPerfil,
+  actualizarDisponibilidad
 } from '../persona.controller';
 
 vi.mock('../../config/db', () => ({
@@ -120,6 +121,70 @@ describe('Persona Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getPersonaById(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('actualizarDisponibilidad', () => {
+    it('debería retornar 400 si disponible no es boolean', async () => {
+      req.params = { id: '1' };
+      req.body = { disponible: 'no' };
+
+      await actualizarDisponibilidad(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    });
+
+    it('debería retornar 404 si la persona no existe', async () => {
+      req.params = { id: '99' };
+      req.body = { disponible: false };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 0 }]);
+
+      await actualizarDisponibilidad(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 200 y marcar como disponible', async () => {
+      req.params = { id: '1' };
+      req.body = { disponible: true };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await actualizarDisponibilidad(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE persona SET disponible = ? WHERE id = ?'),
+        [1, '1']
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        mensaje: 'Ministro marcado como disponible',
+        disponible: true,
+      }));
+    });
+
+    it('debería retornar 200 y marcar como no disponible', async () => {
+      req.params = { id: '1' };
+      req.body = { disponible: false };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await actualizarDisponibilidad(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE persona SET disponible = ? WHERE id = ?'),
+        [0, '1']
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ disponible: false }));
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      req.params = { id: '1' };
+      req.body = { disponible: true };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await actualizarDisponibilidad(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
