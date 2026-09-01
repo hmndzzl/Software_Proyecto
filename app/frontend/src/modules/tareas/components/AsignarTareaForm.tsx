@@ -20,7 +20,11 @@ interface Tarea {
 interface Persona {
   id: number;
   nombre: string;
+  disponible: boolean;
 }
+
+// Debe coincidir con TOPE_SERVICIOS_MES en app/backend/src/config/constants.ts
+const TOPE_SERVICIOS_MES = 8;
 
 export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { refreshKey?: number, onAsignacionExitosa?: () => void }) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
@@ -54,7 +58,27 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
     );
   }, [tareas, tareaSeleccionadaObj, personaSeleccionada]);
 
-  const nombrePersonaSeleccionada = personas.find((p) => String(p.id) === personaSeleccionada)?.nombre ?? 'Este ministro';
+  const personaSeleccionadaObj = personas.find((p) => String(p.id) === personaSeleccionada);
+  const nombrePersonaSeleccionada = personaSeleccionadaObj?.nombre ?? 'Este ministro';
+
+  // No bloquea el envío, solo informa antes de confirmar.
+  const alertaRotacion = useMemo(() => {
+    if (!tareaSeleccionadaObj || !personaSeleccionadaObj) return null;
+
+    const mesAno = tareaSeleccionadaObj.fecha.slice(0, 7); // 'YYYY-MM'
+    const otrosServiciosDelMes = tareas.filter((t) =>
+      t.id !== tareaSeleccionadaObj.id &&
+      t.fecha.slice(0, 7) === mesAno &&
+      t.asignados.some((a) => a.persona_id === personaSeleccionadaObj.id)
+    ).length;
+    const serviciosProyectados = otrosServiciosDelMes + 1;
+
+    const noDisponible = !personaSeleccionadaObj.disponible;
+    const topeSuperado = serviciosProyectados > TOPE_SERVICIOS_MES;
+
+    if (!noDisponible && !topeSuperado) return null;
+    return { noDisponible, topeSuperado, serviciosProyectados };
+  }, [tareaSeleccionadaObj, personaSeleccionadaObj, tareas]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +158,23 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
                   {c.descripcion} · {c.hora_inicio.substring(0, 5)}–{c.hora_fin.substring(0, 5)}
                 </li>
               ))}
+            </ul>
+          </div>
+        )}
+
+        {alertaRotacion && (
+          <div className={styles.modalWarning}>
+            <strong>Alerta de rotación:</strong>
+            <ul className={styles.conflictList}>
+              {alertaRotacion.noDisponible && (
+                <li>{nombrePersonaSeleccionada} está marcado como no disponible (enfermo, permiso, etc.).</li>
+              )}
+              {alertaRotacion.topeSuperado && (
+                <li>
+                  {nombrePersonaSeleccionada} tendría {alertaRotacion.serviciosProyectados} servicios este mes
+                  (tope: {TOPE_SERVICIOS_MES}).
+                </li>
+              )}
             </ul>
           </div>
         )}
