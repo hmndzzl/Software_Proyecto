@@ -6,6 +6,7 @@ import pool from '../../config/db';
 import { ROLES } from '../../config/roles';
 import {
   getCoordinadoresGrupo,
+  getEncargadosEvento,
   getMinistros,
   getPersonaById,
   editarPerfil
@@ -88,6 +89,29 @@ describe('Persona Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getMinistros(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('getEncargadosEvento', () => {
+    it('debería retornar 200 y las personas que pueden ser encargadas', async () => {
+      const mockRows = [{ id: 1, nombre: 'Ana' }, { id: 2, nombre: 'Luis' }];
+      (pool.execute as any).mockResolvedValue([mockRows]);
+
+      await getEncargadosEvento(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(
+        'SELECT id, nombre FROM persona ORDER BY nombre ASC'
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(mockRows);
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await getEncargadosEvento(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });

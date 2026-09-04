@@ -41,6 +41,21 @@ export const getMinistros = async (_req: Request, res: Response): Promise<void> 
   }
 };
 
+// GET /api/personas/encargados-evento — lista las personas disponibles para reasignar un evento.
+export const getEncargadosEvento = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      'SELECT id, nombre FROM persona ORDER BY nombre ASC'
+    );
+    res.status(HttpStatus.OK).json(rows);
+  } catch (error) {
+    console.error('Error en getEncargadosEvento:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      mensaje: 'Error al obtener las personas encargadas',
+    });
+  }
+};
+
 // GET /api/personas/:id — devuelve datos públicos de una persona (sin password)
 export const getPersonaById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
