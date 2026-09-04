@@ -79,6 +79,22 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       ]);
     });
 
+    it('debería retornar persona_nombre como null si la tarea no tiene asignados', async () => {
+      req.query = {};
+      const mockTareas = [{ id: 1, descripcion: 'Tarea Sin Asignados' }];
+      const mockAsignados: any[] = [];
+
+      (pool.execute as any).mockResolvedValueOnce([mockTareas]);
+      (pool.execute as any).mockResolvedValueOnce([mockAsignados]);
+
+      await getTareas(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith([
+        { ...mockTareas[0], asignados: [], persona_nombre: null },
+      ]);
+    });
+
     it('debería retornar 200 y tareas con filtros (fecha_inicio, fecha_fin, persona_id)', async () => {
       req.query = { fecha_inicio: '2026-08-01', fecha_fin: '2026-08-31', persona_id: '1' };
       const mockTareas = [{ id: 1, descripcion: 'Tarea 1' }];
