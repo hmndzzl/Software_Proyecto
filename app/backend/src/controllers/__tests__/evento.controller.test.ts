@@ -217,6 +217,45 @@ describe('Evento Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Evento actualizado exitosamente' });
     });
 
+    it('debería reasignar el encargado cuando se envía encargado_id válido', async () => {
+      req.params = { id: '1' };
+      req.body = { descripcion: 'Nueva desc', encargado_id: 7 };
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 7 }]]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await updateEvento(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenNthCalledWith(1, 'SELECT id FROM persona WHERE id = ?', [7]);
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        2,
+        'UPDATE evento SET descripcion = ?, encargado_id = ? WHERE id = ?',
+        ['Nueva desc', 7, '1']
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 400 si encargado_id no es válido', async () => {
+      req.params = { id: '1' };
+      req.body = { descripcion: 'Nueva desc', encargado_id: 'invalido' };
+
+      await updateEvento(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El encargado_id debe ser un identificador válido' });
+      expect(pool.execute).not.toHaveBeenCalled();
+    });
+
+    it('debería retornar 404 si el encargado no existe', async () => {
+      req.params = { id: '1' };
+      req.body = { descripcion: 'Nueva desc', encargado_id: 99 };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      await updateEvento(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'La persona encargada no existe' });
+    });
+
     it('debería retornar 404 si el evento no se encuentra (affectedRows === 0)', async () => {
       req.params = { id: '99' };
       req.body = { descripcion: 'Nueva desc' };
