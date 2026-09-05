@@ -19,9 +19,9 @@
 }
 
 /* ── Tamaños ── */
-.sm { height: 36px; padding: 0 14px; font-size: 12.5px; }
-.md { height: 44px; padding: 0 18px; font-size: 13.5px; }
-.lg { height: 52px; padding: 0 22px; font-size: 14.5px; }
+.sm { height: 36px; padding: 0 14px; font-size: 13.5px; }
+.md { height: 44px; padding: 0 18px; font-size: 14.5px; }
+.lg { height: 52px; padding: 0 22px; font-size: 15.5px; }
 
 /* ── Kinds ── */
 .primary {
