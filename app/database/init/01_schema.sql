@@ -154,6 +154,31 @@ CREATE TABLE `persona_notificacion` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- ----------------------------
+-- Cambio de turno entre ministros (HU-23)
+-- ----------------------------
+
+DROP TABLE IF EXISTS `cambio_turno`;
+CREATE TABLE `cambio_turno` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tarea_id` int(11) NOT NULL,
+  `solicitante_id` int(11) NOT NULL,
+  `destinatario_id` int(11) NOT NULL,
+  `estado` ENUM('pendiente','aceptado','rechazado') NOT NULL DEFAULT 'pendiente',
+  `notificacion_id` int(11) DEFAULT NULL,
+  `fecha_solicitud` date NOT NULL,
+  `fecha_respuesta` date DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_ct_tarea_idx` (`tarea_id`),
+  KEY `fk_ct_solicitante_idx` (`solicitante_id`),
+  KEY `fk_ct_destinatario_idx` (`destinatario_id`),
+  KEY `fk_ct_notificacion_idx` (`notificacion_id`),
+  CONSTRAINT `fk_ct_tarea` FOREIGN KEY (`tarea_id`) REFERENCES `tarea` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ct_solicitante` FOREIGN KEY (`solicitante_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ct_destinatario` FOREIGN KEY (`destinatario_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ct_notificacion` FOREIGN KEY (`notificacion_id`) REFERENCES `notificacion` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- ----------------------------
 -- Reserva (depende de espacio y estado_reserva)
 -- ----------------------------
 
