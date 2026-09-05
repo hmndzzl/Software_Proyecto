@@ -15,7 +15,7 @@
 
 .kicker {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .24em;
   color: var(--color-tierra);
@@ -35,7 +35,7 @@
 
 .subtitle {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   color: var(--color-muted);
   margin-top: 6px;
   max-width: 640px;
