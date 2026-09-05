@@ -237,8 +237,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.id}</td>
                   <td>{r.espacio_nombre ?? '—'}</td>
                   <td>{formatFecha(r.fecha)}</td>
-                  <td>{formatHora(r.hora_inicio)}</td>
-                  <td>{formatHora(r.hora_fin)}</td>
+                  <td className={styles.horaCell}>{formatHora(r.hora_inicio)}</td>
+                  <td className={styles.horaCell}>{formatHora(r.hora_fin)}</td>
                   <td>{r.evento_titulo ?? '—'}</td>
                   <td>{r.evento_descripcion ?? '—'}</td>
                   <td>
