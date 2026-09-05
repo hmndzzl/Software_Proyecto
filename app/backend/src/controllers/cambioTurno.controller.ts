@@ -3,7 +3,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
 import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
-import type { CambioTurnoCreateInput } from '../types/cambioTurno.types';
+import type { CambioTurnoCreateInput, CambioTurnoConInfo } from '../types/cambioTurno.types';
 
 // HU-23: permite a un ministro asignado a una tarea solicitar que otro ministro tome su lugar.
 // Al aceptarse (responderCambioTurno) el titular de la tarea se actualiza automáticamente,
@@ -125,5 +125,31 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al solicitar el cambio de turno' });
   } finally {
     if (conn) conn.release();
+  }
+};
+
+// GET /api/cambios-turno — solicitudes donde el usuario autenticado es solicitante o destinatario
+export const getCambiosTurno = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      `SELECT ct.id, ct.tarea_id, ct.solicitante_id, ct.destinatario_id, ct.estado,
+              ct.fecha_solicitud, ct.fecha_respuesta,
+              s.nombre AS solicitante_nombre, d.nombre AS destinatario_nombre,
+              t.descripcion AS tarea_descripcion, t.fecha AS tarea_fecha,
+              t.hora_inicio AS tarea_hora_inicio, t.hora_fin AS tarea_hora_fin
+       FROM cambio_turno ct
+       INNER JOIN persona s ON s.id = ct.solicitante_id
+       INNER JOIN persona d ON d.id = ct.destinatario_id
+       INNER JOIN tarea t   ON t.id = ct.tarea_id
+       WHERE ct.solicitante_id = ? OR ct.destinatario_id = ?
+       ORDER BY ct.fecha_solicitud DESC, ct.id DESC`,
+      [personaId, personaId]
+    );
+
+    res.status(HttpStatus.OK).json(rows as CambioTurnoConInfo[]);
+  } catch (error) {
+    console.error('Error en getCambiosTurno:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener las solicitudes de cambio de turno' });
   }
 };
