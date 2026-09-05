@@ -119,7 +119,7 @@ export default function MisReservasPage() {
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
                     <td className={styles.mono}>{fmt(r.fecha)}</td>
-                    <td className={styles.mono}>{fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}</td>
+                    <td className={styles.horaCell}>{fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}</td>
                     <td>
                       <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                         {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
