@@ -1,0 +1,24 @@
+.seccionTitulo {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+  padding: 16px 24px 8px;
+}
+
+.horaCell { font-family: var(--font-mono); font-size: 14px; color: var(--color-ink); }
+
+.acciones {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mensajeExito {
+  font-family: var(--font-body);
+  color: var(--color-ok);
+  font-size: 14px;
+  padding: 0 24px 8px;
+}
