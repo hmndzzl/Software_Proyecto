@@ -4,7 +4,6 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import { ROLES } from '../../../utils/roles';
-import formStyles from '../../../styles/Form.module.css';
 import styles from './ListaAsignaciones.module.css';
 
 interface Asignacion {
@@ -17,6 +16,39 @@ interface Asignacion {
   nombre_persona: string;
 }
 
+type SortKey = 'tarea' | 'responsable' | 'fecha' | 'horario';
+type SortDir = 'asc' | 'desc' | null;
+
+const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
+  tarea: (a) => a.descripcion_tarea.toLowerCase(),
+  responsable: (a) => a.nombre_persona.toLowerCase(),
+  fecha: (a) => `${a.fecha} ${a.hora_inicio}`,
+  horario: (a) => a.hora_inicio,
+};
+
+// Icono de 3 estados: sin ordenar (flechas apagadas), descendente (flecha abajo), ascendente (flecha arriba)
+function SortIcon({ dir }: { dir: SortDir }) {
+  if (dir === 'desc') {
+    return (
+      <svg className={styles.sortIconActivo} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v14" /><path d="m18 13-6 6-6-6" />
+      </svg>
+    );
+  }
+  if (dir === 'asc') {
+    return (
+      <svg className={styles.sortIconActivo} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19V5" /><path d="m6 11 6-6 6 6" />
+      </svg>
+    );
+  }
+  return (
+    <svg className={styles.sortIcon} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" />
+    </svg>
+  );
+}
+
 export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number }) {
   const usuarioInfo = localStorage.getItem('usuario');
   const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
@@ -26,11 +58,8 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [cargando, setCargando] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
-  const [filtroResponsable, setFiltroResponsable] = useState('');
-  const [filtroHoraDesde, setFiltroHoraDesde] = useState('');
-  const [filtroHoraHasta, setFiltroHoraHasta] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>(null);
 
   const cargarAsignaciones = () => {
     setCargando(true);
@@ -62,91 +91,56 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     cargarAsignaciones();
   }, [refreshKey]);
 
-  const responsables = useMemo(() => {
-    const nombres = new Set(asignaciones.map(a => a.nombre_persona));
-    return Array.from(nombres).sort();
-  }, [asignaciones]);
-
-  const asignacionesFiltradas = useMemo(() => {
-    return asignaciones
-      .filter(a => !filtroFechaDesde || a.fecha >= filtroFechaDesde)
-      .filter(a => !filtroFechaHasta || a.fecha <= filtroFechaHasta)
-      .filter(a => !filtroResponsable || a.nombre_persona === filtroResponsable)
-      .filter(a => !filtroHoraDesde || a.hora_inicio.substring(0, 5) >= filtroHoraDesde)
-      .filter(a => !filtroHoraHasta || a.hora_fin.substring(0, 5) <= filtroHoraHasta);
-  }, [asignaciones, filtroFechaDesde, filtroFechaHasta, filtroResponsable, filtroHoraDesde, filtroHoraHasta]);
-
-  const hayFiltrosActivos = !!(filtroFechaDesde || filtroFechaHasta || filtroResponsable || filtroHoraDesde || filtroHoraHasta);
-
-  const limpiarFiltros = () => {
-    setFiltroFechaDesde('');
-    setFiltroFechaHasta('');
-    setFiltroResponsable('');
-    setFiltroHoraDesde('');
-    setFiltroHoraHasta('');
+  // Ciclo de 3 estados por columna: sin ordenar -> descendente -> ascendente -> sin ordenar
+  const alternarOrden = (key: SortKey) => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir('desc');
+      return;
+    }
+    if (sortDir === 'desc') { setSortDir('asc'); return; }
+    if (sortDir === 'asc') { setSortKey(null); setSortDir(null); return; }
+    setSortDir('desc');
   };
+
+  const asignacionesOrdenadas = useMemo(() => {
+    if (!sortKey || !sortDir) return asignaciones;
+    const getValor = SORT_VALUE[sortKey];
+    const factor = sortDir === 'asc' ? 1 : -1;
+    return [...asignaciones].sort((a, b) => getValor(a).localeCompare(getValor(b)) * factor);
+  }, [asignaciones, sortKey, sortDir]);
 
   if (cargando) return <LoadingState label="Cargando asignaciones..." />;
   if (error)    return <ErrorState message={error} onRetry={cargarAsignaciones} />;
+
+  const renderTh = (label: string, key: SortKey) => (
+    <th className={styles.thOrdenable} onClick={() => alternarOrden(key)}>
+      <span className={styles.thContenido}>
+        {label}
+        <SortIcon dir={sortKey === key ? sortDir : null} />
+      </span>
+    </th>
+  );
 
   return (
     <div>
       <h3 className={styles.seccionTitulo}>{esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'}</h3>
 
-      {!esMinistro && asignaciones.length > 0 && (
-        <div className={styles.filtros}>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Desde:</label>
-            <input type="date" className={formStyles.input} value={filtroFechaDesde} onChange={(e) => setFiltroFechaDesde(e.target.value)} />
-          </div>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Hasta:</label>
-            <input type="date" className={formStyles.input} value={filtroFechaHasta} onChange={(e) => setFiltroFechaHasta(e.target.value)} />
-          </div>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Responsable:</label>
-            <select className={formStyles.input} value={filtroResponsable} onChange={(e) => setFiltroResponsable(e.target.value)}>
-              <option value="">Todos</option>
-              {responsables.map((nombre) => (
-                <option key={nombre} value={nombre}>{nombre}</option>
-              ))}
-            </select>
-          </div>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Hora desde:</label>
-            <input type="time" className={formStyles.input} value={filtroHoraDesde} onChange={(e) => setFiltroHoraDesde(e.target.value)} />
-          </div>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Hora hasta:</label>
-            <input type="time" className={formStyles.input} value={filtroHoraHasta} onChange={(e) => setFiltroHoraHasta(e.target.value)} />
-          </div>
-          {hayFiltrosActivos && (
-            <button type="button" className={formStyles.btnSecondary} onClick={limpiarFiltros}>Limpiar filtros</button>
-          )}
-        </div>
-      )}
-
-      {asignacionesFiltradas.length === 0 ? (
-        <EmptyState message={
-          esMinistro
-            ? 'No tienes tareas asignadas en este momento.'
-            : hayFiltrosActivos
-              ? 'No hay asignaciones que coincidan con los filtros.'
-              : 'No hay tareas asignadas en este momento.'
-        } />
+      {asignaciones.length === 0 ? (
+        <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
       ) : (
         <div className="table-container">
           <table className="styled-table">
             <thead>
               <tr>
-                <th>Tarea</th>
-                {!esMinistro && <th>Ministro Asignado</th>}
-                <th>Fecha</th>
-                <th>Horario</th>
+                {renderTh('Tarea', 'tarea')}
+                {!esMinistro && renderTh('Ministro Asignado', 'responsable')}
+                {renderTh('Fecha', 'fecha')}
+                {renderTh('Horario', 'horario')}
               </tr>
             </thead>
             <tbody>
-              {asignacionesFiltradas.map((asignacion) => (
+              {asignacionesOrdenadas.map((asignacion) => (
                 <tr key={`${asignacion.tarea_id}-${asignacion.persona_id}`}>
                   <td>{asignacion.descripcion_tarea}</td>
                   {!esMinistro && <td><strong>{asignacion.nombre_persona}</strong></td>}
