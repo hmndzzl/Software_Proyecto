@@ -3,6 +3,7 @@ import { Grupo } from '../../../types';
 import apiClient from '../../../api/client';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
 import { CardHead } from '../../../components/ui/Card';
+import Btn from '../../../components/ui/Btn';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -72,9 +73,9 @@ export default function ListaGrupos({
                   {puedeEditar && (
                     <td>
                       {onEditar && (
-                        <button className={styles.btnEditar} onClick={() => onEditar(g)}>
+                        <Btn kind="ghost" size="sm" onClick={() => onEditar(g)}>
                           Editar
-                        </button>
+                        </Btn>
                       )}
                     </td>
                   )}
