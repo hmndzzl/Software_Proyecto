@@ -3,6 +3,7 @@ import { Evento } from '../../../types';
 import { usuarioTieneRol, ROLES } from '../../../utils/roles';
 import apiClient from '../../../api/client';
 import { CardHead } from '../../../components/ui/Card';
+import Btn from '../../../components/ui/Btn';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -76,9 +77,9 @@ export default function ListaEventos({
                   {puedeEditar && (
                     <td>
                       {onEditar && (
-                        <button className={styles.btnEditar} onClick={() => onEditar(ev)}>
+                        <Btn kind="ghost" size="sm" onClick={() => onEditar(ev)}>
                           Editar
-                        </button>
+                        </Btn>
                       )}
                     </td>
                   )}
