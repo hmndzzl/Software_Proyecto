@@ -1,0 +1,15 @@
+.thOrdenable {
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition);
+}
+.thOrdenable:hover { color: var(--color-rojo); }
+
+.thContenido {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sortIcon       { opacity: .4; flex-shrink: 0; }
+.sortIconActivo { opacity: 1; color: var(--color-rojo); flex-shrink: 0; }

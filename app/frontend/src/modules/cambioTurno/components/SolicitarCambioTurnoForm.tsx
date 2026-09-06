@@ -6,6 +6,7 @@ import styles from '../../../styles/Form.module.css';
 
 interface MiTarea {
   id: number;
+  titulo: string;
   descripcion: string;
   fecha: string;
   hora_inicio: string;
@@ -92,7 +93,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
               <option value="">-- Elige una de tus tareas --</option>
               {misTareas.map((tarea) => (
                 <option key={tarea.id} value={tarea.id}>
-                  {tarea.descripcion} · {formatFecha(tarea.fecha)} · {tarea.hora_inicio.substring(0, 5)}-{tarea.hora_fin.substring(0, 5)}
+                  {tarea.titulo} · {formatFecha(tarea.fecha)} · {tarea.hora_inicio.substring(0, 5)}-{tarea.hora_fin.substring(0, 5)}
                 </option>
               ))}
             </select>

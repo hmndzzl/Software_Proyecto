@@ -3,18 +3,44 @@
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 .seccionTitulo { margin-bottom: 14px; }
 
-.thOrdenable {
-  cursor: pointer;
-  user-select: none;
-  transition: color var(--transition);
+.aviso {
+  font-family: var(--font-body);
+  color: var(--color-tierra);
+  font-size: 13.5px;
+  padding: 0 0 14px;
 }
-.thOrdenable:hover { color: var(--color-rojo); }
 
-.thContenido {
+/* Reasignar responsable inline (estilo Jira) */
+.btnReasignar {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  max-width: 100%;
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: var(--radius-input);
+  padding: 3px 8px;
+  margin: -3px -8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--color-carbon);
+  text-align: left;
+  transition: border-color var(--transition), background-color var(--transition);
+}
+.btnReasignar:hover,
+.btnReasignar:focus-visible {
+  border-color: var(--color-oro);
+  background: var(--color-cremaDk);
 }
 
-.sortIcon        { opacity: .4; flex-shrink: 0; }
-.sortIconActivo  { opacity: 1; color: var(--color-rojo); flex-shrink: 0; }
+.reasignarSelect {
+  width: 100%;
+  max-width: 220px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-carbon);
+  padding: 6px 8px;
+  border-radius: var(--radius-input);
+  border: 1.5px solid var(--color-oro);
+  background: var(--color-blanco);
+  box-shadow: 0 0 0 3px rgba(242, 175, 41, .18);
+}

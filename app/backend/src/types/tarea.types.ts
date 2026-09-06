@@ -4,6 +4,7 @@ export interface Tarea {
   fecha: string;        // en formato: YYYY-MM-DD
   hora_inicio: string;  // en formato: HH:MM:SS
   hora_fin: string;
+  titulo: string;
   descripcion: string;
 }
 

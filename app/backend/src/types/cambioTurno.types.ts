@@ -21,6 +21,7 @@ export interface CambioTurnoCreateInput {
 export interface CambioTurnoConInfo extends CambioTurno {
   solicitante_nombre: string;
   destinatario_nombre: string;
+  tarea_titulo: string;
   tarea_descripcion: string;
   tarea_fecha: string;
   tarea_hora_inicio: string;
