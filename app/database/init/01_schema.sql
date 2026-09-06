@@ -47,6 +47,7 @@ CREATE TABLE `tarea` (
   `fecha` date NOT NULL,
   `hora_inicio` time NOT NULL,
   `hora_fin` time NOT NULL,
+  `titulo` varchar(255) NOT NULL,
   `descripcion` text NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;

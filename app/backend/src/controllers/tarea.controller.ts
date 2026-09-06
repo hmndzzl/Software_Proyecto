@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
 import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
+import { ROLES } from '../config/roles';
 import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 
@@ -114,11 +115,11 @@ export const getTareaById = async (req: Request, res: Response): Promise<void> =
 
 // Manejo de creación de tarea con POST /api/tareas
 export const createTarea = async (req: Request, res: Response): Promise<void> => {
-  const { fecha, hora_inicio, hora_fin, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
 
-  if (!fecha || !hora_inicio || !hora_fin || !descripcion) {
+  if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, descripcion',
+      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, titulo, descripcion',
     });
     return;
   }
@@ -132,8 +133,8 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
 
   try {
     const [result] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO tarea (fecha, hora_inicio, hora_fin, descripcion) VALUES (?, ?, ?, ?)',
-      [fecha, hora_inicio, hora_fin, descripcion]
+      'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion) VALUES (?, ?, ?, ?, ?)',
+      [fecha, hora_inicio, hora_fin, titulo, descripcion]
     );
 
     res.status(HttpStatus.CREATED).json({
@@ -143,6 +144,7 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
         fecha,
         hora_inicio,
         hora_fin,
+        titulo,
         descripcion,
         asignados: [],
       },
@@ -156,11 +158,11 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
 // manejo de PUT para actualizar una tarea con PUT /api/tareas/:id
 export const updateTarea = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { fecha, hora_inicio, hora_fin, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
 
-  if (!fecha || !hora_inicio || !hora_fin || !descripcion) {
+  if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, descripcion',
+      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, titulo, descripcion',
     });
     return;
   }
@@ -173,9 +175,33 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
   }
 
   try {
+    const rolId = req.user!.rol_id;
+    const esPrivilegiado = rolId === ROLES.ADMIN || rolId === ROLES.SACERDOTE;
+
+    if (!esPrivilegiado) {
+      if (rolId !== ROLES.COORDINADOR_MINISTROS) {
+        res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'No tienes permiso para editar tareas' });
+        return;
+      }
+      // Un coordinador de ministros solo puede editar tareas donde al menos uno de los
+      // asignados actuales sea uno de sus propios ministros (coordinador_ministro).
+      const [autorizado] = await pool.execute<RowDataPacket[]>(
+        `SELECT 1
+         FROM asignacion_tarea at
+         INNER JOIN coordinador_ministro cm ON cm.ministro_id = at.persona_id
+         WHERE at.tarea_id = ? AND cm.coordinador_id = ?
+         LIMIT 1`,
+        [id, req.user!.id]
+      );
+      if (autorizado.length === 0) {
+        res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo puedes editar tareas de tus propios ministros asignados' });
+        return;
+      }
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
-      'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, descripcion = ? WHERE id = ?',
-      [fecha, hora_inicio, hora_fin, descripcion, id]
+      'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, titulo = ?, descripcion = ? WHERE id = ?',
+      [fecha, hora_inicio, hora_fin, titulo, descripcion, id]
     );
 
     if (result.affectedRows === 0) {
@@ -185,7 +211,7 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
 
     res.status(HttpStatus.OK).json({
       mensaje: 'Tarea actualizada exitosamente',
-      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, descripcion },
+      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, titulo, descripcion },
     });
   } catch (error) {
     console.error('Error en updateTarea:', error);
@@ -229,7 +255,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -277,7 +303,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const descripcionTarea: string = (tareas[0] as any).descripcion;
+    const tituloTarea: string = (tareas[0] as any).titulo;
     const remitenteId: number = req.user!.id;
     const hoy = new Date().toISOString().split('T')[0];
 
@@ -292,7 +318,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
 
     // 2. Solo notificar si la asignación fue nueva (affectedRows > 0)
     if (asignResult.affectedRows > 0) {
-      const mensaje = `Se te asignó la tarea: ${descripcionTarea}`;
+      const mensaje = `Se te asignó la tarea: ${tituloTarea}`;
 
       const [notifResult] = await conn.execute<ResultSetHeader>(
         `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id)
@@ -330,7 +356,116 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// Manejo del DELETE /api/tareas/asignar 
+// Manejo del PUT /api/tareas/asignar — reasigna el responsable de una tarea de una persona a otra
+// en una sola transacción (DELETE + INSERT), sin pasar por el flujo de solicitud/aceptación de HU-23.
+// Pensado para que un coordinador cambie al responsable directamente, estilo "asignar" de Jira.
+export const reasignarTarea = async (req: Request, res: Response): Promise<void> => {
+  const { tarea_id, persona_actual_id, persona_nueva_id } = req.body;
+
+  if (!tarea_id || !persona_actual_id || !persona_nueva_id) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'tarea_id, persona_actual_id y persona_nueva_id son requeridos' });
+    return;
+  }
+  if (Number(persona_actual_id) === Number(persona_nueva_id)) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El nuevo responsable debe ser distinto al actual' });
+    return;
+  }
+
+  let conn: PoolConnection | null = null;
+  try {
+    const [tareas] = await pool.execute<RowDataPacket[]>(
+      'SELECT id, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
+    );
+    if (tareas.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
+      return;
+    }
+    const tarea = tareas[0];
+
+    const [asignaciones] = await pool.execute<RowDataPacket[]>(
+      'SELECT 1 FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
+      [tarea_id, persona_actual_id]
+    );
+    if (asignaciones.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'La persona indicada no está asignada actualmente a esta tarea' });
+      return;
+    }
+
+    const [personas] = await pool.execute<RowDataPacket[]>(
+      'SELECT id, disponible FROM persona WHERE id = ?', [persona_nueva_id]
+    );
+    if (personas.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
+      return;
+    }
+
+    // Misma alerta de rotación (no bloqueante) que asignarTarea, calculada para el nuevo responsable.
+    const ministroNoDisponible = !personas[0].disponible;
+
+    const [conteoMes] = await pool.execute<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total
+       FROM asignacion_tarea at
+       INNER JOIN tarea t ON t.id = at.tarea_id
+       WHERE at.persona_id = ?
+         AND YEAR(t.fecha) = YEAR(?) AND MONTH(t.fecha) = MONTH(?)
+         AND t.id <> ?`,
+      [persona_nueva_id, tarea.fecha, tarea.fecha, tarea_id]
+    );
+    const serviciosEnElMes = Number(conteoMes[0].total) + 1;
+
+    const [conflictos] = await pool.execute<RowDataPacket[]>(
+      `SELECT 1
+       FROM asignacion_tarea at
+       INNER JOIN tarea t ON t.id = at.tarea_id
+       WHERE at.persona_id = ?
+         AND t.id <> ?
+         AND t.fecha = ?
+         AND t.hora_inicio < ?
+         AND t.hora_fin > ?
+       LIMIT 1`,
+      [persona_nueva_id, tarea_id, tarea.fecha, tarea.hora_fin, tarea.hora_inicio]
+    );
+    if (conflictos.length > 0) {
+      res.status(HttpStatus.CONFLICT).json({ mensaje: 'El nuevo responsable ya tiene una tarea asignada en ese horario' });
+      return;
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    await conn.execute(
+      'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
+      [tarea_id, persona_actual_id]
+    );
+    await conn.execute(
+      'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
+      [tarea_id, persona_nueva_id]
+    );
+
+    await conn.commit();
+
+    res.status(HttpStatus.OK).json({
+      mensaje: 'Responsable reasignado correctamente',
+      tarea_id: Number(tarea_id),
+      persona_anterior_id: Number(persona_actual_id),
+      persona_nueva_id: Number(persona_nueva_id),
+      alerta: {
+        ministro_no_disponible: ministroNoDisponible,
+        tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
+        servicios_en_el_mes: serviciosEnElMes,
+        tope_servicios_mes: TOPE_SERVICIOS_MES,
+      },
+    });
+  } catch (error) {
+    if (conn) await conn.rollback();
+    console.error('Error en reasignarTarea:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al reasignar la tarea' });
+  } finally {
+    if (conn) conn.release();
+  }
+};
+
+// Manejo del DELETE /api/tareas/asignar
 export const desasignarTarea = async (req: Request, res: Response): Promise<void> => {
   const { tarea_id, persona_id } = req.body;
 

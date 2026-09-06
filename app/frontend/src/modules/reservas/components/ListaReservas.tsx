@@ -4,7 +4,13 @@ import { CardHead } from '../.././../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
+import Badge from '../../../components/ui/Badge';
+import type { BadgeKind } from '../../../components/ui/Badge';
+import Btn from '../../../components/ui/Btn';
+import SortableTh from '../../../components/ui/SortableTh';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 import { ROLES } from '../../../utils/roles';
+import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
@@ -30,13 +36,24 @@ interface Reserva {
 const ESTADO_LABEL: Record<number, string> = {
   1: 'Pendiente',
   2: 'Confirmada',
-  3: 'Rechazada'
+  3: 'Rechazada',
+  4: 'Cancelada',
 };
 
-const ESTADO_BADGE_CLASS: Record<number, string> = {
-  1: styles.badgePendiente,
-  2: styles.badgeConfirmada,
-  3: styles.badgeRechazada,
+const ESTADO_KIND: Record<number, BadgeKind> = {
+  1: 'pendiente',
+  2: 'confirmada',
+  3: 'rechazada',
+  4: 'cancelada',
+};
+
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
+
+const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
+  id: (r) => r.id,
+  espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
+  fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
+  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
@@ -60,6 +77,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const esAdminOSacerdote = usuario && (
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );
+
+  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(reservas, SORT_VALUE);
 
   const fetchReservas = async () => {
     setLoading(true);
@@ -102,6 +121,22 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const cerrarEdicion = () => {
     setEditando(null);
     setEditMensaje('');
+  };
+
+  const cancelarReservaDesdeEdicion = async () => {
+    if (!editando) return;
+    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    setEditLoading(true);
+    setEditMensaje('');
+    try {
+      await apiClient.put(`/api/reservas/${editando.id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
+      cerrarEdicion();
+      fetchReservas();
+    } catch (err: any) {
+      setEditMensaje(err.response?.data?.message || 'Error al cancelar la reserva.');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const guardarEdicion = async () => {
@@ -191,6 +226,16 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </div>
 
             <div className={formStyles.modalActions}>
+              {usuario && editando.solicitante_id === usuario.id && (editando.estado_reserva_id === 1 || editando.estado_reserva_id === 2) && (
+                <button
+                  type="button"
+                  className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
+                  onClick={cancelarReservaDesdeEdicion}
+                  disabled={editLoading}
+                >
+                  Cancelar Reserva
+                </button>
+              )}
               <button className={formStyles.btnSecondary} onClick={cerrarEdicion} disabled={editLoading}>
                 Cancelar
               </button>
@@ -214,19 +259,19 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           <table className="styled-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Espacio</th>
-                <th>Fecha</th>
+                <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Hora Inicio</th>
                 <th>Hora Fin</th>
                 <th>Título del Evento</th>
                 <th>Descripción</th>
-                <th>Estado</th>
+                <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {reservas.map((r) => (
+              {reservasOrdenadas.map((r) => (
                 <tr key={r.id}>
                   <td>{r.id}</td>
                   <td>{r.espacio_nombre ?? '—'}</td>
@@ -236,26 +281,32 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.evento_titulo ?? '—'}</td>
                   <td>{r.evento_descripcion ?? '—'}</td>
                   <td>
-                    <span className={`${styles.badge} ${ESTADO_BADGE_CLASS[r.estado_reserva_id] ?? ''}`}>
+                    <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                    </span>
+                    </Badge>
                   </td>
                   <td>
                     <div className={styles.acciones}>
                       {esAdminOSacerdote && r.estado_reserva_id === 1 && (
                         <>
-                          <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, 2)}>
+                          <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
                             Aprobar
-                          </button>
-                          <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, 3)}>
-                            Rechazar
-                          </button>
+                          </Btn>
+                          {usuario && r.solicitante_id === usuario.id ? (
+                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CANCELADA)}>
+                              Cancelar
+                            </Btn>
+                          ) : (
+                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
+                              Rechazar
+                            </Btn>
+                          )}
                         </>
                       )}
                       {usuario && (esAdminOSacerdote || r.solicitante_id === usuario.id) && (
-                        <button className={styles.btnEditar} onClick={() => abrirEdicion(r)}>
+                        <Btn kind="ghost" size="sm" onClick={() => abrirEdicion(r)}>
                           Editar
-                        </button>
+                        </Btn>
                       )}
                     </div>
                   </td>

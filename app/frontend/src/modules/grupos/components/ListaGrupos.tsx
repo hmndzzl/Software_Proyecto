@@ -3,10 +3,21 @@ import { Grupo } from '../../../types';
 import apiClient from '../../../api/client';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
 import { CardHead } from '../../../components/ui/Card';
+import Btn from '../../../components/ui/Btn';
+import SortableTh from '../../../components/ui/SortableTh';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import styles from './ListaGrupos.module.css';
+
+type SortKey = 'id' | 'nombre' | 'coordinador';
+
+const SORT_VALUE: Record<SortKey, (g: Grupo) => string | number> = {
+  id: (g) => g.id,
+  nombre: (g) => g.nombre.toLowerCase(),
+  coordinador: (g) => (g.nombre_coordinador ?? '').toLowerCase(),
+};
 
 export default function ListaGrupos({
   refreshKey,
@@ -18,6 +29,8 @@ export default function ListaGrupos({
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const { sortKey, sortDir, toggleSort, sortedData: gruposOrdenados } = useSortableTable(grupos, SORT_VALUE);
 
   const puedeEditar = usuarioTieneRol([
     ROLES.SACERDOTE,
@@ -57,14 +70,14 @@ export default function ListaGrupos({
           <table className="styled-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Coordinador</th>
+                <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Nombre" sortKey="nombre" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Coordinador" sortKey="coordinador" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 {puedeEditar && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
-              {grupos.map((g) => (
+              {gruposOrdenados.map((g) => (
                 <tr key={g.id}>
                   <td>{g.id}</td>
                   <td>{g.nombre}</td>
@@ -72,9 +85,9 @@ export default function ListaGrupos({
                   {puedeEditar && (
                     <td>
                       {onEditar && (
-                        <button className={styles.btnEditar} onClick={() => onEditar(g)}>
+                        <Btn kind="ghost" size="sm" onClick={() => onEditar(g)}>
                           Editar
-                        </button>
+                        </Btn>
                       )}
                     </td>
                   )}
