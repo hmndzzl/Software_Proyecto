@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import Btn from '../../../components/ui/Btn';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -8,6 +9,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { ROLES } from '../../../utils/roles';
 import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaAsignaciones.module.css';
+import formStyles from '../../../styles/Form.module.css';
 
 interface Asignacion {
   tarea_id: number;
@@ -46,6 +48,14 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [editandoKey, setEditandoKey] = useState<string | null>(null);
   const [reasignando, setReasignando] = useState(false);
   const [aviso, setAviso] = useState('');
+
+  const [editandoTarea, setEditandoTarea] = useState<Asignacion | null>(null);
+  const [editDescripcion, setEditDescripcion] = useState('');
+  const [editFecha, setEditFecha] = useState('');
+  const [editHoraInicio, setEditHoraInicio] = useState('');
+  const [editHoraFin, setEditHoraFin] = useState('');
+  const [editMensaje, setEditMensaje] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
 
   const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
 
@@ -107,12 +117,98 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     }
   };
 
+  const abrirEdicionTarea = (asignacion: Asignacion) => {
+    setEditandoTarea(asignacion);
+    setEditDescripcion(asignacion.descripcion_tarea);
+    setEditFecha(asignacion.fecha);
+    setEditHoraInicio(asignacion.hora_inicio.substring(0, 5));
+    setEditHoraFin(asignacion.hora_fin.substring(0, 5));
+    setEditMensaje('');
+  };
+
+  const cerrarEdicionTarea = () => {
+    setEditandoTarea(null);
+    setEditMensaje('');
+  };
+
+  const guardarEdicionTarea = async () => {
+    if (!editandoTarea) return;
+    if (!editFecha || !editHoraInicio || !editHoraFin || !editDescripcion) {
+      setEditMensaje('Por favor completa todos los campos.');
+      return;
+    }
+    if (editHoraInicio >= editHoraFin) {
+      setEditMensaje('La hora de inicio debe ser menor que la hora de fin.');
+      return;
+    }
+    setEditLoading(true);
+    setEditMensaje('');
+    try {
+      await apiClient.put(`/api/tareas/${editandoTarea.tarea_id}`, {
+        fecha: editFecha,
+        hora_inicio: editHoraInicio,
+        hora_fin: editHoraFin,
+        descripcion: editDescripcion,
+      });
+      cerrarEdicionTarea();
+      cargarAsignaciones();
+    } catch (err: any) {
+      setEditMensaje(err.response?.data?.mensaje || 'Error al guardar los cambios.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   if (cargando) return <LoadingState label="Cargando asignaciones..." />;
   if (error)    return <ErrorState message={error} onRetry={cargarAsignaciones} />;
 
   return (
     <div>
       <h3 className={styles.seccionTitulo}>{esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'}</h3>
+
+      {editandoTarea && (
+        <div className={formStyles.modalOverlay}>
+          <div className={formStyles.modalCard}>
+            <h4 className={formStyles.modalTitle}>Editar Tarea #{editandoTarea.tarea_id}</h4>
+
+            {editMensaje && (
+              <p className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>
+            )}
+
+            <div className={formStyles.form}>
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Descripción:</label>
+                <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
+              </div>
+
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
+                <input type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
+              </div>
+
+              <div className={formStyles.fieldRow}>
+                <div className={formStyles.field}>
+                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
+                  <input type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
+                </div>
+                <div className={formStyles.field}>
+                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
+                  <input type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className={formStyles.modalActions}>
+              <button className={formStyles.btnSecondary} onClick={cerrarEdicionTarea} disabled={editLoading}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={guardarEdicionTarea} disabled={editLoading}>
+                {editLoading ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!esMinistro && aviso && <p className={styles.aviso}>{aviso}</p>}
 
@@ -127,6 +223,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                 {!esMinistro && <SortableTh label="Ministro Asignado" sortKey="responsable" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />}
                 <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                {!esMinistro && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -164,6 +261,13 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                     )}
                     <td>{formatFecha(asignacion.fecha)}</td>
                     <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
+                    {!esMinistro && (
+                      <td>
+                        <Btn kind="ghost" size="sm" onClick={() => abrirEdicionTarea(asignacion)}>
+                          Editar
+                        </Btn>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
