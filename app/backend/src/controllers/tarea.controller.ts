@@ -115,11 +115,11 @@ export const getTareaById = async (req: Request, res: Response): Promise<void> =
 
 // Manejo de creación de tarea con POST /api/tareas
 export const createTarea = async (req: Request, res: Response): Promise<void> => {
-  const { fecha, hora_inicio, hora_fin, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
 
-  if (!fecha || !hora_inicio || !hora_fin || !descripcion) {
+  if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, descripcion',
+      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, titulo, descripcion',
     });
     return;
   }
@@ -133,8 +133,8 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
 
   try {
     const [result] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO tarea (fecha, hora_inicio, hora_fin, descripcion) VALUES (?, ?, ?, ?)',
-      [fecha, hora_inicio, hora_fin, descripcion]
+      'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion) VALUES (?, ?, ?, ?, ?)',
+      [fecha, hora_inicio, hora_fin, titulo, descripcion]
     );
 
     res.status(HttpStatus.CREATED).json({
@@ -144,6 +144,7 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
         fecha,
         hora_inicio,
         hora_fin,
+        titulo,
         descripcion,
         asignados: [],
       },
@@ -157,11 +158,11 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
 // manejo de PUT para actualizar una tarea con PUT /api/tareas/:id
 export const updateTarea = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { fecha, hora_inicio, hora_fin, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
 
-  if (!fecha || !hora_inicio || !hora_fin || !descripcion) {
+  if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, descripcion',
+      mensaje: 'Todos los campos son requeridos: fecha, hora_inicio, hora_fin, titulo, descripcion',
     });
     return;
   }
@@ -199,8 +200,8 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
     }
 
     const [result] = await pool.execute<ResultSetHeader>(
-      'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, descripcion = ? WHERE id = ?',
-      [fecha, hora_inicio, hora_fin, descripcion, id]
+      'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, titulo = ?, descripcion = ? WHERE id = ?',
+      [fecha, hora_inicio, hora_fin, titulo, descripcion, id]
     );
 
     if (result.affectedRows === 0) {
@@ -210,7 +211,7 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
 
     res.status(HttpStatus.OK).json({
       mensaje: 'Tarea actualizada exitosamente',
-      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, descripcion },
+      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, titulo, descripcion },
     });
   } catch (error) {
     console.error('Error en updateTarea:', error);
