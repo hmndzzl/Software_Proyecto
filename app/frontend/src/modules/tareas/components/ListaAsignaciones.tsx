@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
+import SortableTh from '../../../components/ui/SortableTh';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 import { ROLES } from '../../../utils/roles';
 import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaAsignaciones.module.css';
@@ -18,7 +20,6 @@ interface Asignacion {
 }
 
 type SortKey = 'tarea' | 'responsable' | 'fecha' | 'horario';
-type SortDir = 'asc' | 'desc' | null;
 
 const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
   tarea: (a) => a.descripcion_tarea.toLowerCase(),
@@ -26,29 +27,6 @@ const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
   fecha: (a) => `${a.fecha} ${a.hora_inicio}`,
   horario: (a) => a.hora_inicio,
 };
-
-// Icono de 3 estados: sin ordenar (flechas apagadas), descendente (flecha abajo), ascendente (flecha arriba)
-function SortIcon({ dir }: { dir: SortDir }) {
-  if (dir === 'desc') {
-    return (
-      <svg className={styles.sortIconActivo} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 5v14" /><path d="m18 13-6 6-6-6" />
-      </svg>
-    );
-  }
-  if (dir === 'asc') {
-    return (
-      <svg className={styles.sortIconActivo} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 19V5" /><path d="m6 11 6-6 6 6" />
-      </svg>
-    );
-  }
-  return (
-    <svg className={styles.sortIcon} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" />
-    </svg>
-  );
-}
 
 export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number }) {
   const usuarioInfo = localStorage.getItem('usuario');
@@ -59,8 +37,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [cargando, setCargando] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>(null);
+  const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
 
   const cargarAsignaciones = () => {
     setCargando(true);
@@ -92,36 +69,8 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     cargarAsignaciones();
   }, [refreshKey]);
 
-  // Ciclo de 3 estados por columna: sin ordenar -> descendente -> ascendente -> sin ordenar
-  const alternarOrden = (key: SortKey) => {
-    if (sortKey !== key) {
-      setSortKey(key);
-      setSortDir('desc');
-      return;
-    }
-    if (sortDir === 'desc') { setSortDir('asc'); return; }
-    if (sortDir === 'asc') { setSortKey(null); setSortDir(null); return; }
-    setSortDir('desc');
-  };
-
-  const asignacionesOrdenadas = useMemo(() => {
-    if (!sortKey || !sortDir) return asignaciones;
-    const getValor = SORT_VALUE[sortKey];
-    const factor = sortDir === 'asc' ? 1 : -1;
-    return [...asignaciones].sort((a, b) => getValor(a).localeCompare(getValor(b)) * factor);
-  }, [asignaciones, sortKey, sortDir]);
-
   if (cargando) return <LoadingState label="Cargando asignaciones..." />;
   if (error)    return <ErrorState message={error} onRetry={cargarAsignaciones} />;
-
-  const renderTh = (label: string, key: SortKey) => (
-    <th className={styles.thOrdenable} onClick={() => alternarOrden(key)}>
-      <span className={styles.thContenido}>
-        {label}
-        <SortIcon dir={sortKey === key ? sortDir : null} />
-      </span>
-    </th>
-  );
 
   return (
     <div>
@@ -134,10 +83,10 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
           <table className="styled-table">
             <thead>
               <tr>
-                {renderTh('Tarea', 'tarea')}
-                {!esMinistro && renderTh('Ministro Asignado', 'responsable')}
-                {renderTh('Fecha', 'fecha')}
-                {renderTh('Horario', 'horario')}
+                <SortableTh label="Tarea" sortKey="tarea" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                {!esMinistro && <SortableTh label="Ministro Asignado" sortKey="responsable" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />}
+                <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
               </tr>
             </thead>
             <tbody>
