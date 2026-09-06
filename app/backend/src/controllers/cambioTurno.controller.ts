@@ -27,7 +27,7 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
   let conn: PoolConnection | null = null;
   try {
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?',
+      'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?',
       [tarea_id]
     );
     if (tareas.length === 0) {
@@ -87,7 +87,7 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
     const hoy = new Date().toISOString().split('T')[0];
     const horaInicio = String(tarea.hora_inicio).substring(0, 5);
     const horaFin = String(tarea.hora_fin).substring(0, 5);
-    const mensaje = `${solicitanteNombre} te solicita un cambio de turno para la tarea: ${tarea.descripcion} (${tarea.fecha} ${horaInicio}-${horaFin})`;
+    const mensaje = `${solicitanteNombre} te solicita un cambio de turno para la tarea: ${tarea.titulo} (${tarea.fecha} ${horaInicio}-${horaFin})`;
 
     conn = await pool.getConnection();
     await conn.beginTransaction();
@@ -136,7 +136,7 @@ export const getCambiosTurno = async (req: Request, res: Response): Promise<void
       `SELECT ct.id, ct.tarea_id, ct.solicitante_id, ct.destinatario_id, ct.estado,
               ct.fecha_solicitud, ct.fecha_respuesta,
               s.nombre AS solicitante_nombre, d.nombre AS destinatario_nombre,
-              t.descripcion AS tarea_descripcion, t.fecha AS tarea_fecha,
+              t.titulo AS tarea_titulo, t.descripcion AS tarea_descripcion, t.fecha AS tarea_fecha,
               t.hora_inicio AS tarea_hora_inicio, t.hora_fin AS tarea_hora_fin
        FROM cambio_turno ct
        INNER JOIN persona s ON s.id = ct.solicitante_id
@@ -189,7 +189,7 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
     }
 
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?',
+      'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?',
       [cambio.tarea_id]
     );
     if (tareas.length === 0) {
@@ -213,7 +213,7 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
         cambio.solicitante_id,
         destinatarioId,
         hoy,
-        `Tu solicitud de cambio de turno para la tarea "${tarea.descripcion}" fue rechazada`
+        `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue rechazada`
       );
 
       await conn.commit();
@@ -270,7 +270,7 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
       cambio.solicitante_id,
       destinatarioId,
       hoy,
-      `Tu solicitud de cambio de turno para la tarea "${tarea.descripcion}" fue aceptada`
+      `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue aceptada`
     );
 
     await conn.commit();
