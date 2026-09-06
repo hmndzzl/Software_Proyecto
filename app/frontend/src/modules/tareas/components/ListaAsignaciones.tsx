@@ -19,6 +19,11 @@ interface Asignacion {
   nombre_persona: string;
 }
 
+interface MinistroOpcion {
+  id: number;
+  nombre: string;
+}
+
 type SortKey = 'tarea' | 'responsable' | 'fecha' | 'horario';
 
 const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
@@ -37,7 +42,17 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [cargando, setCargando] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
+  const [ministros, setMinistros] = useState<MinistroOpcion[]>([]);
+  const [editandoKey, setEditandoKey] = useState<string | null>(null);
+  const [reasignando, setReasignando] = useState(false);
+  const [aviso, setAviso] = useState('');
+
   const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
+
+  useEffect(() => {
+    if (esMinistro) return;
+    apiClient.get('/api/personas').then(res => setMinistros(res.data)).catch(() => {});
+  }, [esMinistro]);
 
   const cargarAsignaciones = () => {
     setCargando(true);
@@ -69,12 +84,37 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     cargarAsignaciones();
   }, [refreshKey]);
 
+  const reasignar = async (tareaId: number, personaActualId: number, personaNuevaId: number) => {
+    setReasignando(true);
+    setAviso('');
+    try {
+      const res = await apiClient.put('/api/tareas/asignar', {
+        tarea_id: tareaId,
+        persona_actual_id: personaActualId,
+        persona_nueva_id: personaNuevaId,
+      });
+      const alerta = res.data.alerta;
+      const avisos: string[] = [];
+      if (alerta?.ministro_no_disponible) avisos.push('está marcado como no disponible');
+      if (alerta?.tope_servicios_superado) avisos.push(`tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes})`);
+      setAviso(avisos.length > 0 ? `Responsable actualizado. Atención: ${avisos.join(' y ')}.` : 'Responsable actualizado correctamente.');
+      setEditandoKey(null);
+      cargarAsignaciones();
+    } catch (err: any) {
+      alert(err.response?.data?.mensaje || 'Error al reasignar la tarea');
+    } finally {
+      setReasignando(false);
+    }
+  };
+
   if (cargando) return <LoadingState label="Cargando asignaciones..." />;
   if (error)    return <ErrorState message={error} onRetry={cargarAsignaciones} />;
 
   return (
     <div>
       <h3 className={styles.seccionTitulo}>{esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'}</h3>
+
+      {!esMinistro && aviso && <p className={styles.aviso}>{aviso}</p>}
 
       {asignaciones.length === 0 ? (
         <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
@@ -90,14 +130,43 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
               </tr>
             </thead>
             <tbody>
-              {asignacionesOrdenadas.map((asignacion) => (
-                <tr key={`${asignacion.tarea_id}-${asignacion.persona_id}`}>
-                  <td>{asignacion.descripcion_tarea}</td>
-                  {!esMinistro && <td><strong>{asignacion.nombre_persona}</strong></td>}
-                  <td>{formatFecha(asignacion.fecha)}</td>
-                  <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
-                </tr>
-              ))}
+              {asignacionesOrdenadas.map((asignacion) => {
+                const key = `${asignacion.tarea_id}-${asignacion.persona_id}`;
+                return (
+                  <tr key={key}>
+                    <td>{asignacion.descripcion_tarea}</td>
+                    {!esMinistro && (
+                      <td>
+                        {editandoKey === key ? (
+                          <select
+                            className={styles.reasignarSelect}
+                            autoFocus
+                            defaultValue={asignacion.persona_id}
+                            disabled={reasignando}
+                            onChange={(e) => reasignar(asignacion.tarea_id, asignacion.persona_id, Number(e.target.value))}
+                            onBlur={() => setEditandoKey(null)}
+                          >
+                            {ministros.map((m) => (
+                              <option key={m.id} value={m.id}>{m.nombre}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <button
+                            type="button"
+                            className={styles.btnReasignar}
+                            onClick={() => setEditandoKey(key)}
+                            title="Cambiar responsable"
+                          >
+                            <strong>{asignacion.nombre_persona}</strong>
+                          </button>
+                        )}
+                      </td>
+                    )}
+                    <td>{formatFecha(asignacion.fecha)}</td>
+                    <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
