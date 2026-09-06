@@ -109,6 +109,22 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setEditMensaje('');
   };
 
+  const cancelarReservaDesdeEdicion = async () => {
+    if (!editando) return;
+    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    setEditLoading(true);
+    setEditMensaje('');
+    try {
+      await apiClient.put(`/api/reservas/${editando.id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
+      cerrarEdicion();
+      fetchReservas();
+    } catch (err: any) {
+      setEditMensaje(err.response?.data?.message || 'Error al cancelar la reserva.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const guardarEdicion = async () => {
     if (!editFecha || !editHoraInicio || !editHoraFin || !editEspacioId || !editTitulo || !editDescripcion) {
       setEditMensaje('Por favor completa todos los campos.');
@@ -196,6 +212,16 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </div>
 
             <div className={formStyles.modalActions}>
+              {usuario && editando.solicitante_id === usuario.id && (editando.estado_reserva_id === 1 || editando.estado_reserva_id === 2) && (
+                <button
+                  type="button"
+                  className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
+                  onClick={cancelarReservaDesdeEdicion}
+                  disabled={editLoading}
+                >
+                  Cancelar Reserva
+                </button>
+              )}
               <button className={formStyles.btnSecondary} onClick={cerrarEdicion} disabled={editLoading}>
                 Cancelar
               </button>
