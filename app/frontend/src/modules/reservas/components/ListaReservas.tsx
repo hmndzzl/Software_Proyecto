@@ -5,6 +5,7 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import { ROLES } from '../../../utils/roles';
+import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -131,13 +132,6 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       setEditLoading(false);
     }
   };
-
-  const formatFecha = (fecha: string) => {
-    const [year, month, day] = fecha.split('T')[0].split('-');
-    return `${day}/${month}/${year}`;
-  };
-
-  const formatHora = (hora: string) => hora.substring(0, 5);
 
   return (
     <div>

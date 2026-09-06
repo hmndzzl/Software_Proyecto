@@ -2,3 +2,19 @@
 .textoError { font-family: var(--font-body); color: var(--color-bad); font-size: 14px; font-weight: 600; padding: 16px 24px; }
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 .seccionTitulo { margin-bottom: 14px; }
+
+.thOrdenable {
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition);
+}
+.thOrdenable:hover { color: var(--color-rojo); }
+
+.thContenido {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sortIcon        { opacity: .4; flex-shrink: 0; }
+.sortIconActivo  { opacity: 1; color: var(--color-rojo); flex-shrink: 0; }
