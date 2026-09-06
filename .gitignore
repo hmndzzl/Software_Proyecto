@@ -27,3 +27,6 @@ CLAUDE.md
 # Temp
 *.tmp
 *.docx
+
+# Testing
+tests/k6/results/
