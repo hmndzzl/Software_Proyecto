@@ -4,7 +4,10 @@ import { CardHead } from '../.././../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
+import Badge from '../../../components/ui/Badge';
+import type { BadgeKind } from '../../../components/ui/Badge';
 import { ROLES } from '../../../utils/roles';
+import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -29,13 +32,15 @@ interface Reserva {
 const ESTADO_LABEL: Record<number, string> = {
   1: 'Pendiente',
   2: 'Confirmada',
-  3: 'Rechazada'
+  3: 'Rechazada',
+  4: 'Cancelada',
 };
 
-const ESTADO_BADGE_CLASS: Record<number, string> = {
-  1: styles.badgePendiente,
-  2: styles.badgeConfirmada,
-  3: styles.badgeRechazada,
+const ESTADO_KIND: Record<number, BadgeKind> = {
+  1: 'pendiente',
+  2: 'confirmada',
+  3: 'rechazada',
+  4: 'cancelada',
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
@@ -242,18 +247,18 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.evento_titulo ?? '—'}</td>
                   <td>{r.evento_descripcion ?? '—'}</td>
                   <td>
-                    <span className={`${styles.badge} ${ESTADO_BADGE_CLASS[r.estado_reserva_id] ?? ''}`}>
+                    <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                    </span>
+                    </Badge>
                   </td>
                   <td>
                     <div className={styles.acciones}>
                       {esAdminOSacerdote && r.estado_reserva_id === 1 && (
                         <>
-                          <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, 2)}>
+                          <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
                             Aprobar
                           </button>
-                          <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, 3)}>
+                          <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
                             Rechazar
                           </button>
                         </>

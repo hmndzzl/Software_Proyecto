@@ -2,12 +2,6 @@
 .textoInfo  { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; padding: 16px 24px; }
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 
-/* Badges — usan Badge component ahora, estas son legacy */
-.badge           { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-badge); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-.badgePendiente  { background: var(--color-warnBg); color: var(--color-warn); }
-.badgeConfirmada { background: var(--color-okBg);   color: var(--color-ok);   }
-.badgeRechazada  { background: var(--color-badBg);  color: var(--color-bad);  }
-
 /* Acciones en tabla */
 .acciones {
   display: flex;
