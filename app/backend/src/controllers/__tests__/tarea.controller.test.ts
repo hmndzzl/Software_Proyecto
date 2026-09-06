@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/httpStatus';
+import { ROLES } from '../../config/roles';
 import { TOPE_SERVICIOS_MES } from '../../config/constants';
 import pool from '../../config/db';
 import {
@@ -248,9 +249,10 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(pool.execute).not.toHaveBeenCalled();
     });
 
-    it('debería retornar 200 al actualizar exitosamente', async () => {
+    it('debería retornar 200 al actualizar exitosamente (Admin)', async () => {
       req.params = { id: '1' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
 
       await updateTarea(req as Request, res as Response);
@@ -258,9 +260,66 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
     });
 
+    it('debería retornar 200 al actualizar exitosamente (Sacerdote)', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 1, rol_id: ROLES.SACERDOTE } as any;
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await updateTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 403 si un Ministro intenta editar una tarea', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 9, rol_id: ROLES.MINISTRO } as any;
+
+      await updateTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+      expect(pool.execute).not.toHaveBeenCalled();
+    });
+
+    it('debería retornar 403 si un Coordinador de Grupos intenta editar una tarea', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 8, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
+
+      await updateTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+      expect(pool.execute).not.toHaveBeenCalled();
+    });
+
+    it('debería permitir a un Coordinador de Ministros editar una tarea de su propio ministro', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
+      (pool.execute as any).mockResolvedValueOnce([[{ 1: 1 }]]); // autorizado
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+
+      await updateTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 403 si el Coordinador de Ministros no coordina a ningún asignado de la tarea', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 13, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
+      (pool.execute as any).mockResolvedValueOnce([[]]); // no autorizado
+
+      await updateTarea(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    });
+
     it('debería retornar 404 si la tarea no existe', async () => {
       req.params = { id: '99' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 0 }]);
 
       await updateTarea(req as Request, res as Response);
@@ -271,6 +330,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await updateTarea(req as Request, res as Response);
