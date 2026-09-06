@@ -10,57 +10,6 @@
   align-items: center;
 }
 
-.btnAprobar {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  background: var(--color-ok);
-  color: var(--color-blanco);
-  border: none;
-  border-radius: var(--radius-btn);
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  transition: background-color var(--transition);
-}
-.btnAprobar:hover { background: var(--color-okDk); }
-
-.btnRechazar {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  background: var(--color-bad);
-  color: var(--color-blanco);
-  border: none;
-  border-radius: var(--radius-btn);
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  transition: background-color var(--transition);
-}
-.btnRechazar:hover { background: var(--color-badDk); }
-
-.btnEditar {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  background: var(--color-blanco);
-  color: var(--color-carbon);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-btn);
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  transition: border-color var(--transition), background-color var(--transition);
-}
-.btnEditar:hover { border-color: var(--color-muted); background: var(--color-crema); }
-
 /* Empuja el botón de cancelar reserva a la izquierda dentro del modal (acciones flex-end) */
 .btnCancelarReservaModal {
   margin-right: auto;

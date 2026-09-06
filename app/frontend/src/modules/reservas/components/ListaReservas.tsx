@@ -6,6 +6,7 @@ import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
+import Btn from '../../../components/ui/Btn';
 import { ROLES } from '../../../utils/roles';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import { formatFecha, formatHora } from '../../../utils/date';
@@ -275,24 +276,24 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                     <div className={styles.acciones}>
                       {esAdminOSacerdote && r.estado_reserva_id === 1 && (
                         <>
-                          <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
+                          <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
                             Aprobar
-                          </button>
+                          </Btn>
                           {usuario && r.solicitante_id === usuario.id ? (
-                            <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CANCELADA)}>
+                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CANCELADA)}>
                               Cancelar
-                            </button>
+                            </Btn>
                           ) : (
-                            <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
+                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
                               Rechazar
-                            </button>
+                            </Btn>
                           )}
                         </>
                       )}
                       {usuario && (esAdminOSacerdote || r.solicitante_id === usuario.id) && (
-                        <button className={styles.btnEditar} onClick={() => abrirEdicion(r)}>
+                        <Btn kind="ghost" size="sm" onClick={() => abrirEdicion(r)}>
                           Editar
-                        </button>
+                        </Btn>
                       )}
                     </div>
                   </td>
