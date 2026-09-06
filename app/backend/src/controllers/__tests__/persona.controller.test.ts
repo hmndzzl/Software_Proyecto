@@ -92,6 +92,21 @@ describe('Persona Controller - Pruebas Unitarias', () => {
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
+
+    it('debería filtrar por coordinador_ministro cuando el solicitante es Coordinador de Ministros', async () => {
+      req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS, correo: 'coord@test.com' } as any;
+      const mockRows = [{ id: 9, nombre: 'Ministro Propio' }];
+      (pool.execute as any).mockResolvedValue([mockRows]);
+
+      await getMinistros(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(
+        expect.stringContaining('coordinador_ministro'),
+        [7]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(mockRows);
+    });
   });
 
   describe('getPersonaById', () => {
