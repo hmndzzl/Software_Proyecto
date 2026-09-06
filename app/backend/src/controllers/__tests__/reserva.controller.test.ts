@@ -389,6 +389,19 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva marcada como pendiente nuevamente' }));
     });
 
+    it('debería permitir a un Admin/Sacerdote rechazar una reserva (estado_id=3)', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{ espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva rechazada correctamente' }));
+    });
+
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 3 };
@@ -401,7 +414,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
     it('debería permitir al solicitante cancelar su propia reserva Pendiente', async () => {
       req.params = { id: '1' };
-      req.body = { estado_id: 3 };
+      req.body = { estado_id: 4 };
       req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
       (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1 }]]);
       (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
@@ -409,12 +422,12 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       await cambiarEstadoReserva(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva rechazada correctamente' }));
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva cancelada correctamente' }));
     });
 
     it('debería permitir al solicitante cancelar su propia reserva Confirmada', async () => {
       req.params = { id: '1' };
-      req.body = { estado_id: 3 };
+      req.body = { estado_id: 4 };
       req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
       (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 2 }]]);
       (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
@@ -422,6 +435,17 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       await cambiarEstadoReserva(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 403 si el solicitante intenta rechazar (estado_id=3) en vez de cancelar', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1 }]]);
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
     });
 
     it('debería retornar 403 si el solicitante intenta aprobar su propia reserva (estado_id=2)', async () => {
@@ -448,7 +472,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 403 si un usuario intenta cancelar la reserva de otra persona', async () => {
       req.params = { id: '1' };
-      req.body = { estado_id: 3 };
+      req.body = { estado_id: 4 };
       req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
       (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 2, estado_reserva_id: 1 }]]);
 
@@ -459,7 +483,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 400 si el solicitante intenta cancelar una reserva ya Rechazada', async () => {
       req.params = { id: '1' };
-      req.body = { estado_id: 3 };
+      req.body = { estado_id: 4 };
       req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
       (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 3 }]]);
 
