@@ -4,6 +4,7 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import { ROLES } from '../../../utils/roles';
+import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaAsignaciones.module.css';
 
 interface Asignacion {
@@ -144,8 +145,8 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                 <tr key={`${asignacion.tarea_id}-${asignacion.persona_id}`}>
                   <td>{asignacion.descripcion_tarea}</td>
                   {!esMinistro && <td><strong>{asignacion.nombre_persona}</strong></td>}
-                  <td>{asignacion.fecha}</td>
-                  <td>{asignacion.hora_inicio} - {asignacion.hora_fin}</td>
+                  <td>{formatFecha(asignacion.fecha)}</td>
+                  <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
                 </tr>
               ))}
             </tbody>
