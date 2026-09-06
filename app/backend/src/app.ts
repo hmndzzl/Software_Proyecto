@@ -11,6 +11,7 @@ import espacioRoutes from './routes/espacio.routes';
 import grupoRoutes from './routes/grupo.routes';
 import eventoRoutes from './routes/evento.routes';
 import notificacionRoutes from './routes/notificacion.routes';
+import cambioTurnoRoutes from './routes/cambioTurno.routes';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/espacios', espacioRoutes);
 app.use('/api/grupos', grupoRoutes);
 app.use('/api/eventos', eventoRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/cambios-turno', cambioTurnoRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {
