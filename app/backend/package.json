@@ -6,7 +6,9 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "test:k6": "../../tests/k6/run-tests.sh",
+    "test:k6:all": "../../tests/k6/run-tests.sh all"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
