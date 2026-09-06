@@ -9,6 +9,7 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
+import { ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -23,13 +24,14 @@ interface MiReserva {
   evento_titulo: string | null;
 }
 
-const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
-const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada' };
+const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada', 4: 'Cancelada' };
+const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada', 4: 'cancelada' };
 
 const KPI_ITEMS = [
   { label: 'Pendientes',  estadoId: 1, bg: 'var(--color-warnBg)', color: 'var(--color-warn)'  },
   { label: 'Confirmadas', estadoId: 2, bg: 'var(--color-okBg)',   color: 'var(--color-ok)'    },
   { label: 'Rechazadas',  estadoId: 3, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
+  { label: 'Canceladas',  estadoId: 4, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
 ];
 
 export default function MisReservasPage() {
@@ -53,7 +55,7 @@ export default function MisReservasPage() {
   const cancelarReserva = async (id: number) => {
     if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
     try {
-      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: 3 });
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
       cargarReservas();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al cancelar la reserva');
