@@ -6,10 +6,8 @@ import { CardHead } from '../../../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
+import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
 import styles from './ListaEventos.module.css';
-
-const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
-const fmtH = (h: string) => h.substring(0, 5);
 
 export default function ListaEventos({
   refreshKey,
