@@ -22,6 +22,7 @@ interface CambioTurno {
   estado: CambioTurnoEstado;
   solicitante_nombre: string;
   destinatario_nombre: string;
+  tarea_titulo: string;
   tarea_descripcion: string;
   tarea_fecha: string;
   tarea_hora_inicio: string;
@@ -43,7 +44,7 @@ const ESTADO_BADGE: Record<CambioTurnoEstado, BadgeKind> = {
 type SortKey = 'tarea' | 'fecha' | 'horario' | 'persona' | 'estado';
 
 const SORT_VALUE_RECIBIDAS: Record<SortKey, (c: CambioTurno) => string> = {
-  tarea: (c) => c.tarea_descripcion.toLowerCase(),
+  tarea: (c) => c.tarea_titulo.toLowerCase(),
   fecha: (c) => `${c.tarea_fecha} ${c.tarea_hora_inicio}`,
   horario: (c) => c.tarea_hora_inicio,
   persona: (c) => c.solicitante_nombre.toLowerCase(),
@@ -122,7 +123,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
             <tbody>
               {recibidasSort.sortedData.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.tarea_descripcion}</td>
+                  <td>{c.tarea_titulo}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
                   <td className={styles.horaCell}>{c.tarea_hora_inicio.substring(0, 5)}-{c.tarea_hora_fin.substring(0, 5)}</td>
                   <td>{c.solicitante_nombre}</td>
@@ -160,7 +161,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
             <tbody>
               {enviadasSort.sortedData.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.tarea_descripcion}</td>
+                  <td>{c.tarea_titulo}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
                   <td className={styles.horaCell}>{c.tarea_hora_inicio.substring(0, 5)}-{c.tarea_hora_fin.substring(0, 5)}</td>
                   <td>{c.destinatario_nombre}</td>
