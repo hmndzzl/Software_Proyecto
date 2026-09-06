@@ -53,7 +53,7 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  const tareaBase = { id: 5, descripcion: 'Lectura misa 10am', fecha: '2026-09-20', hora_inicio: '10:00:00', hora_fin: '11:00:00' };
+  const tareaBase = { id: 5, titulo: 'Lectura', descripcion: 'Lectura misa 10am', fecha: '2026-09-20', hora_inicio: '10:00:00', hora_fin: '11:00:00' };
 
   describe('solicitarCambioTurno', () => {
     it('debería retornar 400 si faltan tarea_id o destinatario_id', async () => {
