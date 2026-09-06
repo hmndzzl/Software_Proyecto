@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Evento } from '../../../types';
+import { Evento, Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 
@@ -13,23 +13,35 @@ export default function EditarEventoForm({
   onCancelar?: () => void;
 }) {
   const [descripcion, setDescripcion] = useState(evento.descripcion);
+  const [encargadoId, setEncargadoId] = useState(String(evento.encargado_id));
+  const [personas, setPersonas]       = useState<Persona[]>([]);
   const [mensaje, setMensaje]         = useState('');
 
   useEffect(() => {
     setDescripcion(evento.descripcion);
+    setEncargadoId(String(evento.encargado_id));
     setMensaje('');
   }, [evento]);
+
+  useEffect(() => {
+    apiClient.get('/api/personas/encargados-evento')
+      .then(res => setPersonas(res.data))
+      .catch(() => setMensaje('Error al cargar las personas disponibles.'));
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!descripcion) {
-      setMensaje('La descripción no puede estar vacía.');
+    if (!descripcion || !encargadoId) {
+      setMensaje('La descripción y el encargado son requeridos.');
       return;
     }
 
     try {
-      await apiClient.put(`/api/eventos/${evento.id}`, { descripcion });
+      await apiClient.put(`/api/eventos/${evento.id}`, {
+        descripcion,
+        encargado_id: Number(encargadoId),
+      });
       setMensaje('¡Evento actualizado con éxito!');
       if (onEventoActualizado) onEventoActualizado();
     } catch (error: any) {
@@ -58,12 +70,6 @@ export default function EditarEventoForm({
         </p>
       )}
 
-      <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
-        <span className={styles.infoBoxLabel}>Encargado:</span>
-        <span>{evento.nombre_encargado}</span>
-        <span className={styles.infoBoxNote}>(solicitante de la reserva)</span>
-      </div>
-
       <form onSubmit={handleUpdate} className={styles.form}>
         <div className={styles.field}>
           <label className={styles.label}>Descripción:</label>
@@ -73,6 +79,25 @@ export default function EditarEventoForm({
             value={descripcion}
             onChange={e => setDescripcion(e.target.value)}
           />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Encargado:</label>
+          <select
+            className={styles.input}
+            value={encargadoId}
+            onChange={e => setEncargadoId(e.target.value)}
+          >
+            <option value="">-- Elige una persona --</option>
+            {personas.map(persona => (
+              <option key={persona.id} value={persona.id}>
+                {persona.nombre}
+              </option>
+            ))}
+          </select>
+          {personas.length === 0 && (
+            <p className={styles.fieldNote}>No se pudieron cargar las personas disponibles.</p>
+          )}
         </div>
 
         <div className={styles.buttonRow}>

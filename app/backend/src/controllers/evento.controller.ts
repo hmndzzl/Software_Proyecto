@@ -120,10 +120,10 @@ export const createEvento = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// Solo se puede editar la descripción; el encargado queda fijo al solicitante de la reserva
+// La descripción es obligatoria y el encargado puede reasignarse opcionalmente.
 export const updateEvento = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { descripcion } = req.body;
+  const { descripcion, encargado_id } = req.body;
 
   if (!descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El campo descripcion es requerido' });
@@ -131,9 +131,36 @@ export const updateEvento = async (req: Request, res: Response): Promise<void> =
   }
 
   try {
+    if (encargado_id !== undefined) {
+      const encargadoId = Number(encargado_id);
+      if (!Number.isInteger(encargadoId) || encargadoId <= 0) {
+        res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El encargado_id debe ser un identificador válido' });
+        return;
+      }
+
+      const [personas] = await pool.execute<RowDataPacket[]>(
+        'SELECT id FROM persona WHERE id = ?',
+        [encargadoId]
+      );
+
+      if (personas.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'La persona encargada no existe' });
+        return;
+      }
+    }
+
+    const campos = ['descripcion = ?'];
+    const valores: (string | number)[] = [descripcion];
+
+    if (encargado_id !== undefined) {
+      campos.push('encargado_id = ?');
+      valores.push(Number(encargado_id));
+    }
+    valores.push(id);
+
     const [result] = await pool.execute<ResultSetHeader>(
-      'UPDATE evento SET descripcion = ? WHERE id = ?',
-      [descripcion, id]
+      `UPDATE evento SET ${campos.join(', ')} WHERE id = ?`,
+      valores
     );
 
     if (result.affectedRows === 0) {
