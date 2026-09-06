@@ -45,11 +45,15 @@ INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`) VALUES
   -- Ministros adicionales (id=10,11,12) para probar HU-23 (cambio de turno) con más de un ministro disponible
   ('Ana Xitumul',      'ana.ministro@parroquia.com',    '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
   ('Carlos Ramirez',   'carlos.ministro@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
-  ('Lucia Fernandez',  'lucia.ministro@parroquia.com',  '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4);
+  ('Lucia Fernandez',  'lucia.ministro@parroquia.com',  '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  -- Segundo coordinador de ministros (id=13), con un grupo de ministros distinto al de CoordMin (id=7),
+  -- para probar que cada coordinador solo puede editar/reasignar tareas de sus propios ministros.
+  ('Coord Ministros Sur', 'coord.min2@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 2);
 
--- Relación coordinador-ministro (CoordMin id=7 coordina a los ministros id=9,10,11,12)
+-- Relación coordinador-ministro: CoordMin (id=7) coordina a Ministro Test y Ana (id=9,10);
+-- Coord Ministros Sur (id=13) coordina a Carlos y Lucía (id=11,12) — grupos distintos y sin solaparse.
 INSERT INTO `coordinador_ministro` (`coordinador_id`, `ministro_id`) VALUES
-  (7, 9), (7, 10), (7, 11), (7, 12);
+  (7, 9), (7, 10), (13, 11), (13, 12);
 
 -- Tareas y asignaciones de prueba para HU-23 (cambio de turno entre ministros).
 -- Tarea 1 (Ministro Test, id=9) es la que se usa para solicitar el cambio; Ana (id=10)
@@ -91,14 +95,14 @@ INSERT INTO `notificacion` (`mensaje`, `fecha`, `tipo`, `remitente_id`, `grupo_i
   ('Confirma tu asistencia a la Misa dominical de prueba del 23 de agosto.', '2026-08-18', 'individual', 6, NULL, 1, 1);
 
 INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VALUES
-  -- Notificación 1 global — leida=1 para los 12 usuarios
+  -- Notificación 1 global — leida=1 para los 13 usuarios
   (1, 1, 1), (2, 1, 1), (3, 1, 1), (4, 1, 1), (5, 1, 1),
   (6, 1, 1), (7, 1, 1), (8, 1, 1), (9, 1, 1),
-  (10, 1, 1), (11, 1, 1), (12, 1, 1),
-  -- Notificación 2 global — leida=0 para los 12 usuarios
+  (10, 1, 1), (11, 1, 1), (12, 1, 1), (13, 1, 1),
+  -- Notificación 2 global — leida=0 para los 13 usuarios
   (1, 2, 0), (2, 2, 0), (3, 2, 0), (4, 2, 0), (5, 2, 0),
   (6, 2, 0), (7, 2, 0), (8, 2, 0), (9, 2, 0),
-  (10, 2, 0), (11, 2, 0), (12, 2, 0),
+  (10, 2, 0), (11, 2, 0), (12, 2, 0), (13, 2, 0),
   -- Notificación 3 individual → solo CoordMin (id=7)
   (7, 3, 0),
   -- Notificación 4 individual — Ministro; requiere confirmación
