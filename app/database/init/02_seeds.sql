@@ -20,10 +20,12 @@ INSERT INTO `espacio` (`nombre`, `capacidad`) VALUES
   ('Capilla Lateral',        80);
 
 -- Estados de reserva
+-- id: 1=Pendiente, 2=Confirmada, 3=Rechazada (por Sacerdote/Admin), 4=Cancelada (por el solicitante)
 INSERT INTO `estado_reserva` (`detalle`) VALUES
   ('Pendiente'),
   ('Confirmada'),
-  ('Rechazada');
+  ('Rechazada'),
+  ('Cancelada');
 
 -- Usuarios de prueba
 -- Contraseña "admin123"    → $2a$10$BhWSxmSQb3uuNIg8QHkB2.46Z24c5hHHtO.94zgZnnegaz8smWqwK
