@@ -252,9 +252,15 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                           <button className={styles.btnAprobar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
                             Aprobar
                           </button>
-                          <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
-                            Rechazar
-                          </button>
+                          {usuario && r.solicitante_id === usuario.id ? (
+                            <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CANCELADA)}>
+                              Cancelar
+                            </button>
+                          ) : (
+                            <button className={styles.btnRechazar} onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
+                              Rechazar
+                            </button>
+                          )}
                         </>
                       )}
                       {usuario && (esAdminOSacerdote || r.solicitante_id === usuario.id) && (
