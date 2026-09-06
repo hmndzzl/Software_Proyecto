@@ -5,10 +5,13 @@ import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import SortableTh from '../../components/ui/SortableTh';
+import { useSortableTable } from '../../hooks/useSortableTable';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
+import { ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -23,19 +26,31 @@ interface MiReserva {
   evento_titulo: string | null;
 }
 
-const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
-const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada' };
+const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada', 4: 'Cancelada' };
+const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada', 4: 'cancelada' };
 
 const KPI_ITEMS = [
   { label: 'Pendientes',  estadoId: 1, bg: 'var(--color-warnBg)', color: 'var(--color-warn)'  },
   { label: 'Confirmadas', estadoId: 2, bg: 'var(--color-okBg)',   color: 'var(--color-ok)'    },
   { label: 'Rechazadas',  estadoId: 3, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
+  { label: 'Canceladas',  estadoId: 4, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
 ];
+
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
+
+const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
+  id: (r) => r.id,
+  espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
+  fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
+  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+};
 
 export default function MisReservasPage() {
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+
+  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(reservas, SORT_VALUE);
 
   const cargarReservas = () => {
     setLoading(true);
@@ -53,7 +68,7 @@ export default function MisReservasPage() {
   const cancelarReserva = async (id: number) => {
     if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
     try {
-      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: 3 });
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
       cargarReservas();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al cancelar la reserva');
@@ -99,18 +114,18 @@ export default function MisReservasPage() {
             <table className="styled-table">
               <thead>
                 <tr>
-                  <th>#</th>
+                  <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th>Título del Evento</th>
                   <th>Evento</th>
-                  <th>Espacio</th>
-                  <th>Fecha</th>
+                  <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th>Horario</th>
-                  <th>Estado</th>
+                  <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {reservas.map(r => (
+                {reservasOrdenadas.map(r => (
                   <tr key={r.id}>
                     <td className={styles.mono}>{r.id}</td>
                     <td className={styles.mono}>{r.evento_titulo ?? <span className={styles.muted}>Sin título</span>}</td>

@@ -7,6 +7,8 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import SortableTh from '../../components/ui/SortableTh';
+import { useSortableTable } from '../../hooks/useSortableTable';
 import { ROLES, usuarioTieneRol } from '../../utils/roles';
 import styles from './MinistrosPage.module.css';
 
@@ -32,12 +34,23 @@ function getInitials(nombre: string): string {
 
 const puedeGestionarDisponibilidad = () => usuarioTieneRol([ROLES.COORDINADOR_MINISTROS]);
 
+type SortKey = 'nombre' | 'correo' | 'rol' | 'disponibilidad';
+
+const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
+  nombre: (m) => m.nombre.toLowerCase(),
+  correo: (m) => m.correo.toLowerCase(),
+  rol: (m) => ROL_LABEL[m.rol_id ?? 4] ?? '',
+  disponibilidad: (m) => (m.disponible ? 1 : 0),
+};
+
 export default function MinistrosPage() {
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [accionError, setAccionError] = useState('');
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
+
+  const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(ministros, SORT_VALUE);
 
   const puedeGestionar = puedeGestionarDisponibilidad();
 
@@ -96,14 +109,14 @@ export default function MinistrosPage() {
             <table className="styled-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>Rol</th>
-                  <th>Disponibilidad</th>
+                  <SortableTh label="Nombre" sortKey="nombre" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Correo" sortKey="correo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Rol" sortKey="rol" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Disponibilidad" sortKey="disponibilidad" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 </tr>
               </thead>
               <tbody>
-                {ministros.map(m => (
+                {ministrosOrdenados.map(m => (
                   <tr key={m.id}>
                     <td>
                       <div className={styles.nameCell}>

@@ -270,7 +270,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       });
     }
 
-    if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA, ESTADOS_RESERVA.RECHAZADA].includes(Number(estado_id))) {
+    if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA, ESTADOS_RESERVA.RECHAZADA, ESTADOS_RESERVA.CANCELADA].includes(Number(estado_id))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'estado_id inválido'
       });
@@ -292,13 +292,22 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     const esSolicitante = reserva.solicitante_id === req.user!.id;
     const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
 
+    // Rechazar es una acción de un tercero sobre la reserva de otra persona. Si el propio
+    // solicitante la envía (incluso siendo Admin/Sacerdote), en realidad es una cancelación:
+    // debe usar CANCELADA. Esta validación aplica sin importar el privilegio del usuario.
+    if (esSolicitante && Number(estado_id) === ESTADOS_RESERVA.RECHAZADA) {
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: 'No puedes rechazar tu propia reserva, solo cancelarla'
+      });
+    }
+
     if (!esPrivilegiado) {
       if (!esSolicitante) {
         return res.status(HttpStatus.FORBIDDEN).json({
           message: 'No tienes permiso para modificar el estado de esta reserva'
         });
       }
-      if (Number(estado_id) !== ESTADOS_RESERVA.RECHAZADA) {
+      if (Number(estado_id) !== ESTADOS_RESERVA.CANCELADA) {
         return res.status(HttpStatus.FORBIDDEN).json({
           message: 'Solo puedes cancelar tu propia reserva'
         });
@@ -337,6 +346,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       [ESTADOS_RESERVA.PENDIENTE]: 'Reserva marcada como pendiente nuevamente',
       [ESTADOS_RESERVA.CONFIRMADA]: 'Reserva aprobada correctamente',
       [ESTADOS_RESERVA.RECHAZADA]: 'Reserva rechazada correctamente',
+      [ESTADOS_RESERVA.CANCELADA]: 'Reserva cancelada correctamente',
     };
 
     return res.status(HttpStatus.OK).json({

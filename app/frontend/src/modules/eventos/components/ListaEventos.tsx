@@ -3,11 +3,24 @@ import { Evento } from '../../../types';
 import { usuarioTieneRol, ROLES } from '../../../utils/roles';
 import apiClient from '../../../api/client';
 import { CardHead } from '../../../components/ui/Card';
+import Btn from '../../../components/ui/Btn';
+import SortableTh from '../../../components/ui/SortableTh';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
 import styles from './ListaEventos.module.css';
+
+type SortKey = 'id' | 'descripcion' | 'encargado' | 'fecha' | 'espacio';
+
+const SORT_VALUE: Record<SortKey, (ev: Evento) => string | number> = {
+  id: (ev) => ev.id,
+  descripcion: (ev) => ev.descripcion.toLowerCase(),
+  encargado: (ev) => (ev.nombre_encargado ?? '').toLowerCase(),
+  fecha: (ev) => `${ev.fecha} ${ev.hora_inicio}`,
+  espacio: (ev) => (ev.nombre_espacio ?? '').toLowerCase(),
+};
 
 export default function ListaEventos({
   refreshKey,
@@ -19,6 +32,8 @@ export default function ListaEventos({
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
+
+  const { sortKey, sortDir, toggleSort, sortedData: eventosOrdenados } = useSortableTable(eventos, SORT_VALUE);
 
   const puedeEditar = usuarioTieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
 
@@ -55,17 +70,17 @@ export default function ListaEventos({
           <table className="styled-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Descripción</th>
-                <th>Encargado</th>
-                <th>Fecha</th>
+                <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Descripción" sortKey="descripcion" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Encargado" sortKey="encargado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Horario</th>
-                <th>Espacio</th>
+                <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 {puedeEditar && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
-              {eventos.map(ev => (
+              {eventosOrdenados.map(ev => (
                 <tr key={ev.id}>
                   <td>{ev.id}</td>
                   <td>{ev.descripcion}</td>
@@ -76,9 +91,9 @@ export default function ListaEventos({
                   {puedeEditar && (
                     <td>
                       {onEditar && (
-                        <button className={styles.btnEditar} onClick={() => onEditar(ev)}>
+                        <Btn kind="ghost" size="sm" onClick={() => onEditar(ev)}>
                           Editar
-                        </button>
+                        </Btn>
                       )}
                     </td>
                   )}

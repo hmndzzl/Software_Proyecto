@@ -10,6 +10,7 @@ interface AsignadoInfo {
 
 interface Tarea {
   id: number;
+  titulo: string;
   descripcion: string;
   fecha: string;
   hora_inicio: string;
@@ -124,7 +125,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
             <option value="">-- Elige una tarea --</option>
             {tareas.map((tarea) => (
               <option key={tarea.id} value={tarea.id}>
-                {tarea.descripcion}
+                {tarea.titulo}
               </option>
             ))}
           </select>
@@ -155,7 +156,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
             <ul className={styles.conflictList}>
               {conflictos.map((c) => (
                 <li key={c.id}>
-                  {c.descripcion} · {c.hora_inicio.substring(0, 5)}–{c.hora_fin.substring(0, 5)}
+                  {c.titulo} · {c.hora_inicio.substring(0, 5)}–{c.hora_fin.substring(0, 5)}
                 </li>
               ))}
             </ul>

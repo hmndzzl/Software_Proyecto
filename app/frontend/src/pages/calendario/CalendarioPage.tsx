@@ -17,6 +17,7 @@ interface Tarea {
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
+  titulo: string;
   descripcion: string;
   persona_nombre?: string | null;
   asignados: AsignadoInfo[];
@@ -249,7 +250,7 @@ export default function CalendarioPage() {
                             <span>{formatHora(t.hora_inicio)} – {formatHora(t.hora_fin)}</span>
                           </div>
 
-                          <p className={styles.taskDesc}>{t.descripcion}</p>
+                          <p className={styles.taskDesc}>{t.titulo}</p>
 
                           <div className={styles.assigneeRow}>
                             {ministerName ? (
