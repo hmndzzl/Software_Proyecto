@@ -59,13 +59,13 @@ INSERT INTO `coordinador_ministro` (`coordinador_id`, `ministro_id`) VALUES
 -- Tarea 1 (Ministro Test, id=9) es la que se usa para solicitar el cambio; Ana (id=10)
 -- y Carlos (id=11) están libres a esa hora (destinatarios válidos); Lucía (id=12) tiene
 -- otra tarea que se solapa con la tarea 1, para probar el rechazo por conflicto de horario.
-INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `descripcion`) VALUES
-  ('2026-09-13', '10:00:00', '10:15:00', 'Lectura primera - Misa dominical 10am'),
-  ('2026-09-13', '10:15:00', '10:20:00', 'Salmo responsorial - Misa dominical 10am'),
-  ('2026-09-13', '10:20:00', '11:00:00', 'Ministro de comunión - Misa dominical 10am'),
-  ('2026-09-13', '10:00:00', '10:10:00', 'Coro - Misa dominical 10am'),
-  ('2026-09-20', '12:00:00', '12:15:00', 'Lectura segunda - Misa dominical 12pm'),
-  ('2026-09-20', '12:15:00', '13:00:00', 'Ministro de comunión - Misa dominical 12pm');
+INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `titulo`, `descripcion`) VALUES
+  ('2026-09-13', '10:00:00', '10:15:00', 'Lectura primera',        'Proclamar la primera lectura en la Misa dominical de las 10am'),
+  ('2026-09-13', '10:15:00', '10:20:00', 'Salmo responsorial',     'Cantar o proclamar el salmo responsorial en la Misa dominical de las 10am'),
+  ('2026-09-13', '10:20:00', '11:00:00', 'Ministro de comunión',   'Distribuir la comunión durante la Misa dominical de las 10am'),
+  ('2026-09-13', '10:00:00', '10:10:00', 'Coro',                   'Acompañar musicalmente la Misa dominical de las 10am'),
+  ('2026-09-20', '12:00:00', '12:15:00', 'Lectura segunda',        'Proclamar la segunda lectura en la Misa dominical de las 12pm'),
+  ('2026-09-20', '12:15:00', '13:00:00', 'Ministro de comunión',   'Distribuir la comunión durante la Misa dominical de las 12pm');
 
 INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
   (1, 9), (2, 10), (3, 11), (4, 12), (5, 10), (6, 11);
