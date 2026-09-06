@@ -4,6 +4,8 @@ import { CardHead } from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
+import SortableTh from '../../../components/ui/SortableTh';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -36,6 +38,21 @@ const ESTADO_BADGE: Record<CambioTurnoEstado, BadgeKind> = {
   pendiente: 'pendiente',
   aceptado: 'confirmada',
   rechazado: 'rechazada',
+};
+
+type SortKey = 'tarea' | 'fecha' | 'horario' | 'persona' | 'estado';
+
+const SORT_VALUE_RECIBIDAS: Record<SortKey, (c: CambioTurno) => string> = {
+  tarea: (c) => c.tarea_descripcion.toLowerCase(),
+  fecha: (c) => `${c.tarea_fecha} ${c.tarea_hora_inicio}`,
+  horario: (c) => c.tarea_hora_inicio,
+  persona: (c) => c.solicitante_nombre.toLowerCase(),
+  estado: (c) => ESTADO_LABEL[c.estado],
+};
+
+const SORT_VALUE_ENVIADAS: Record<SortKey, (c: CambioTurno) => string> = {
+  ...SORT_VALUE_RECIBIDAS,
+  persona: (c) => c.destinatario_nombre.toLowerCase(),
 };
 
 export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number }) {
@@ -71,11 +88,14 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
     }
   };
 
-  if (loading) return <LoadingState label="Cargando solicitudes de cambio de turno..." />;
-  if (error) return <ErrorState message={error} onRetry={cargarCambios} />;
-
   const recibidas = usuario ? cambios.filter(c => c.destinatario_id === usuario.id) : [];
   const enviadas = usuario ? cambios.filter(c => c.solicitante_id === usuario.id) : [];
+
+  const recibidasSort = useSortableTable(recibidas, SORT_VALUE_RECIBIDAS);
+  const enviadasSort = useSortableTable(enviadas, SORT_VALUE_ENVIADAS);
+
+  if (loading) return <LoadingState label="Cargando solicitudes de cambio de turno..." />;
+  if (error) return <ErrorState message={error} onRetry={cargarCambios} />;
 
   return (
     <div>
@@ -91,16 +111,16 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
           <table className="styled-table">
             <thead>
               <tr>
-                <th>Tarea</th>
-                <th>Fecha</th>
-                <th>Horario</th>
-                <th>Solicitante</th>
-                <th>Estado</th>
+                <SortableTh label="Tarea" sortKey="tarea" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                <SortableTh label="Fecha" sortKey="fecha" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                <SortableTh label="Horario" sortKey="horario" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                <SortableTh label="Solicitante" sortKey="persona" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                <SortableTh label="Estado" sortKey="estado" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {recibidas.map((c) => (
+              {recibidasSort.sortedData.map((c) => (
                 <tr key={c.id}>
                   <td>{c.tarea_descripcion}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
@@ -130,15 +150,15 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
           <table className="styled-table">
             <thead>
               <tr>
-                <th>Tarea</th>
-                <th>Fecha</th>
-                <th>Horario</th>
-                <th>Destinatario</th>
-                <th>Estado</th>
+                <SortableTh label="Tarea" sortKey="tarea" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                <SortableTh label="Fecha" sortKey="fecha" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                <SortableTh label="Horario" sortKey="horario" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                <SortableTh label="Destinatario" sortKey="persona" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                <SortableTh label="Estado" sortKey="estado" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
               </tr>
             </thead>
             <tbody>
-              {enviadas.map((c) => (
+              {enviadasSort.sortedData.map((c) => (
                 <tr key={c.id}>
                   <td>{c.tarea_descripcion}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
