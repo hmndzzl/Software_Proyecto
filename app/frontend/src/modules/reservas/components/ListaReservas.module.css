@@ -60,3 +60,8 @@
   transition: border-color var(--transition), background-color var(--transition);
 }
 .btnEditar:hover { border-color: var(--color-muted); background: var(--color-crema); }
+
+/* Empuja el botón de cancelar reserva a la izquierda dentro del modal (acciones flex-end) */
+.btnCancelarReservaModal {
+  margin-right: auto;
+}
