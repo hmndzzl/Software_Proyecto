@@ -470,6 +470,33 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
     });
 
+    it('debería retornar 403 si un Admin/Sacerdote intenta rechazar (estado_id=3) su propia reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1 }]]);
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'No puedes rechazar tu propia reserva, solo cancelarla'
+      }));
+    });
+
+    it('debería permitir a un Admin cancelar (estado_id=4) su propia reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 4 };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1 }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva cancelada correctamente' }));
+    });
+
     it('debería retornar 403 si un usuario intenta cancelar la reserva de otra persona', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 4 };
