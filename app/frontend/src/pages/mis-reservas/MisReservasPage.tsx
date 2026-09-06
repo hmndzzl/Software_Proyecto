@@ -8,6 +8,7 @@ import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
+import { formatFecha, formatHora } from '../../utils/date';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -24,9 +25,6 @@ interface MiReserva {
 
 const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
 const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada' };
-
-const fmt  = (f: string) => { const [y, m, d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
-const fmtH = (h: string) => h.substring(0, 5);
 
 const KPI_ITEMS = [
   { label: 'Pendientes',  estadoId: 1, bg: 'var(--color-warnBg)', color: 'var(--color-warn)'  },
@@ -118,8 +116,8 @@ export default function MisReservasPage() {
                     <td className={styles.mono}>{r.evento_titulo ?? <span className={styles.muted}>Sin título</span>}</td>
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
-                    <td className={styles.mono}>{fmt(r.fecha)}</td>
-                    <td className={styles.horaCell}>{fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}</td>
+                    <td className={styles.mono}>{formatFecha(r.fecha)}</td>
+                    <td className={styles.horaCell}>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</td>
                     <td>
                       <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                         {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
