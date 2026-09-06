@@ -7,6 +7,8 @@ import EmptyState from '../../../components/ui/EmptyState';
 import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
+import SortableTh from '../../../components/ui/SortableTh';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 import { ROLES } from '../../../utils/roles';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import { formatFecha, formatHora } from '../../../utils/date';
@@ -45,6 +47,15 @@ const ESTADO_KIND: Record<number, BadgeKind> = {
   4: 'cancelada',
 };
 
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
+
+const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
+  id: (r) => r.id,
+  espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
+  fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
+  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+};
+
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
@@ -66,6 +77,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const esAdminOSacerdote = usuario && (
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );
+
+  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(reservas, SORT_VALUE);
 
   const fetchReservas = async () => {
     setLoading(true);
@@ -246,19 +259,19 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           <table className="styled-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Espacio</th>
-                <th>Fecha</th>
+                <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Hora Inicio</th>
                 <th>Hora Fin</th>
                 <th>Título del Evento</th>
                 <th>Descripción</th>
-                <th>Estado</th>
+                <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {reservas.map((r) => (
+              {reservasOrdenadas.map((r) => (
                 <tr key={r.id}>
                   <td>{r.id}</td>
                   <td>{r.espacio_nombre ?? '—'}</td>
