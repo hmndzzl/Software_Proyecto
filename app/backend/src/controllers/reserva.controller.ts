@@ -292,6 +292,15 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     const esSolicitante = reserva.solicitante_id === req.user!.id;
     const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
 
+    // Rechazar es una acción de un tercero sobre la reserva de otra persona. Si el propio
+    // solicitante la envía (incluso siendo Admin/Sacerdote), en realidad es una cancelación:
+    // debe usar CANCELADA. Esta validación aplica sin importar el privilegio del usuario.
+    if (esSolicitante && Number(estado_id) === ESTADOS_RESERVA.RECHAZADA) {
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: 'No puedes rechazar tu propia reserva, solo cancelarla'
+      });
+    }
+
     if (!esPrivilegiado) {
       if (!esSolicitante) {
         return res.status(HttpStatus.FORBIDDEN).json({
