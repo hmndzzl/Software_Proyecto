@@ -255,7 +255,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -303,7 +303,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const descripcionTarea: string = (tareas[0] as any).descripcion;
+    const tituloTarea: string = (tareas[0] as any).titulo;
     const remitenteId: number = req.user!.id;
     const hoy = new Date().toISOString().split('T')[0];
 
@@ -318,7 +318,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
 
     // 2. Solo notificar si la asignación fue nueva (affectedRows > 0)
     if (asignResult.affectedRows > 0) {
-      const mensaje = `Se te asignó la tarea: ${descripcionTarea}`;
+      const mensaje = `Se te asignó la tarea: ${tituloTarea}`;
 
       const [notifResult] = await conn.execute<ResultSetHeader>(
         `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id)
