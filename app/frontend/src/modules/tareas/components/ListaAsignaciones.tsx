@@ -14,6 +14,7 @@ import formStyles from '../../../styles/Form.module.css';
 interface Asignacion {
   tarea_id: number;
   persona_id: number;
+  titulo_tarea: string;
   descripcion_tarea: string;
   fecha: string;
   hora_inicio: string;
@@ -29,7 +30,7 @@ interface MinistroOpcion {
 type SortKey = 'tarea' | 'responsable' | 'fecha' | 'horario';
 
 const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
-  tarea: (a) => a.descripcion_tarea.toLowerCase(),
+  tarea: (a) => a.titulo_tarea.toLowerCase(),
   responsable: (a) => a.nombre_persona.toLowerCase(),
   fecha: (a) => `${a.fecha} ${a.hora_inicio}`,
   horario: (a) => a.hora_inicio,
@@ -50,6 +51,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [aviso, setAviso] = useState('');
 
   const [editandoTarea, setEditandoTarea] = useState<Asignacion | null>(null);
+  const [editTitulo, setEditTitulo] = useState('');
   const [editDescripcion, setEditDescripcion] = useState('');
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
@@ -74,6 +76,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
           tarea.asignados.map((asignado: any) => ({
             tarea_id: tarea.id,
             persona_id: asignado.persona_id,
+            titulo_tarea: tarea.titulo,
             descripcion_tarea: tarea.descripcion,
             fecha: tarea.fecha.split('T')[0],
             hora_inicio: tarea.hora_inicio,
@@ -119,6 +122,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
 
   const abrirEdicionTarea = (asignacion: Asignacion) => {
     setEditandoTarea(asignacion);
+    setEditTitulo(asignacion.titulo_tarea);
     setEditDescripcion(asignacion.descripcion_tarea);
     setEditFecha(asignacion.fecha);
     setEditHoraInicio(asignacion.hora_inicio.substring(0, 5));
@@ -133,7 +137,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
 
   const guardarEdicionTarea = async () => {
     if (!editandoTarea) return;
-    if (!editFecha || !editHoraInicio || !editHoraFin || !editDescripcion) {
+    if (!editFecha || !editHoraInicio || !editHoraFin || !editTitulo || !editDescripcion) {
       setEditMensaje('Por favor completa todos los campos.');
       return;
     }
@@ -148,6 +152,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
         fecha: editFecha,
         hora_inicio: editHoraInicio,
         hora_fin: editHoraFin,
+        titulo: editTitulo,
         descripcion: editDescripcion,
       });
       cerrarEdicionTarea();
@@ -176,6 +181,11 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
             )}
 
             <div className={formStyles.form}>
+              <div className={formStyles.field}>
+                <label className={`${formStyles.label} ${formStyles.required}`}>Título:</label>
+                <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
+              </div>
+
               <div className={formStyles.field}>
                 <label className={`${formStyles.label} ${formStyles.required}`}>Descripción:</label>
                 <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
@@ -231,7 +241,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                 const key = `${asignacion.tarea_id}-${asignacion.persona_id}`;
                 return (
                   <tr key={key}>
-                    <td>{asignacion.descripcion_tarea}</td>
+                    <td>{asignacion.titulo_tarea}</td>
                     {!esMinistro && (
                       <td>
                         {editandoKey === key ? (
