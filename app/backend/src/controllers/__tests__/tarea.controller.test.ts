@@ -201,7 +201,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 400 si hora_inicio >= hora_fin', async () => {
-      req.body = { fecha: '2026-08-12', hora_inicio: '15:40', hora_fin: '15:40', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '15:40', hora_fin: '15:40', titulo: 'T', descripcion: 'D' };
 
       await createTarea(req as Request, res as Response);
 
@@ -210,7 +210,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 201 y crear la tarea', async () => {
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       (pool.execute as any).mockResolvedValueOnce([{ insertId: 5 }]);
 
       await createTarea(req as Request, res as Response);
@@ -220,7 +220,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
     });
 
     it('debería retornar 500 en caso de error de BD', async () => {
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await createTarea(req as Request, res as Response);
@@ -241,7 +241,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 400 si hora_inicio >= hora_fin', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '16:00', hora_fin: '15:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '16:00', hora_fin: '15:00', titulo: 'T', descripcion: 'D' };
 
       await updateTarea(req as Request, res as Response);
 
@@ -251,7 +251,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 200 al actualizar exitosamente (Admin)', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
 
@@ -262,7 +262,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 200 al actualizar exitosamente (Sacerdote)', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.SACERDOTE } as any;
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
 
@@ -273,7 +273,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 403 si un Ministro intenta editar una tarea', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 9, rol_id: ROLES.MINISTRO } as any;
 
       await updateTarea(req as Request, res as Response);
@@ -284,7 +284,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 403 si un Coordinador de Grupos intenta editar una tarea', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 8, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
 
       await updateTarea(req as Request, res as Response);
@@ -295,7 +295,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería permitir a un Coordinador de Ministros editar una tarea de su propio ministro', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
       (pool.execute as any).mockResolvedValueOnce([[{ 1: 1 }]]); // autorizado
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
@@ -307,7 +307,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 403 si el Coordinador de Ministros no coordina a ningún asignado de la tarea', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 13, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
       (pool.execute as any).mockResolvedValueOnce([[]]); // no autorizado
 
@@ -318,7 +318,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 404 si la tarea no existe', async () => {
       req.params = { id: '99' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 0 }]);
 
@@ -329,7 +329,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 500 en caso de error de BD', async () => {
       req.params = { id: '1' };
-      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', descripcion: 'D' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
@@ -388,7 +388,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 404 si la persona no existe', async () => {
       req.body = { tarea_id: 1, persona_id: 99 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D' }]]); // SELECT tarea
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D' }]]); // SELECT tarea
       (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT persona -> no hay
 
       await asignarTarea(req as Request, res as Response);
@@ -398,7 +398,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 201 y asignar creando notificación', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]); // SELECT tarea
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]); // SELECT tarea
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]); // SELECT persona
       (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]); // conteo servicios del mes
       (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT conflictos de horario - ninguno
@@ -423,7 +423,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 201 y no crear notificación si la asignación ya existía (IGNORE)', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ total: 1 }]]); // ya tenía 1 servicio este mes (la propia tarea)
       (pool.execute as any).mockResolvedValueOnce([[]]);
@@ -443,7 +443,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería marcar ministro_no_disponible en la alerta sin bloquear la asignación', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 0 }]]); // marcado no disponible
       (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]);
       (pool.execute as any).mockResolvedValueOnce([[]]);
@@ -463,7 +463,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería marcar tope_servicios_superado cuando ya alcanzó el tope mensual', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ total: TOPE_SERVICIOS_MES }]]); // ya al tope antes de esta asignación
       (pool.execute as any).mockResolvedValueOnce([[]]);
@@ -485,7 +485,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería retornar 409 si hay conflicto de horario, sin llegar a insertar', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ 1: 1 }]]); // hay conflicto de horario
@@ -498,7 +498,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2, disponible: 1 }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ total: 0 }]]);
       (pool.execute as any).mockResolvedValueOnce([[]]);
