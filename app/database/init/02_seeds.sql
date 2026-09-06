@@ -49,6 +49,21 @@ INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`) VALUES
 INSERT INTO `coordinador_ministro` (`coordinador_id`, `ministro_id`) VALUES
   (7, 9), (7, 10), (7, 11), (7, 12);
 
+-- Tareas y asignaciones de prueba para HU-23 (cambio de turno entre ministros).
+-- Tarea 1 (Ministro Test, id=9) es la que se usa para solicitar el cambio; Ana (id=10)
+-- y Carlos (id=11) están libres a esa hora (destinatarios válidos); Lucía (id=12) tiene
+-- otra tarea que se solapa con la tarea 1, para probar el rechazo por conflicto de horario.
+INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `descripcion`) VALUES
+  ('2026-09-13', '10:00:00', '10:15:00', 'Lectura primera - Misa dominical 10am'),
+  ('2026-09-13', '10:15:00', '10:20:00', 'Salmo responsorial - Misa dominical 10am'),
+  ('2026-09-13', '10:20:00', '11:00:00', 'Ministro de comunión - Misa dominical 10am'),
+  ('2026-09-13', '10:00:00', '10:10:00', 'Coro - Misa dominical 10am'),
+  ('2026-09-20', '12:00:00', '12:15:00', 'Lectura segunda - Misa dominical 12pm'),
+  ('2026-09-20', '12:15:00', '13:00:00', 'Ministro de comunión - Misa dominical 12pm');
+
+INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
+  (1, 9), (2, 10), (3, 11), (4, 12), (5, 10), (6, 11);
+
 -- Notificaciones de prueba
 -- persona IDs: 1-5=Admin equipo, 6=Sacerdote, 7=CoordMin, 8=CoordGrupos, 9=Ministro
 -- notif 1 (id=1): leida=1 para todos  → todos tienen al menos una leída
