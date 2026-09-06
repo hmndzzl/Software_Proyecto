@@ -2,3 +2,11 @@
 .textoError { font-family: var(--font-body); color: var(--color-bad); font-size: 14px; font-weight: 600; padding: 16px 24px; }
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 .seccionTitulo { margin-bottom: 14px; }
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 18px;
+}
