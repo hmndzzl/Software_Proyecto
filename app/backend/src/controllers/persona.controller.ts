@@ -22,8 +22,23 @@ export const getCoordinadoresGrupo = async (_req: Request, res: Response): Promi
   }
 };
 
-export const getMinistros = async (_req: Request, res: Response): Promise<void> => {
+// GET /api/personas — Coordinador de Ministros ve solo sus propios ministros
+// (coordinador_ministro); cualquier otro rol autenticado ve el directorio completo.
+export const getMinistros = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (req.user?.rol_id === ROLES.COORDINADOR_MINISTROS) {
+      const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT p.id, p.nombre, p.correo, p.disponible
+         FROM persona p
+         INNER JOIN coordinador_ministro cm ON cm.ministro_id = p.id
+         WHERE cm.coordinador_id = ?
+         ORDER BY p.nombre ASC`,
+        [req.user.id]
+      );
+      res.status(HttpStatus.OK).json(rows);
+      return;
+    }
+
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT p.id, p.nombre, p.correo, p.disponible
        FROM persona p
