@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
 import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
+import { ROLES } from '../config/roles';
 import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 
@@ -173,6 +174,30 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
   }
 
   try {
+    const rolId = req.user!.rol_id;
+    const esPrivilegiado = rolId === ROLES.ADMIN || rolId === ROLES.SACERDOTE;
+
+    if (!esPrivilegiado) {
+      if (rolId !== ROLES.COORDINADOR_MINISTROS) {
+        res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'No tienes permiso para editar tareas' });
+        return;
+      }
+      // Un coordinador de ministros solo puede editar tareas donde al menos uno de los
+      // asignados actuales sea uno de sus propios ministros (coordinador_ministro).
+      const [autorizado] = await pool.execute<RowDataPacket[]>(
+        `SELECT 1
+         FROM asignacion_tarea at
+         INNER JOIN coordinador_ministro cm ON cm.ministro_id = at.persona_id
+         WHERE at.tarea_id = ? AND cm.coordinador_id = ?
+         LIMIT 1`,
+        [id, req.user!.id]
+      );
+      if (autorizado.length === 0) {
+        res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo puedes editar tareas de tus propios ministros asignados' });
+        return;
+      }
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
       'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, descripcion = ? WHERE id = ?',
       [fecha, hora_inicio, hora_fin, descripcion, id]
