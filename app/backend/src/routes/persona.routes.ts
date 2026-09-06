@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getMinistros,
   getCoordinadoresGrupo,
+  getEncargadosEvento,
   getPersonaById,
   editarPerfil,
   actualizarDisponibilidad,
@@ -15,6 +16,7 @@ router.use(authMiddleware);
 
 // Rutas específicas ANTES de /:id para que Express no las confunda con parámetros
 router.get('/coordinadores-grupo', getCoordinadoresGrupo);
+router.get('/encargados-evento', getEncargadosEvento);
 router.get('/', getMinistros);
 
 // Rutas con parámetro de id
