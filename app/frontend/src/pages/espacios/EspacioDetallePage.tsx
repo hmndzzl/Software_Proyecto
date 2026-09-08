@@ -10,6 +10,7 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { partesFecha, formatHora as fmtH } from '../../utils/date';
 import styles from './EspacioDetallePage.module.css';
 
 interface Reserva {
@@ -24,9 +25,6 @@ interface Reserva {
 
 const ESTADO_LABEL: Record<number, string>   = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
 const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada' };
-
-function fmt(fecha: string)  { const [y,m,d] = fecha.split('T')[0].split('-'); return `${d}/${m}/${y}`; }
-function fmtH(hora: string)  { return hora.substring(0, 5); }
 
 export default function EspacioDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -140,8 +138,8 @@ export default function EspacioDetallePage() {
 
                   {/* Bloque fecha */}
                   <div className={styles.dateBlock}>
-                    <span className={styles.dateMes}>{fmt(r.fecha).split('/')[1]}/{fmt(r.fecha).split('/')[2]}</span>
-                    <span className={styles.dateDay}>{fmt(r.fecha).split('/')[0]}</span>
+                    <span className={styles.dateMes}>{partesFecha(r.fecha).mesAbrev}</span>
+                    <span className={styles.dateDay}>{partesFecha(r.fecha).dia}</span>
                     <span className={styles.dateHora}>{fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}</span>
                   </div>
 

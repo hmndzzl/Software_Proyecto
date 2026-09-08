@@ -7,6 +7,7 @@ import { Card, CardHead } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import EmptyState from '../../components/ui/EmptyState';
+import { formatFecha, formatHora } from '../../utils/date';
 import styles from './DashboardPage.module.css';
 
 /* ── Role helpers ── */
@@ -166,13 +167,6 @@ export default function DashboardPage() {
       setTareasLoading(false);
     }
   }, []);
-
-  const formatFecha = (fecha: string) => {
-    const [y, m, d] = fecha.split('T')[0].split('-');
-    return `${d}/${m}/${y}`;
-  };
-
-  const formatHora = (hora: string) => hora.substring(0, 5);
 
   const nombre = usuario?.nombre?.split(' ')[0] ?? 'Usuario';
 

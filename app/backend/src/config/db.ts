@@ -12,7 +12,11 @@ const pool = mysql.createPool({
   port: Number(process.env.DB_PORT) || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Las columnas DATE se devuelven como 'YYYY-MM-DD' en vez de Date. Si no,
+  // mysql2 las convierte usando la zona horaria del servidor y al serializar a
+  // JSON (UTC) la fecha podia correrse un dia en el calendario.
+  dateStrings: ['DATE']
 });
 
 // Función de prueba para verificar la conexión inicial

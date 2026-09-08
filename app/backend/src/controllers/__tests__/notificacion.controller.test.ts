@@ -7,8 +7,10 @@ import {
   getNotificaciones,
   marcarLeida,
   confirmarAsistenciaNotificacion,
+  confirmarAsistencia,
   getDestinatarios,
   createNotificacion,
+  excusarAsistencia,
   deleteNotificacion,
   reportarInasistencia
 } from '../notificacion.controller';
@@ -132,6 +134,98 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       await confirmarAsistenciaNotificacion(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    });
+
+    it('debería retornar 404 si la notificación no existe', async () => {
+      req.params = { id: '999' };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      await confirmarAsistenciaNotificacion(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada' });
+    });
+
+    it('debería retornar 404 si affectedRows === 0', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+
+      await confirmarAsistenciaNotificacion(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada para este usuario' });
+    });
+
+    it('debería retornar 500 en caso de error en BD', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await confirmarAsistenciaNotificacion(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al confirmar asistencia' });
+    });
+  });
+
+  describe('confirmarAsistencia', () => {
+    it('debería confirmar la asistencia correctamente y retornar 200', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await confirmarAsistencia(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenLastCalledWith(
+        expect.stringContaining('UPDATE persona_notificacion'),
+        ['10', 1]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Asistencia confirmada' });
+    });
+
+    it('debería retornar 404 si la notificación no existe', async () => {
+      req.params = { id: '999' };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      await confirmarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada' });
+    });
+
+    it('debería retornar 400 si la notificación no requiere confirmación', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockResolvedValueOnce([[{ requiere_confirmacion: 0 }]]);
+
+      await confirmarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Esta notificación no requiere confirmación de asistencia' });
+    });
+
+    it('debería retornar 404 si affectedRows === 0', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+
+      await confirmarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada para este usuario' });
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await confirmarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al confirmar asistencia' });
     });
   });
 
@@ -293,6 +387,128 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       expect(mockConnection.rollback).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
+
+    it('debería retornar 400 si requiere confirmación pero no se incluye evento_id', async () => {
+      req.body = { mensaje: 'Aviso', tipo: 'global', requiere_confirmacion: true };
+
+      await createNotificacion(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Selecciona el evento al que aplica la confirmación de asistencia' });
+    });
+
+    it('debería retornar 404 y rollback si el evento especificado no existe', async () => {
+      req.body = { mensaje: 'Aviso', tipo: 'global', evento_id: 999, requiere_confirmacion: true };
+      mockConnection.execute.mockResolvedValueOnce([[]]);
+
+      await createNotificacion(req as Request, res as Response);
+
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El evento indicado no existe' });
+    });
+
+    it('debería procesar envío global con evento_id y confirmación exitosamente', async () => {
+      req.body = { mensaje: 'Aviso de Misa', tipo: 'global', evento_id: 5, requiere_confirmacion: true };
+      mockConnection.execute.mockResolvedValueOnce([[{ id: 5 }]]);
+      mockConnection.execute.mockResolvedValueOnce([{ insertId: 20 }]);
+      mockConnection.execute.mockResolvedValueOnce([[{ id: 1 }, { id: 2 }]]);
+      mockConnection.execute.mockResolvedValue([{}]);
+
+      await createNotificacion(req as Request, res as Response);
+
+      expect(mockConnection.commit).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ id: 20, destinatarios: 2 }));
+    });
+  });
+
+  describe('excusarAsistencia', () => {
+    it('debería retornar 400 si no se proporciona motivo', async () => {
+      req.params = { id: '1' };
+      req.body = {};
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El motivo de la excusa es requerido' });
+    });
+
+    it('debería retornar 400 si el motivo es un string vacío o con solo espacios', async () => {
+      req.params = { id: '1' };
+      req.body = { motivo: '   ' };
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El motivo de la excusa es requerido' });
+    });
+
+    it('debería retornar 404 si la notificación no existe', async () => {
+      req.params = { id: '999' };
+      req.body = { motivo: 'Enfermedad' };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada' });
+    });
+
+    it('debería retornar 400 si la notificación no requiere confirmación/excusa', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Enfermedad' };
+      (pool.execute as any).mockResolvedValueOnce([[{ requiere_confirmacion: 0 }]]);
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Esta notificación no requiere confirmación/excusa' });
+    });
+
+    it('debería retornar 404 si affectedRows === 0', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Enfermedad' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada para este usuario' });
+    });
+
+    it('debería registrar la excusa exitosamente con 200', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: '  Asunto médico  ' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenLastCalledWith(
+        expect.stringContaining('UPDATE persona_notificacion'),
+        ['Asunto médico', '10', 1]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith({
+        mensaje: 'Excusa registrada correctamente',
+        motivo: 'Asunto médico',
+      });
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Enfermedad' };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await excusarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al registrar excusa' });
+    });
   });
 
   describe('reportarInasistencia', () => {
@@ -341,6 +557,67 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       expect(mockConnection.rollback).toHaveBeenCalled();
       expect(mockConnection.commit).not.toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 404 si la notificación de asistencia no se encuentra para el usuario', async () => {
+      req.params = { id: '999' };
+      req.body = { motivo: 'Imprevisto' };
+      mockConnection.execute.mockResolvedValueOnce([[]]);
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación de asistencia no encontrada para este usuario' });
+    });
+
+    it('debería retornar 404 si affectedRows al actualizar persona_notificacion es 0', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Imprevisto' };
+      mockConnection.execute
+        .mockResolvedValueOnce([[{ id: 10, evento_id: 4, ministro_nombre: 'Ana', evento_nombre: 'Misa dominical' }]])
+        .mockResolvedValueOnce([[{ coordinador_id: 8 }]])
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada para este usuario' });
+    });
+
+    it('debería hacer rollback y retornar 500 en caso de error durante la transacción', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Imprevisto' };
+      mockConnection.execute.mockRejectedValueOnce(new Error('DB Error'));
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al registrar la inasistencia' });
+    });
+
+    it('debería retornar 400 si motivo no es de tipo string', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 12345 };
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El motivo de la inasistencia es requerido' });
+    });
+
+    it('debería retornar 500 si falla la obtención de conexión a la BD', async () => {
+      req.params = { id: '10' };
+      req.body = { motivo: 'Imprevisto' };
+      (pool.getConnection as any).mockRejectedValueOnce(new Error('Connection error'));
+
+      await reportarInasistencia(req as Request, res as Response);
+
+      expect(mockConnection.rollback).not.toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al registrar la inasistencia' });
     });
   });
 

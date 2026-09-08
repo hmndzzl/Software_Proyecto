@@ -23,7 +23,7 @@
 
 .message {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-bad);
   line-height: 1.45;
@@ -40,7 +40,7 @@
   border-radius: var(--radius-btn);
   padding: 5px 12px;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--color-bad);
   cursor: pointer;

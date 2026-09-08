@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ReservaDisponible } from '../../../types';
 import apiClient from '../../../api/client';
+import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
-
-const fmt  = (f: string) => { const [y,m,d] = f.split('T')[0].split('-'); return `${d}/${m}/${y}`; };
-const fmtH = (h: string) => h.substring(0, 5);
 
 export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: () => void }) {
   const [descripcion, setDescripcion]   = useState('');

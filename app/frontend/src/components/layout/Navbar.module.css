@@ -18,7 +18,7 @@
 }
 
 .logo {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   margin: 0;
   color: #111;
@@ -28,7 +28,7 @@
   text-decoration: none;
   color: #555;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .link:hover {
@@ -45,7 +45,7 @@
   text-decoration: none;
   color: #555;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   padding: 8px 16px;
   border-radius: 50px;
   border: 1px solid transparent;
@@ -66,7 +66,7 @@
   cursor: pointer;
   color: #333;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .btnLogout:hover {

@@ -39,7 +39,7 @@
 
 .label {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-muted);
   letter-spacing: .03em;
 }

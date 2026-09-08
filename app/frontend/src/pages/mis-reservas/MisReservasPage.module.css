@@ -37,7 +37,8 @@
 }
 
 /* Tabla */
-.mono  { font-family: var(--font-mono); font-size: 13px; }
+.mono     { font-family: var(--font-mono); font-size: 13px; }
+.horaCell { font-family: var(--font-mono); font-size: 14px; color: var(--color-ink); }
 .bold  { font-weight: 600; }
 .muted { color: var(--color-muted); font-style: italic; }
 

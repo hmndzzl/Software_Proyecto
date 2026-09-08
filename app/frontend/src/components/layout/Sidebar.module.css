@@ -16,7 +16,7 @@
 
 .kicker {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .22em;
   color: var(--color-tierra);
@@ -26,7 +26,7 @@
 
 .subtitle {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-muted);
   letter-spacing: .02em;
 }
@@ -45,7 +45,7 @@
   height: 46px;
   padding: 0 20px;
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   color: var(--color-ink);
   text-decoration: none;
@@ -95,7 +95,7 @@
   background-color: var(--color-rojo);
   color: var(--color-crema);
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -121,7 +121,7 @@
 
 .footerLink {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-muted);
   text-decoration: none;
   transition: color var(--transition);

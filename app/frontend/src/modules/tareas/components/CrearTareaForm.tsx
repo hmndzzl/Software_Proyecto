@@ -3,6 +3,7 @@ import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 
 export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () => void }) {
+  const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
@@ -12,19 +13,26 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!descripcion || !fecha || !horaInicio || !horaFin) {
+    if (!titulo || !descripcion || !fecha || !horaInicio || !horaFin) {
       setMensaje('Por favor completa todos los campos.');
+      return;
+    }
+
+    if (horaInicio >= horaFin) {
+      setMensaje('La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
 
     try {
       await apiClient.post('/api/tareas', {
+        titulo,
         descripcion,
         fecha,
         hora_inicio: horaInicio,
         hora_fin: horaFin
       });
       setMensaje('¡Tarea creada con éxito!');
+      setTitulo('');
       setDescripcion('');
       setFecha('');
       setHoraInicio('');
@@ -46,6 +54,18 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
       )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="titulo" className={`${styles.label} ${styles.required}`}>Título:</label>
+          <input
+            type="text"
+            id="titulo"
+            className={styles.input}
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Ej. Lectura primera"
+          />
+        </div>
+
         <div className={styles.field}>
           <label htmlFor="descripcion" className={`${styles.label} ${styles.required}`}>Descripción:</label>
           <input
