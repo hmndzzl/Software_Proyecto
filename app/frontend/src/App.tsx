@@ -19,6 +19,7 @@ import MisReservasPage from './pages/mis-reservas/MisReservasPage';
 import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
 import PerfilPage from './pages/perfil/PerfilPage';
 import CalendarioPage from './pages/calendario/CalendarioPage';
+import CambiosTurnoPage from './pages/cambios-turno/CambiosTurnoPage';
 import NotFoundPage from './pages/not_found_page/NotFoundPage';
 
 const ALL_ROLES = [
@@ -122,6 +123,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <CalendarioPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/cambios-turno"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.MINISTRO, ROLES.ADMIN]}>
+              <CambiosTurnoPage />
             </ProtectedRoute>
           }
         />

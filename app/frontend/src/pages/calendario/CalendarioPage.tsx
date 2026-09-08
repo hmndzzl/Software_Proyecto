@@ -17,6 +17,7 @@ interface Tarea {
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
+  titulo: string;
   descripcion: string;
   persona_nombre?: string | null;
   asignados: AsignadoInfo[];
@@ -63,7 +64,40 @@ const formatRangeText = (mon: Date, sun: Date): string => {
   }
 };
 
-const formatHora = (h: string): string => h.substring(0, 5);
+const formatHora = (h?: string | null): string => (h ? h.substring(0, 5) : '--:--');
+
+// La API puede devolver 'YYYY-MM-DD' o un ISO completo ('YYYY-MM-DDTHH:mm:ss.sssZ').
+// Nos quedamos siempre con la parte de fecha, sin volver a parsear a Date
+// (parsear reintroduciria el desfase de zona horaria).
+const fechaKey = (fecha?: string | null): string => (fecha ? fecha.slice(0, 10) : '');
+
+// Ordena por hora de inicio y, en empate, por hora de fin, para que el orden
+// dentro de la columna no dependa del ORDER BY de la API.
+const compararPorHora = (a: Tarea, b: Tarea): number =>
+  (a.hora_inicio ?? '').localeCompare(b.hora_inicio ?? '') ||
+  (a.hora_fin ?? '').localeCompare(b.hora_fin ?? '');
+
+// Agrupa las tareas por dia en una sola pasada, descartando repetidos por id.
+const agruparPorDia = (tareas: Tarea[]): Map<string, Tarea[]> => {
+  const porDia = new Map<string, Tarea[]>();
+  const vistas = new Set<number>();
+
+  for (const tarea of tareas) {
+    const dia = fechaKey(tarea.fecha);
+    if (!dia || vistas.has(tarea.id)) continue;
+    vistas.add(tarea.id);
+
+    const delDia = porDia.get(dia);
+    if (delDia) {
+      delDia.push(tarea);
+    } else {
+      porDia.set(dia, [tarea]);
+    }
+  }
+
+  porDia.forEach(delDia => delDia.sort(compararPorHora));
+  return porDia;
+};
 
 export default function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
@@ -83,9 +117,12 @@ export default function CalendarioPage() {
     return day;
   });
 
-  const cargarTareas = () => {
-    setLoading(true);
-    setError('');
+  // silent=true evita el parpadeo de "Cargando..." cuando el refresco ocurre
+  const cargarTareas = (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
 
     const startStr = formatYYYYMMDD(activeMonday);
     const endStr   = formatYYYYMMDD(activeSunday);
@@ -93,17 +130,33 @@ export default function CalendarioPage() {
     apiClient.get(`/api/tareas?fecha_inicio=${startStr}&fecha_fin=${endStr}`)
       .then(res => {
         setTareas(res.data);
+        if (silent) setError('');
       })
       .catch(() => {
-        setError('Error al cargar las tareas del calendario.');
+        if (!silent) setError('Error al cargar las tareas del calendario.');
       })
       .finally(() => {
-        setLoading(false);
+        if (!silent) setLoading(false);
       });
   };
 
   useEffect(() => {
     cargarTareas();
+
+    // Las tareas pueden crearse/modificarse desde otra pestaña sin que este componente se vuelva a montar, al recuperar el foco o visibilidad, se refresca para no depender de un
+    // recargo manual de la página.
+    const handleRefresh = () => {
+      if (document.visibilityState === 'visible') {
+        cargarTareas(true);
+      }
+    };
+    window.addEventListener('focus', handleRefresh);
+    document.addEventListener('visibilitychange', handleRefresh);
+
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      document.removeEventListener('visibilitychange', handleRefresh);
+    };
   }, [currentDate]);
 
   const handlePrevWeek = () => {
@@ -123,6 +176,8 @@ export default function CalendarioPage() {
   };
 
   const todayStr = formatYYYYMMDD(new Date());
+
+  const tareasPorDia = agruparPorDia(tareas);
 
   return (
     <div className={styles.page}>
@@ -158,7 +213,7 @@ export default function CalendarioPage() {
       </div>
 
       {loading && <LoadingState label="Cargando calendario..." />}
-      {error && <ErrorState message={error} onRetry={cargarTareas} />}
+      {error && <ErrorState message={error} onRetry={() => cargarTareas()} />}
 
       {!loading && !error && (
         <div className={styles.grid}>
@@ -166,8 +221,7 @@ export default function CalendarioPage() {
             const dayStr = formatYYYYMMDD(day);
             const isToday = dayStr === todayStr;
 
-            // Filter tasks assigned to this specific date
-            const dayTareas = tareas.filter(t => t.fecha.split('T')[0] === dayStr);
+            const dayTareas = tareasPorDia.get(dayStr) ?? [];
 
             return (
               <div
@@ -196,7 +250,7 @@ export default function CalendarioPage() {
                             <span>{formatHora(t.hora_inicio)} – {formatHora(t.hora_fin)}</span>
                           </div>
 
-                          <p className={styles.taskDesc}>{t.descripcion}</p>
+                          <p className={styles.taskDesc}>{t.titulo}</p>
 
                           <div className={styles.assigneeRow}>
                             {ministerName ? (
