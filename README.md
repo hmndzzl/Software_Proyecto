@@ -152,8 +152,6 @@ Todas las rutas, excepto las de autenticación, requieren `Authorization: Bearer
 | `/api/grupos`, `/api/eventos` | CRUD; eventos incluye `/reservas-disponibles` |
 | `/api/notificaciones` | Bandeja, destinatarios, lectura, asistencia, excusa e inasistencia |
 
-Documentación técnica detallada, contratos de negocio y esquema completo: [`CLAUDE.md`](CLAUDE.md).
-
 ## Pruebas
 
 ### Unitarias
@@ -228,7 +226,7 @@ El workflow de CI y el de despliegue son independientes. Confirmar que GitHub te
 
 ## Documentación académica
 
-Los informes de Sprint 6 y Sprint 7, el Plan Maestro de Pruebas y la exportación de Jira se mantienen fuera del repositorio. El estado técnico y el historial detallado del proyecto están en [`CLAUDE.md`](CLAUDE.md).
+Los informes de Sprint 6 y Sprint 7, el Plan Maestro de Pruebas y la exportación de Jira se mantienen fuera del repositorio.
 
 ## Licencia
 
