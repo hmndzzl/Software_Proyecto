@@ -1,98 +1,116 @@
 # Plataforma Administrativa — Parroquia San Pedro Nolasco
 
-Sistema web de gestión administrativa para la Parroquia San Pedro Nolasco (Guatemala). Permite administrar grupos parroquiales, espacios físicos, reservas de salones, ministros, tareas, eventos y notificaciones, con control de acceso basado en roles (RBAC).
+Sistema web para la gestión interna de la Parroquia San Pedro Nolasco (Guatemala). Centraliza tareas y turnos de ministros, reservas de salones, eventos, grupos y notificaciones, reemplazando flujos manuales basados en Excel y WhatsApp.
 
-> **Estado actual: Sprint 4 en curso** — Módulo de notificaciones completo (campana en TopBar con polling, página de bandeja, envío manual por rol). Rediseño completo de la interfaz. Módulo de reservas ampliado.
+> Estado: **Sprint 7 completado** (8 de septiembre de 2026). Las funcionalidades principales están implementadas; quedan pendientes de seguridad y control de acceso descritos en [Pendientes técnicos](#pendientes-técnicos).
 
----
+## Funcionalidades
 
-## Equipo de Trabajo — Grupo 3
+- Autenticación JWT con access token y refresh token en cookie `HttpOnly`, rutas protegidas y jerarquía de roles.
+- Gestión de reservas y eventos: solicitud, edición, aprobación/rechazo, cancelación propia y validación de conflictos de horario.
+- Disponibilidad de espacios por fecha y horario.
+- Gestión de ministros y tareas: asignación, desasignación, edición, reasignación inline y validación de solapamientos.
+- Alerta de rotación (HU-09): avisa si el ministro está indisponible o supera el tope mensual; informa, no bloquea la asignación.
+- Cambio de turno entre ministros (HU-23): solicitud, aceptación/rechazo y reasignación automática del titular al aceptar.
+- Notificaciones con polling, confirmación/excusa de asistencia y aviso de inasistencia al coordinador.
+- Calendario semanal, perfil de usuario, eventos, grupos y páginas de error/carga/estado vacío reutilizables.
+- UI responsive con sistema de diseño litúrgico, tablas ordenables y formato uniforme de fechas/horas.
 
-| Nombre | Carné | Correo UVG |
-|---|---|---|
-| Diego André Calderón Salazar | 241263 | cal241263@uvg.edu.gt |
-| Pedro Julio Caso | 241286 | cas241286@uvg.edu.gt |
-| Javier Sebastián Alvarado Monzón | 24546 | alv24546@uvg.edu.gt |
-| Hugo Méndez Lee | 241265 | men241265@uvg.edu.gt |
-| José Miguel Rosas Guerra | 241274 | ros241274@uvg.edu.gt |
+## Stack
 
----
+| Capa | Tecnología |
+|---|---|
+| Frontend | React 18, Vite 5, TypeScript, Axios |
+| Backend | Node.js, Express 4, TypeScript |
+| Persistencia | MariaDB 11 con `mysql2` |
+| Contenedores | Docker Compose |
+| Pruebas | Vitest y Grafana k6 |
+| Automatización | GitHub Actions |
+| Producción | DigitalOcean Droplet |
 
-## Stack Tecnológico
+## Equipo — Grupo 3
 
-| Capa | Tecnología | Versión |
-|---|---|---|
-| Frontend | React + Vite + TypeScript | React 18, Vite 5 |
-| Backend | Express + TypeScript | Express 4 |
-| Base de datos | MariaDB | 11 |
-| Contenedores | Docker + Docker Compose | — |
-| Autenticación | JWT (jsonwebtoken) doble token | — |
-| CI/CD | GitHub Actions | — |
-| Infraestructura | Azure VM | Ubuntu |
-| Fuentes | Cinzel + Noto Serif | Google Fonts |
+| Nombre | Carné |
+|---|---:|
+| Diego André Calderón Salazar | 241263 |
+| Pedro Julio Caso Tzunun | 241286 |
+| Javier Sebastián Alvarado Monzón | 24546 |
+| Hugo Méndez Lee | 241265 |
+| José Miguel Rosas Guerra | 241274 |
 
----
+## Inicio rápido
 
-## Funcionalidades Implementadas
+### Requisitos
 
-### Sprint 3 (en curso)
+- Docker y Docker Compose
+- Un archivo `app/.env` creado desde `app/.env.example` y completado con las credenciales del entorno.
 
-#### Módulo de Notificaciones
-- **Campana en TopBar** con badge rojo de no-leídas, polling automático cada 60s
-- Dropdown de últimas 5 notificaciones con vista previa; click navega a `/notificaciones` y marca como leída
-- **Página `/notificaciones`:** tabla completa con columnas Fecha, Mensaje, Remitente, Tipo, Estado (Badge verde/amarillo)
-- **Botón "Marcar todas como leídas"** visible solo cuando hay no-leídas
-- **Envío manual de notificaciones** (modal con acordeón por rol):
-  - Admin/Sacerdote: tipo Global (auto-todos) o Individual (cualquier persona, lista agrupada por rol colapsable)
-  - Coordinador de Ministros: Individual a sus ministros asignados únicamente
-  - CoordGrupos y Ministros: solo reciben, no envían
-- Backend CRUD completo: `GET`, `PUT /:id/leida`, `POST`, `DELETE`
-- `GET /api/notificaciones/destinatarios` retorna personas disponibles según rol del remitente
+```bash
+git clone https://github.com/hmndzzl/Software_Proyecto.git
+cd Software_Proyecto/app
+cp .env.example .env
+docker compose up --build -d
+```
 
-#### Rediseño completo de la interfaz
-- **Nuevo sistema de diseño** basado en paleta litúrgica: rojo `#9D2F38`, oro `#F2AF29`, crema `#F3F1E9`, tierra `#8B5A2D`
-- **Fuentes:** Cinzel (títulos y kickers) + Noto Serif (cuerpo y tablas) + monospace para fechas/horas/IDs
-- **AppShell:** TopBar (72px, fondo rojo) + Sidebar (260px, fondo crema) con links activos y navegación reactiva
-- **Tokens CSS centralizados** en `src/styles/tokens.css` — cero colores hardcodeados en módulos
-- **Primitivos UI reutilizables:** `Btn`, `Badge`, `Card`/`CardHead`/`CardBody`, `PageHeader`, `Field`/`InputUI`/`SelectUI`, `Modal`
-- **Login:** layout split 50/50 con branding parroquial en panel rojo y formulario en panel crema
-- **Dashboard:** KPI cards, Próximas Tareas, Accesos Rápidos filtrados por rol
-- CSS Modules en todos los componentes — cero `style={{}}` estáticos en el frontend
+El primer arranque crea el esquema y carga las semillas desde `database/init/`. Para detener los servicios:
 
-#### Módulo de Reservas ampliado
-- Campos **título y descripción** obligatorios en `CrearReservaForm`
-- **Edición de reservas** (`PUT /api/reservas/:id`): solicitante edita las propias; Admin/Sacerdote editan cualquiera; resetea estado a Pendiente
-- Modal con campos pre-llenados y aviso de re-aprobación si era Confirmada/Rechazada
+```bash
+docker compose down
+```
 
----
+Para recrear la base de datos local desde cero (elimina el volumen y todos sus datos):
 
-### Sprint 2 (completado — 43 Story Points)
+```bash
+docker compose down -v
+docker compose up --build -d
+```
 
-- **HU-10** Dashboard e interfaz de navegación principal
-- **HU-05** CRUD de grupos parroquiales
-- **HU-08** CRUD de espacios físicos (7 espacios en seeds)
-- **HU-02** Sistema completo de reservas (formulario, aprobación, validación de conflictos)
-- **HU-09** Middleware JWT + RBAC + rutas protegidas frontend
+### Servicios locales
 
----
+| Servicio | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| API | http://localhost:3001 |
+| Health check | http://localhost:3001/health |
+| Adminer | `http://localhost:${ADMINER_PORT}` |
 
-### Sprint 1 (completado)
+Adminer usa sistema `MySQL`, servidor `mariadb` y las credenciales definidas en `.env`.
 
-- Módulo de Tareas: CRUD + asignación a ministros
-- Módulo de Ministros/Personas: listado y registro
-- Autenticación básica con JWT
+### Desarrollo sin Docker
 
----
+```bash
+cd app/backend
+npm install
+npm run dev
 
-## Roles y Permisos (RBAC)
+cd ../frontend
+npm install
+npm run dev
+```
 
-| rol_id | Nombre | Descripción |
-|---|---|---|
-| 1 | Sacerdote | Aprueba/rechaza reservas. Edita cualquier reserva. Envía notificaciones a todos. |
-| 2 | Coordinador de Ministros | Asigna tareas, reserva salones. Envía notificaciones a sus ministros. |
-| 3 | Coordinador de Grupos | Gestiona su grupo, reserva salones. Solo recibe notificaciones. |
-| 4 | Ministro | Solo visualización. Solo recibe notificaciones. |
-| 5 | Admin | Acceso total. Envía notificaciones a todos. |
+## Variables de entorno
+
+Copiar `app/.env.example` como `app/.env`. Las variables requeridas son:
+
+| Grupo | Variables |
+|---|---|
+| Frontend | `VITE_API_URL` |
+| API | `PORT`, `CORS_ORIGIN` |
+| MariaDB | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_ROOT_PASSWORD` |
+| JWT | `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN` |
+| Herramientas | `ADMINER_PORT` |
+
+No versionar secretos ni valores de producción.
+
+## Roles
+
+| ID | Rol | Acciones principales |
+|---:|---|---|
+| 1 | Sacerdote | Gestiona reservas y espacios; registra usuarios. |
+| 2 | Coordinador de Ministros | Gestiona a sus ministros, tareas y notificaciones a sus subordinados. |
+| 3 | Coordinador de Grupos | Gestiona su grupo y solicita reservas. |
+| 4 | Ministro | Consulta sus servicios, responde notificaciones y solicita cambios de turno. |
+| 5 | Admin | Acceso jerárquico completo. |
 
 ```
 Admin (5)          → [5, 1, 2, 3, 4]
@@ -102,280 +120,116 @@ CoordGrupos (3)    → [3]
 Ministro (4)       → [4]
 ```
 
-> **Nota sobre grupos:** Los miembros de grupos parroquiales no tienen acceso a la app. Solo el coordinador del grupo tiene cuenta. Las notificaciones de tipo "grupo" van al coordinador, quien comunica a sus miembros por otros medios.
+Los grupos parroquiales no tienen cuentas propias: su coordinador comunica los avisos a sus integrantes por los medios acordados.
 
----
+## Rutas de la aplicación
 
-## Estructura del Proyecto
-
-```
-Software_Proyecto/
-├── .github/workflows/deploy.yml
-├── app/
-│   ├── frontend/
-│   │   └── src/
-│   │       ├── api/
-│   │       │   ├── client.ts          # Axios + interceptor refresh token
-│   │       │   └── auth.ts
-│   │       ├── components/
-│   │       │   ├── layout/
-│   │       │   │   ├── AppShell.tsx
-│   │       │   │   ├── Sidebar.tsx    # NavLinks activos + enlace notificaciones
-│   │       │   │   └── TopBar.tsx     # Logo, campana con badge, usuario, logout
-│   │       │   └── ui/
-│   │       │       ├── Btn.tsx        # 6 kinds × 3 sizes
-│   │       │       ├── Badge.tsx      # Dot badge de estado
-│   │       │       ├── Card.tsx       # Card + CardHead + CardBody
-│   │       │       ├── Field.tsx      # Field + InputUI + SelectUI + TextareaUI
-│   │       │       ├── Modal.tsx      # Overlay con blur + cierre ESC/click fuera
-│   │       │       ├── PageHeader.tsx # Kicker + H1 + subtitle + rule oro
-│   │       │       └── ProtectedRoute.tsx
-│   │       ├── context/AuthContext.tsx
-│   │       ├── modules/
-│   │       │   ├── espacios/
-│   │       │   ├── eventos/
-│   │       │   ├── grupos/
-│   │       │   ├── notificaciones/
-│   │       │   │   ├── components/    # NotificacionRow, EnviarNotificacionForm
-│   │       │   │   └── hooks/         # useNotificaciones
-│   │       │   ├── reservas/
-│   │       │   └── tareas/
-│   │       ├── pages/
-│   │       │   ├── auth/
-│   │       │   ├── dashboard/
-│   │       │   ├── espacios/
-│   │       │   ├── eventos/
-│   │       │   ├── grupos/
-│   │       │   ├── ministers/
-│   │       │   ├── mis-reservas/
-│   │       │   ├── notificaciones/    # NotificacionesPage
-│   │       │   ├── reservas/
-│   │       │   └── tasks/
-│   │       ├── styles/
-│   │       │   ├── tokens.css
-│   │       │   └── Form.module.css
-│   │       ├── types/index.ts
-│   │       └── utils/
-│   │           ├── date.ts            # formatFecha() — ISO → "21 may. 2026"
-│   │           └── roles.ts
-│   ├── backend/
-│   │   └── src/
-│   │       ├── config/db.ts, roles.ts
-│   │       ├── controllers/
-│   │       │   ├── auth.controller.ts
-│   │       │   ├── espacio.controller.ts
-│   │       │   ├── evento.controller.ts
-│   │       │   ├── grupo.controller.ts
-│   │       │   ├── notificacion.controller.ts
-│   │       │   ├── persona.controller.ts
-│   │       │   ├── reserva.controller.ts
-│   │       │   └── tarea.controller.ts
-│   │       ├── middlewares/auth.middleware.ts
-│   │       ├── routes/
-│   │       ├── types/
-│   │       │   ├── notificacion.types.ts
-│   │       │   └── tarea.types.ts
-│   │       └── utils/httpStatus.ts
-│   ├── database/init/
-│   │   ├── 01_schema.sql
-│   │   └── 02_seeds.sql
-│   ├── .env.example
-│   └── docker-compose.yml
-├── docs/
-└── README.md
-```
-
----
-
-## Modelo de Base de Datos
-
-| Tabla | Descripción |
+| Ruta | Descripción |
 |---|---|
-| `rol` | Catálogo de roles del sistema |
-| `estado_reserva` | 1=Pendiente, 2=Confirmada, 3=Rechazada |
-| `espacio` | Salones y áreas físicas |
-| `persona` | Usuarios (correo + password hasheado + rol) |
-| `telefono` | Teléfonos de contacto por persona |
-| `grupo` | Grupos parroquiales con coordinador asignado |
-| `coordinador_ministro` | N:M coordinadores ↔ ministros |
-| `tarea` | Tareas asignables (fecha, horario, descripción) |
-| `asignacion_tarea` | N:M tarea ↔ persona |
-| `notificacion` | Notificaciones: `tipo` ENUM(global/grupo/individual), `remitente_id`, `grupo_id` |
-| `persona_notificacion` | N:M persona ↔ notificación + columna `leida TINYINT(1)` |
-| `reserva` | Solicitudes de reserva con solicitante |
-| `evento` | 1-to-1 con reserva; tiene `titulo` y `descripcion` |
+| `/dashboard` | Resumen y accesos rápidos por rol. |
+| `/ministros` | Directorio y disponibilidad de ministros. |
+| `/tareas` | Tareas, asignaciones y reasignación del responsable. |
+| `/calendario` | Calendario semanal de servicios. |
+| `/cambios-turno` | Solicitudes y respuestas de cambios de turno. |
+| `/reservas`, `/mis-reservas` | Gestión e historial de reservas. |
+| `/espacios`, `/espacios/:id` | Espacios y disponibilidad por horario. |
+| `/eventos`, `/grupos` | Administración de eventos y grupos. |
+| `/notificaciones` | Bandeja, asistencia e inasistencias. |
+| `/perfil` | Perfil del usuario autenticado. |
 
----
+## API
 
-## API Endpoints
+Todas las rutas, excepto las de autenticación, requieren `Authorization: Bearer <token>`.
 
-Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer <token>`.
-
-### Autenticación — `/api/auth`
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| POST | `/login` | No | Access token + refresh cookie |
-| POST | `/refresh` | Cookie | Renueva access token |
-| POST | `/logout` | No | Limpia cookie |
-| POST | `/register` | Sacerdote/Admin | Registra persona |
-
-### Notificaciones — `/api/notificaciones`
-| Método | Ruta | Roles | Descripción |
-|---|---|---|---|
-| GET | `/` | Cualquiera | Lista notificaciones del usuario con `remitente_nombre` |
-| GET | `/destinatarios` | Admin/Sacerdote/CoordMin | Personas a las que puede notificar |
-| PUT | `/:id/leida` | Cualquiera | Marca notificación propia como leída |
-| POST | `/` | Admin/Sacerdote/CoordMin | Crea notificación; global auto-puebla todos |
-| DELETE | `/:id` | Admin/Sacerdote | Elimina notificación (cascade) |
-
-### Reservas — `/api/reservas`
-| Método | Ruta | Roles | Descripción |
-|---|---|---|---|
-| POST | `/` | Cualquiera | Crea reserva + evento en transacción |
-| GET | `/` | Cualquiera | Lista con evento_titulo, evento_descripcion |
-| GET | `/mis-reservas` | Cualquiera | Reservas del usuario autenticado |
-| GET | `/:id` | Cualquiera | Detalle |
-| PUT | `/:id` | Solicitante/Sacerdote/Admin | Edita + resetea a Pendiente |
-| PUT | `/:id/estado` | Sacerdote/Admin | Aprueba o rechaza |
-
-### Otros módulos
-| Recurso | Prefijo | Notas |
-|---|---|---|
-| Tareas | `/api/tareas` | CRUD + asignación/desasignación |
-| Personas | `/api/personas` | GET lista + GET detalle |
-| Espacios | `/api/espacios` | CRUD; CUD solo Sacerdote/Admin |
-| Grupos | `/api/grupos` | CRUD completo |
-| Eventos | `/api/eventos` | CRUD + `/reservas-disponibles` |
-
----
-
-## Usuarios de Prueba (Seeds)
-
-### Equipo de desarrollo — contraseña `admin123` (rol Admin)
-| Correo | Nombre |
+| Recurso | Operaciones principales |
 |---|---|
-| diego@parroquia.com | Diego Calderón |
-| pedro@parroquia.com | Pedro Caso |
-| javier@parroquia.com | Javier Alvarado |
-| hugo@parroquia.com | Hugo Méndez |
-| miguel@parroquia.com | Miguel Rosas |
+| `/api/auth` | `POST /login`, `/refresh`, `/logout`, `/register` |
+| `/api/tareas` | CRUD, `POST/DELETE /asignar`, `PUT /asignar` para reasignar responsable |
+| `/api/cambios-turno` | `GET/POST /`, `PUT /:id/responder` |
+| `/api/personas` | Directorio, perfil, encargados de evento y `PATCH /:id/disponibilidad` |
+| `/api/reservas` | Crear/listar/editar, mis reservas y `PUT /:id/estado` |
+| `/api/espacios` | CRUD y disponibilidad con `fecha`, `hora_inicio`, `hora_fin` |
+| `/api/grupos`, `/api/eventos` | CRUD; eventos incluye `/reservas-disponibles` |
+| `/api/notificaciones` | Bandeja, destinatarios, lectura, asistencia, excusa e inasistencia |
 
-### Usuarios por rol — contraseña `password123`
-| Correo | Rol | Notas |
-|---|---|---|
-| sacerdote@parroquia.com | Sacerdote | — |
-| coord.min@parroquia.com | Coordinador de Ministros | Coordina a `ministro@parroquia.com` |
-| coord.grupos@parroquia.com | Coordinador de Grupos | — |
-| ministro@parroquia.com | Ministro | Asignado a coord.min |
+Documentación técnica detallada, contratos de negocio y esquema completo: [`CLAUDE.md`](CLAUDE.md).
 
-### Espacios físicos sembrados
-| Espacio | Capacidad |
-|---|---|
-| Templo Principal | 500 |
-| Salón Parroquial | 150 |
-| Sala de Catequesis A/B | 30 c/u |
-| Sala de Reuniones | 20 |
-| Patio Central | 200 |
-| Capilla Lateral | 80 |
+## Pruebas
 
----
-
-## Instalación y Puesta en Marcha
-
-### Prerrequisitos
-- Docker Desktop instalado y ejecutándose
-- Archivo `app/.env` (copiar desde `app/.env.example`)
-
-### Primera vez
+### Unitarias
 
 ```bash
-git clone https://github.com/hmndzzl/Software_Proyecto.git
-cd Software_Proyecto/app
-cp .env.example .env   # completar variables
-docker compose up --build -d
+cd app/backend
+npm test
+npm run coverage
+
+cd ../frontend
+npm test
+npm run coverage
 ```
 
-MariaDB ejecuta automáticamente `01_schema.sql` y `02_seeds.sql` al primer inicio.
+Las pruebas backend usan mocks de Vitest para MariaDB. El workflow `.github/workflows/ci.yml` ejecuta la cobertura backend en pull requests a `main` y `develop`.
 
-### Siguientes veces
+### Carga y estrés
+
+Los cuatro escenarios de Grafana k6 cubren login, disponibilidad de espacios, polling de notificaciones y un flujo combinado.
 
 ```bash
-cd app && docker compose up -d
+./tests/k6/run-tests.sh all
+./tests/k6/run-tests.sh login
+./tests/k6/run-tests.sh espacios
+./tests/k6/run-tests.sh notificaciones
+./tests/k6/run-tests.sh combined
 ```
 
-### Reiniciar BD desde cero (cuando cambia el schema)
+También puede ejecutarse desde `app/backend` con `npm run test:k6:all`. El runner emplea k6 instalado localmente o la imagen `grafana/k6`; los resultados se guardan en `tests/k6/results/` y el informe está en [`tests/k6/reports/reporte_carga_estres_k6.md`](tests/k6/reports/reporte_carga_estres_k6.md).
 
-**⚠️ Borra todos los datos existentes.**
+Resultados Sprint 7: más de 26,400 solicitudes sin errores HTTP/5xx; espacios alcanzó 148.15 req/s y notificaciones 137.92 req/s. Login se degrada con carga alta por `bcrypt`, por lo que rate limiting es la siguiente mejora prioritaria.
 
-```bash
-docker compose down -v
-docker compose up --build -d
+## Estructura
+
+```text
+app/
+├── frontend/src/
+│   ├── components/     # Layout y primitivos UI
+│   ├── context/        # Autenticación y errores globales
+│   ├── modules/        # Espacios, reservas, tareas, eventos, grupos, notificaciones, cambios
+│   ├── pages/          # Rutas de la interfaz
+│   └── utils/          # Roles, fechas y estados de reserva
+├── backend/src/
+│   ├── controllers/    # Lógica de negocio + pruebas unitarias
+│   ├── routes/         # Endpoints Express
+│   ├── middlewares/    # JWT y RBAC
+│   └── config/         # Base de datos, roles y estados
+├── database/init/      # Schema y semillas MariaDB
+└── docker-compose.yml
+tests/k6/               # Scripts, runner e informe de rendimiento
 ```
 
-> Necesario cuando: se agrega una columna (ej. `leida` en `persona_notificacion`), se cambia el schema, o se actualizan las seeds.
+## Despliegue y flujo Git
 
-### Desarrollo local (sin Docker — para IntelliSense del IDE)
+`deploy.yml` despliega al Droplet de DigitalOcean con cada `push` a `main`. El entorno de producción usa HTTPS configurado en la infraestructura. Se recomienda trabajar mediante PRs:
 
-```bash
-cd app/backend  && npm install
-cd app/frontend && npm install
+```text
+main ← código desplegable
+└── develop ← integración
+    └── feature/<nombre> ← trabajo individual
 ```
 
----
+El workflow de CI y el de despliegue son independientes. Confirmar que GitHub tenga un *required check* configurado antes de asumir que CI bloquea una fusión.
 
-## Acceso a los Servicios
+## Pendientes técnicos
 
-| Servicio | URL local |
-|---|---|
-| Aplicación web | http://localhost:5173 |
-| API REST | http://localhost:3001 |
-| Health check | http://localhost:3001/health |
-| Adminer (UI de BD) | http://localhost:8080 |
+- Restringir por RBAC/ownership las mutaciones de grupos y las rutas de tareas que hoy solo validan autenticación.
+- Eliminar secretos JWT de respaldo y validar variables de entorno al iniciar.
+- Incorporar lint, build y pruebas frontend al CI; ampliar cobertura de páginas, formularios y `useSortableTable`.
+- Implementar HU-15 (check-in QR), HU-30 (avisar al coordinador por cambio de turno), HU-31 (periodos de ausencia) y HU-32 (portal público).
+- Mejorar la navegación de reserva/asistencia observada en las pruebas UX y proteger login con rate limiting.
 
-**Adminer:** Sistema `MySQL`, Servidor `mariadb`, credenciales del `.env`.
+## Documentación académica
 
----
+Los informes de Sprint 6 y Sprint 7, el Plan Maestro de Pruebas y la exportación de Jira se mantienen fuera del repositorio. El estado técnico y el historial detallado del proyecto están en [`CLAUDE.md`](CLAUDE.md).
 
-## Despliegue en Producción
+## Licencia
 
-GitHub Actions (`.github/workflows/deploy.yml`) despliega automáticamente a Azure VM en cada `push` a `main`:
-
-```
-push a main → SSH al VM → git pull → docker compose down → docker compose up --build -d
-```
-
-**Nunca mergear a `main` sin pasar primero por `develop`.**
-
----
-
-## Flujo de Trabajo con Git
-
-```
-main        ← código estable, despliegue automático
-└── develop ← rama de integración del equipo
-    └── feature/<nombre>  ← trabajo individual
-```
-
-```bash
-git checkout develop && git pull origin develop
-git checkout -b feature/nombre-funcionalidad
-# ... desarrollar ...
-git push origin feature/nombre-funcionalidad
-# Abrir PR hacia develop en GitHub
-```
-
----
-
-## Documentación Académica
-
-| Entrega | Documento |
-|---|---|
-| Corte 1 | `docs/corte1/` |
-| Corte 2 | `docs/corte2/` |
-| Corte 3 | `docs/corte3/` |
-| Sprint 1 | `docs/sprint1/` |
-| Sprint 2 | `docs/sprint2/` |
-
----
-
-*Universidad del Valle de Guatemala — Ingeniería en Software 1, Sección 30 — 2026*
+Proyecto académico para CC3091 — Ingeniería de Software 2, Universidad del Valle de Guatemala.
