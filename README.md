@@ -95,7 +95,7 @@ Copiar `app/.env.example` como `app/.env`. Las variables requeridas son:
 | Grupo | Variables |
 |---|---|
 | Frontend | `VITE_API_URL` |
-| API | `PORT`, `CORS_ORIGIN` |
+| API | `PORT`, `NODE_ENV`, `CORS_ORIGIN` |
 | MariaDB | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_ROOT_PASSWORD` |
 | JWT | `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN` |
 | Herramientas | `ADMINER_PORT` |

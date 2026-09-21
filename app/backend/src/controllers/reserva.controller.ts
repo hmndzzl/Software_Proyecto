@@ -263,6 +263,13 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { estado_id } = req.body;
+    const estadoReservaId = Number(estado_id);
+    const estadosReservaValidos: number[] = [
+      ESTADOS_RESERVA.PENDIENTE,
+      ESTADOS_RESERVA.CONFIRMADA,
+      ESTADOS_RESERVA.RECHAZADA,
+      ESTADOS_RESERVA.CANCELADA,
+    ];
 
     if (!estado_id) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -270,7 +277,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       });
     }
 
-    if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA, ESTADOS_RESERVA.RECHAZADA, ESTADOS_RESERVA.CANCELADA].includes(Number(estado_id))) {
+    if (!estadosReservaValidos.includes(estadoReservaId)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'estado_id inválido'
       });
@@ -295,7 +302,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     // Rechazar es una acción de un tercero sobre la reserva de otra persona. Si el propio
     // solicitante la envía (incluso siendo Admin/Sacerdote), en realidad es una cancelación:
     // debe usar CANCELADA. Esta validación aplica sin importar el privilegio del usuario.
-    if (esSolicitante && Number(estado_id) === ESTADOS_RESERVA.RECHAZADA) {
+    if (esSolicitante && estadoReservaId === ESTADOS_RESERVA.RECHAZADA) {
       return res.status(HttpStatus.FORBIDDEN).json({
         message: 'No puedes rechazar tu propia reserva, solo cancelarla'
       });
@@ -307,7 +314,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
           message: 'No tienes permiso para modificar el estado de esta reserva'
         });
       }
-      if (Number(estado_id) !== ESTADOS_RESERVA.CANCELADA) {
+      if (estadoReservaId !== ESTADOS_RESERVA.CANCELADA) {
         return res.status(HttpStatus.FORBIDDEN).json({
           message: 'Solo puedes cancelar tu propia reserva'
         });
@@ -319,7 +326,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       }
     }
 
-    if (Number(estado_id) === ESTADOS_RESERVA.CONFIRMADA) {
+    if (estadoReservaId === ESTADOS_RESERVA.CONFIRMADA) {
       const [conflictos]: any = await db.query(
         `SELECT * FROM reserva
          WHERE espacio_id = ?
@@ -339,7 +346,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
 
     await db.query(
       'UPDATE reserva SET estado_reserva_id = ? WHERE id = ?',
-      [estado_id, id]
+      [estadoReservaId, id]
     );
 
     const mensajes: Record<number, string> = {
@@ -350,7 +357,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     };
 
     return res.status(HttpStatus.OK).json({
-      message: mensajes[Number(estado_id)]
+      message: mensajes[estadoReservaId]
     });
   } catch (error) {
     console.error('Error al cambiar estado de la reserva:', error);
