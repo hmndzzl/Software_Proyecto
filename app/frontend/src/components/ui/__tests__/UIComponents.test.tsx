@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Btn from '../Btn';
 import Badge from '../Badge';
@@ -168,7 +168,7 @@ describe('UI Components', () => {
     });
 
     it('debería mostrar la pantalla de error cuando un hijo lanza una excepción', () => {
-      function ComponenteQueExplota() {
+      function ComponenteQueExplota(): never {
         throw new Error('Explosión de prueba');
       }
 
@@ -183,7 +183,7 @@ describe('UI Components', () => {
     });
 
     it('debería renderizar el fallback personalizado si se proporciona', () => {
-      function ComponenteQueExplota() {
+      function ComponenteQueExplota(): never {
         throw new Error('Error');
       }
 
