@@ -208,7 +208,16 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
   });
 
   describe('responderCambioTurno', () => {
-    const cambioBase = { id: 7, tarea_id: 5, solicitante_id: 1, destinatario_id: 2, estado: 'pendiente', notificacion_id: 50 };
+    const cambioBase = {
+      id: 7,
+      tarea_id: 5,
+      solicitante_id: 1,
+      destinatario_id: 2,
+      estado: 'pendiente',
+      notificacion_id: 50,
+      solicitante_nombre: 'Juan',
+      destinatario_nombre: 'María',
+    };
 
     beforeEach(() => {
       req.user = { id: 2 } as any; // el destinatario es quien responde
@@ -271,11 +280,18 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
         .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE cambio_turno rechazado
         .mockResolvedValueOnce([{ affectedRows: 1 }]) // marcarNotificacionLeida
         .mockResolvedValueOnce([{ insertId: 51 }]) // INSERT notificacion al solicitante
-        .mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+        .mockResolvedValueOnce([{}]) // INSERT persona_notificacion solicitante
+        .mockResolvedValueOnce([[{ coordinador_id: 7 }]]) // SELECT coordinador
+        .mockResolvedValueOnce([{ insertId: 52 }]) // INSERT notificacion al coordinador
+        .mockResolvedValueOnce([{}]); // INSERT persona_notificacion coordinador
 
       await responderCambioTurno(req as Request, res as Response);
 
       expect(mockConnection.commit).toHaveBeenCalled();
+      expect(mockConnection.execute).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT DISTINCT coordinador_id'),
+        [1, 2]
+      );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ mensaje: 'Cambio de turno rechazado', tarea_id: 5 }));
     });
@@ -318,7 +334,10 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
         .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE cambio_turno aceptado
         .mockResolvedValueOnce([{ affectedRows: 1 }]) // marcarNotificacionLeida
         .mockResolvedValueOnce([{ insertId: 52 }]) // INSERT notificacion al solicitante
-        .mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+        .mockResolvedValueOnce([{}]) // INSERT persona_notificacion solicitante
+        .mockResolvedValueOnce([[{ coordinador_id: 7 }]]) // SELECT coordinador
+        .mockResolvedValueOnce([{ insertId: 53 }]) // INSERT notificacion al coordinador
+        .mockResolvedValueOnce([{}]); // INSERT persona_notificacion coordinador
 
       await responderCambioTurno(req as Request, res as Response);
 
@@ -331,6 +350,10 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
         2,
         expect.stringContaining('INSERT IGNORE INTO asignacion_tarea'),
         [5, 2]
+      );
+      expect(mockConnection.execute).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO persona_notificacion'),
+        [7, 53]
       );
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
