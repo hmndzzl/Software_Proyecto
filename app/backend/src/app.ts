@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import { checkDbConnection } from './config/db';
 import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
@@ -15,26 +16,39 @@ import cambioTurnoRoutes from './routes/cambioTurno.routes';
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
 
 const allowedOrigins = [
   'http://localhost:5173',
+  ...(process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 ];
 
-if (process.env.CORS_ORIGIN) {
-  allowedOrigins.push(process.env.CORS_ORIGIN);
-}
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      upgradeInsecureRequests: isProduction ? [] : null,
+    },
+  },
+  strictTransportSecurity: isProduction ? undefined : false,
+}));
 
 app.use(cors({
-  origin: function (origin, callback) {
+  origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('No permitido por CORS'));
+      callback(null, false);
     }
   },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
+  maxAge: 24 * 60 * 60,
 }));
 
 
@@ -58,8 +72,14 @@ app.get('/health', (_req, res) => {
 });
 
 // Verificamos la conexión a BD al arrancar
-checkDbConnection();
+export function startServer() {
+  checkDbConnection();
 
-app.listen(PORT, () => {
-  console.log(`Backend corriendo en puerto ${PORT}`);
-});
+  return app.listen(PORT, () => {
+    console.log(`Backend corriendo en puerto ${PORT}`);
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
