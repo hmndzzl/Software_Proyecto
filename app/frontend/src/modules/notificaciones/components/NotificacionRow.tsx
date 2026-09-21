@@ -28,13 +28,14 @@ export default function NotificacionRow({
     motivo_excusa,
     evento_descripcion,
   } = notificacion;
+  const requiereConfirmacion = Boolean(requiere_confirmacion);
 
   return (
     <tr className={`${styles.row} ${!leida ? styles.rowUnread : ''}`}>
       <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
       <td className={styles.tdMensaje}>
         {mensaje}
-        {requiere_confirmacion && evento_descripcion && (
+        {requiereConfirmacion && evento_descripcion && (
           <div className={styles.eventoRef}>Evento: {evento_descripcion}</div>
         )}
         {motivo_excusa && (
@@ -61,7 +62,7 @@ export default function NotificacionRow({
               Marcar leída
             </Btn>
           )}
-          {requiere_confirmacion && (
+          {requiereConfirmacion && (
             asistencia_confirmada ? (
               <Badge kind="confirmada">Asistencia confirmada</Badge>
             ) : motivo_excusa ? (
