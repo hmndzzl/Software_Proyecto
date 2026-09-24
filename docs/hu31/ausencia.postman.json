@@ -4,35 +4,92 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3001" },
-    { "key": "token", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
   ],
   "item": [
     {
       "name": "1. Iniciar sesión como Ministro Test",
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-        "pm.test('Login correcto', () => pm.response.to.have.status(200));",
-        "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().token);"
-      ] } }],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login correcto', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "url": "{{baseUrl}}/api/auth/login",
-        "body": { "mode": "raw", "raw": "{\n  \"correo\": \"ministro@parroquia.com\",\n  \"password\": \"password123\"\n}", "options": { "raw": { "language": "json" } } }
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"ministro@parroquia.com\",\n  \"password\": \"password123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       }
     },
     {
       "name": "2. Notificar ausencia",
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-        "pm.test('Ausencia creada', () => pm.response.to.have.status(201));",
-        "pm.test('Ministro identificado', () => pm.expect(pm.response.json().ausencia.ministro.id).to.eql(9));"
-      ] } }],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Ausencia creada', () => pm.response.to.have.status(201));",
+              "pm.test('Ministro identificado', () => pm.expect(pm.response.json().ausencia.ministro.id).to.eql(9));"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
         "url": "{{baseUrl}}/api/ausencias",
-        "body": { "mode": "raw", "raw": "{\n  \"ministro_id\": 9,\n  \"fecha_inicio\": \"2026-10-01\",\n  \"fecha_fin\": \"2026-10-05\"\n}", "options": { "raw": { "language": "json" } } }
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"ministro_id\": 9,\r\n  \"titulo\": \"Ausencia por viaje\",\r\n  \"justificacion\": \"Estaré fuera de la ciudad por un compromiso familiar.\",\r\n  \"fecha_inicio\": \"2026-10-01\",\r\n  \"fecha_fin\": \"2026-10-05\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
       }
     }
   ]
