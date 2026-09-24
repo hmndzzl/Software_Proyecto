@@ -43,7 +43,7 @@ Respuesta `201` (IDs de ausencia y notificación ilustrativos):
 }
 ```
 
-Solo un ministro puede registrar su propia ausencia. Se valida que `ministro_id` coincida con el JWT y que conserve el rol en BD. Nombre y correo se consultan en BD; enviarlos en el body no modifica la identidad. No se devuelven contraseñas ni tokens en la ausencia.
+Un ministro o administrador puede registrar su propia ausencia. Se valida que `ministro_id` coincida con el JWT y que conserve su rol de Ministro o Admin en BD. El campo ministro_id conserva su nombre por compatibilidad y contiene el ID del usuario autenticado. Nombre y correo se consultan en BD; enviarlos en el body no modifica la identidad. No se devuelven contraseñas ni tokens en la ausencia.
 
 `titulo` funciona como el asunto de un correo (máximo 255 caracteres); `justificacion` explica el motivo (máximo 5000 caracteres). Ambos son texto obligatorio: se recortan espacios exteriores y se rechazan valores vacíos, solo espacios o de otro tipo con `400`. Se guardan como campos separados, se devuelven en el JSON y se incluyen en el mensaje de notificación para los destinatarios autorizados.
 
