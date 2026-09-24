@@ -3,7 +3,7 @@ import styles from './Sidebar.module.css';
 import { ROLES, usuarioTieneRol } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 
-const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRole?: number; icon: React.ReactNode }[] = [
+const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles?: number[]; icon: React.ReactNode }[] = [
   {
     to: '/dashboard',
     label: 'Dashboard',
@@ -51,8 +51,8 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRole?
   {
     to: '/ausencias',
     label: 'Notificar Ausencia',
-    roles: [ROLES.MINISTRO],
-    exactRole: ROLES.MINISTRO,
+    roles: [ROLES.MINISTRO, ROLES.ADMIN],
+    exactRoles: [ROLES.MINISTRO, ROLES.ADMIN],
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -157,8 +157,8 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
 
-  const navItems = NAV_ITEMS.filter(({ roles, exactRole }) => exactRole !== undefined
-    ? usuario?.rol_id === exactRole
+  const navItems = NAV_ITEMS.filter(({ roles, exactRoles }) => exactRoles !== undefined
+    ? usuario !== null && exactRoles.includes(usuario.rol_id)
     : roles === null || usuarioTieneRol(roles));
   const puedeVerReservas = usuarioTieneRol(ROLES_RESERVAS);
 
