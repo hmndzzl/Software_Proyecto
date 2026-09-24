@@ -5,18 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRole?: number; icon: React.ReactNode }[] = [
   {
-    to: '/ausencias',
-    label: 'Notificar Ausencia',
-    roles: [ROLES.MINISTRO],
-    exactRole: ROLES.MINISTRO,
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <path d="M8 2v4M16 2v4M3 10h18M9 16h6" />
-      </svg>
-    ),
-  },
-  {
     to: '/dashboard',
     label: 'Dashboard',
     roles: null,
@@ -57,6 +45,18 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRole?
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
         <path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/ausencias',
+    label: 'Notificar Ausencia',
+    roles: [ROLES.MINISTRO],
+    exactRole: ROLES.MINISTRO,
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <path d="M8 2v4M16 2v4M3 10h18M9 16h6" />
       </svg>
     ),
   },
