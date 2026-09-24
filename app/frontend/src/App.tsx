@@ -147,7 +147,7 @@ function AppContent() {
         />
 
         <Route path="/ausencias" element={
-          <ProtectedRoute allowedRoles={[ROLES.MINISTRO]}>
+          <ProtectedRoute allowedRoles={[ROLES.MINISTRO, ROLES.ADMIN]}>
             <AusenciasPage />
           </ProtectedRoute>
         } />
