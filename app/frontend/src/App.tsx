@@ -21,6 +21,7 @@ import PerfilPage from './pages/perfil/PerfilPage';
 import CalendarioPage from './pages/calendario/CalendarioPage';
 import CambiosTurnoPage from './pages/cambios-turno/CambiosTurnoPage';
 import NotFoundPage from './pages/not_found_page/NotFoundPage';
+import AusenciasPage from './pages/ausencias/AusenciasPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -144,6 +145,12 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/ausencias" element={
+          <ProtectedRoute allowedRoles={[ROLES.MINISTRO]}>
+            <AusenciasPage />
+          </ProtectedRoute>
+        } />
 
         <Route
           path="/notificaciones"
