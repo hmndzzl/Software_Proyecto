@@ -16,7 +16,7 @@ Entrar como `ministro@parroquia.com` / `password123` y seleccionar **Notificar A
 - Justificación o descripción: texto multilínea obligatorio, máximo 5000 caracteres, enviado como `justificacion`.
 - El ID procede de la sesión y no se muestra en pantalla. Se recortan espacios exteriores y se rechazan textos en blanco.
 - Se bloquean los controles durante el envío y los envíos repetidos. Al completarse se muestra confirmación y se limpia el formulario. Si falla, se conservan los datos y se muestra un mensaje para reintentar.
-- Solo el rol exacto Ministro ve el acceso y puede abrir la página; los otros roles se redirigen al dashboard.
+- Los roles exactos Ministro y Admin ven el acceso y pueden abrir la página; los otros roles se redirigen al dashboard.
 
 ## Verificación
 
