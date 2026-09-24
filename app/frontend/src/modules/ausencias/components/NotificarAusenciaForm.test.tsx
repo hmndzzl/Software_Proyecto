@@ -83,7 +83,7 @@ describe('Notificar ausencia', () => {
     terminar(); await screen.findByRole('status');
   });
 
-  it.each([1, 2, 3, 5])('oculta el acceso y redirige el rol %s', async rol_id => {
+  it.each([1, 2, 3])('oculta el acceso y redirige el rol %s', async rol_id => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id }));
     render(<MemoryRouter initialEntries={['/ausencias']}><AuthProvider><Sidebar /><Routes>
       <Route path="/ausencias" element={<AusenciasPage />} />
@@ -92,6 +92,14 @@ describe('Notificar ausencia', () => {
     await waitFor(() => expect(screen.getByText('Inicio permitido')).toBeInTheDocument());
     expect(screen.queryByRole('link', { name: 'Notificar Ausencia' })).not.toBeInTheDocument();
     expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
+  it('muestra el acceso al admin y envía su propia identidad', async () => {
+    localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 5, nombre: 'Admin' }));
+    render(<MemoryRouter><AuthProvider><Sidebar /><AusenciasPage /></AuthProvider></MemoryRouter>);
+    expect(screen.getByRole('link', { name: 'Notificar Ausencia' })).toBeInTheDocument();
+    completar(); enviar(); await screen.findByRole('status');
+    expect(apiClient.post).toHaveBeenCalledWith('/api/ausencias', { ...payload, ministro_id: 1 });
   });
 
   it('el cliente conserva el contrato del endpoint', async () => {
