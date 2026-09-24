@@ -1,5 +1,7 @@
 export interface AusenciaCreateInput {
   ministro_id: number;
+  titulo: string;
+  justificacion: string;
   fecha_inicio: string;
   fecha_fin: string;
 }

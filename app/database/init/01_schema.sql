@@ -224,6 +224,8 @@ DROP TABLE IF EXISTS periodo_ausencia;
 CREATE TABLE periodo_ausencia (
   id int(11) NOT NULL AUTO_INCREMENT,
   ministro_id int(11) NOT NULL,
+  titulo varchar(255) NOT NULL,
+  justificacion text NOT NULL,
   fecha_inicio date NOT NULL,
   fecha_fin date NOT NULL,
   notificacion_id int(11) DEFAULT NULL,

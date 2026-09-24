@@ -9,7 +9,7 @@ vi.mock('../../config/db', () => ({ default: { getConnection: vi.fn() } }));
 const app = express();
 app.use(express.json());
 app.use('/api/ausencias', ausenciaRoutes);
-const body = { ministro_id: 9, fecha_inicio: '2026-10-01', fecha_fin: '2026-10-05' };
+const body = { ministro_id: 9, fecha_inicio: '2026-10-01', fecha_fin: '2026-10-05', titulo: 'Ausencia por viaje', justificacion: 'Estaré fuera de la ciudad por un compromiso familiar.' };
 const ministro = { id: 9, nombre: 'Ministro Test', correo: 'ministro@parroquia.com' };
 const conn = {
   beginTransaction: vi.fn(), execute: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
@@ -40,8 +40,10 @@ describe('POST /api/ausencias (HU-31)', () => {
         'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [id, 80]);
     }
     expect(conn.execute).toHaveBeenLastCalledWith(expect.stringContaining('INSERT INTO periodo_ausencia'),
-      [9, body.fecha_inicio, body.fecha_fin, 80]);
+      [9, body.fecha_inicio, body.fecha_fin, 80, body.titulo, body.justificacion]);
     expect(conn.execute.mock.calls[2][1][0]).toContain('Ministro Test');
+    expect(conn.execute.mock.calls[2][1][0]).toContain(body.titulo);
+    expect(conn.execute.mock.calls[2][1][0]).toContain(body.justificacion);
     expect(conn.commit).toHaveBeenCalledOnce();
     expect(conn.rollback).not.toHaveBeenCalled();
     expect(conn.release).toHaveBeenCalledOnce();
@@ -49,6 +51,26 @@ describe('POST /api/ausencias (HU-31)', () => {
 
   it.each(['2026-10-01', '2028-02-29'])('acepta ausencia de un día y fecha válida %s', async fecha => {
     expect((await enviar({ ...body, fecha_inicio: fecha, fecha_fin: fecha })).status).toBe(201);
+  });
+
+  it.each(['titulo', 'justificacion'])('rechaza %s ausente, vacío, inválido o demasiado largo', async campo => {
+    for (const valor of [undefined, null, 123, {}, [], '', ' \n\t ', 'a'.repeat(campo === 'titulo' ? 256 : 5001)]) {
+      expect((await enviar({ ...body, [campo]: valor })).status).toBe(400);
+    }
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('recorta espacios exteriores antes de guardar y notificar', async () => {
+    const res = await enviar({ ...body, titulo: `  ${body.titulo}  `, justificacion: `\n${body.justificacion}\n` });
+    expect(res.status).toBe(201);
+    expect(res.body.ausencia.titulo).toBe(body.titulo);
+    expect(res.body.ausencia.justificacion).toBe(body.justificacion);
+    expect(conn.execute).toHaveBeenLastCalledWith(expect.stringContaining('INSERT INTO periodo_ausencia'),
+      [9, body.fecha_inicio, body.fecha_fin, 80, body.titulo, body.justificacion]);
+  });
+
+  it('acepta las longitudes máximas', async () => {
+    expect((await enviar({ ...body, titulo: 'a'.repeat(255), justificacion: 'b'.repeat(5000) })).status).toBe(201);
   });
 
   it.each([

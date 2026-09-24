@@ -23,6 +23,12 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
     return;
   }
   const { ministro_id, fecha_inicio, fecha_fin } = req.body ?? {};
+  const titulo = typeof req.body?.titulo === 'string' ? req.body.titulo.trim() : '';
+  const justificacion = typeof req.body?.justificacion === 'string' ? req.body.justificacion.trim() : '';
+  if (!titulo || titulo.length > 255 || !justificacion || justificacion.length > 5000) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El título (máximo 255 caracteres) y la justificación (máximo 5000 caracteres) son obligatorios' });
+    return;
+  }
   if (!Number.isSafeInteger(ministro_id) || ministro_id <= 0 ||
       !esFecha(fecha_inicio) || !esFecha(fecha_fin) || fecha_inicio > fecha_fin) {
     res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Envía ministro_id entero positivo y fechas válidas YYYY-MM-DD con fecha_inicio <= fecha_fin' });
@@ -55,7 +61,7 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
       return;
     }
     const { id, nombre, correo } = ministros[0];
-    const mensaje = `${nombre} (${correo}) notificó un periodo de ausencia del ${fecha_inicio} al ${fecha_fin}, ambos días incluidos.`;
+    const mensaje = `${titulo}\n${nombre} (${correo}) notificó un periodo de ausencia del ${fecha_inicio} al ${fecha_fin}, ambos días incluidos.\nJustificación: ${justificacion}`;
     const [notificacion] = await conn.execute<ResultSetHeader>(
       "INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)",
       [mensaje, ministro_id]
@@ -65,13 +71,13 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
         [destinatario.id, notificacion.insertId]);
     }
     const [resultado] = await conn.execute<ResultSetHeader>(
-      'INSERT INTO periodo_ausencia (ministro_id, fecha_inicio, fecha_fin, notificacion_id) VALUES (?, ?, ?, ?)',
-      [ministro_id, fecha_inicio, fecha_fin, notificacion.insertId]
+      'INSERT INTO periodo_ausencia (ministro_id, fecha_inicio, fecha_fin, notificacion_id, titulo, justificacion) VALUES (?, ?, ?, ?, ?, ?)',
+      [ministro_id, fecha_inicio, fecha_fin, notificacion.insertId, titulo, justificacion]
     );
     await conn.commit();
     const ausencia: AusenciaCreada = {
       id: resultado.insertId, ministro_id, ministro: { id, nombre, correo },
-      fecha_inicio, fecha_fin, notificacion_id: notificacion.insertId,
+      fecha_inicio, fecha_fin, titulo, justificacion, notificacion_id: notificacion.insertId,
     };
     res.status(HttpStatus.CREATED).json({ mensaje: 'Periodo de ausencia registrado; coordinadores de ministros y sacerdote notificados', ausencia });
   } catch (error) {
