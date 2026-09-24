@@ -5,7 +5,7 @@
 ## Preparación
 
 - Bases nuevas: `app/database/init/01_schema.sql` incluye la tabla.
-- Bases existentes: ejecutar `app/database/migrations/20260923_periodo_ausencia.sql` sobre la base configurada. Es aditiva y no requiere borrar el volumen ni los datos.
+- Bases existentes: ejecutar `app/database/migrations/20260923_periodo_ausencia.sql` y después `app/database/migrations/20260924_ausencia_titulo_justificacion.sql` sobre la base configurada. Son aditivas y no requieren borrar el volumen ni los datos. Las ausencias anteriores conservan título y justificación vacíos; las nuevas solicitudes deben proporcionar ambos campos.
 - Desde `app`, actualizar el backend con `docker compose up -d --build backend`.
 
 ## Postman
@@ -18,6 +18,8 @@ Importar `ausencia.postman.json` y ejecutar sus dos solicitudes en orden. La pri
 ```json
 {
   "ministro_id": 9,
+  "titulo": "Ausencia por viaje",
+  "justificacion": "Estaré fuera de la ciudad por un compromiso familiar.",
   "fecha_inicio": "2026-10-01",
   "fecha_fin": "2026-10-05"
 }
@@ -31,6 +33,8 @@ Respuesta `201` (IDs de ausencia y notificación ilustrativos):
   "ausencia": {
     "id": 1,
     "ministro_id": 9,
+    "titulo": "Ausencia por viaje",
+    "justificacion": "Estaré fuera de la ciudad por un compromiso familiar.",
     "ministro": { "id": 9, "nombre": "Ministro Test", "correo": "ministro@parroquia.com" },
     "fecha_inicio": "2026-10-01",
     "fecha_fin": "2026-10-05",
@@ -40,6 +44,8 @@ Respuesta `201` (IDs de ausencia y notificación ilustrativos):
 ```
 
 Solo un ministro puede registrar su propia ausencia. Se valida que `ministro_id` coincida con el JWT y que conserve el rol en BD. Nombre y correo se consultan en BD; enviarlos en el body no modifica la identidad. No se devuelven contraseñas ni tokens en la ausencia.
+
+`titulo` funciona como el asunto de un correo (máximo 255 caracteres); `justificacion` explica el motivo (máximo 5000 caracteres). Ambos son texto obligatorio: se recortan espacios exteriores y se rechazan valores vacíos, solo espacios o de otro tipo con `400`. Se guardan como campos separados, se devuelven en el JSON y se incluyen en el mensaje de notificación para los destinatarios autorizados.
 
 Las fechas son `DATE`, sin hora y con extremos inclusivos; se permite un único día. Se rechazan fechas inexistentes, marcas de tiempo y rangos invertidos. No se impone una restricción de fechas pasadas ni solapamientos en esta HU; cada POST válido crea un periodo y una notificación nuevos.
 
@@ -53,4 +59,4 @@ La tabla conserva la relación al ministro y un índice por ministro/fechas para
 
 Desde `app/backend`: `npm run build` y `npm test`. Las pruebas del endpoint cubren autenticación, roles exactos, identidad, fechas, destinatarios y reversión de escrituras.
 
-Verificación realizada: compilación correcta y 311 pruebas aprobadas (28 nuevas). Prueba HTTP con MariaDB local: login real, respuesta 201, fechas persistidas y consulta de notificaciones con las 9 cuentas existentes; solo las personas 6 y 7, los únicos usuarios locales con los roles destinatarios, pudieron ver la notificación. Esa base tenía seeds anteriores y no incluía todavía a la persona 13; las pruebas automatizadas sí incluyen ambos coordinadores del seed actual. Los registros de esa prueba se eliminaron al terminar, conservando la tabla y los datos previos.
+Verificación realizada: compilación correcta y 315 pruebas aprobadas (32 del endpoint de ausencias). Prueba HTTP con MariaDB local: login real, respuesta 201, fechas persistidas y consulta de notificaciones con las 9 cuentas existentes; solo las personas 6 y 7, los únicos usuarios locales con los roles destinatarios, pudieron ver la notificación. Esa base tenía seeds anteriores y no incluía todavía a la persona 13; las pruebas automatizadas sí incluyen ambos coordinadores del seed actual. También se comprobó por HTTP y SQL el guardado de título y justificación, su inclusión en el mensaje y el rechazo de justificación vacía con 400. Los registros de prueba se eliminaron al terminar, conservando la tabla y los datos previos.
