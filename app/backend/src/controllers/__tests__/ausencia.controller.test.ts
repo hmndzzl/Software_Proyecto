@@ -90,8 +90,22 @@ describe('POST /api/ausencias (HU-31)', () => {
     expect(pool.getConnection).not.toHaveBeenCalled();
   });
 
-  it.each([1, 2, 3, 5])('impide registrar ausencia a rol %s', async rol => {
+  it.each([1, 2, 3])('impide registrar ausencia a rol %s', async rol => {
     expect((await enviar(body, 9, rol)).status).toBe(403);
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('permite al admin registrar su ausencia verificando su rol en BD', async () => {
+    const res = await enviar(body, 9, 5);
+    expect(res.status).toBe(201);
+    expect(conn.execute).toHaveBeenNthCalledWith(1,
+      'SELECT id, nombre, correo FROM persona WHERE id = ? AND rol_id = ?', [9, 5]);
+    expect(conn.execute).toHaveBeenNthCalledWith(2,
+      'SELECT id FROM persona WHERE rol_id IN (?, ?)', [2, 1]);
+  });
+
+  it('el admin tampoco puede suplantar otra identidad', async () => {
+    expect((await enviar(body, 1, 5)).status).toBe(403);
     expect(pool.getConnection).not.toHaveBeenCalled();
   });
 
