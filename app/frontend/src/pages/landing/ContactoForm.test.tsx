@@ -40,6 +40,26 @@ describe('Formulario de contacto (landing page, HU-32)', () => {
     expect(screen.getByLabelText(/Mensaje/)).toHaveValue('');
   });
 
+  it('muestra el prefijo fijo +502 junto al campo de teléfono', () => {
+    mostrar();
+    expect(screen.getByText('+502')).toBeInTheDocument();
+  });
+
+  it('descarta caracteres no numéricos y limita el teléfono a 8 dígitos', async () => {
+    mostrar(); completar();
+    fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: 'abc5555-1234extra' } });
+    enviar(); await screen.findByRole('status');
+    expect(apiClient.post).toHaveBeenCalledWith('/api/contacto', { ...payload, telefono: '+50255551234' });
+  });
+
+  it('rechaza un teléfono con menos de 8 dígitos', () => {
+    mostrar(); completar();
+    fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: '5551234' } });
+    enviar();
+    expect(screen.getByRole('alert')).toHaveTextContent('8 dígitos');
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
   it('envía sin teléfono (opcional) como undefined', async () => {
     mostrar(); completar();
     fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: '' } });
