@@ -170,19 +170,15 @@ Las pruebas backend usan mocks de Vitest para MariaDB. El workflow `.github/work
 
 ### Carga y estrés
 
-Los cuatro escenarios de Grafana k6 cubren login, disponibilidad de espacios, polling de notificaciones y un flujo combinado.
+Las 12 pruebas de Grafana k6 cubren autenticación, espacios, notificaciones, reservas, calendario, flujo integral, colisiones, picos y resistencia continua. Se ejecutan en perfiles separados de carga y estrés, con un stack Docker efímero independiente del entorno habitual.
 
 ```bash
-./tests/k6/run-tests.sh all
-./tests/k6/run-tests.sh login
-./tests/k6/run-tests.sh espacios
-./tests/k6/run-tests.sh notificaciones
-./tests/k6/run-tests.sh combined
+docker compose -f tests/k6/docker-compose.yml up -d --build --wait
+K6_STACK=true ./tests/k6/run-tests.sh all load
+K6_STACK=true ./tests/k6/run-tests.sh all stress
 ```
 
-También puede ejecutarse desde `app/backend` con `npm run test:k6:all`. El runner emplea k6 instalado localmente o la imagen `grafana/k6`; los resultados se guardan en `tests/k6/results/` y el informe está en [`tests/k6/reports/reporte_carga_estres_k6.md`](tests/k6/reports/reporte_carga_estres_k6.md).
-
-Resultados Sprint 7: más de 26,400 solicitudes sin errores HTTP/5xx; espacios alcanzó 148.15 req/s y notificaciones 137.92 req/s. Login se degrada con carga alta por `bcrypt`, por lo que rate limiting es la siguiente mejora prioritaria.
+Consulta [tests/k6/README.md](tests/k6/README.md) para los 12 identificadores, umbrales, ejecución breve, observación de recursos y las diferencias conocidas del contrato de reservas. Los resultados de cada ejecución se guardan en `tests/k6/results/`; las cifras del informe anterior no certifican esta nueva suite.
 
 ## Estructura
 
