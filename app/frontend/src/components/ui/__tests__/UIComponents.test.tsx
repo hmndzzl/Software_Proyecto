@@ -135,7 +135,7 @@ describe('UI Components', () => {
     });
 
     it('debería renderizarse en tamaño sm, md y lg sin errores y centrado', () => {
-      const { rerender } = render(<Spinner size="sm" center />);
+      const { rerender } = render(<Spinner size="sm" />);
       expect(screen.getByRole('status')).toBeInTheDocument();
 
       rerender(<Spinner size="md" />);
@@ -149,6 +149,12 @@ describe('UI Components', () => {
       render(<Spinner fullPage label="Procesando..." />);
       expect(screen.getByRole('status')).toBeInTheDocument();
       expect(screen.getByText(/procesando/i)).toBeInTheDocument();
+    });
+
+    it('debería renderizar en modo fullPage sin label explícito usando el default', () => {
+      render(<Spinner fullPage />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText('Cargando...')).toBeInTheDocument();
     });
   });
 
@@ -212,6 +218,21 @@ describe('UI Components', () => {
       expect(screen.getByText(/algo salió mal/i)).toBeInTheDocument();
     });
 
+    it('debería manejar errores sin mensaje', () => {
+      function ComponenteQueExplota(): never {
+        // eslint-disable-next-line no-throw-literal
+        throw { name: 'Error' } as Error;
+      }
+
+      render(
+        <ErrorBoundary>
+          <ComponenteQueExplota />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText(/error desconocido/i)).toBeInTheDocument();
+    });
+
     it('debería renderizar el fallback personalizado si se proporciona', () => {
       function ComponenteQueExplota(): never {
         throw new Error('Error');
@@ -267,6 +288,13 @@ describe('UI Components', () => {
       render(<Modal open={true} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
       fireEvent.keyDown(document, { key: 'Escape' });
       expect(onClose).toHaveBeenCalled();
+    });
+
+    it('NO debería cerrarse al presionar otra tecla', () => {
+      const onClose = vi.fn();
+      render(<Modal open={true} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Enter' });
+      expect(onClose).not.toHaveBeenCalled();
     });
 
     it('NO debería cerrarse al presionar Escape si open es false', () => {
