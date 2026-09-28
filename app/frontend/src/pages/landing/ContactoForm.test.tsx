@@ -6,10 +6,11 @@ import apiClient from '../../api/client';
 
 vi.mock('../../api/client', () => ({ default: { post: vi.fn() } }));
 
+const telefonoLocal = '55551234';
 const payload = {
   nombre: 'María Elena Guzmán',
   correo: 'maria@example.com',
-  telefono: '+502 5555 1234',
+  telefono: `+502${telefonoLocal}`,
   motivo: 'Información general',
   mensaje: 'Quisiera saber los horarios de misa del domingo.',
 };
@@ -24,7 +25,7 @@ function mostrar() {
 }
 function completar() {
   fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: payload.nombre } });
-  fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: payload.telefono } });
+  fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: telefonoLocal } });
   fireEvent.change(screen.getByLabelText(/Correo electrónico/), { target: { value: payload.correo } });
   fireEvent.change(screen.getByLabelText(/Mensaje/), { target: { value: payload.mensaje } });
 }

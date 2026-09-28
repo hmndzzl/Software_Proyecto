@@ -3,6 +3,11 @@ import axios from 'axios';
 import { enviarContacto } from '../../api/contacto';
 
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TELEFONO_LOCAL_REGEX = /^\d{8}$/;
+// Único código de país soportado hoy. Si la parroquia necesita aceptar otros
+// códigos en el futuro, esto se reemplaza por un <select> de códigos — el
+// backend ya es agnóstico al código (ver TELEFONO_REGEX en contacto.controller.ts).
+const CODIGO_PAIS = '+502';
 
 const MOTIVOS = [
   'Información general',
@@ -16,7 +21,7 @@ const MOTIVO_OTRO = 'Otro';
 
 export default function ContactoForm() {
   const [nombre, setNombre] = useState('');
-  const [telefono, setTelefono] = useState('');
+  const [telefonoLocal, setTelefonoLocal] = useState('');
   const [correo, setCorreo] = useState('');
   const [motivo, setMotivo] = useState(MOTIVOS[0]);
   const [motivoOtro, setMotivoOtro] = useState('');
@@ -35,7 +40,7 @@ export default function ContactoForm() {
     const nombreLimpio = nombre.trim();
     const correoLimpio = correo.trim();
     const mensajeLimpio = mensaje.trim();
-    const telefonoLimpio = telefono.trim();
+    const telefonoLocalLimpio = telefonoLocal.trim();
 
     if (!nombreLimpio || nombreLimpio.length > 255) {
       setError('Ingresa tu nombre (máximo 255 caracteres).');
@@ -49,8 +54,8 @@ export default function ContactoForm() {
       setError('Escribe tu mensaje (máximo 5000 caracteres).');
       return;
     }
-    if (telefonoLimpio.length > 50) {
-      setError('El teléfono no puede superar los 50 caracteres.');
+    if (telefonoLocalLimpio && !TELEFONO_LOCAL_REGEX.test(telefonoLocalLimpio)) {
+      setError('El teléfono debe tener 8 dígitos.');
       return;
     }
     const motivoOtroLimpio = motivoOtro.trim();
@@ -65,12 +70,12 @@ export default function ContactoForm() {
       await enviarContacto({
         nombre: nombreLimpio,
         correo: correoLimpio,
-        telefono: telefonoLimpio || undefined,
+        telefono: telefonoLocalLimpio ? `${CODIGO_PAIS}${telefonoLocalLimpio}` : undefined,
         motivo: motivo === MOTIVO_OTRO ? `Otro: ${motivoOtroLimpio}` : motivo,
         mensaje: mensajeLimpio,
       });
       setExito(true);
-      setNombre(''); setTelefono(''); setCorreo(''); setMotivo(MOTIVOS[0]); setMotivoOtro(''); setMensaje('');
+      setNombre(''); setTelefonoLocal(''); setCorreo(''); setMotivo(MOTIVOS[0]); setMotivoOtro(''); setMensaje('');
     } catch (err) {
       const mensajeApi = axios.isAxiosError<{ mensaje?: string }>(err) ? err.response?.data?.mensaje : undefined;
       setError(mensajeApi || 'No se pudo enviar el mensaje. Tus datos se conservaron; vuelve a intentarlo.');
@@ -93,8 +98,11 @@ export default function ContactoForm() {
           </div>
           <div className="field">
             <label htmlFor="c-tel">Teléfono</label>
-            <input id="c-tel" type="tel" maxLength={50} placeholder="+502 0000 0000"
-              value={telefono} onChange={e => setTelefono(e.target.value)} />
+            <div className="telGroup">
+              <span className="telPrefix">{CODIGO_PAIS}</span>
+              <input id="c-tel" type="tel" inputMode="numeric" maxLength={8} placeholder="55551234"
+                value={telefonoLocal} onChange={e => setTelefonoLocal(e.target.value.replace(/\D/g, '').slice(0, 8))} />
+            </div>
           </div>
           <div className="field full">
             <label htmlFor="c-correo">Correo electrónico <span className="req">*</span></label>
