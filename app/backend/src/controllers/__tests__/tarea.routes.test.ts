@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/db';
 import tareaRoutes from '../../routes/tarea.routes';
 import { ROLES } from '../../config/roles';
+import { JWT_SECRET } from '../../config/env';
 
 vi.mock('../../config/db', () => ({
   default: {
@@ -34,7 +35,7 @@ const conn = {
 };
 
 function token(rol_id: number, id = 7) {
-  return jwt.sign({ id, rol_id }, process.env.JWT_SECRET || 'llave_secreta_super_segura');
+  return jwt.sign({ id, rol_id }, JWT_SECRET);
 }
 
 const ROLES_BLOQUEADOS = [ROLES.MINISTRO, ROLES.COORDINADOR_GRUPOS];
