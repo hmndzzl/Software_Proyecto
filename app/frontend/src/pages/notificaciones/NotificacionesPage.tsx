@@ -78,6 +78,18 @@ export default function NotificacionesPage() {
     await vaciar();
   };
 
+  // useNotificaciones y usePapelera mantienen listas independientes: al mover o
+  // restaurar hay que refrescar la otra para que aparezca sin recargar la página.
+  const handleEliminar = async (id: number) => {
+    await eliminar(id);
+    refetchPapelera();
+  };
+
+  const handleRestaurar = async (id: number) => {
+    await restaurar(id);
+    refetch();
+  };
+
   return (
     <div className={styles.page}>
       <PageHeader
@@ -154,7 +166,7 @@ export default function NotificacionesPage() {
                       onMarcarNoLeida={marcarNoLeida}
                       onConfirmarAsistencia={confirmarAsistencia}
                       onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
-                      onEliminar={eliminar}
+                      onEliminar={handleEliminar}
                       resaltada={n.id === resaltarId}
                     />
                   ))}
@@ -233,7 +245,7 @@ export default function NotificacionesPage() {
                 </thead>
                 <tbody>
                   {papelera.map((n) => (
-                    <PapeleraRow key={n.id} notificacion={n} onRestaurar={restaurar} />
+                    <PapeleraRow key={n.id} notificacion={n} onRestaurar={handleRestaurar} />
                   ))}
                 </tbody>
               </table>
