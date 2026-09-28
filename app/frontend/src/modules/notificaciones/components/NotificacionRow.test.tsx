@@ -71,4 +71,29 @@ describe('NotificacionRow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(onEliminar).toHaveBeenCalledWith(1);
   });
+
+  it('llama a onConfirmarAsistencia y onExcusarAsistencia cuando requiere confirmacion', () => {
+    const onConfirmar = vi.fn();
+    const onExcusar = vi.fn();
+    render(
+      <table>
+        <tbody>
+          <NotificacionRow
+            notificacion={{ ...base, requiere_confirmacion: true }}
+            onMarcarLeida={vi.fn()}
+            onMarcarNoLeida={vi.fn()}
+            onConfirmarAsistencia={onConfirmar}
+            onExcusarAsistencia={onExcusar}
+            onEliminar={vi.fn()}
+          />
+        </tbody>
+      </table>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+    expect(onConfirmar).toHaveBeenCalledWith(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'No podré asistir' }));
+    expect(onExcusar).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+  });
 });
