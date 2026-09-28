@@ -16,11 +16,20 @@
   background: #fdf3d0;
 }
 
+.rowResaltada {
+  animation: resaltarFila 2.5s ease-out;
+}
+
+@keyframes resaltarFila {
+  0%, 40% { background: #fdedb8; }
+  100% { background: transparent; }
+}
+
 .tdFecha {
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--color-muted);
-  white-space: nowrap;
+  white-space: normal;
   padding: 14px 16px;
   vertical-align: middle;
 }
@@ -32,6 +41,7 @@
   line-height: 1.5;
   padding: 14px 16px;
   vertical-align: middle;
+  white-space: pre-line;
 }
 
 .tdRemitente {

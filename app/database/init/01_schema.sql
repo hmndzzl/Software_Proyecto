@@ -148,6 +148,7 @@ CREATE TABLE `persona_notificacion` (
   `asistencia_confirmada` tinyint(1) NOT NULL DEFAULT 0,
   `inasistencia_reportada` tinyint(1) NOT NULL DEFAULT 0,
   `motivo_excusa` text DEFAULT NULL,
+  `eliminada_en` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`persona_id`,`notificacion_id`),
   KEY `fk_pn_notificacion_idx` (`notificacion_id`),
   CONSTRAINT `fk_pn_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
@@ -235,6 +236,22 @@ CREATE TABLE periodo_ausencia (
   CONSTRAINT chk_ausencia_fechas CHECK (fecha_inicio <= fecha_fin),
   CONSTRAINT fk_ausencia_ministro FOREIGN KEY (ministro_id) REFERENCES persona (id),
   CONSTRAINT fk_ausencia_notificacion FOREIGN KEY (notificacion_id) REFERENCES notificacion (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Mensajes de contacto de la landing page pública (HU-32)
+DROP TABLE IF EXISTS mensaje_contacto;
+CREATE TABLE mensaje_contacto (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  nombre varchar(255) NOT NULL,
+  correo varchar(255) NOT NULL,
+  telefono varchar(50) DEFAULT NULL,
+  motivo varchar(255) NOT NULL,
+  mensaje text NOT NULL,
+  fecha date NOT NULL,
+  notificacion_id int(11) DEFAULT NULL,
+  creado_en timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_contacto_notificacion FOREIGN KEY (notificacion_id) REFERENCES notificacion (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
