@@ -19,7 +19,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
        INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
        LEFT  JOIN persona r               ON r.id = n.remitente_id
        LEFT  JOIN evento ev               ON ev.id = n.evento_id
-       WHERE pn.persona_id = ?
+       WHERE pn.persona_id = ? AND pn.eliminada_en IS NULL
        ORDER BY n.fecha DESC`,
       [personaId]
     );
