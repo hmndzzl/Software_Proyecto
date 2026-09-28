@@ -3,6 +3,7 @@ import {
   getNotificaciones,
   getDestinatarios,
   marcarLeida,
+  marcarNoLeida,
   confirmarAsistenciaNotificacion,
   confirmarAsistencia,
   excusarAsistencia,
@@ -21,6 +22,7 @@ router.use(authMiddleware);
 router.get('/destinatarios', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), getDestinatarios);
 router.get('/', getNotificaciones);
 router.put('/:id/leida', marcarLeida);
+router.put('/:id/no-leida', marcarNoLeida);
 router.put('/:id/confirmar', confirmarAsistenciaNotificacion);
 router.put('/:id/asistencia', confirmarAsistencia);
 router.put('/:id/excusar', excusarAsistencia);
