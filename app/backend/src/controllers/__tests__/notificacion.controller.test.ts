@@ -5,6 +5,7 @@ import pool from '../../config/db';
 import { ROLES } from '../../config/roles';
 import {
   getNotificaciones,
+  getNotificacionesEnviadas,
   marcarLeida,
   marcarNoLeida,
   confirmarAsistenciaNotificacion,
@@ -82,6 +83,27 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await getNotificaciones(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('getNotificacionesEnviadas', () => {
+    it('debería retornar 200 con las notificaciones enviadas por el usuario', async () => {
+      const mockRows = [{ id: 5, mensaje: 'Aviso', total_destinatarios: 3, total_leidas: 1, destinatarios_nombres: 'Ana, Luis, Pedro' }];
+      (pool.execute as any).mockResolvedValue([mockRows]);
+
+      await getNotificacionesEnviadas(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('WHERE n.remitente_id = ?'), [1]);
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(mockRows);
+    });
+
+    it('debería retornar 500 en caso de error', async () => {
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await getNotificacionesEnviadas(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
