@@ -192,5 +192,55 @@ describe('Notificaciones Hooks', () => {
       });
       expect(result.current.notificaciones[0].asistencia_confirmada).toBe(false);
     });
+
+    it('debería cancelar asistencia exitosamente', async () => {
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, asistencia_confirmada: true }] });
+      vi.mocked(apiClient.put).mockResolvedValueOnce({});
+      const { result } = renderHook(() => useNotificaciones());
+      await waitFor(() => expect(result.current.cargando).toBe(false));
+
+      await act(async () => {
+        await result.current.cancelarAsistencia(1);
+      });
+      expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-asistencia');
+      expect(result.current.notificaciones[0].asistencia_confirmada).toBe(false);
+    });
+
+    it('debería capturar el error sin interrumpir UI si falla cancelarAsistencia', async () => {
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, asistencia_confirmada: true }] });
+      vi.mocked(apiClient.put).mockRejectedValueOnce(new Error('Network error'));
+      const { result } = renderHook(() => useNotificaciones());
+      await waitFor(() => expect(result.current.cargando).toBe(false));
+
+      await act(async () => {
+        await result.current.cancelarAsistencia(1);
+      });
+      expect(result.current.notificaciones[0].asistencia_confirmada).toBe(true);
+    });
+
+    it('debería cancelar inasistencia exitosamente', async () => {
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, motivo_excusa: 'Motivo' }] });
+      vi.mocked(apiClient.put).mockResolvedValueOnce({});
+      const { result } = renderHook(() => useNotificaciones());
+      await waitFor(() => expect(result.current.cargando).toBe(false));
+
+      await act(async () => {
+        await result.current.cancelarInasistencia(1);
+      });
+      expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-inasistencia');
+      expect(result.current.notificaciones[0].motivo_excusa).toBeNull();
+    });
+
+    it('debería capturar el error sin interrumpir UI si falla cancelarInasistencia', async () => {
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, motivo_excusa: 'Motivo' }] });
+      vi.mocked(apiClient.put).mockRejectedValueOnce(new Error('Network error'));
+      const { result } = renderHook(() => useNotificaciones());
+      await waitFor(() => expect(result.current.cargando).toBe(false));
+
+      await act(async () => {
+        await result.current.cancelarInasistencia(1);
+      });
+      expect(result.current.notificaciones[0].motivo_excusa).toBe('Motivo');
+    });
   });
 });
