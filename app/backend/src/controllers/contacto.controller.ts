@@ -7,6 +7,9 @@ import { HttpStatus } from '../utils/httpStatus';
 import { ContactoCreado } from '../types/contacto.types';
 
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Formato genérico tipo E.164 (+código de país y número, sin espacios ni símbolos).
+// Deliberadamente no se ata a +502: el prefijo de país lo decide el frontend.
+const TELEFONO_REGEX = /^\+\d{8,15}$/;
 
 function textoRequerido(value: unknown, maxLength: number): string | null {
   if (typeof value !== 'string') return null;
@@ -38,8 +41,8 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
     res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El teléfono debe ser texto' });
     return;
   }
-  if (telefono && telefono.length > 50) {
-    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El teléfono no puede superar los 50 caracteres' });
+  if (telefono && !TELEFONO_REGEX.test(telefono)) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El teléfono debe incluir código de país, ej. +50255551234' });
     return;
   }
 
