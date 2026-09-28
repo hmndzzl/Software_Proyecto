@@ -73,7 +73,7 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
       [textoNotificacion]
     );
     for (const destinatario of destinatarios) {
-      await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+      await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)',
         [destinatario.id, notificacion.insertId]);
     }
 
