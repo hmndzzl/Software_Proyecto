@@ -220,7 +220,6 @@ describe('UI Components', () => {
 
     it('debería manejar errores sin mensaje', () => {
       function ComponenteQueExplota(): never {
-        // eslint-disable-next-line no-throw-literal
         throw { name: 'Error' } as Error;
       }
 
