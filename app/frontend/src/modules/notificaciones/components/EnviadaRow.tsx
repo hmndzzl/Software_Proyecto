@@ -12,12 +12,13 @@ interface Props {
 }
 
 export default function EnviadaRow({ notificacion }: Props) {
-  const { mensaje, fecha, tipo, total_destinatarios, total_leidas, destinatarios_nombres } = notificacion;
+  const { mensaje, fecha, tipo, total_destinatarios, total_leidas, total_confirmaron, requiere_confirmacion, destinatarios_nombres } = notificacion;
   const [expandido, setExpandido] = useState(false);
 
   const lista = destinatarios_nombres ? destinatarios_nombres.split(', ') : [];
   const hayMasDeLosVisibles = lista.length > NOMBRES_VISIBLES;
   const resumen = hayMasDeLosVisibles ? lista.slice(0, NOMBRES_VISIBLES).join(', ') : destinatarios_nombres;
+  const requiereConfirmacion = Boolean(requiere_confirmacion);
 
   return (
     <tr className={styles.row}>
@@ -44,6 +45,13 @@ export default function EnviadaRow({ notificacion }: Props) {
         <Badge kind={total_destinatarios > 0 && total_leidas === total_destinatarios ? 'confirmada' : 'pendiente'}>
           {total_leidas}/{total_destinatarios} leídas
         </Badge>
+        {requiereConfirmacion ? (
+          <div className={destStyles.confirmaronWrap}>
+            <Badge kind={total_destinatarios > 0 && total_confirmaron === total_destinatarios ? 'confirmada' : 'pendiente'}>
+              {total_confirmaron}/{total_destinatarios} confirmaron
+            </Badge>
+          </div>
+        ) : null}
       </td>
     </tr>
   );

@@ -24,3 +24,7 @@
 .verMas:hover {
   color: var(--color-rojoDk);
 }
+
+.confirmaronWrap {
+  margin-top: 6px;
+}
