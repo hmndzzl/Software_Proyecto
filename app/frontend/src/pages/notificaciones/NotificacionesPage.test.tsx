@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NotificacionesPage from './NotificacionesPage';
 import apiClient from '../../api/client';
 
-vi.mock('../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
+vi.mock('../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
 
 const notificaciones = [
   { id: 1, mensaje: 'Primera notificación', fecha: '2026-10-01', tipo: 'individual',
@@ -17,14 +17,44 @@ const notificaciones = [
     asistencia_confirmada: false, motivo_excusa: null },
 ];
 
+const papelera = [
+  { id: 9, mensaje: 'Notificación eliminada', fecha: '2026-09-20', tipo: 'individual',
+    remitente_id: null, remitente_nombre: null, grupo_id: null, leida: true,
+    evento_id: null, evento_descripcion: null, requiere_confirmacion: false,
+    eliminada_en: '2026-09-25T10:00:00.000Z' },
+];
+
+const enviadas = [
+  { id: 7, mensaje: 'Aviso importante', fecha: '2026-09-15', tipo: 'individual',
+    grupo_id: null, evento_id: null, requiere_confirmacion: false,
+    total_destinatarios: 2, total_leidas: 1, destinatarios_nombres: 'Ana Xitumul, Pedro Caso' },
+];
+
+function mockGetPorUrl() {
+  vi.mocked(apiClient.get).mockImplementation((url: string) => {
+    if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: papelera });
+    if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+    return Promise.resolve({ data: notificaciones });
+  });
+}
+
+function usuarioMinistro() {
+  localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 4, nombre: 'Ministro Test' }));
+}
+function usuarioSacerdote() {
+  localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 1, nombre: 'Sacerdote Test' }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 4, nombre: 'Ministro Test' }));
-  vi.mocked(apiClient.get).mockResolvedValue({ data: notificaciones });
+  usuarioMinistro();
+  mockGetPorUrl();
+  vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+  vi.mocked(apiClient.delete).mockResolvedValue({ data: {} });
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-function mostrar(initialEntry: string) {
+function mostrar(initialEntry = '/notificaciones') {
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
@@ -42,15 +72,64 @@ describe('Resaltado de notificación desde el menú de la campana', () => {
   });
 
   it('no desplaza nada si no hay parámetro resaltar', async () => {
-    mostrar('/notificaciones');
+    mostrar();
     await screen.findByText('Primera notificación');
     expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('cada fila tiene un id navegable por notificación', async () => {
-    mostrar('/notificaciones');
+    mostrar();
     await screen.findByText('Primera notificación');
     expect(document.getElementById('notificacion-1')).toBeInTheDocument();
     expect(document.getElementById('notificacion-2')).toBeInTheDocument();
+  });
+});
+
+describe('Pestaña Papelera', () => {
+  it('un Ministro no ve la pestaña Enviadas, pero sí Papelera', async () => {
+    mostrar();
+    await screen.findByText('Primera notificación');
+    expect(screen.queryByRole('button', { name: 'Enviadas' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Papelera' })).toBeInTheDocument();
+  });
+
+  it('muestra las notificaciones eliminadas y permite restaurarlas', async () => {
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    await screen.findByText('Notificación eliminada');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
+    expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/9/restaurar');
+    await waitFor(() => expect(screen.queryByText('Notificación eliminada')).not.toBeInTheDocument());
+  });
+
+  it('vacía la papelera solo si se confirma', async () => {
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    await screen.findByText('Notificación eliminada');
+
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
+    expect(apiClient.delete).not.toHaveBeenCalled();
+
+    confirmSpy.mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
+    expect(apiClient.delete).toHaveBeenCalledWith('/api/notificaciones/papelera');
+    await waitFor(() => expect(screen.getByText('La papelera está vacía.')).toBeInTheDocument());
+    confirmSpy.mockRestore();
+  });
+});
+
+describe('Pestaña Enviadas', () => {
+  it('un Sacerdote sí ve la pestaña Enviadas con destinatarios y lecturas', async () => {
+    usuarioSacerdote();
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getByRole('button', { name: 'Enviadas' }));
+    await screen.findByText('Aviso importante');
+    expect(screen.getByText('Ana Xitumul, Pedro Caso')).toBeInTheDocument();
+    expect(screen.getByText('1/2 leídas')).toBeInTheDocument();
   });
 });
