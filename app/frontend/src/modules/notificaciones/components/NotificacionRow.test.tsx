@@ -65,4 +65,10 @@ describe('NotificacionRow', () => {
     mostrar(base);
     expect(screen.getByText(/Nombre: Prueba/)).toBeInTheDocument();
   });
+
+  it('llama a onEliminar al hacer clic en Eliminar', () => {
+    const { onEliminar } = mostrar(base);
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(onEliminar).toHaveBeenCalledWith(1);
+  });
 });
