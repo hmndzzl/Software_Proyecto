@@ -21,8 +21,8 @@ describe('Field', () => {
 });
 
 describe('Modal', () => {
-  it('renderiza null si isOpen es false', () => {
-    const { container } = render(<Modal isOpen={false} onClose={() => {}} title="Test"><div/></Modal>);
+  it('renderiza null si open es false', () => {
+    const { container } = render(<Modal open={false} onClose={() => {}} title="Test"><div/></Modal>);
     expect(container).toBeEmptyDOMElement();
   });
 });
@@ -79,6 +79,7 @@ describe('EnviadaRow / NotificacionRow', () => {
           <NotificacionRow
             notificacion={{ id: 1, mensaje: 'M', requiere_confirmacion: true, asistencia_confirmada: true, leida: false } as any}
             onMarcarLeida={vi.fn()} onMarcarNoLeida={vi.fn()} onConfirmarAsistencia={vi.fn()} onExcusarAsistencia={vi.fn()} onEliminar={vi.fn()}
+            onCancelarAsistencia={vi.fn()} onCancelarInasistencia={vi.fn()}
           />
         </tbody>
       </table>
