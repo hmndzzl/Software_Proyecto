@@ -22,9 +22,11 @@ const base: Notificacion = {
 function mostrar(notificacion: Notificacion, props: {
   onMarcarLeida?: (id: number) => void;
   onMarcarNoLeida?: (id: number) => void;
+  onEliminar?: (id: number) => void;
 } = {}) {
   const onMarcarLeida = props.onMarcarLeida ?? vi.fn();
   const onMarcarNoLeida = props.onMarcarNoLeida ?? vi.fn();
+  const onEliminar = props.onEliminar ?? vi.fn();
   render(
     <table>
       <tbody>
@@ -34,11 +36,12 @@ function mostrar(notificacion: Notificacion, props: {
           onMarcarNoLeida={onMarcarNoLeida}
           onConfirmarAsistencia={vi.fn()}
           onExcusarAsistencia={vi.fn()}
+          onEliminar={onEliminar}
         />
       </tbody>
     </table>
   );
-  return { onMarcarLeida, onMarcarNoLeida };
+  return { onMarcarLeida, onMarcarNoLeida, onEliminar };
 }
 
 describe('NotificacionRow', () => {

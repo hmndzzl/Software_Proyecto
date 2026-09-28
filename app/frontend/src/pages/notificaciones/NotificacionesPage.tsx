@@ -24,6 +24,7 @@ export default function NotificacionesPage() {
     error,
     marcarLeida,
     marcarNoLeida,
+    eliminar,
     marcarTodasLeidas,
     confirmarAsistencia,
     excusarAsistencia,
@@ -138,6 +139,7 @@ export default function NotificacionesPage() {
                     onMarcarNoLeida={marcarNoLeida}
                     onConfirmarAsistencia={confirmarAsistencia}
                     onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
+                    onEliminar={eliminar}
                     resaltada={n.id === resaltarId}
                   />
                 ))}
