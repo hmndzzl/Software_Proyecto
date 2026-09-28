@@ -278,6 +278,46 @@ export const confirmarAsistencia = async (req: Request, res: Response): Promise<
   }
 };
 
+// PUT /api/notificaciones/:id/cancelar-asistencia — deshace una confirmación de asistencia
+// (ej. se confirmó sin querer); a diferencia de excusarAsistencia, no requiere motivo ni
+// avisa a nadie, solo revierte al estado pendiente para que el ministro pueda decidir de nuevo.
+export const cancelarAsistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [notifs] = await pool.execute<RowDataPacket[]>(
+      `SELECT requiere_confirmacion FROM notificacion WHERE id = ?`,
+      [id]
+    );
+
+    if (notifs.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+    if (!notifs[0].requiere_confirmacion) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Esta notificación no requiere confirmación de asistencia' });
+      return;
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET asistencia_confirmada = 0
+       WHERE notificacion_id = ? AND persona_id = ? AND asistencia_confirmada = 1`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No tenías una confirmación de asistencia para cancelar' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Confirmación de asistencia cancelada' });
+  } catch (error) {
+    console.error('Error en cancelarAsistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al cancelar la confirmación de asistencia' });
+  }
+};
+
 // GET /api/notificaciones/destinatarios — personas a las que el usuario puede enviar notificaciones
 // Admin/Sacerdote: todos | CoordMinistros: sus ministros | Otros: 403
 export const getDestinatarios = async (req: Request, res: Response): Promise<void> => {
