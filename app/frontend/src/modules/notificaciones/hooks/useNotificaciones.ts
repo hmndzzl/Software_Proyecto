@@ -11,6 +11,8 @@ interface UseNotificacionesReturn {
   eliminar: (id: number) => Promise<void>;
   marcarTodasLeidas: () => Promise<void>;
   confirmarAsistencia: (id: number) => Promise<void>;
+  cancelarAsistencia: (id: number) => Promise<void>;
+  cancelarInasistencia: (id: number) => Promise<void>;
   excusarAsistencia: (id: number, motivo: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -76,10 +78,32 @@ export function useNotificaciones(): UseNotificacionesReturn {
     try {
       await apiClient.put(`/api/notificaciones/${id}/asistencia`);
       setNotificaciones((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: true, leida: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: true, leida: true, motivo_excusa: null } : n))
       );
     } catch {
       // no interrumpir UI — notif sigue visible para reintentar
+    }
+  }, []);
+
+  const cancelarAsistencia = useCallback(async (id: number) => {
+    try {
+      await apiClient.put(`/api/notificaciones/${id}/cancelar-asistencia`);
+      setNotificaciones((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: false } : n))
+      );
+    } catch {
+      // no interrumpir UI — se conserva el estado confirmado si no se pudo cancelar
+    }
+  }, []);
+
+  const cancelarInasistencia = useCallback(async (id: number) => {
+    try {
+      await apiClient.put(`/api/notificaciones/${id}/cancelar-inasistencia`);
+      setNotificaciones((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, motivo_excusa: null } : n))
+      );
+    } catch {
+      // no interrumpir UI — se conserva el estado si no se pudo actualizar
     }
   }, []);
 
@@ -94,5 +118,5 @@ export function useNotificaciones(): UseNotificacionesReturn {
     );
   }, []);
 
-  return { notificaciones, cargando, error, marcarLeida, marcarNoLeida, eliminar, marcarTodasLeidas, confirmarAsistencia, excusarAsistencia, refetch };
+  return { notificaciones, cargando, error, marcarLeida, marcarNoLeida, eliminar, marcarTodasLeidas, confirmarAsistencia, cancelarAsistencia, cancelarInasistencia, excusarAsistencia, refetch };
 }

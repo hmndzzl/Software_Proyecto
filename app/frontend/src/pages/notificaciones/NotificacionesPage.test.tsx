@@ -27,7 +27,7 @@ const papelera = [
 const enviadas = [
   { id: 7, mensaje: 'Aviso importante', fecha: '2026-09-15', tipo: 'individual',
     grupo_id: null, evento_id: null, requiere_confirmacion: false,
-    total_destinatarios: 2, total_leidas: 1, destinatarios_nombres: 'Ana Xitumul, Pedro Caso' },
+    total_destinatarios: 2, total_leidas: 1, total_confirmaron: 0, destinatarios_nombres: 'Ana Xitumul, Pedro Caso' },
 ];
 
 function mockGetPorUrl() {
@@ -188,5 +188,92 @@ describe('Pestaña Enviadas', () => {
     await screen.findByText('Aviso importante');
     expect(screen.getByText('Ana Xitumul, Pedro Caso')).toBeInTheDocument();
     expect(screen.getByText('1/2 leídas')).toBeInTheDocument();
+  });
+});
+
+describe('Confirmación y cancelación de asistencia', () => {
+  it('permite confirmar asistencia y luego cancelar dicha confirmación', async () => {
+    const requiereAsistencia = [{
+      ...notificaciones[0],
+      requiere_confirmacion: true,
+      asistencia_confirmada: false,
+      motivo_excusa: null,
+    }];
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: papelera });
+      if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+      return Promise.resolve({ data: requiereAsistencia });
+    });
+
+    mostrar();
+    await screen.findByRole('button', { name: 'Confirmar' });
+
+    // Confirmar asistencia
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+    expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/asistencia');
+    await waitFor(() => expect(screen.getByText('Asistencia confirmada')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Cancelar asistencia' })).toBeInTheDocument();
+
+    // Cancelar asistencia confirmada
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar asistencia' }));
+    expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-asistencia');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Cancelar asistencia' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Reportar inasistencia y revertirla', () => {
+  it('permite registrar que no podrá asistir mediante el modal de excusa', async () => {
+    const requiereAsistencia = [{
+      ...notificaciones[0],
+      requiere_confirmacion: true,
+      asistencia_confirmada: false,
+      motivo_excusa: null,
+    }];
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: papelera });
+      if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+      return Promise.resolve({ data: requiereAsistencia });
+    });
+
+    mostrar();
+    await screen.findByRole('button', { name: 'No podré asistir' });
+
+    // Abrir modal de excusa
+    fireEvent.click(screen.getByRole('button', { name: 'No podré asistir' }));
+    expect(screen.getByRole('heading', { name: 'Excusar Asistencia' })).toBeInTheDocument();
+
+    // Llenar motivo y enviar
+    const textarea = screen.getByPlaceholderText(/Explica brevemente por qué no podrás asistir/i);
+    fireEvent.change(textarea, { target: { value: 'Tengo un compromiso familiar inaplazable' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar excusa' }));
+
+    expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/excusar', {
+      motivo: 'Tengo un compromiso familiar inaplazable',
+    });
+    await waitFor(() => expect(screen.getByText('No asistirá')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Quitar no asistencia' })).toBeInTheDocument();
+  });
+
+  it('elimina el estado de no asistencia después de confirmar la operación', async () => {
+    const conInasistencia = [{
+      ...notificaciones[0],
+      requiere_confirmacion: true,
+      motivo_excusa: 'Tengo un compromiso',
+    }];
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: papelera });
+      if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+      return Promise.resolve({ data: conInasistencia });
+    });
+
+    mostrar();
+    await screen.findByRole('button', { name: 'Quitar no asistencia' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar no asistencia' }));
+
+    expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-inasistencia');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Quitar no asistencia' })).not.toBeInTheDocument();
   });
 });
