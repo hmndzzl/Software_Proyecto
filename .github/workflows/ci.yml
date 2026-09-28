@@ -35,8 +35,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run tests
-        run: npm test
+      - name: Run Tests (Coverage)
+        run: npm run coverage
 
   test-backend:
     name: Backend Unit Tests
