@@ -32,6 +32,8 @@ export default function NotificacionesPage() {
     eliminar,
     marcarTodasLeidas,
     confirmarAsistencia,
+    cancelarAsistencia,
+    cancelarInasistencia,
     excusarAsistencia,
     refetch,
   } = useNotificaciones();
@@ -164,6 +166,8 @@ export default function NotificacionesPage() {
                       onMarcarLeida={marcarLeida}
                       onMarcarNoLeida={marcarNoLeida}
                       onConfirmarAsistencia={confirmarAsistencia}
+                      onCancelarAsistencia={cancelarAsistencia}
+                      onCancelarInasistencia={cancelarInasistencia}
                       onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
                       onEliminar={handleEliminar}
                       resaltada={n.id === resaltarId}
