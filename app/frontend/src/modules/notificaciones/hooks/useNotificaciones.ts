@@ -7,6 +7,8 @@ interface UseNotificacionesReturn {
   cargando: boolean;
   error: string | null;
   marcarLeida: (id: number) => Promise<void>;
+  marcarNoLeida: (id: number) => Promise<void>;
+  eliminar: (id: number) => Promise<void>;
   marcarTodasLeidas: () => Promise<void>;
   confirmarAsistencia: (id: number) => Promise<void>;
   excusarAsistencia: (id: number, motivo: string) => Promise<void>;
@@ -46,6 +48,22 @@ export function useNotificaciones(): UseNotificacionesReturn {
     }
   }, []);
 
+  const marcarNoLeida = useCallback(async (id: number) => {
+    try {
+      await apiClient.put(`/api/notificaciones/${id}/no-leida`);
+      setNotificaciones((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, leida: false } : n))
+      );
+    } catch {
+      // no interrumpir UI — notif sigue visible
+    }
+  }, []);
+
+  const eliminar = useCallback(async (id: number) => {
+    await apiClient.put(`/api/notificaciones/${id}/papelera`);
+    setNotificaciones((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
   const marcarTodasLeidas = useCallback(async () => {
     const noLeidas = notificaciones.filter((n) => !n.leida);
     await Promise.allSettled(
@@ -76,5 +94,5 @@ export function useNotificaciones(): UseNotificacionesReturn {
     );
   }, []);
 
-  return { notificaciones, cargando, error, marcarLeida, marcarTodasLeidas, confirmarAsistencia, excusarAsistencia, refetch };
+  return { notificaciones, cargando, error, marcarLeida, marcarNoLeida, eliminar, marcarTodasLeidas, confirmarAsistencia, excusarAsistencia, refetch };
 }
