@@ -17,6 +17,7 @@ export default function NotificarAusenciaForm() {
   const [error, setError] = useState('');
   const [exito, setExito] = useState(false);
   const enCurso = useRef(false);
+  console.log("USUARIO:", usuario);
   const fechasInvalidas = Boolean(inicio && fin && inicio > fin);
 
   async function enviar(event: FormEvent<HTMLFormElement>) {

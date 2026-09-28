@@ -154,7 +154,7 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
             <option value="">-- Elige el evento --</option>
             {eventos.map((ev) => (
               <option key={ev.id} value={ev.id}>
-                {ev.descripcion} · {formatFecha(ev.fecha)} · {ev.hora_inicio.substring(0, 5)}–{ev.hora_fin.substring(0, 5)}
+                {ev.descripcion} · {formatFecha(ev.fecha)} · {ev.hora_inicio?.substring(0, 5)}–{ev.hora_fin?.substring(0, 5)}
               </option>
             ))}
           </SelectUI>

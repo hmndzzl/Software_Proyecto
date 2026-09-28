@@ -7,6 +7,9 @@ import { Field, InputUI } from '../Field';
 import Spinner from '../Spinner';
 import ErrorMessage from '../ErrorMessage';
 import ErrorBoundary from '../ErrorBoundary';
+import EmptyState from '../EmptyState';
+import ErrorState from '../ErrorState';
+import Modal from '../Modal';
 
 describe('UI Components', () => {
 
@@ -21,6 +24,12 @@ describe('UI Components', () => {
     // No chequeamos clases específicas css module porque pueden cambiar el hash,
     // pero verificamos que sea de tipo botón.
     expect(button.tagName).toBe('BUTTON');
+  });
+
+  it('Btn - debería renderizar iconos si se pasan props icon y iconRight', () => {
+    render(<Btn icon={<span data-testid="icon-left">L</span>} iconRight={<span data-testid="icon-right">R</span>}>Con iconos</Btn>);
+    expect(screen.getByTestId('icon-left')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-right')).toBeInTheDocument();
   });
 
   // ----------------------------------------------------
@@ -43,6 +52,17 @@ describe('UI Components', () => {
     render(<Badge kind="ok">Aprobado</Badge>);
     const badge = screen.getByText(/aprobado/i);
     expect(badge).toBeInTheDocument();
+  });
+
+  it('EmptyState - debería renderizar icono y mensaje', () => {
+    render(<EmptyState message="Nada por aquí" icon={<span data-testid="empty-icon" />} />);
+    expect(screen.getByText('Nada por aquí')).toBeInTheDocument();
+    expect(screen.getByTestId('empty-icon')).toBeInTheDocument();
+  });
+
+  it('ErrorState - debería renderizar mensaje', () => {
+    render(<ErrorState message="Error 500" />);
+    expect(screen.getByText('Error 500')).toBeInTheDocument();
   });
 
   // ----------------------------------------------------
@@ -90,6 +110,16 @@ describe('UI Components', () => {
     expect(input).toBeInTheDocument();
   });
 
+  it('Field - debería renderizar sin label ni hint y sin *', () => {
+    render(
+      <Field>
+        <InputUI placeholder="Escribe aquí..." />
+      </Field>
+    );
+    expect(screen.queryByText('*')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/escribe aquí.../i)).toBeInTheDocument();
+  });
+
   // ----------------------------------------------------
   // 6. Spinner Component
   // ----------------------------------------------------
@@ -104,7 +134,7 @@ describe('UI Components', () => {
       expect(screen.getByText(/cargando datos/i)).toBeInTheDocument();
     });
 
-    it('debería renderizarse en tamaño sm, md y lg sin errores', () => {
+    it('debería renderizarse en tamaño sm, md y lg sin errores y centrado', () => {
       const { rerender } = render(<Spinner size="sm" />);
       expect(screen.getByRole('status')).toBeInTheDocument();
 
@@ -119,6 +149,12 @@ describe('UI Components', () => {
       render(<Spinner fullPage label="Procesando..." />);
       expect(screen.getByRole('status')).toBeInTheDocument();
       expect(screen.getByText(/procesando/i)).toBeInTheDocument();
+    });
+
+    it('debería renderizar en modo fullPage sin label explícito usando el default', () => {
+      render(<Spinner fullPage />);
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText('Cargando...')).toBeInTheDocument();
     });
   });
 
@@ -182,6 +218,20 @@ describe('UI Components', () => {
       expect(screen.getByText(/algo salió mal/i)).toBeInTheDocument();
     });
 
+    it('debería manejar errores sin mensaje', () => {
+      function ComponenteQueExplota(): never {
+        throw { name: 'Error' } as Error;
+      }
+
+      render(
+        <ErrorBoundary>
+          <ComponenteQueExplota />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText(/error desconocido/i)).toBeInTheDocument();
+    });
+
     it('debería renderizar el fallback personalizado si se proporciona', () => {
       function ComponenteQueExplota(): never {
         throw new Error('Error');
@@ -194,6 +244,63 @@ describe('UI Components', () => {
       );
 
       expect(screen.getByText(/fallback personalizado/i)).toBeInTheDocument();
+    });
+  });
+
+  // ----------------------------------------------------
+  // 9. Modal Component
+  // ----------------------------------------------------
+  describe('Modal', () => {
+    it('debería renderizar si open es true y llamar onClose al hacer click en cerrar', () => {
+      const onClose = vi.fn();
+      render(<Modal open={true} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
+      expect(screen.getByText('Test Modal')).toBeInTheDocument();
+      expect(screen.getByText('Modal Content')).toBeInTheDocument();
+      const closeBtn = screen.getByRole('button');
+      fireEvent.click(closeBtn);
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it('NO debería renderizar si open es false', () => {
+      render(<Modal open={false} onClose={() => {}} title="Test Modal"><p>Modal Content</p></Modal>);
+      expect(screen.queryByText('Test Modal')).not.toBeInTheDocument();
+    });
+    
+    it('debería cerrarse al hacer click en el overlay', () => {
+      const onClose = vi.fn();
+      const { container } = render(<Modal open={true} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
+      const overlay = container.querySelector('div'); // el overlay es el primer div
+      fireEvent.mouseDown(overlay!);
+      expect(onClose).toHaveBeenCalled();
+    });
+    
+    it('NO debería cerrarse al hacer click en el contenido', () => {
+      const onClose = vi.fn();
+      render(<Modal open={true} onClose={onClose} title="Test Modal"><div data-testid="content">Modal Content</div></Modal>);
+      const content = screen.getByTestId('content');
+      fireEvent.mouseDown(content);
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('debería cerrarse al presionar Escape', () => {
+      const onClose = vi.fn();
+      render(<Modal open={true} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it('NO debería cerrarse al presionar otra tecla', () => {
+      const onClose = vi.fn();
+      render(<Modal open={true} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Enter' });
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('NO debería cerrarse al presionar Escape si open es false', () => {
+      const onClose = vi.fn();
+      render(<Modal open={false} onClose={onClose} title="Test Modal"><p>Modal Content</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onClose).not.toHaveBeenCalled();
     });
   });
 
