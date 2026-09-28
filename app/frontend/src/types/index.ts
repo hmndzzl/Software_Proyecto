@@ -65,6 +65,7 @@ export interface NotificacionEnviada {
   requiere_confirmacion: boolean;
   total_destinatarios: number;
   total_leidas: number;
+  total_confirmaron: number;
   destinatarios_nombres: string | null;
 }
 
