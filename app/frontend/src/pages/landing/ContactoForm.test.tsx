@@ -101,4 +101,29 @@ describe('Formulario de contacto (landing page, HU-32)', () => {
     await enviarContacto(payload);
     expect(apiClient.post).toHaveBeenCalledWith('/api/contacto', payload);
   });
+
+  describe('motivo "Otro"', () => {
+    it('muestra un campo para especificar el motivo al elegir "Otro" y lo antepone al enviar', async () => {
+      mostrar(); completar();
+      fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Otro' } });
+      fireEvent.change(screen.getByLabelText(/Especifica el motivo/), { target: { value: 'Quiero donar un banco para la capilla' } });
+      enviar(); await screen.findByRole('status');
+      expect(apiClient.post).toHaveBeenCalledWith('/api/contacto', {
+        ...payload, motivo: 'Otro: Quiero donar un banco para la capilla',
+      });
+    });
+
+    it('rechaza "Otro" sin especificar el motivo', () => {
+      mostrar(); completar();
+      fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Otro' } });
+      enviar();
+      expect(screen.getByRole('alert')).toHaveTextContent('Especifica el motivo');
+      expect(apiClient.post).not.toHaveBeenCalled();
+    });
+
+    it('no muestra el campo de especificar motivo para otras opciones', () => {
+      mostrar();
+      expect(screen.queryByLabelText(/Especifica el motivo/)).not.toBeInTheDocument();
+    });
+  });
 });
