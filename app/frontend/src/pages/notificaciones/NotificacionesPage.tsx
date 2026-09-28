@@ -59,7 +59,6 @@ export default function NotificacionesPage() {
       }, { replace: true });
     }, 2500);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargando, resaltarId]);
 
   const hayNoLeidas = notificaciones.some((n) => !n.leida);
