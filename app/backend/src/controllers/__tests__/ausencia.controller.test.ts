@@ -4,6 +4,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import pool from '../../config/db';
 import ausenciaRoutes from '../../routes/ausencia.routes';
+import { JWT_SECRET } from '../../config/env';
 
 vi.mock('../../config/db', () => ({ default: { getConnection: vi.fn() } }));
 const app = express();
@@ -15,7 +16,7 @@ const conn = {
   beginTransaction: vi.fn(), execute: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
 };
 function enviar(payload: object = body, id = 9, rol_id = 4) {
-  const token = jwt.sign({ id, rol_id }, process.env.JWT_SECRET || 'llave_secreta_super_segura');
+  const token = jwt.sign({ id, rol_id }, JWT_SECRET);
   return request(app).post('/api/ausencias').set('Authorization', `Bearer ${token}`).send(payload);
 }
 

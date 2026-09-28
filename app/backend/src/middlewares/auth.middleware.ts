@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ROLE_HIERARCHY } from '../config/roles';
 import { HttpStatus } from '../utils/httpStatus';
+import { JWT_SECRET } from '../config/env';
 
 export interface JwtPayload {
   id: number;
@@ -49,8 +50,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const token = authHeader.split(' ')[1];
 
   try {
-    const secret = process.env.JWT_SECRET || 'llave_secreta_super_segura';
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     req.user = decoded;
     next();
   } catch {
