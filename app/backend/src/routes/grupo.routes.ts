@@ -6,7 +6,8 @@ import {
   updateGrupo,
   deleteGrupo,
 } from '../controllers/grupo.controller';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
+import { ROLES } from '../config/roles';
 
 const router = Router();
 
@@ -15,8 +16,10 @@ router.use(authMiddleware);
 
 router.get('/', getGrupos);
 router.get('/:id', getGrupoById);
-router.post('/', createGrupo);
-router.put('/:id', updateGrupo);
-router.delete('/:id', deleteGrupo);
+
+// Solo Sacerdote, Coordinador de Grupos y Admin gestionan grupos (DT-05)
+router.post('/', requireRole(ROLES.COORDINADOR_GRUPOS), createGrupo);
+router.put('/:id', requireRole(ROLES.COORDINADOR_GRUPOS), updateGrupo);
+router.delete('/:id', requireRole(ROLES.COORDINADOR_GRUPOS), deleteGrupo);
 
 export default router;
