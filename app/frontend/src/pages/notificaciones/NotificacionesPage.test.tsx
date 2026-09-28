@@ -122,6 +122,63 @@ describe('Pestaña Papelera', () => {
   });
 });
 
+describe('Sincronización entre Recibidas y Papelera', () => {
+  it('al eliminar una notificación, aparece en la Papelera sin recargar', async () => {
+    let inbox = [...notificaciones];
+    let trash: typeof papelera = [];
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: trash });
+      if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+      return Promise.resolve({ data: inbox });
+    });
+    vi.mocked(apiClient.put).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/1/papelera') {
+        const [movida] = inbox.filter((n) => n.id === 1);
+        inbox = inbox.filter((n) => n.id !== 1);
+        trash = [...trash, { ...movida, eliminada_en: '2026-09-28T00:00:00.000Z' }];
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
+    await waitFor(() => expect(screen.queryByText('Primera notificación')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    await screen.findByText('Primera notificación');
+  });
+
+  it('al restaurar una notificación, vuelve a Recibidas sin recargar', async () => {
+    let inbox: typeof notificaciones = [];
+    let trash = [...papelera];
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: trash });
+      if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+      return Promise.resolve({ data: inbox });
+    });
+    vi.mocked(apiClient.put).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/9/restaurar') {
+        const [restaurada] = trash.filter((n) => n.id === 9);
+        trash = trash.filter((n) => n.id !== 9);
+        const { eliminada_en, ...resto } = restaurada;
+        inbox = [...inbox, resto as typeof notificaciones[number]];
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    mostrar();
+    await screen.findByText('No tienes notificaciones.');
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    await screen.findByText('Notificación eliminada');
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
+    await waitFor(() => expect(screen.queryByText('Notificación eliminada')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recibidas' }));
+    await screen.findByText('Notificación eliminada');
+  });
+});
+
 describe('Pestaña Enviadas', () => {
   it('un Sacerdote sí ve la pestaña Enviadas con destinatarios y lecturas', async () => {
     usuarioSacerdote();
