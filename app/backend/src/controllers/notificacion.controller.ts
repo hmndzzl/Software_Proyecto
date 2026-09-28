@@ -55,6 +55,30 @@ export const marcarLeida = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+// PUT /api/notificaciones/:id/no-leida
+export const marcarNoLeida = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET leida = 0
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Notificación marcada como no leída' });
+  } catch (error) {
+    console.error('Error en marcarNoLeida:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al marcar notificación como no leída' });
+  }
+};
+
 // PUT /api/notificaciones/:id/confirmar
 export const confirmarAsistenciaNotificacion = async (req: Request, res: Response): Promise<void> => {
   const personaId = req.user!.id;
