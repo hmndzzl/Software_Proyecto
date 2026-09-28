@@ -34,5 +34,11 @@ describe('roles utils', () => {
       localStorage.setItem('usuario', JSON.stringify({ rol_id: ROLES.MINISTRO }));
       expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
     });
+
+    it('retorna el rol por defecto si no existe en la jerarquia', () => {
+      localStorage.setItem('usuario', JSON.stringify({ rol_id: 999 }));
+      expect(usuarioTieneRol([999])).toBe(true);
+      expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
+    });
   });
 });
