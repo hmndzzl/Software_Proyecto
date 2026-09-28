@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/db';
 import grupoRoutes from '../../routes/grupo.routes';
 import { ROLES } from '../../config/roles';
+import { JWT_SECRET } from '../../config/env';
 
 vi.mock('../../config/db', () => ({ default: { execute: vi.fn() } }));
 
@@ -15,7 +16,7 @@ app.use('/api/grupos', grupoRoutes);
 const body = { nombre: 'Grupo Test', coordinador_id: 7 };
 
 function token(rol_id: number) {
-  return jwt.sign({ id: 1, rol_id }, process.env.JWT_SECRET || 'llave_secreta_super_segura');
+  return jwt.sign({ id: 1, rol_id }, JWT_SECRET);
 }
 
 beforeEach(() => {
