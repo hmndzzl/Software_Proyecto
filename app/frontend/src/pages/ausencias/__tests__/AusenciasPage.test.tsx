@@ -28,26 +28,28 @@ describe('AusenciasPage', () => {
 
   it('redirige al dashboard si el usuario no es ministro', () => {
     vi.mocked(useAuth).mockReturnValue({
-      usuario: { id: 1, rol_id: ROLES.SACERDOTE, nombre: 'Sacerdote Test', correo: 'sacerdote@test.com' },
-      setAuth: vi.fn(),
-      logout: vi.fn() as any,
+      usuario: { id: 1, rol_id: ROLES.SACERDOTE, nombre: 'Sacerdote Test' },
+      login: vi.fn(),
+      logout: vi.fn(),
+      cargando: false,
     });
-    
+
     renderConRouter();
-    
+
     expect(screen.getByText('Dashboard Mock')).toBeInTheDocument();
     expect(screen.queryByText('Notificar ausencia')).not.toBeInTheDocument();
   });
 
   it('renderiza la página para un ministro', () => {
     vi.mocked(useAuth).mockReturnValue({
-      usuario: { id: 9, rol_id: ROLES.MINISTRO, nombre: 'Ministro Test', correo: 'ministro@test.com' },
-      setAuth: vi.fn(),
-      logout: vi.fn() as any,
+      usuario: { id: 9, rol_id: ROLES.MINISTRO, nombre: 'Ministro Test' },
+      login: vi.fn(),
+      logout: vi.fn(),
+      cargando: false,
     });
-    
+
     renderConRouter();
-    
+
     expect(screen.getByText('Notificar ausencia')).toBeInTheDocument();
     expect(screen.getByText('Nuevo periodo de ausencia')).toBeInTheDocument();
     expect(screen.getByTestId('notificar-ausencia-form')).toBeInTheDocument();
