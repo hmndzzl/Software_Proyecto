@@ -131,6 +131,19 @@ describe('Pestaña Papelera', () => {
     await waitFor(() => expect(screen.getByText('La papelera está vacía.')).toBeInTheDocument());
     confirmSpy.mockRestore();
   });
+
+  it('muestra estado de error si falla al cargar la papelera', async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/api/notificaciones/papelera') return Promise.reject(new Error('error'));
+      return Promise.resolve({ data: notificaciones });
+    });
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    
+    // Debería mostrar ErrorState (tiene un texto o boton)
+    await screen.findByText('No se pudo cargar la papelera.');
+  });
 });
 
 describe('Sincronización entre Recibidas y Papelera', () => {
