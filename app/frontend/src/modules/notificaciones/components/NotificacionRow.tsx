@@ -7,6 +7,7 @@ import styles from './NotificacionRow.module.css';
 interface Props {
   notificacion: Notificacion;
   onMarcarLeida: (id: number) => void;
+  onMarcarNoLeida: (id: number) => void;
   onConfirmarAsistencia: (id: number) => void;
   onExcusarAsistencia: (notificacion: Notificacion) => void;
 }
@@ -14,6 +15,7 @@ interface Props {
 export default function NotificacionRow({
   notificacion,
   onMarcarLeida,
+  onMarcarNoLeida,
   onConfirmarAsistencia,
   onExcusarAsistencia,
 }: Props) {
@@ -57,9 +59,13 @@ export default function NotificacionRow({
       </td>
       <td className={styles.tdAccion}>
         <div className={styles.acciones}>
-          {!leida && (
+          {!leida ? (
             <Btn kind="ghost" size="sm" onClick={() => onMarcarLeida(id)}>
               Marcar leída
+            </Btn>
+          ) : (
+            <Btn kind="ghost" size="sm" onClick={() => onMarcarNoLeida(id)}>
+              Marcar no leída
             </Btn>
           )}
           {requiereConfirmacion && (
