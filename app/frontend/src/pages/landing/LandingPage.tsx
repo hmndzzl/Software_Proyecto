@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
+import ContactoForm from './ContactoForm';
 
 const NAV_LINKS = [
   { id: 'quienes-somos', label: 'Quiénes Somos' },
@@ -61,7 +62,6 @@ function LoginIcon() {
 export default function LandingPage() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const [enviado, setEnviado] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
@@ -77,13 +77,6 @@ export default function LandingPage() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // TODO: conectar con un endpoint de contacto cuando exista en el backend.
-    setEnviado(true);
-    e.currentTarget.reset();
-  };
 
   return (
     <div className="landing">
@@ -217,29 +210,7 @@ export default function LandingPage() {
               <div className="cmap"><Slot label="Mapa o foto de la entrada" /></div>
             </div>
 
-            <form className="form" onSubmit={handleSubmit}>
-              <h3>Envíanos un mensaje</h3>
-              <p className="muted" style={{ fontSize: 15 }}>Completa el formulario y la oficina parroquial te contactará.</p>
-              <div className="fgrid">
-                <div className="field"><label htmlFor="c-nombre">Nombre <span className="req">*</span></label><input id="c-nombre" type="text" required placeholder="María Elena Guzmán" /></div>
-                <div className="field"><label htmlFor="c-tel">Teléfono</label><input id="c-tel" type="tel" placeholder="+502 0000 0000" /></div>
-                <div className="field full"><label htmlFor="c-correo">Correo electrónico <span className="req">*</span></label><input id="c-correo" type="email" required placeholder="tucorreo@ejemplo.com" /></div>
-                <div className="field full">
-                  <label htmlFor="c-motivo">Motivo</label>
-                  <select id="c-motivo">
-                    <option>Información general</option>
-                    <option>Sacramentos (bautismo, matrimonio, confirmación)</option>
-                    <option>Reserva de salón o espacio</option>
-                    <option>Sumarme a un grupo pastoral</option>
-                    <option>Apoyo o acompañamiento</option>
-                  </select>
-                </div>
-                <div className="field full"><label htmlFor="c-msg">Mensaje <span className="req">*</span></label><textarea id="c-msg" required placeholder="Cuéntanos en qué podemos ayudarte…" /></div>
-              </div>
-              <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 26 }}>ENVIAR MENSAJE</button>
-              {enviado && <p className="fsent" role="status">¡Gracias! Hemos recibido tu mensaje.</p>}
-              <p className="fnote">Tus datos se usan únicamente para responderte. No los compartimos con terceros.</p>
-            </form>
+            <ContactoForm />
           </div>
         </div>
       </section>
