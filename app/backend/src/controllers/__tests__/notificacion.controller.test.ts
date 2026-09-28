@@ -69,6 +69,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       await getNotificaciones(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalled();
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('pn.eliminada_en IS NULL'), [1]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(mockRows);
     });
