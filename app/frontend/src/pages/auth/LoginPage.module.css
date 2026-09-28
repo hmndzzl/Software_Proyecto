@@ -45,6 +45,39 @@
   margin-bottom: 80px;
 }
 
+/* Volver a la landing */
+.backLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25);
+  color: rgba(255,255,255,.85);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-decoration: none;
+  transition: background .2s, color .2s, border-color .2s;
+}
+
+.backLink svg {
+  transition: transform .2s;
+}
+
+.backLink:hover {
+  background: rgba(255,255,255,.1);
+  border-color: var(--color-oro);
+  color: #fff;
+}
+
+.backLink:hover svg {
+  transform: translateX(-3px);
+}
+
 .logoImg {
   width: 56px;
   height: 56px;
