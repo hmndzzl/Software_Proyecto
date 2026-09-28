@@ -53,7 +53,7 @@ describe('POST /api/contacto (HU-32)', () => {
     expect(conn.execute).toHaveBeenNthCalledWith(1, 'SELECT id FROM persona WHERE rol_id IN (?, ?)', [1, 5]);
     for (const id of [1, 5]) {
       expect(conn.execute).toHaveBeenCalledWith(
-        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [id, 30]);
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)', [id, 30]);
     }
     expect(conn.execute).toHaveBeenLastCalledWith(expect.stringContaining('INSERT INTO mensaje_contacto'),
       [body.nombre, body.correo, body.telefono, body.motivo, body.mensaje, 30]);
