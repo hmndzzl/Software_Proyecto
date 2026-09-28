@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getNotificaciones,
+  getNotificacionesEnviadas,
   getDestinatarios,
   marcarLeida,
   marcarNoLeida,
@@ -22,8 +23,9 @@ const router = Router();
 
 router.use(authMiddleware);
 
-// /destinatarios y /papelera antes de /:id para que Express no las confunda con un id
+// /destinatarios, /enviadas y /papelera antes de /:id para que Express no las confunda con un id
 router.get('/destinatarios', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), getDestinatarios);
+router.get('/enviadas', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), getNotificacionesEnviadas);
 router.get('/papelera', getPapelera);
 router.delete('/papelera', vaciarPapelera);
 router.get('/', getNotificaciones);

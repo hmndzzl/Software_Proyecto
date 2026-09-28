@@ -31,6 +31,31 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
   }
 };
 
+// GET /api/notificaciones/enviadas — notificaciones que el usuario envió, con quién las recibió y cuántos ya las leyeron
+export const getNotificacionesEnviadas = async (req: Request, res: Response): Promise<void> => {
+  const remitenteId = req.user!.id;
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
+              COUNT(pn.persona_id) AS total_destinatarios,
+              COALESCE(SUM(pn.leida), 0) AS total_leidas,
+              GROUP_CONCAT(p.nombre ORDER BY p.nombre SEPARATOR ', ') AS destinatarios_nombres
+       FROM notificacion n
+       LEFT JOIN persona_notificacion pn ON pn.notificacion_id = n.id
+       LEFT JOIN persona p               ON p.id = pn.persona_id
+       WHERE n.remitente_id = ?
+       GROUP BY n.id
+       ORDER BY n.fecha DESC`,
+      [remitenteId]
+    );
+
+    res.status(HttpStatus.OK).json(rows);
+  } catch (error) {
+    console.error('Error en getNotificacionesEnviadas:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener las notificaciones enviadas' });
+  }
+};
+
 // PUT /api/notificaciones/:id/leida
 export const marcarLeida = async (req: Request, res: Response): Promise<void> => {
   const personaId = req.user!.id;
