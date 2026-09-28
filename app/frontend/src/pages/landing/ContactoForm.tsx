@@ -10,13 +10,16 @@ const MOTIVOS = [
   'Reserva de salón o espacio',
   'Sumarme a un grupo pastoral',
   'Apoyo o acompañamiento',
+  'Otro',
 ];
+const MOTIVO_OTRO = 'Otro';
 
 export default function ContactoForm() {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [correo, setCorreo] = useState('');
   const [motivo, setMotivo] = useState(MOTIVOS[0]);
+  const [motivoOtro, setMotivoOtro] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
@@ -50,6 +53,11 @@ export default function ContactoForm() {
       setError('El teléfono no puede superar los 50 caracteres.');
       return;
     }
+    const motivoOtroLimpio = motivoOtro.trim();
+    if (motivo === MOTIVO_OTRO && (!motivoOtroLimpio || motivoOtroLimpio.length > 255)) {
+      setError('Especifica el motivo (máximo 255 caracteres).');
+      return;
+    }
 
     enCurso.current = true;
     setEnviando(true);
@@ -58,11 +66,11 @@ export default function ContactoForm() {
         nombre: nombreLimpio,
         correo: correoLimpio,
         telefono: telefonoLimpio || undefined,
-        motivo,
+        motivo: motivo === MOTIVO_OTRO ? `Otro: ${motivoOtroLimpio}` : motivo,
         mensaje: mensajeLimpio,
       });
       setExito(true);
-      setNombre(''); setTelefono(''); setCorreo(''); setMotivo(MOTIVOS[0]); setMensaje('');
+      setNombre(''); setTelefono(''); setCorreo(''); setMotivo(MOTIVOS[0]); setMotivoOtro(''); setMensaje('');
     } catch (err) {
       const mensajeApi = axios.isAxiosError<{ mensaje?: string }>(err) ? err.response?.data?.mensaje : undefined;
       setError(mensajeApi || 'No se pudo enviar el mensaje. Tus datos se conservaron; vuelve a intentarlo.');
@@ -99,6 +107,13 @@ export default function ContactoForm() {
               {MOTIVOS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
+          {motivo === MOTIVO_OTRO && (
+            <div className="field full">
+              <label htmlFor="c-motivo-otro">Especifica el motivo <span className="req">*</span></label>
+              <input id="c-motivo-otro" type="text" required maxLength={255} placeholder="Cuéntanos brevemente el motivo"
+                value={motivoOtro} onChange={e => setMotivoOtro(e.target.value)} />
+            </div>
+          )}
           <div className="field full">
             <label htmlFor="c-msg">Mensaje <span className="req">*</span></label>
             <textarea id="c-msg" required maxLength={5000} placeholder="Cuéntanos en qué podemos ayudarte…"
