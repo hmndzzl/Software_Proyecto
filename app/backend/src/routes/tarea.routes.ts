@@ -20,15 +20,16 @@ router.use(authMiddleware);
 // Manejo de asignación
 // nota: /asignar debe ir antes de /:id para que Express no confunda
 // la cadena "asignar" con un parámetro numérico de id
-router.post('/asignar', asignarTarea);
+router.post('/asignar', requireRole(ROLES.COORDINADOR_MINISTROS), asignarTarea);
 router.put('/asignar', requireRole(ROLES.COORDINADOR_MINISTROS), reasignarTarea);
-router.delete('/asignar', desasignarTarea);
+router.delete('/asignar', requireRole(ROLES.COORDINADOR_MINISTROS), desasignarTarea);
 
 //CRUD para tareas
 router.get('/', getTareas);
 router.get('/:id', getTareaById);
-router.post('/', createTarea);
+router.post('/', requireRole(ROLES.COORDINADOR_MINISTROS), createTarea);
+// updateTarea ya verifica autorización por ownership dentro del controller (ver DT-06)
 router.put('/:id', updateTarea);
-router.delete('/:id', deleteTarea);
+router.delete('/:id', requireRole(ROLES.COORDINADOR_MINISTROS), deleteTarea);
 
 export default router;
