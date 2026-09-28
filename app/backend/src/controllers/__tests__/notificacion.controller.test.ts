@@ -90,12 +90,13 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
   describe('getNotificacionesEnviadas', () => {
     it('debería retornar 200 con las notificaciones enviadas por el usuario', async () => {
-      const mockRows = [{ id: 5, mensaje: 'Aviso', total_destinatarios: 3, total_leidas: 1, destinatarios_nombres: 'Ana, Luis, Pedro' }];
+      const mockRows = [{ id: 5, mensaje: 'Aviso', total_destinatarios: 3, total_leidas: 1, total_confirmaron: 1, destinatarios_nombres: 'Ana, Luis, Pedro' }];
       (pool.execute as any).mockResolvedValue([mockRows]);
 
       await getNotificacionesEnviadas(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('WHERE n.remitente_id = ?'), [1]);
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('total_confirmaron'), [1]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(mockRows);
     });
