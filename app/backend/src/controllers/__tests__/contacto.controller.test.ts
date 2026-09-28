@@ -16,7 +16,7 @@ app.post('/api/contacto', crearContacto);
 const body = {
   nombre: 'María Elena Guzmán',
   correo: 'maria@example.com',
-  telefono: '+502 5555 1234',
+  telefono: '+50255551234',
   motivo: 'Información general',
   mensaje: 'Quisiera saber los horarios de misa del domingo.',
 };
@@ -113,10 +113,16 @@ describe('POST /api/contacto (HU-32)', () => {
     expect(pool.getConnection).not.toHaveBeenCalled();
   });
 
-  it('rechaza teléfono demasiado largo', async () => {
-    const res = await enviar({ ...body, telefono: '1'.repeat(51) });
-    expect(res.status).toBe(400);
-    expect(pool.getConnection).not.toHaveBeenCalled();
+  it.each(['55551234', '502-5555-1234', '+502 5555 1234', '+', '+1'.padEnd(60, '2')])(
+    'rechaza teléfono con formato inválido: %j', async telefono => {
+      const res = await enviar({ ...body, telefono });
+      expect(res.status).toBe(400);
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+
+  it('acepta un teléfono con un código de país distinto a +502 (no está hardcodeado)', async () => {
+    const res = await enviar({ ...body, telefono: '+14155552671' });
+    expect(res.status).toBe(201);
   });
 
   it('devuelve 409 si no hay Sacerdote ni Admin registrados', async () => {
