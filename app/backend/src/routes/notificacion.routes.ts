@@ -7,6 +7,8 @@ import {
   marcarNoLeida,
   confirmarAsistenciaNotificacion,
   confirmarAsistencia,
+  cancelarAsistencia,
+  cancelarInasistencia,
   excusarAsistencia,
   reportarInasistencia,
   createNotificacion,
@@ -35,6 +37,8 @@ router.put('/:id/papelera', moverAPapelera);
 router.put('/:id/restaurar', restaurarNotificacion);
 router.put('/:id/confirmar', confirmarAsistenciaNotificacion);
 router.put('/:id/asistencia', confirmarAsistencia);
+router.put('/:id/cancelar-asistencia', cancelarAsistencia);
+router.put('/:id/cancelar-inasistencia', cancelarInasistencia);
 router.put('/:id/excusar', excusarAsistencia);
 router.put('/:id/no-asistir', reportarInasistencia);
 router.post('/', requireRole(ROLES.SACERDOTE, ROLES.ADMIN, ROLES.COORDINADOR_MINISTROS), createNotificacion);
