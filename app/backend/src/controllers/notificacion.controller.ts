@@ -39,6 +39,7 @@ export const getNotificacionesEnviadas = async (req: Request, res: Response): Pr
       `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
               COUNT(pn.persona_id) AS total_destinatarios,
               COALESCE(SUM(pn.leida), 0) AS total_leidas,
+              COALESCE(SUM(pn.asistencia_confirmada), 0) AS total_confirmaron,
               GROUP_CONCAT(p.nombre ORDER BY p.nombre SEPARATOR ', ') AS destinatarios_nombres
        FROM notificacion n
        LEFT JOIN persona_notificacion pn ON pn.notificacion_id = n.id
