@@ -123,9 +123,13 @@ describe('ModalExcusaAsistencia', () => {
     
     expect(screen.getByRole('button', { name: 'Guardando…' })).toBeDisabled();
     
-    // Intenta cerrar
+    // Intenta cerrar con botón
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(mockOnClose).not.toHaveBeenCalled(); // esta desactivado pero x si acaso
+    expect(mockOnClose).not.toHaveBeenCalled(); // esta desactivado
+
+    // Intenta cerrar con Escape
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(mockOnClose).not.toHaveBeenCalled(); // cover if (enviando) return;
     
     resolver();
     await waitFor(() => expect(mockOnClose).toHaveBeenCalled());
