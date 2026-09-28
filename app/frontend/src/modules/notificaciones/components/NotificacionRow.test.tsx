@@ -80,7 +80,6 @@ describe('NotificacionRow', () => {
     expect(onEliminar).toHaveBeenCalledWith(1);
   });
 
-<<<<<<< HEAD
   it('permite cancelar una asistencia que ya había sido confirmada', () => {
     const { onCancelarAsistencia, onConfirmarAsistencia } = mostrar({
       ...base,
@@ -128,16 +127,10 @@ describe('NotificacionRow', () => {
       motivo_excusa: null,
     };
 
-=======
-  it('llama a onConfirmarAsistencia y onExcusarAsistencia cuando requiere confirmacion', () => {
-    const onConfirmar = vi.fn();
-    const onExcusar = vi.fn();
->>>>>>> 9d2a049 (test(frontend): agregar baterias de pruebas para UI, API, modulos y contextos al 100%)
     render(
       <table>
         <tbody>
           <NotificacionRow
-<<<<<<< HEAD
             notificacion={notif}
             onMarcarLeida={vi.fn()}
             onMarcarNoLeida={vi.fn()}
@@ -145,29 +138,14 @@ describe('NotificacionRow', () => {
             onCancelarAsistencia={vi.fn()}
             onCancelarInasistencia={vi.fn()}
             onExcusarAsistencia={onExcusarAsistencia}
-=======
-            notificacion={{ ...base, requiere_confirmacion: true }}
-            onMarcarLeida={vi.fn()}
-            onMarcarNoLeida={vi.fn()}
-            onConfirmarAsistencia={onConfirmar}
-            onExcusarAsistencia={onExcusar}
->>>>>>> 9d2a049 (test(frontend): agregar baterias de pruebas para UI, API, modulos y contextos al 100%)
             onEliminar={vi.fn()}
           />
         </tbody>
       </table>
     );
 
-<<<<<<< HEAD
     fireEvent.click(screen.getByRole('button', { name: 'No podré asistir' }));
 
     expect(onExcusarAsistencia).toHaveBeenCalledWith(notif);
-=======
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
-    expect(onConfirmar).toHaveBeenCalledWith(1);
-
-    fireEvent.click(screen.getByRole('button', { name: 'No podré asistir' }));
-    expect(onExcusar).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
->>>>>>> 9d2a049 (test(frontend): agregar baterias de pruebas para UI, API, modulos y contextos al 100%)
   });
 });
