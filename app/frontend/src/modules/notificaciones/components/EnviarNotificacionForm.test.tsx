@@ -11,6 +11,7 @@ vi.mock('../../../api/client', () => ({
 
 const mockDestinatarios = [
   { id: 101, rol: 'sacerdote', nombre: 'Sacerdote Test', rol_nombre: 'Sacerdotes' },
+  { id: 103, rol: 'sacerdote', nombre: 'Sacerdote Dos', rol_nombre: 'Sacerdotes' },
   { id: 102, rol: 'ministro', nombre: 'Ministro Test', rol_nombre: 'Ministros' },
 ];
 
@@ -177,8 +178,28 @@ describe('EnviarNotificacionForm', () => {
     const checkboxSacerdote = await screen.findByLabelText('Sacerdote Test') as HTMLInputElement;
     expect(checkboxSacerdote.checked).toBe(true);
 
-    // Quitar seleccion
+    // Quitar seleccion parcial
+    fireEvent.click(checkboxSacerdote);
+    expect(checkboxSacerdote.checked).toBe(false);
+
+    // Seleccionar de nuevo y quitar todos
+    fireEvent.click(checkboxSacerdote);
     fireEvent.click(screen.getByRole('button', { name: 'Quitar todos' }));
+    expect(checkboxSacerdote.checked).toBe(false);
+  });
+
+  it('permite quitar seleccion cuando alguno esta seleccionado', async () => {
+    renderForm();
+    await waitFor(() => expect(screen.queryByText('Cargando destinatarios…')).not.toBeInTheDocument());
+    
+    // Check one
+    const checkboxSacerdote = await screen.findByLabelText('Sacerdote Test') as HTMLInputElement;
+    fireEvent.click(checkboxSacerdote);
+    
+    // Group Sacerdotes button should now say "Quitar selección"
+    const quitarSelBtn = screen.getByRole('button', { name: 'Quitar selección' });
+    fireEvent.click(quitarSelBtn);
+    
     expect(checkboxSacerdote.checked).toBe(false);
   });
 
