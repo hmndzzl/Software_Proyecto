@@ -22,10 +22,16 @@ const base: Notificacion = {
 function mostrar(notificacion: Notificacion, props: {
   onMarcarLeida?: (id: number) => void;
   onMarcarNoLeida?: (id: number) => void;
+  onConfirmarAsistencia?: (id: number) => void;
+  onCancelarAsistencia?: (id: number) => void;
+  onCancelarInasistencia?: (id: number) => void;
   onEliminar?: (id: number) => void;
 } = {}) {
   const onMarcarLeida = props.onMarcarLeida ?? vi.fn();
   const onMarcarNoLeida = props.onMarcarNoLeida ?? vi.fn();
+  const onConfirmarAsistencia = props.onConfirmarAsistencia ?? vi.fn();
+  const onCancelarAsistencia = props.onCancelarAsistencia ?? vi.fn();
+  const onCancelarInasistencia = props.onCancelarInasistencia ?? vi.fn();
   const onEliminar = props.onEliminar ?? vi.fn();
   render(
     <table>
@@ -34,14 +40,16 @@ function mostrar(notificacion: Notificacion, props: {
           notificacion={notificacion}
           onMarcarLeida={onMarcarLeida}
           onMarcarNoLeida={onMarcarNoLeida}
-          onConfirmarAsistencia={vi.fn()}
+          onConfirmarAsistencia={onConfirmarAsistencia}
+          onCancelarAsistencia={onCancelarAsistencia}
+          onCancelarInasistencia={onCancelarInasistencia}
           onExcusarAsistencia={vi.fn()}
           onEliminar={onEliminar}
         />
       </tbody>
     </table>
   );
-  return { onMarcarLeida, onMarcarNoLeida, onEliminar };
+  return { onMarcarLeida, onMarcarNoLeida, onConfirmarAsistencia, onCancelarAsistencia, onCancelarInasistencia, onEliminar };
 }
 
 describe('NotificacionRow', () => {
@@ -70,5 +78,74 @@ describe('NotificacionRow', () => {
     const { onEliminar } = mostrar(base);
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(onEliminar).toHaveBeenCalledWith(1);
+  });
+
+  it('permite cancelar una asistencia que ya había sido confirmada', () => {
+    const { onCancelarAsistencia, onConfirmarAsistencia } = mostrar({
+      ...base,
+      requiere_confirmacion: true,
+      asistencia_confirmada: true,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar asistencia' }));
+
+    expect(onCancelarAsistencia).toHaveBeenCalledWith(1);
+    expect(onConfirmarAsistencia).not.toHaveBeenCalled();
+  });
+
+  it('permite quitar el estado de no asistencia para decidir de nuevo', () => {
+    const { onCancelarInasistencia } = mostrar({
+      ...base,
+      requiere_confirmacion: true,
+      motivo_excusa: 'Tengo un compromiso',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar no asistencia' }));
+
+    expect(onCancelarInasistencia).toHaveBeenCalledWith(1);
+  });
+
+  it('permite confirmar asistencia cuando requiere confirmación', () => {
+    const { onConfirmarAsistencia } = mostrar({
+      ...base,
+      requiere_confirmacion: true,
+      asistencia_confirmada: false,
+      motivo_excusa: null,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    expect(onConfirmarAsistencia).toHaveBeenCalledWith(1);
+  });
+
+  it('permite accionar No podré asistir cuando requiere confirmación', () => {
+    const onExcusarAsistencia = vi.fn();
+    const notif: Notificacion = {
+      ...base,
+      requiere_confirmacion: true,
+      asistencia_confirmada: false,
+      motivo_excusa: null,
+    };
+
+    render(
+      <table>
+        <tbody>
+          <NotificacionRow
+            notificacion={notif}
+            onMarcarLeida={vi.fn()}
+            onMarcarNoLeida={vi.fn()}
+            onConfirmarAsistencia={vi.fn()}
+            onCancelarAsistencia={vi.fn()}
+            onCancelarInasistencia={vi.fn()}
+            onExcusarAsistencia={onExcusarAsistencia}
+            onEliminar={vi.fn()}
+          />
+        </tbody>
+      </table>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'No podré asistir' }));
+
+    expect(onExcusarAsistencia).toHaveBeenCalledWith(notif);
   });
 });

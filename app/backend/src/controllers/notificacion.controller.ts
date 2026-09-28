@@ -39,6 +39,7 @@ export const getNotificacionesEnviadas = async (req: Request, res: Response): Pr
       `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
               COUNT(pn.persona_id) AS total_destinatarios,
               COALESCE(SUM(pn.leida), 0) AS total_leidas,
+              COALESCE(SUM(pn.asistencia_confirmada), 0) AS total_confirmaron,
               GROUP_CONCAT(p.nombre ORDER BY p.nombre SEPARATOR ', ') AS destinatarios_nombres
        FROM notificacion n
        LEFT JOIN persona_notificacion pn ON pn.notificacion_id = n.id
@@ -222,7 +223,7 @@ export const confirmarAsistenciaNotificacion = async (req: Request, res: Respons
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET asistencia_confirmada = 1, leida = 1
+       SET asistencia_confirmada = 1, leida = 1, motivo_excusa = NULL, inasistencia_reportada = 0
        WHERE notificacion_id = ? AND persona_id = ?`,
       [id, personaId]
     );
@@ -260,7 +261,7 @@ export const confirmarAsistencia = async (req: Request, res: Response): Promise<
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET asistencia_confirmada = 1, leida = 1
+       SET asistencia_confirmada = 1, leida = 1, motivo_excusa = NULL, inasistencia_reportada = 0
        WHERE notificacion_id = ? AND persona_id = ?`,
       [id, personaId]
     );
@@ -274,6 +275,72 @@ export const confirmarAsistencia = async (req: Request, res: Response): Promise<
   } catch (error) {
     console.error('Error en confirmarAsistencia:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al confirmar asistencia' });
+  }
+};
+
+// PUT /api/notificaciones/:id/cancelar-asistencia — deshace una confirmación de asistencia
+// (ej. se confirmó sin querer); a diferencia de excusarAsistencia, no requiere motivo ni
+// avisa a nadie, solo revierte al estado pendiente para que el ministro pueda decidir de nuevo.
+export const cancelarAsistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [notifs] = await pool.execute<RowDataPacket[]>(
+      `SELECT requiere_confirmacion FROM notificacion WHERE id = ?`,
+      [id]
+    );
+
+    if (notifs.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+    if (!notifs[0].requiere_confirmacion) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Esta notificación no requiere confirmación de asistencia' });
+      return;
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET asistencia_confirmada = 0
+       WHERE notificacion_id = ? AND persona_id = ? AND asistencia_confirmada = 1`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No tenías una confirmación de asistencia para cancelar' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Confirmación de asistencia cancelada' });
+  } catch (error) {
+    console.error('Error en cancelarAsistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al cancelar la confirmación de asistencia' });
+  }
+};
+
+// PUT /api/notificaciones/:id/cancelar-inasistencia — elimina una excusa o reporte de no asistencia.
+export const cancelarInasistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET motivo_excusa = NULL, inasistencia_reportada = 0
+       WHERE notificacion_id = ?
+         AND persona_id = ?
+         AND (motivo_excusa IS NOT NULL OR inasistencia_reportada = 1)`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No tenías un estado de no asistencia para eliminar' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Estado de no asistencia eliminado' });
+  } catch (error) {
+    console.error('Error en cancelarInasistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar el estado de no asistencia' });
   }
 };
 
@@ -444,7 +511,7 @@ export const excusarAsistencia = async (req: Request, res: Response): Promise<vo
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET asistencia_confirmada = 0, leida = 1, motivo_excusa = ?
+       SET asistencia_confirmada = 0, leida = 1, motivo_excusa = ?, inasistencia_reportada = 1
        WHERE notificacion_id = ? AND persona_id = ?`,
       [String(motivo).trim(), id, personaId]
     );
@@ -572,5 +639,3 @@ export const deleteNotificacion = async (req: Request, res: Response): Promise<v
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar notificación' });
   }
 };
-
-
