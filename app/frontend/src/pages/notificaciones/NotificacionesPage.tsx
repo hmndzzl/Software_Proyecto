@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Btn from '../../components/ui/Btn';
 import Modal from '../../components/ui/Modal';
 import PageHeader from '../../components/ui/PageHeader';
@@ -31,6 +32,24 @@ export default function NotificacionesPage() {
 
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false);
   const [notifSeleccionadaExcusa, setNotifSeleccionadaExcusa] = useState<Notificacion | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const resaltarId = searchParams.get('resaltar') ? Number(searchParams.get('resaltar')) : null;
+
+  // Viene del clic en una notificación desde el menú de la campana: desplaza
+  // hasta esa fila y la resalta unos segundos, luego limpia el parámetro.
+  useEffect(() => {
+    if (cargando || resaltarId == null) return;
+    document.getElementById(`notificacion-${resaltarId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const timeout = setTimeout(() => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('resaltar');
+        return next;
+      }, { replace: true });
+    }, 2500);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargando, resaltarId]);
 
   const hayNoLeidas = notificaciones.some((n) => !n.leida);
   const puedeEnviar = usuarioTieneRol(ROLES_PUEDEN_ENVIAR);
@@ -119,6 +138,7 @@ export default function NotificacionesPage() {
                     onMarcarNoLeida={marcarNoLeida}
                     onConfirmarAsistencia={confirmarAsistencia}
                     onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
+                    resaltada={n.id === resaltarId}
                   />
                 ))}
               </tbody>

@@ -83,7 +83,7 @@ export default function TopBar() {
       }
     }
     setOpen(false);
-    navigate('/notificaciones');
+    navigate(`/notificaciones?resaltar=${notif.id}`);
   };
 
   return (
