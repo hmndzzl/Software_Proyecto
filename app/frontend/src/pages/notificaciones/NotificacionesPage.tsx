@@ -193,10 +193,10 @@ export default function NotificacionesPage() {
             ) : (
               <table className={styles.table} style={{ tableLayout: 'fixed' }}>
                 <colgroup>
-                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '15%' }} />
                   <col style={{ width: '38%' }} />
-                  <col style={{ width: '28%' }} />
-                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '26%' }} />
+                  <col style={{ width: '9%' }} />
                   <col style={{ width: '12%' }} />
                 </colgroup>
                 <thead className={styles.thead}>
