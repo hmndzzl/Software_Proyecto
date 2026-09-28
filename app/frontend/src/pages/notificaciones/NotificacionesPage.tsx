@@ -22,6 +22,7 @@ export default function NotificacionesPage() {
     cargando,
     error,
     marcarLeida,
+    marcarNoLeida,
     marcarTodasLeidas,
     confirmarAsistencia,
     excusarAsistencia,
@@ -115,6 +116,7 @@ export default function NotificacionesPage() {
                     key={n.id}
                     notificacion={n}
                     onMarcarLeida={marcarLeida}
+                    onMarcarNoLeida={marcarNoLeida}
                     onConfirmarAsistencia={confirmarAsistencia}
                     onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
                   />
