@@ -98,4 +98,20 @@ describe('Notificar ausencia', () => {
     await notificarAusencia(payload);
     expect(apiClient.post).toHaveBeenCalledWith('/api/ausencias', payload);
   });
+
+  it('no hace nada si el usuario no está cargado (null)', () => {
+    localStorage.removeItem('usuario');
+    mostrar(); completar(); enviar();
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
+  it('muestra mensaje específico de la API si es un error de Axios', async () => {
+    const axiosError = new Error('Axios error') as any;
+    axiosError.isAxiosError = true;
+    axiosError.response = { data: { mensaje: 'Error específico del servidor' } };
+    vi.mocked(apiClient.post).mockRejectedValueOnce(axiosError);
+    
+    mostrar(); completar(); enviar();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Error específico del servidor');
+  });
 });
