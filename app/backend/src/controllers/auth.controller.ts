@@ -4,19 +4,20 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2';
 import { HttpStatus } from '../utils/httpStatus';
+import { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN } from '../config/env';
 
 const REFRESH_MAX_AGE = 15 * 24 * 60 * 60 * 1000;
 
 function generateTokens(userId: number, rolId: number) {
   const accessToken = jwt.sign(
     { id: userId, rol_id: rolId },
-    process.env.JWT_SECRET || 'llave_secreta_super_segura',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' } as jwt.SignOptions
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
   );
   const refreshToken = jwt.sign(
     { id: userId, rol_id: rolId },
-    process.env.JWT_REFRESH_SECRET || 'refresh_llave_secreta',
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '15d' } as jwt.SignOptions
+    JWT_REFRESH_SECRET,
+    { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
   );
   return { accessToken, refreshToken };
 }
@@ -85,8 +86,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const secret = process.env.JWT_REFRESH_SECRET || 'refresh_llave_secreta';
-    const decoded = jwt.verify(token, secret) as { id: number; rol_id: number };
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { id: number; rol_id: number };
 
     const { accessToken, refreshToken } = generateTokens(decoded.id, decoded.rol_id);
     setRefreshCookie(res, refreshToken);
