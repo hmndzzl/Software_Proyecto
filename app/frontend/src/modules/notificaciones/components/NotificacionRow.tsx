@@ -10,6 +10,7 @@ interface Props {
   onMarcarNoLeida: (id: number) => void;
   onConfirmarAsistencia: (id: number) => void;
   onExcusarAsistencia: (notificacion: Notificacion) => void;
+  resaltada?: boolean;
 }
 
 export default function NotificacionRow({
@@ -18,6 +19,7 @@ export default function NotificacionRow({
   onMarcarNoLeida,
   onConfirmarAsistencia,
   onExcusarAsistencia,
+  resaltada = false,
 }: Props) {
   const {
     id,
@@ -33,7 +35,7 @@ export default function NotificacionRow({
   const requiereConfirmacion = Boolean(requiere_confirmacion);
 
   return (
-    <tr className={`${styles.row} ${!leida ? styles.rowUnread : ''}`}>
+    <tr id={`notificacion-${id}`} className={`${styles.row} ${!leida ? styles.rowUnread : ''} ${resaltada ? styles.rowResaltada : ''}`}>
       <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
       <td className={styles.tdMensaje}>
         {mensaje}
