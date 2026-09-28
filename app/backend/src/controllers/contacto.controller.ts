@@ -60,7 +60,14 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const textoNotificacion = `Nuevo mensaje de contacto de ${nombre} (${correo}${telefono ? `, ${telefono}` : ''}).\nMotivo: ${motivo}\nMensaje: ${mensaje}`;
+    const textoNotificacion = [
+      'Nuevo mensaje de contacto de la página web:',
+      `Nombre: ${nombre}`,
+      `Correo: ${correo}`,
+      `Teléfono: ${telefono ?? 'No proporcionado'}`,
+      `Motivo: ${motivo}`,
+      `Mensaje: ${mensaje}`,
+    ].join('\n');
     const [notificacion] = await conn.execute<ResultSetHeader>(
       "INSERT INTO notificacion (mensaje, fecha, tipo) VALUES (?, CURDATE(), 'individual')",
       [textoNotificacion]
