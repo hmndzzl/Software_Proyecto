@@ -10,6 +10,7 @@ interface Props {
   onMarcarNoLeida: (id: number) => void;
   onConfirmarAsistencia: (id: number) => void;
   onExcusarAsistencia: (notificacion: Notificacion) => void;
+  onEliminar: (id: number) => void;
   resaltada?: boolean;
 }
 
@@ -19,6 +20,7 @@ export default function NotificacionRow({
   onMarcarNoLeida,
   onConfirmarAsistencia,
   onExcusarAsistencia,
+  onEliminar,
   resaltada = false,
 }: Props) {
   const {
@@ -86,6 +88,9 @@ export default function NotificacionRow({
               </>
             )
           )}
+          <Btn kind="bad" size="sm" onClick={() => onEliminar(id)}>
+            Eliminar
+          </Btn>
         </div>
       </td>
     </tr>

@@ -8,6 +8,7 @@ interface UseNotificacionesReturn {
   error: string | null;
   marcarLeida: (id: number) => Promise<void>;
   marcarNoLeida: (id: number) => Promise<void>;
+  eliminar: (id: number) => Promise<void>;
   marcarTodasLeidas: () => Promise<void>;
   confirmarAsistencia: (id: number) => Promise<void>;
   excusarAsistencia: (id: number, motivo: string) => Promise<void>;
@@ -58,6 +59,11 @@ export function useNotificaciones(): UseNotificacionesReturn {
     }
   }, []);
 
+  const eliminar = useCallback(async (id: number) => {
+    await apiClient.put(`/api/notificaciones/${id}/papelera`);
+    setNotificaciones((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
   const marcarTodasLeidas = useCallback(async () => {
     const noLeidas = notificaciones.filter((n) => !n.leida);
     await Promise.allSettled(
@@ -88,5 +94,5 @@ export function useNotificaciones(): UseNotificacionesReturn {
     );
   }, []);
 
-  return { notificaciones, cargando, error, marcarLeida, marcarNoLeida, marcarTodasLeidas, confirmarAsistencia, excusarAsistencia, refetch };
+  return { notificaciones, cargando, error, marcarLeida, marcarNoLeida, eliminar, marcarTodasLeidas, confirmarAsistencia, excusarAsistencia, refetch };
 }
