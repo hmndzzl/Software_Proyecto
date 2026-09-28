@@ -1,0 +1,46 @@
+name: parroquia-k6
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: k6-root-local
+      MARIADB_DATABASE: parroquia_k6
+      MARIADB_USER: k6
+      MARIADB_PASSWORD: k6-local
+    tmpfs:
+      - /var/lib/mysql
+    volumes:
+      - ../../app/database/init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ../../app/database/init/02_seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql:ro
+      - ./fixtures/03_k6.sql:/docker-entrypoint-initdb.d/03_k6.sql:ro
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  backend:
+    build:
+      context: ../../app/backend
+    command: [sh, -c, 'npm run build && node dist/app.js']
+    environment:
+      NODE_ENV: performance
+      K6_DISABLE_LOGIN_RATE_LIMIT: 'true'
+      PORT: 3001
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: k6
+      DB_PASSWORD: k6-local
+      DB_NAME: parroquia_k6
+      JWT_SECRET: k6-access-secret-only-for-disposable-tests
+      JWT_REFRESH_SECRET: k6-refresh-secret-only-for-disposable-tests
+      JWT_EXPIRES_IN: 15m
+    ports:
+      - '127.0.0.1:3002:3001'
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
