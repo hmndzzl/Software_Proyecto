@@ -10,6 +10,8 @@ import {
   marcarNoLeida,
   confirmarAsistenciaNotificacion,
   confirmarAsistencia,
+  cancelarAsistencia,
+  cancelarInasistencia,
   getDestinatarios,
   createNotificacion,
   excusarAsistencia,
@@ -90,12 +92,13 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
   describe('getNotificacionesEnviadas', () => {
     it('debería retornar 200 con las notificaciones enviadas por el usuario', async () => {
-      const mockRows = [{ id: 5, mensaje: 'Aviso', total_destinatarios: 3, total_leidas: 1, destinatarios_nombres: 'Ana, Luis, Pedro' }];
+      const mockRows = [{ id: 5, mensaje: 'Aviso', total_destinatarios: 3, total_leidas: 1, total_confirmaron: 1, destinatarios_nombres: 'Ana, Luis, Pedro' }];
       (pool.execute as any).mockResolvedValue([mockRows]);
 
       await getNotificacionesEnviadas(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('WHERE n.remitente_id = ?'), [1]);
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('total_confirmaron'), [1]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(mockRows);
     });
@@ -387,6 +390,99 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al confirmar asistencia' });
+    });
+  });
+
+  describe('cancelarAsistencia', () => {
+    it('debería cancelar la confirmación y retornar 200', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+
+      await cancelarAsistencia(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenLastCalledWith(
+        expect.stringContaining('asistencia_confirmada = 0'),
+        ['10', 1]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Confirmación de asistencia cancelada' });
+    });
+
+    it('debería retornar 404 si la notificación no existe', async () => {
+      req.params = { id: '999' };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+
+      await cancelarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Notificación no encontrada' });
+    });
+
+    it('debería retornar 400 si la notificación no requiere confirmación', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockResolvedValueOnce([[{ requiere_confirmacion: 0 }]]);
+
+      await cancelarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    });
+
+    it('debería retornar 404 si no había una confirmación que cancelar', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any)
+        .mockResolvedValueOnce([[{ requiere_confirmacion: 1 }]])
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+
+      await cancelarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'No tenías una confirmación de asistencia para cancelar' });
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await cancelarAsistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('cancelarInasistencia', () => {
+    it('debería quitar el estado de no asistencia y su motivo', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockResolvedValue([{ affectedRows: 1 }]);
+
+      await cancelarInasistencia(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(
+        expect.stringContaining('motivo_excusa = NULL, inasistencia_reportada = 0'),
+        ['10', 1]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Estado de no asistencia eliminado' });
+    });
+
+    it('debería retornar 404 si no existía un estado de no asistencia', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockResolvedValue([{ affectedRows: 0 }]);
+
+      await cancelarInasistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      req.params = { id: '10' };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await cancelarInasistencia(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Error al eliminar el estado de no asistencia' });
     });
   });
 

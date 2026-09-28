@@ -9,6 +9,8 @@ interface Props {
   onMarcarLeida: (id: number) => void;
   onMarcarNoLeida: (id: number) => void;
   onConfirmarAsistencia: (id: number) => void;
+  onCancelarAsistencia: (id: number) => void;
+  onCancelarInasistencia: (id: number) => void;
   onExcusarAsistencia: (notificacion: Notificacion) => void;
   onEliminar: (id: number) => void;
   resaltada?: boolean;
@@ -19,6 +21,8 @@ export default function NotificacionRow({
   onMarcarLeida,
   onMarcarNoLeida,
   onConfirmarAsistencia,
+  onCancelarAsistencia,
+  onCancelarInasistencia,
   onExcusarAsistencia,
   onEliminar,
   resaltada = false,
@@ -74,9 +78,19 @@ export default function NotificacionRow({
           )}
           {requiereConfirmacion && (
             asistencia_confirmada ? (
-              <Badge kind="confirmada">Asistencia confirmada</Badge>
+              <>
+                <Badge kind="confirmada">Asistencia confirmada</Badge>
+                <Btn kind="ghost" size="sm" onClick={() => onCancelarAsistencia(id)}>
+                  Cancelar asistencia
+                </Btn>
+              </>
             ) : motivo_excusa ? (
-              <Badge kind="cancelada" title={`Motivo: ${motivo_excusa}`}>No asistirá</Badge>
+              <>
+                <Badge kind="cancelada" title={`Motivo: ${motivo_excusa}`}>No asistirá</Badge>
+                <Btn kind="ghost" size="sm" onClick={() => onCancelarInasistencia(id)}>
+                  Quitar no asistencia
+                </Btn>
+              </>
             ) : (
               <>
                 <Btn kind="ok" size="sm" onClick={() => onConfirmarAsistencia(id)}>
