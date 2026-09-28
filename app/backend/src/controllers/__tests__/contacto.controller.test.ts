@@ -57,9 +57,9 @@ describe('POST /api/contacto (HU-32)', () => {
     }
     expect(conn.execute).toHaveBeenLastCalledWith(expect.stringContaining('INSERT INTO mensaje_contacto'),
       [body.nombre, body.correo, body.telefono, body.motivo, body.mensaje, 30]);
-    expect(conn.execute.mock.calls[1][1][0]).toContain(body.nombre);
-    expect(conn.execute.mock.calls[1][1][0]).toContain(body.motivo);
-    expect(conn.execute.mock.calls[1][1][0]).toContain(body.mensaje);
+    expect(conn.execute.mock.calls[1][1][0]).toBe(
+      `Nuevo mensaje de contacto de la página web:\nNombre: ${body.nombre}\nCorreo: ${body.correo}\nTeléfono: ${body.telefono}\nMotivo: ${body.motivo}\nMensaje: ${body.mensaje}`
+    );
     expect(conn.commit).toHaveBeenCalledOnce();
     expect(conn.rollback).not.toHaveBeenCalled();
     expect(conn.release).toHaveBeenCalledOnce();
@@ -77,6 +77,7 @@ describe('POST /api/contacto (HU-32)', () => {
     expect(res.body.contacto.telefono).toBeUndefined();
     expect(conn.execute).toHaveBeenLastCalledWith(expect.stringContaining('INSERT INTO mensaje_contacto'),
       [body.nombre, body.correo, null, body.motivo, body.mensaje, 30]);
+    expect(conn.execute.mock.calls[1][1][0]).toContain('Teléfono: No proporcionado');
   });
 
   it('recorta espacios exteriores antes de guardar', async () => {
