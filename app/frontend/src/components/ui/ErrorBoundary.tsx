@@ -102,7 +102,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               Ocurrió un error inesperado en la aplicación. Puedes intentar recargar la
               página o volver al inicio.
             </p>
-            {process.env.NODE_ENV !== 'production' && (
+            {import.meta.env.MODE !== 'production' && (
               <p style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '12px',

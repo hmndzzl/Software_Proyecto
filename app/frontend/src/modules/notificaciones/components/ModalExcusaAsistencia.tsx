@@ -35,10 +35,6 @@ export default function ModalExcusaAsistencia({
     if (!notificacion) return;
 
     const motivoTrim = motivo.trim();
-    if (motivoTrim.length < MIN_CHARS) {
-      setError(`El motivo debe tener al menos ${MIN_CHARS} caracteres.`);
-      return;
-    }
 
     setEnviando(true);
     setError('');
