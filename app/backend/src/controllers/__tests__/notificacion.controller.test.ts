@@ -6,6 +6,7 @@ import { ROLES } from '../../config/roles';
 import {
   getNotificaciones,
   marcarLeida,
+  marcarNoLeida,
   confirmarAsistenciaNotificacion,
   confirmarAsistencia,
   getDestinatarios,
@@ -106,6 +107,36 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
 
       await marcarLeida(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+  });
+
+  describe('marcarNoLeida', () => {
+    it('debería retornar 200 al marcar no leída', async () => {
+      req.params = { id: '1' };
+      (pool.execute as any).mockResolvedValue([{ affectedRows: 1 }]);
+
+      await marcarNoLeida(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(expect.any(String), ['1', 1]);
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 404 si affectedRows === 0', async () => {
+      req.params = { id: '99' };
+      (pool.execute as any).mockResolvedValue([{ affectedRows: 0 }]);
+
+      await marcarNoLeida(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 500 en caso de error', async () => {
+      req.params = { id: '1' };
+      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await marcarNoLeida(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
