@@ -9,7 +9,7 @@ import styles from './AusenciasPage.module.css';
 export default function AusenciasPage() {
   const { usuario } = useAuth();
   // Este trámite es personal y no admite herencia de roles, igual que la API.
-  if (usuario?.rol_id !== ROLES.MINISTRO) return <Navigate to="/dashboard" replace />;
+  if (usuario?.rol_id !== ROLES.MINISTRO && usuario?.rol_id !== ROLES.ADMIN) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className={styles.page}>

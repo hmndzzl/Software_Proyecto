@@ -18,8 +18,8 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
     res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Autenticación requerida' });
     return;
   }
-  if (req.user.rol_id !== ROLES.MINISTRO) {
-    res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo un ministro puede notificar su ausencia' });
+  if (req.user.rol_id !== ROLES.MINISTRO && req.user.rol_id !== ROLES.ADMIN) {
+    res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo un ministro o administrador puede notificar su ausencia' });
     return;
   }
   const { ministro_id, fecha_inicio, fecha_fin } = req.body ?? {};
@@ -45,11 +45,11 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
     await conn.beginTransaction();
     const [ministros] = await conn.execute<RowDataPacket[]>(
       'SELECT id, nombre, correo FROM persona WHERE id = ? AND rol_id = ?',
-      [ministro_id, ROLES.MINISTRO]
+      [ministro_id, req.user.rol_id]
     );
     if (!ministros.length) {
       await conn.rollback();
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Ministro no encontrado' });
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Usuario no encontrado o rol actualizado' });
       return;
     }
     const [destinatarios] = await conn.execute<RowDataPacket[]>(
