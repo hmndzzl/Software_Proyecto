@@ -40,17 +40,17 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('Notificaciones')).toBeInTheDocument();
   });
 
-  it('renderiza botón "Nuevo Registro" si el usuario tiene rol para reservas y navega al hacer click', () => {
+  it('renderiza botón "Nueva Reserva" si el usuario tiene rol para reservas y navega al hacer click', () => {
     renderWithRouterAndAuth(ROLES.ADMIN);
-    const btn = screen.getByText('Nuevo Registro');
+    const btn = screen.getByText('Nueva Reserva');
     expect(btn).toBeInTheDocument();
     
     fireEvent.click(btn);
     expect(mockNavigate).toHaveBeenCalledWith('/reservas');
   });
 
-  it('NO renderiza botón "Nuevo Registro" si el usuario es ministro', () => {
+  it('NO renderiza botón "Nueva Reserva" si el usuario es ministro', () => {
     renderWithRouterAndAuth(ROLES.MINISTRO);
-    expect(screen.queryByText('Nuevo Registro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();
   });
 });
