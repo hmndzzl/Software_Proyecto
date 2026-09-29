@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
@@ -12,6 +13,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
 import { ESTADOS_RESERVA } from '../../utils/estadosReserva';
+import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA, usuarioTieneRol } from '../../utils/roles';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -46,6 +48,8 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
 };
 
 export default function MisReservasPage() {
+  const navigate = useNavigate();
+  const puedeReservar = usuarioTieneRol(ROLES_RESERVAS);
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -81,6 +85,11 @@ export default function MisReservasPage() {
         kicker="Historial Personal"
         title="Mis Reservas"
         subtitle="Revisa el estado de tus solicitudes de espacios parroquiales."
+        actions={puedeReservar && (
+          <Btn kind="primary" size="lg" onClick={() => navigate(RUTA_NUEVA_RESERVA)}>
+            + Nueva reserva
+          </Btn>
+        )}
       />
 
       {/* KPI chips */}
@@ -106,7 +115,16 @@ export default function MisReservasPage() {
         {loading && <LoadingState label="Cargando tus reservas..." />}
         {error   && <ErrorState message={error} onRetry={cargarReservas} />}
         {!loading && !error && reservas.length === 0 && (
-          <EmptyState message="Aún no tienes reservas registradas." />
+          <>
+            <EmptyState message="Aún no tienes reservas registradas." />
+            {puedeReservar && (
+              <div className={styles.emptyCta}>
+                <Btn kind="primary" onClick={() => navigate(RUTA_NUEVA_RESERVA)}>
+                  Solicitar mi primera reserva
+                </Btn>
+              </div>
+            )}
+          </>
         )}
 
         {!loading && !error && reservas.length > 0 && (
