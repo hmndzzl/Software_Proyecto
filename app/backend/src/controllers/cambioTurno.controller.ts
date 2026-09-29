@@ -170,7 +170,12 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
   let conn: PoolConnection | null = null;
   try {
     const [cambios] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, tarea_id, solicitante_id, destinatario_id, estado, notificacion_id FROM cambio_turno WHERE id = ?',
+      `SELECT ct.id, ct.tarea_id, ct.solicitante_id, ct.destinatario_id, ct.estado, ct.notificacion_id,
+              s.nombre AS solicitante_nombre, d.nombre AS destinatario_nombre
+       FROM cambio_turno ct
+       INNER JOIN persona s ON s.id = ct.solicitante_id
+       INNER JOIN persona d ON d.id = ct.destinatario_id
+       WHERE ct.id = ?`,
       [id]
     );
     if (cambios.length === 0) {
@@ -214,6 +219,14 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
         destinatarioId,
         hoy,
         `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue rechazada`
+      );
+      await notificarCoordinadoresCambioTurno(
+        conn,
+        cambio.solicitante_id,
+        cambio.destinatario_id,
+        destinatarioId,
+        hoy,
+        `El cambio de turno para la tarea "${tarea.titulo}" entre ${cambio.solicitante_nombre} y ${cambio.destinatario_nombre} fue rechazado`
       );
 
       await conn.commit();
@@ -272,6 +285,14 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
       hoy,
       `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue aceptada`
     );
+    await notificarCoordinadoresCambioTurno(
+      conn,
+      cambio.solicitante_id,
+      cambio.destinatario_id,
+      destinatarioId,
+      hoy,
+      `El cambio de turno para la tarea "${tarea.titulo}" entre ${cambio.solicitante_nombre} y ${cambio.destinatario_nombre} fue aceptado`
+    );
 
     await conn.commit();
 
@@ -312,4 +333,31 @@ async function notificarSolicitante(
     'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
     [solicitanteId, notifResult.insertId]
   );
+}
+
+async function notificarCoordinadoresCambioTurno(
+  conn: PoolConnection,
+  solicitanteId: number,
+  destinatarioId: number,
+  remitenteId: number,
+  fecha: string,
+  mensaje: string
+): Promise<void> {
+  const [coordinadores] = await conn.execute<RowDataPacket[]>(
+    `SELECT DISTINCT coordinador_id
+     FROM coordinador_ministro
+     WHERE ministro_id IN (?, ?)`,
+    [solicitanteId, destinatarioId]
+  );
+
+  for (const coordinador of coordinadores) {
+    const [notifResult] = await conn.execute<ResultSetHeader>(
+      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+      [mensaje, fecha, remitenteId]
+    );
+    await conn.execute(
+      'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+      [coordinador.coordinador_id, notifResult.insertId]
+    );
+  }
 }

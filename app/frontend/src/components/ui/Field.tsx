@@ -3,7 +3,7 @@ import styles from './Field.module.css';
 
 /* ── Field wrapper ── */
 interface FieldProps {
-  label: string;
+  label?: string;
   required?: boolean;
   hint?: string;
   children: ReactNode;
@@ -12,10 +12,12 @@ interface FieldProps {
 export function Field({ label, required, hint, children }: FieldProps) {
   return (
     <div className={styles.field}>
-      <span className={styles.label}>
-        {label}
-        {required && <span className={styles.required}>*</span>}
-      </span>
+      {label && (
+        <span className={styles.label}>
+          {label}
+          {required && <span className={styles.required}>*</span>}
+        </span>
+      )}
       {children}
       {hint && <span className={styles.hint}>{hint}</span>}
     </div>

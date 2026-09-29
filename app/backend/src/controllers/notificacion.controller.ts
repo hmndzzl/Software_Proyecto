@@ -19,7 +19,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
        INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
        LEFT  JOIN persona r               ON r.id = n.remitente_id
        LEFT  JOIN evento ev               ON ev.id = n.evento_id
-       WHERE pn.persona_id = ?
+       WHERE pn.persona_id = ? AND pn.eliminada_en IS NULL
        ORDER BY n.fecha DESC`,
       [personaId]
     );
@@ -28,6 +28,32 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
   } catch (error) {
     console.error('Error en getNotificaciones:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener notificaciones' });
+  }
+};
+
+// GET /api/notificaciones/enviadas — notificaciones que el usuario envió, con quién las recibió y cuántos ya las leyeron
+export const getNotificacionesEnviadas = async (req: Request, res: Response): Promise<void> => {
+  const remitenteId = req.user!.id;
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
+              COUNT(pn.persona_id) AS total_destinatarios,
+              COALESCE(SUM(pn.leida), 0) AS total_leidas,
+              COALESCE(SUM(pn.asistencia_confirmada), 0) AS total_confirmaron,
+              GROUP_CONCAT(p.nombre ORDER BY p.nombre SEPARATOR ', ') AS destinatarios_nombres
+       FROM notificacion n
+       LEFT JOIN persona_notificacion pn ON pn.notificacion_id = n.id
+       LEFT JOIN persona p               ON p.id = pn.persona_id
+       WHERE n.remitente_id = ?
+       GROUP BY n.id
+       ORDER BY n.fecha DESC`,
+      [remitenteId]
+    );
+
+    res.status(HttpStatus.OK).json(rows);
+  } catch (error) {
+    console.error('Error en getNotificacionesEnviadas:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener las notificaciones enviadas' });
   }
 };
 
@@ -55,6 +81,127 @@ export const marcarLeida = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+// PUT /api/notificaciones/:id/no-leida
+export const marcarNoLeida = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET leida = 0
+       WHERE notificacion_id = ? AND persona_id = ?`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Notificación marcada como no leída' });
+  } catch (error) {
+    console.error('Error en marcarNoLeida:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al marcar notificación como no leída' });
+  }
+};
+
+const RETENCION_PAPELERA_DIAS = 15;
+
+// PUT /api/notificaciones/:id/papelera — mueve la notificación (solo la copia propia) a la papelera
+export const moverAPapelera = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET eliminada_en = NOW()
+       WHERE notificacion_id = ? AND persona_id = ? AND eliminada_en IS NULL`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Notificación movida a la papelera' });
+  } catch (error) {
+    console.error('Error en moverAPapelera:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al mover la notificación a la papelera' });
+  }
+};
+
+// PUT /api/notificaciones/:id/restaurar — restaura una notificación propia desde la papelera
+export const restaurarNotificacion = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET eliminada_en = NULL
+       WHERE notificacion_id = ? AND persona_id = ? AND eliminada_en IS NOT NULL`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada en la papelera' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Notificación restaurada' });
+  } catch (error) {
+    console.error('Error en restaurarNotificacion:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al restaurar la notificación' });
+  }
+};
+
+// GET /api/notificaciones/papelera — notificaciones propias eliminadas, purgando antes las de más de 15 días
+export const getPapelera = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  try {
+    await pool.execute(
+      `DELETE FROM persona_notificacion WHERE eliminada_en IS NOT NULL AND eliminada_en < (NOW() - INTERVAL ? DAY)`,
+      [RETENCION_PAPELERA_DIAS]
+    );
+
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
+              n.evento_id, n.requiere_confirmacion,
+              pn.leida, pn.eliminada_en,
+              r.nombre AS remitente_nombre,
+              ev.descripcion AS evento_descripcion
+       FROM notificacion n
+       INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
+       LEFT  JOIN persona r               ON r.id = n.remitente_id
+       LEFT  JOIN evento ev               ON ev.id = n.evento_id
+       WHERE pn.persona_id = ? AND pn.eliminada_en IS NOT NULL
+       ORDER BY pn.eliminada_en DESC`,
+      [personaId]
+    );
+
+    res.status(HttpStatus.OK).json(rows);
+  } catch (error) {
+    console.error('Error en getPapelera:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener la papelera' });
+  }
+};
+
+// DELETE /api/notificaciones/papelera — vacía la papelera propia (borrado permanente e inmediato)
+export const vaciarPapelera = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `DELETE FROM persona_notificacion WHERE persona_id = ? AND eliminada_en IS NOT NULL`,
+      [personaId]
+    );
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Papelera vaciada', eliminadas: result.affectedRows });
+  } catch (error) {
+    console.error('Error en vaciarPapelera:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al vaciar la papelera' });
+  }
+};
+
 // PUT /api/notificaciones/:id/confirmar
 export const confirmarAsistenciaNotificacion = async (req: Request, res: Response): Promise<void> => {
   const personaId = req.user!.id;
@@ -76,7 +223,7 @@ export const confirmarAsistenciaNotificacion = async (req: Request, res: Respons
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET asistencia_confirmada = 1, leida = 1
+       SET asistencia_confirmada = 1, leida = 1, motivo_excusa = NULL, inasistencia_reportada = 0
        WHERE notificacion_id = ? AND persona_id = ?`,
       [id, personaId]
     );
@@ -114,7 +261,7 @@ export const confirmarAsistencia = async (req: Request, res: Response): Promise<
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET asistencia_confirmada = 1, leida = 1
+       SET asistencia_confirmada = 1, leida = 1, motivo_excusa = NULL, inasistencia_reportada = 0
        WHERE notificacion_id = ? AND persona_id = ?`,
       [id, personaId]
     );
@@ -128,6 +275,72 @@ export const confirmarAsistencia = async (req: Request, res: Response): Promise<
   } catch (error) {
     console.error('Error en confirmarAsistencia:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al confirmar asistencia' });
+  }
+};
+
+// PUT /api/notificaciones/:id/cancelar-asistencia — deshace una confirmación de asistencia
+// (ej. se confirmó sin querer); a diferencia de excusarAsistencia, no requiere motivo ni
+// avisa a nadie, solo revierte al estado pendiente para que el ministro pueda decidir de nuevo.
+export const cancelarAsistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [notifs] = await pool.execute<RowDataPacket[]>(
+      `SELECT requiere_confirmacion FROM notificacion WHERE id = ?`,
+      [id]
+    );
+
+    if (notifs.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada' });
+      return;
+    }
+    if (!notifs[0].requiere_confirmacion) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Esta notificación no requiere confirmación de asistencia' });
+      return;
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET asistencia_confirmada = 0
+       WHERE notificacion_id = ? AND persona_id = ? AND asistencia_confirmada = 1`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No tenías una confirmación de asistencia para cancelar' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Confirmación de asistencia cancelada' });
+  } catch (error) {
+    console.error('Error en cancelarAsistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al cancelar la confirmación de asistencia' });
+  }
+};
+
+// PUT /api/notificaciones/:id/cancelar-inasistencia — elimina una excusa o reporte de no asistencia.
+export const cancelarInasistencia = async (req: Request, res: Response): Promise<void> => {
+  const personaId = req.user!.id;
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE persona_notificacion
+       SET motivo_excusa = NULL, inasistencia_reportada = 0
+       WHERE notificacion_id = ?
+         AND persona_id = ?
+         AND (motivo_excusa IS NOT NULL OR inasistencia_reportada = 1)`,
+      [id, personaId]
+    );
+
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No tenías un estado de no asistencia para eliminar' });
+      return;
+    }
+
+    res.status(HttpStatus.OK).json({ mensaje: 'Estado de no asistencia eliminado' });
+  } catch (error) {
+    console.error('Error en cancelarInasistencia:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar el estado de no asistencia' });
   }
 };
 
@@ -298,7 +511,7 @@ export const excusarAsistencia = async (req: Request, res: Response): Promise<vo
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE persona_notificacion
-       SET asistencia_confirmada = 0, leida = 1, motivo_excusa = ?
+       SET asistencia_confirmada = 0, leida = 1, motivo_excusa = ?, inasistencia_reportada = 1
        WHERE notificacion_id = ? AND persona_id = ?`,
       [String(motivo).trim(), id, personaId]
     );
@@ -426,5 +639,3 @@ export const deleteNotificacion = async (req: Request, res: Response): Promise<v
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar notificación' });
   }
 };
-
-
