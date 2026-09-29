@@ -32,3 +32,7 @@ export function usuarioTieneRol(allowedRoles: number[]) {
     return false;
   }
 }
+
+export const ROLES_RESERVAS: number[] = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
+
+export const RUTA_NUEVA_RESERVA = '/reservas?nueva=1';
