@@ -45,3 +45,6 @@
 /* Estados */
 .msg      { font-family: var(--font-body); font-size: 14px; color: var(--color-muted); font-style: italic; padding: 20px 24px; }
 .msgError { color: var(--color-bad); font-style: normal; font-weight: 600; }
+
+/* CTA de estado vacío */
+.emptyCta { display: flex; justify-content: center; padding: 0 24px 24px; }
