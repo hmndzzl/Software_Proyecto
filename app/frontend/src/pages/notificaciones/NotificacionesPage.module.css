@@ -5,6 +5,11 @@
   padding: var(--main-py) var(--main-px);
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

@@ -1,5 +1,7 @@
 # Informe Técnico: Pruebas de Carga y Estrés con Grafana k6
 
+> Informe histórico de la suite anterior de cuatro scripts. No representa los resultados de las 12 pruebas actuales ni su aprobación. Consulta [la guía vigente](../README.md) y los resúmenes de cada ejecución. El backend actual ya incorpora rate limiting.
+
 **Proyecto:** Sistema de Gestión Parroquial  
 **Fecha de Ejecución:** Septiembre 2026  
 **Herramienta de Carga y Estrés:** Grafana k6 (v2.2.0 / `grafana/k6:latest`)  

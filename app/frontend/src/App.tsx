@@ -7,6 +7,7 @@ import AppShell from './components/layout/AppShell';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
 
 import LoginPage from './pages/auth/LoginPage';
+import LandingPage from './pages/landing/LandingPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
@@ -21,6 +22,7 @@ import PerfilPage from './pages/perfil/PerfilPage';
 import CalendarioPage from './pages/calendario/CalendarioPage';
 import CambiosTurnoPage from './pages/cambios-turno/CambiosTurnoPage';
 import NotFoundPage from './pages/not_found_page/NotFoundPage';
+import AusenciasPage from './pages/ausencias/AusenciasPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -33,6 +35,11 @@ const ALL_ROLES = [
 function AppContent() {
   const location = useLocation();
   const isLogin = location.pathname === '/login';
+  const isLanding = location.pathname === '/';
+
+  if (isLanding) {
+    return <LandingPage />;
+  }
 
   if (isLogin) {
     return (
@@ -145,6 +152,12 @@ function AppContent() {
           }
         />
 
+        <Route path="/ausencias" element={
+          <ProtectedRoute allowedRoles={[ROLES.MINISTRO, ROLES.ADMIN]}>
+            <AusenciasPage />
+          </ProtectedRoute>
+        } />
+
         <Route
           path="/notificaciones"
           element={
@@ -163,7 +176,6 @@ function AppContent() {
           }
         />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>

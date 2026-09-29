@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import CrearReservaForm from '../../modules/reservas/components/CrearReservaForm';
 import ListaReservas from '../../modules/reservas/components/ListaReservas';
 import PageHeader from '../../components/ui/PageHeader';
@@ -7,6 +8,9 @@ import styles from './ReservasPage.module.css';
 
 export default function ReservasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  // Llegada desde "Nueva reserva" (Sidebar / Mis Reservas): se enfoca el formulario.
+  const [searchParams] = useSearchParams();
+  const enfocarFormulario = searchParams.get('nueva') === '1';
 
   return (
     <div className={styles.page}>
@@ -19,7 +23,10 @@ export default function ReservasPage() {
       <Card>
         <CardHead title="Nueva Solicitud" />
         <CardBody>
-          <CrearReservaForm onReservaCreada={() => setRefreshKey(k => k + 1)} />
+          <CrearReservaForm
+            autoFocus={enfocarFormulario}
+            onReservaCreada={() => setRefreshKey(k => k + 1)}
+          />
         </CardBody>
       </Card>
 

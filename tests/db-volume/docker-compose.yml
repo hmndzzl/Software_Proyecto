@@ -1,0 +1,45 @@
+services:
+  db:
+    image: mariadb:11.4
+    container_name: parroquia-db-volume
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: parroquia
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      # Montamos el esquema y seeds del proyecto para inicializar la BDD base
+      - ../../app/database/init:/docker-entrypoint-initdb.d
+    command: --max_connections=500 --innodb_buffer_pool_size=1G
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sysbench:
+    build:
+      context: .
+      dockerfile: Dockerfile.sysbench
+    container_name: parroquia-sysbench
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASS=root
+      - DB_NAME=parroquia
+    volumes:
+      - ./lua:/sysbench/lua
+      - ./config:/sysbench/config
+      - ./reports:/sysbench/reports
+    # Se mantiene vivo para ejecutar comandos interactivamente o vía scripts bash
+    command: tail -f /dev/null
+
+volumes:
+  db_data:

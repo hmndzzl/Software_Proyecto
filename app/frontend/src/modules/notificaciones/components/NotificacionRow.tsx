@@ -7,15 +7,25 @@ import styles from './NotificacionRow.module.css';
 interface Props {
   notificacion: Notificacion;
   onMarcarLeida: (id: number) => void;
+  onMarcarNoLeida: (id: number) => void;
   onConfirmarAsistencia: (id: number) => void;
+  onCancelarAsistencia: (id: number) => void;
+  onCancelarInasistencia: (id: number) => void;
   onExcusarAsistencia: (notificacion: Notificacion) => void;
+  onEliminar: (id: number) => void;
+  resaltada?: boolean;
 }
 
 export default function NotificacionRow({
   notificacion,
   onMarcarLeida,
+  onMarcarNoLeida,
   onConfirmarAsistencia,
+  onCancelarAsistencia,
+  onCancelarInasistencia,
   onExcusarAsistencia,
+  onEliminar,
+  resaltada = false,
 }: Props) {
   const {
     id,
@@ -28,13 +38,14 @@ export default function NotificacionRow({
     motivo_excusa,
     evento_descripcion,
   } = notificacion;
+  const requiereConfirmacion = Boolean(requiere_confirmacion);
 
   return (
-    <tr className={`${styles.row} ${!leida ? styles.rowUnread : ''}`}>
+    <tr id={`notificacion-${id}`} className={`${styles.row} ${!leida ? styles.rowUnread : ''} ${resaltada ? styles.rowResaltada : ''}`}>
       <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
       <td className={styles.tdMensaje}>
         {mensaje}
-        {requiere_confirmacion && evento_descripcion && (
+        {requiereConfirmacion && evento_descripcion && (
           <div className={styles.eventoRef}>Evento: {evento_descripcion}</div>
         )}
         {motivo_excusa && (
@@ -56,16 +67,30 @@ export default function NotificacionRow({
       </td>
       <td className={styles.tdAccion}>
         <div className={styles.acciones}>
-          {!leida && (
+          {!leida ? (
             <Btn kind="ghost" size="sm" onClick={() => onMarcarLeida(id)}>
               Marcar leída
             </Btn>
+          ) : (
+            <Btn kind="ghost" size="sm" onClick={() => onMarcarNoLeida(id)}>
+              Marcar no leída
+            </Btn>
           )}
-          {requiere_confirmacion && (
+          {requiereConfirmacion && (
             asistencia_confirmada ? (
-              <Badge kind="confirmada">Asistencia confirmada</Badge>
+              <>
+                <Badge kind="confirmada">Asistencia confirmada</Badge>
+                <Btn kind="ghost" size="sm" onClick={() => onCancelarAsistencia(id)}>
+                  Cancelar asistencia
+                </Btn>
+              </>
             ) : motivo_excusa ? (
-              <Badge kind="cancelada" title={`Motivo: ${motivo_excusa}`}>No asistirá</Badge>
+              <>
+                <Badge kind="cancelada" title={`Motivo: ${motivo_excusa}`}>No asistirá</Badge>
+                <Btn kind="ghost" size="sm" onClick={() => onCancelarInasistencia(id)}>
+                  Quitar no asistencia
+                </Btn>
+              </>
             ) : (
               <>
                 <Btn kind="ok" size="sm" onClick={() => onConfirmarAsistencia(id)}>
@@ -77,6 +102,9 @@ export default function NotificacionRow({
               </>
             )
           )}
+          <Btn kind="bad" size="sm" onClick={() => onEliminar(id)}>
+            Eliminar
+          </Btn>
         </div>
       </td>
     </tr>
