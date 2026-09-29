@@ -18,8 +18,9 @@ export function useSortableTable<T, K extends string>(
       return;
     }
     if (sortDir === 'desc') { setSortDir('asc'); return; }
-    if (sortDir === 'asc') { setSortKey(null); setSortDir(null); return; }
-    setSortDir('desc');
+    // Misma columna en 'asc': vuelve a sin ordenar (sortDir nunca es null con sortKey activo).
+    setSortKey(null);
+    setSortDir(null);
   };
 
   const sortedData = useMemo(() => {
