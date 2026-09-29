@@ -30,3 +30,4 @@ CLAUDE.md
 
 # Testing
 tests/k6/results/
+tests/db-volume/reports/
