@@ -37,6 +37,18 @@ Sistema web para la gestión interna de la Parroquia San Pedro Nolasco (Guatemal
 | Javier Sebastián Alvarado Monzón | 24546 |
 | Hugo Méndez Lee | 241265 |
 | José Miguel Rosas Guerra | 241274 |
+| Capa | Tecnología | Versión |
+
+|---|---|---|
+| Frontend | React + Vite + TypeScript | React 18, Vite 5 |
+| Backend | Express + TypeScript | Express 4 |
+| Base de datos | MariaDB | 11 |
+| Contenedores | Docker + Docker Compose | — |
+| Autenticación | JWT (jsonwebtoken) doble token | — |
+| CI/CD | GitHub Actions | — |
+| Infraestructura | DigitalOcean Droplet | Ubuntu |
+| Pruebas unitarias | Vitest | backend + frontend |
+| Fuentes | Cinzel + Noto Serif | Google Fonts |
 
 ## Inicio rápido
 
@@ -44,6 +56,49 @@ Sistema web para la gestión interna de la Parroquia San Pedro Nolasco (Guatemal
 
 - Docker y Docker Compose
 - Un archivo `app/.env` creado desde `app/.env.example` y completado con las credenciales del entorno.
+
+### Sprint 5 (completado)
+
+#### HU-22 — Confirmación de Asistencia
+- Ministro confirma asistencia directamente desde la notificación del recordatorio
+- Backend: columnas de confirmación en `persona_notificacion`, `PUT /api/notificaciones/:id/confirmar` y `PUT /api/notificaciones/:id/asistencia`
+- Frontend: botón "Confirmar asistencia" en `NotificacionRow` (dropdown TopBar y `/notificaciones`); Badge "Asistencia confirmada" cuando ya se confirmó
+
+#### HU-08 — Reducir Errores de Asignación
+- Validación de conflicto de horario al asignar una tarea a un ministro: `409 Conflict` si el ministro ya tiene otra tarea asignada que se solapa en fecha/hora (`asignarTarea` en `tarea.controller.ts`)
+- Frontend: `AsignarTareaForm` muestra aviso de conflicto antes de enviar la asignación
+
+#### Pruebas Unitarias
+- Framework: **Vitest** (backend y frontend)
+- `app/backend`: tests de `auth.controller.ts`
+- `app/frontend`: tests de componentes UI (`src/components/ui/__tests__`)
+- `npm test` corre la suite en cada paquete (`app/backend`, `app/frontend`)
+
+#### Migración de infraestructura
+- Despliegue movido de Azure VM a **Droplet de DigitalOcean** (`.github/workflows/deploy.yml`, SSH + `docker compose up -d --build` en cada push a `main`)
+
+---
+
+### Sprint 4 (completado)
+
+#### Notificaciones en tiempo real
+- Campana en `TopBar` con polling cada 60s, badge de no-leídas, dropdown con últimas 5
+- Auto-notificación al asignar una tarea a un ministro
+
+#### Calendario semanal de ministros (HU-03/HU-07)
+- `CalendarioPage` en `/calendario`: grid de 7 columnas (lun-dom), navegación semana anterior/siguiente
+- `GET /api/tareas` ampliado con filtros `fecha_inicio`, `fecha_fin`, `persona_id`
+
+#### Edición de perfil
+- `PerfilPage` en `/perfil`: editar nombre, correo, contraseña (y rol, solo Admin)
+- `PUT /api/personas/:id`
+
+#### Disponibilidad dinámica de espacios (HU-29)
+- Selector de fecha/hora en `EspaciosPage`, badge Disponible/Ocupado calculado por `GET /api/espacios?fecha=&hora_inicio=&hora_fin=`
+
+---
+
+### Sprint 3
 
 ```bash
 git clone https://github.com/hmndzzl/Software_Proyecto.git
@@ -137,11 +192,75 @@ Los grupos parroquiales no tienen cuentas propias: su coordinador comunica los a
 | `/notificaciones` | Bandeja, asistencia e inasistencias. |
 | `/perfil` | Perfil del usuario autenticado. |
 
+## Modelo de Base de Datos
+
+| Tabla | Descripción |
+|---|---|
+| `rol` | Catálogo de roles del sistema |
+| `estado_reserva` | 1=Pendiente, 2=Confirmada, 3=Rechazada |
+| `espacio` | Salones y áreas físicas |
+| `persona` | Usuarios (correo + password hasheado + rol) |
+| `telefono` | Teléfonos de contacto por persona |
+| `grupo` | Grupos parroquiales con coordinador asignado |
+| `coordinador_ministro` | N:M coordinadores ↔ ministros |
+| `tarea` | Tareas asignables (fecha, horario, descripción) |
+| `asignacion_tarea` | N:M tarea ↔ persona |
+| `notificacion` | Notificaciones: `tipo` ENUM(global/grupo/individual), `remitente_id`, `grupo_id` |
+| `persona_notificacion` | N:M persona ↔ notificación + `leida`, `confirmada`, `asistencia_confirmada` (HU-22) |
+| `reserva` | Solicitudes de reserva con solicitante |
+| `evento` | 1-to-1 con reserva; tiene `titulo` y `descripcion` |
+
 ## API
 
 Todas las rutas, excepto las de autenticación, requieren `Authorization: Bearer <token>`.
 
 | Recurso | Operaciones principales |
+Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer <token>`.
+
+### Autenticación — `/api/auth`
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/login` | No | Access token + refresh cookie |
+| POST | `/refresh` | Cookie | Renueva access token |
+| POST | `/logout` | No | Limpia cookie |
+| POST | `/register` | Sacerdote/Admin | Registra persona |
+
+### Notificaciones — `/api/notificaciones`
+| Método | Ruta | Roles | Descripción |
+|---|---|---|---|
+| GET | `/` | Cualquiera | Lista notificaciones del usuario con `remitente_nombre` |
+| GET | `/destinatarios` | Admin/Sacerdote/CoordMin | Personas a las que puede notificar |
+| PUT | `/:id/leida` | Cualquiera | Marca notificación propia como leída |
+| PUT | `/:id/confirmar` | Cualquiera | Confirma asistencia (HU-22) sobre notificación propia |
+| PUT | `/:id/asistencia` | Cualquiera | Confirma asistencia + marca leída en un solo paso |
+| POST | `/` | Admin/Sacerdote/CoordMin | Crea notificación; global auto-puebla todos |
+| DELETE | `/:id` | Admin/Sacerdote | Elimina notificación (cascade) |
+
+### Reservas — `/api/reservas`
+| Método | Ruta | Roles | Descripción |
+|---|---|---|---|
+| POST | `/` | Cualquiera | Crea reserva + evento en transacción |
+| GET | `/` | Cualquiera | Lista con evento_titulo, evento_descripcion |
+| GET | `/mis-reservas` | Cualquiera | Reservas del usuario autenticado |
+| GET | `/:id` | Cualquiera | Detalle |
+| PUT | `/:id` | Solicitante/Sacerdote/Admin | Edita + resetea a Pendiente |
+| PUT | `/:id/estado` | Sacerdote/Admin | Aprueba o rechaza |
+
+### Otros módulos
+| Recurso | Prefijo | Notas |
+|---|---|---|
+| Tareas | `/api/tareas` | CRUD + asignación/desasignación (409 si hay conflicto de horario, HU-08) |
+| Personas | `/api/personas` | GET lista + GET detalle |
+| Espacios | `/api/espacios` | CRUD; CUD solo Sacerdote/Admin |
+| Grupos | `/api/grupos` | CRUD completo |
+| Eventos | `/api/eventos` | CRUD + `/reservas-disponibles` |
+
+---
+
+## Usuarios de Prueba (Seeds)
+
+### Equipo de desarrollo — contraseña `admin123` (rol Admin)
+| Correo | Nombre |
 |---|---|
 | `/api/auth` | `POST /login`, `/refresh`, `/logout`, `/register` |
 | `/api/tareas` | CRUD, `POST/DELETE /asignar`, `PUT /asignar` para reasignar responsable |
@@ -212,6 +331,15 @@ main ← código desplegable
 
 El workflow de CI y el de despliegue son independientes. Confirmar que GitHub tenga un *required check* configurado antes de asumir que CI bloquea una fusión.
 
+### Pruebas unitarias
+
+```bash
+cd app/backend  && npm test   # Vitest
+cd app/frontend && npm test   # Vitest
+```
+
+---
+
 ## Pendientes técnicos
 
 - Restringir por RBAC/ownership las mutaciones de grupos y las rutas de tareas que hoy solo validan autenticación.
@@ -227,3 +355,47 @@ Los informes de Sprint 6 y Sprint 7, el Plan Maestro de Pruebas y la exportació
 ## Licencia
 
 Proyecto académico para CC3091 — Ingeniería de Software 2, Universidad del Valle de Guatemala.
+GitHub Actions (`.github/workflows/deploy.yml`) despliega automáticamente a un **Droplet de DigitalOcean** en cada `push` a `main`:
+
+```
+push a main → SSH al droplet → git fetch/reset --hard origin/main → docker compose down → docker compose up -d --build
+```
+
+**Nunca mergear a `main` sin pasar primero por `develop`.**
+
+---
+
+## Flujo de Trabajo con Git
+
+```
+main        ← código estable, despliegue automático
+└── develop ← rama de integración del equipo
+    └── feature/<nombre>  ← trabajo individual
+```
+
+```bash
+git checkout develop && git pull origin develop
+git checkout -b feature/nombre-funcionalidad
+# ... desarrollar ...
+git push origin feature/nombre-funcionalidad
+# Abrir PR hacia develop en GitHub
+```
+
+---
+
+## Documentación Académica
+
+| Entrega | Documento |
+|---|---|
+| Corte 1 | `docs/corte1/` |
+| Corte 2 | `docs/corte2/` |
+| Corte 3 | `docs/corte3/` |
+| Sprint 1 | `docs/sprint1/` |
+| Sprint 2 | `docs/sprint2/` |
+| Sprint 3 | `docs/sprint3/` |
+| Sprint 4 | `docs/sprint4/` |
+| Sprint 5 | `docs/sprint5/` |
+
+---
+
+*Universidad del Valle de Guatemala — Ingeniería en Software 1, Sección 30 — 2026*
