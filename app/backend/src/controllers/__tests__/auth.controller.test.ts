@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { login, logout, register, refresh } from '../auth.controller';
+import { login, logout, register, refresh, me } from '../auth.controller';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/httpStatus';
 import pool from '../../config/db';
@@ -241,6 +241,33 @@ describe('Auth Controller - Pruebas Unitarias', () => {
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Sesión expirada, inicia sesión nuevamente' });
+    });
+  });
+
+  // ----------------------------------------------------
+  // 5. Prueba Me
+  // ----------------------------------------------------
+  describe('me', () => {
+    it('debería retornar los datos y el rol del usuario autenticado', async () => {
+      req.user = { id: 5, rol_id: 2 };
+      (pool.execute as any).mockResolvedValue([[{ id: 5, nombre: 'Ana', correo: 'ana@parroquia.com', rol_id: 2 }]]);
+
+      await me(req as Request, res as Response);
+
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('WHERE id = ?'), [5]);
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith({
+        usuario: { id: 5, nombre: 'Ana', correo: 'ana@parroquia.com', rol_id: 2 },
+      });
+    });
+
+    it('debería retornar 404 si la persona ya no existe', async () => {
+      req.user = { id: 99, rol_id: 4 };
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await me(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     });
   });
 });
