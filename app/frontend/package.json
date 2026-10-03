@@ -10,6 +10,8 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@clerk/localizations": "^4.21.2",
+    "@clerk/react": "^6.17.5",
     "axios": "1.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
