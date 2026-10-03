@@ -1,4 +1,7 @@
+import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/react';
+import { esES } from '@clerk/localizations';
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -23,6 +26,8 @@ import CalendarioPage from './pages/calendario/CalendarioPage';
 import CambiosTurnoPage from './pages/cambios-turno/CambiosTurnoPage';
 import NotFoundPage from './pages/not_found_page/NotFoundPage';
 import AusenciasPage from './pages/ausencias/AusenciasPage';
+import ClerkSessionSync from './auth/ClerkSessionSync';
+import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -182,16 +187,29 @@ function AppContent() {
   );
 }
 
+// Clerk solo se monta si hay publishable key; sin ella la app usa el login anterior.
+function MaybeClerkProvider({ children }: { children: ReactNode }) {
+  if (!CLERK_ENABLED) return <>{children}</>;
+  return (
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY!} localization={esES} afterSignOutUrl="/login">
+      {children}
+    </ClerkProvider>
+  );
+}
+
 function App() {
   return (
     <ErrorProvider>
       <ErrorBoundary>
-        <BrowserRouter>
-          <AuthProvider>
-            <AppContent />
-            <GlobalErrorBanner />
-          </AuthProvider>
-        </BrowserRouter>
+        <MaybeClerkProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              {CLERK_ENABLED && <ClerkSessionSync />}
+              <AppContent />
+              <GlobalErrorBanner />
+            </AuthProvider>
+          </BrowserRouter>
+        </MaybeClerkProvider>
       </ErrorBoundary>
     </ErrorProvider>
   );
