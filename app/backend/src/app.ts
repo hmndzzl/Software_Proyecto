@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import { checkDbConnection } from './config/db';
-import { validateEnv } from './config/env';
+import { validateEnv, getAllowedOrigins } from './config/env';
 import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
 import personaRoutes from './routes/persona.routes';
@@ -24,13 +24,7 @@ export const app = express();
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  ...(process.env.CORS_ORIGIN ?? '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-];
+const allowedOrigins = getAllowedOrigins();
 
 app.use(helmet({
   contentSecurityPolicy: {
