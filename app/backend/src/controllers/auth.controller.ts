@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { RowDataPacket } from 'mysql2';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { HttpStatus } from '../utils/httpStatus';
 import { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN } from '../config/env';
+import { isClerkEnabled, getClerkClient } from '../config/clerk';
 
 const REFRESH_MAX_AGE = 15 * 24 * 60 * 60 * 1000;
 
@@ -127,14 +128,67 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await pool.execute(
+    const [resultado] = await pool.execute<ResultSetHeader>(
       'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)',
       [nombre, correo, hashedPassword, rol_id]
     );
 
+    if (isClerkEnabled()) {
+      await crearUsuarioEnClerk(resultado.insertId, nombre, correo, hashedPassword);
+    }
+
     res.status(HttpStatus.CREATED).json({ mensaje: 'Usuario registrado exitosamente' });
   } catch (error) {
     console.error('Error en el controlador de registro:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
+  }
+};
+
+// Durante la migración, los usuarios nuevos también se crean en Clerk con el
+// mismo hash bcrypt, para que puedan entrar por cualquiera de los dos accesos.
+// Si falla, el usuario queda solo con el acceso anterior y se vinculará por
+// correo cuando exista en Clerk.
+async function crearUsuarioEnClerk(personaId: number, nombre: string, correo: string, hashedPassword: string) {
+  try {
+    const clerkUser = await getClerkClient().users.createUser({
+      emailAddress: [correo],
+      firstName: nombre,
+      externalId: String(personaId),
+      passwordDigest: hashedPassword,
+      passwordHasher: 'bcrypt',
+    });
+    await pool.execute(
+      'UPDATE persona SET clerk_user_id = ? WHERE id = ?',
+      [clerkUser.id, personaId]
+    );
+  } catch (error) {
+    console.error('No se pudo crear el usuario en Clerk:', error);
+  }
+}
+
+export const me = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      'SELECT id, nombre, correo, rol_id FROM persona WHERE id = ?',
+      [req.user!.id]
+    );
+
+    if (rows.length === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Usuario no encontrado' });
+      return;
+    }
+
+    const usuario = rows[0];
+    res.status(HttpStatus.OK).json({
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        rol_id: usuario.rol_id,
+      },
+    });
+  } catch (error) {
+    console.error('Error en el controlador de me:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
   }
 };
