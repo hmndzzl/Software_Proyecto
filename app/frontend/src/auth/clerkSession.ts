@@ -15,7 +15,7 @@ type SignOut = () => Promise<void>;
 
 let tokenGetter: TokenGetter | null = null;
 let signOutFn: SignOut | null = null;
-let markReady: () => void = () => {};
+let markReady!: () => void;
 const ready = new Promise<void>((resolve) => { markReady = resolve; });
 
 export function registerClerkSession(getToken: TokenGetter, signOut: SignOut) {
@@ -32,8 +32,10 @@ export function clearClerkSession() {
 
 /** Token de sesión de Clerk vigente, o null si no hay sesión de Clerk. */
 export async function getClerkToken(): Promise<string | null> {
-  if (!CLERK_ENABLED) return null;
-  await Promise.race([ready, new Promise((resolve) => setTimeout(resolve, READY_TIMEOUT_MS))]);
+  // Sin Clerk nunca se registra una sesión, así que se devuelve null sin esperar.
+  if (CLERK_ENABLED) {
+    await Promise.race([ready, new Promise((resolve) => setTimeout(resolve, READY_TIMEOUT_MS))]);
+  }
   if (!tokenGetter) return null;
   try {
     return await tokenGetter();
