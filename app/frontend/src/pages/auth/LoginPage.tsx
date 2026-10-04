@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { SignIn } from '@clerk/react';
 import { loginApi } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
+import { CLERK_ENABLED } from '../../auth/clerkSession';
 import styles from './LoginPage.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
 
@@ -11,8 +13,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]               = useState('');
   const [loading, setLoading]           = useState(false);
+  // Durante la migración se muestra Clerk por defecto y se deja disponible el acceso anterior.
+  const [useLegacyLogin, setUseLegacyLogin] = useState(!CLERK_ENABLED);
   const navigate  = useNavigate();
-  const { setAuth } = useAuth();
+  const { usuario, setAuth } = useAuth();
+
+  // Con Clerk, ClerkSessionSync carga el usuario tras iniciar sesión; al tenerlo, se entra.
+  useEffect(() => {
+    if (CLERK_ENABLED && usuario) navigate('/dashboard', { replace: true });
+  }, [usuario, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,86 +81,112 @@ export default function LoginPage() {
           <h2 className={styles.formTitle}>Hola, de nuevo</h2>
           <p className={styles.formSubtitle}>Ingresa tus credenciales para continuar.</p>
 
-          <form onSubmit={handleSubmit}>
-            <div className={styles.fields}>
-
-              {/* Email */}
-              <div>
-                <label className={styles.fieldLabel}>Correo electrónico</label>
-                <div className={styles.inputWrap}>
-                  <span className={styles.inputIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="20" height="16" rx="2"/>
-                      <path d="M2 7l10 7 10-7"/>
-                    </svg>
-                  </span>
-                  <input
-                    className={styles.input}
-                    type="email"
-                    placeholder="usuario@parroquia.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                  />
-                </div>
+          {!useLegacyLogin ? (
+            <>
+              {/* Sin registro público: las cuentas las crea el administrador. */}
+              <SignIn
+                routing="hash"
+                forceRedirectUrl="/login"
+                withSignUp={false}
+                appearance={{ elements: { footerAction: { display: 'none' } } }}
+              />
+              <div className={styles.forgotRow}>
+                <button type="button" className={styles.forgotLink} onClick={() => setUseLegacyLogin(true)}>
+                  Usar el acceso anterior
+                </button>
               </div>
+            </>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit}>
+                <div className={styles.fields}>
 
-              {/* Contraseña */}
-              <div>
-                <label className={styles.fieldLabel}>Contraseña</label>
-                <div className={styles.inputWrap}>
-                  <span className={styles.inputIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="5" y="11" width="14" height="10" rx="2"/>
-                      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                    </svg>
-                  </span>
-                  <input
-                    className={styles.input}
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className={styles.toggleBtn}
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {showPassword ? (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                        <line x1="1" y1="1" x2="23" y2="23"/>
-                      </svg>
-                    ) : (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                    )}
+                  {/* Email */}
+                  <div>
+                    <label className={styles.fieldLabel}>Correo electrónico</label>
+                    <div className={styles.inputWrap}>
+                      <span className={styles.inputIcon}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="4" width="20" height="16" rx="2"/>
+                          <path d="M2 7l10 7 10-7"/>
+                        </svg>
+                      </span>
+                      <input
+                        className={styles.input}
+                        type="email"
+                        placeholder="usuario@parroquia.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contraseña */}
+                  <div>
+                    <label className={styles.fieldLabel}>Contraseña</label>
+                    <div className={styles.inputWrap}>
+                      <span className={styles.inputIcon}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="5" y="11" width="14" height="10" rx="2"/>
+                          <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                        </svg>
+                      </span>
+                      <input
+                        className={styles.input}
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        autoComplete="current-password"
+                      />
+                      <button
+                        type="button"
+                        className={styles.toggleBtn}
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        {showPassword ? (
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                          </svg>
+                        ) : (
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Olvidé contraseña */}
+                <div className={styles.forgotRow}>
+                  <button type="button" className={styles.forgotLink}>
+                    ¿Olvidaste tu contraseña?
                   </button>
                 </div>
-              </div>
-            </div>
 
-            {/* Olvidé contraseña */}
-            <div className={styles.forgotRow}>
-              <button type="button" className={styles.forgotLink}>
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
+                {error && <p className={styles.error}>{error}</p>}
 
-            {error && <p className={styles.error}>{error}</p>}
-
-            <button type="submit" className={styles.loginBtn} disabled={loading}>
-              {loading ? 'Iniciando sesión…' : 'Iniciar Sesión'}
-            </button>
-          </form>
+                <button type="submit" className={styles.loginBtn} disabled={loading}>
+                  {loading ? 'Iniciando sesión…' : 'Iniciar Sesión'}
+                </button>
+              </form>
+              {CLERK_ENABLED && (
+                <div className={styles.forgotRow}>
+                  <button type="button" className={styles.forgotLink} onClick={() => setUseLegacyLogin(false)}>
+                    Usar el nuevo acceso
+                  </button>
+                </div>
+              )}
+            </>
+          )}
 
           <p className={styles.formHint}>
             ¿Necesitas una cuenta? Solicítala al administrador parroquial.
