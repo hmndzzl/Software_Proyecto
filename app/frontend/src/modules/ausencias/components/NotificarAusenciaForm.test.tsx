@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NotificarAusenciaForm from './NotificarAusenciaForm';
 import { notificarAusencia } from '../../../api/ausencias';
+import { ToastProvider } from '../../../context/ToastContext';
 import apiClient from '../../../api/client';
 import { AuthProvider } from '../../../context/AuthContext';
 import AusenciasPage from '../../../pages/ausencias/AusenciasPage';
@@ -20,7 +21,7 @@ beforeEach(() => {
 });
 
 function mostrar() {
-  render(<MemoryRouter><AuthProvider><NotificarAusenciaForm /></AuthProvider></MemoryRouter>);
+  render(<ToastProvider><MemoryRouter><AuthProvider><NotificarAusenciaForm /></AuthProvider></MemoryRouter></ToastProvider>);
 }
 function completar() {
   fireEvent.change(screen.getByLabelText('Fecha de inicio'), { target: { value: payload.fecha_inicio } });
@@ -85,10 +86,10 @@ describe('Notificar ausencia', () => {
 
   it.each([1, 2, 3])('oculta el acceso y redirige el rol %s', async rol_id => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id }));
-    render(<MemoryRouter initialEntries={['/ausencias']}><AuthProvider><Sidebar /><Routes>
+    render(<ToastProvider><MemoryRouter initialEntries={['/ausencias']}><AuthProvider><Sidebar /><Routes>
       <Route path="/ausencias" element={<AusenciasPage />} />
       <Route path="/dashboard" element={<p>Inicio permitido</p>} />
-    </Routes></AuthProvider></MemoryRouter>);
+    </Routes></AuthProvider></MemoryRouter></ToastProvider>);
     await waitFor(() => expect(screen.getByText('Inicio permitido')).toBeInTheDocument());
     expect(screen.queryByRole('link', { name: 'Notificar Ausencia' })).not.toBeInTheDocument();
     expect(apiClient.post).not.toHaveBeenCalled();
@@ -96,7 +97,7 @@ describe('Notificar ausencia', () => {
 
   it('muestra el acceso al admin y envía su propia identidad', async () => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 5, nombre: 'Admin' }));
-    render(<MemoryRouter><AuthProvider><Sidebar /><AusenciasPage /></AuthProvider></MemoryRouter>);
+    render(<ToastProvider><MemoryRouter><AuthProvider><Sidebar /><AusenciasPage /></AuthProvider></MemoryRouter></ToastProvider>);
     expect(screen.getByRole('link', { name: 'Notificar Ausencia' })).toBeInTheDocument();
     completar(); enviar(); await screen.findByRole('status');
     expect(apiClient.post).toHaveBeenCalledWith('/api/ausencias', { ...payload, ministro_id: 1 });
