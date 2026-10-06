@@ -1,0 +1,105 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.tab {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.tabActiva {
+  color: var(--color-tierra);
+  border-bottom-color: var(--color-tierra);
+}
+
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-cremaDk);
+  border: 1px solid var(--color-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-tierra);
+  flex-shrink: 0;
+}
+
+.nombre {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-carbon);
+  font-size: 14.5px;
+}
+
+.correo {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.confirmTexto {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--color-carbon);
+  margin: 0 0 20px;
+}
+
+.confirmAcciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rolBadge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--color-cremaDk);
+  color: var(--color-tierra);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}

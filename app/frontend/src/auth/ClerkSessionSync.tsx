@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/react';
 import { useAuth } from '../context/AuthContext';
-import { useError } from '../context/ErrorContext';
 import { meApi } from '../api/auth';
-import { AUTH_PROVIDER_KEY, clearClerkSession, registerClerkSession } from './clerkSession';
+import { AUTH_PROVIDER_KEY, clearClerkSession, registerClerkSession, setLoginError } from './clerkSession';
 
 /**
  * Sincroniza la sesión de Clerk con el AuthContext existente: al iniciar sesión
@@ -13,7 +12,6 @@ import { AUTH_PROVIDER_KEY, clearClerkSession, registerClerkSession } from './cl
 export default function ClerkSessionSync() {
   const { isLoaded, isSignedIn, userId, getToken, signOut } = useClerkAuth();
   const { usuario, setAuth, logout } = useAuth();
-  const { showError } = useError();
   const syncedFor = useRef<string | null>(null);
 
   useEffect(() => {
@@ -39,6 +37,7 @@ export default function ClerkSessionSync() {
 
     if (usuario || syncedFor.current === userId) return;
     syncedFor.current = userId;
+    setLoginError(null);
 
     (async () => {
       try {
@@ -48,11 +47,12 @@ export default function ClerkSessionSync() {
         localStorage.setItem(AUTH_PROVIDER_KEY, 'clerk');
         setAuth(token, user);
       } catch (err: any) {
-        showError(err.response?.data?.mensaje || 'No se pudo validar tu sesión. Intenta de nuevo.');
+        // Se guarda antes de cerrar la sesión: al redirigir al login, ese mensaje es el que se muestra.
+        setLoginError(err.response?.data?.mensaje || 'No se pudo validar tu sesión. Intenta de nuevo.');
         await signOut();
       }
     })();
-  }, [isLoaded, isSignedIn, userId, usuario, getToken, signOut, setAuth, logout, showError]);
+  }, [isLoaded, isSignedIn, userId, usuario, getToken, signOut, setAuth, logout]);
 
   return null;
 }

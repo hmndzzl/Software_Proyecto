@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import MisReservasPage from './MisReservasPage';
+import { ToastProvider } from '../../context/ToastContext';
 import apiClient from '../../api/client';
 import { ROLES } from '../../utils/roles';
 
@@ -15,12 +16,12 @@ function Destino() {
 function mostrar(rolId: number) {
   localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: rolId }));
   render(
-    <MemoryRouter initialEntries={['/mis-reservas']}>
+    <ToastProvider><MemoryRouter initialEntries={['/mis-reservas']}>
       <Routes>
         <Route path="/mis-reservas" element={<MisReservasPage />} />
         <Route path="/reservas" element={<Destino />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter></ToastProvider>
   );
 }
 
@@ -105,7 +106,6 @@ describe('MisReservasPage — historial', () => {
   it('avisa si falla la cancelación', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     vi.mocked(apiClient.put)
       .mockRejectedValueOnce({ response: { data: { message: 'No permitido' } } })
       .mockRejectedValueOnce(new Error('red'));
@@ -113,9 +113,10 @@ describe('MisReservasPage — historial', () => {
     const boton = await screen.findByRole('button', { name: 'Cancelar' });
 
     fireEvent.click(boton);
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('No permitido'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cancelar la reserva');
+    expect(screen.getByRole('alert')).toHaveTextContent('No permitido');
     fireEvent.click(boton);
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Error al cancelar la reserva'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Error al cancelar la reserva.'));
     vi.restoreAllMocks();
   });
 });

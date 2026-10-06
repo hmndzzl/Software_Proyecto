@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { CardHead } from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
@@ -63,7 +64,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   const [cambios, setCambios] = useState<CambioTurno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
 
   const cargarCambios = () => {
     setLoading(true);
@@ -79,13 +80,12 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   }, [refreshKey]);
 
   const responder = async (id: number, aceptar: boolean) => {
-    setMensaje('');
     try {
       const res = await apiClient.put(`/api/cambios-turno/${id}/responder`, { aceptar });
-      setMensaje(res.data.mensaje);
+      toast.success(aceptar ? 'Cambio aceptado' : 'Cambio rechazado', res.data.mensaje);
       cargarCambios();
     } catch (err: any) {
-      alert(err.response?.data?.mensaje || 'Error al responder la solicitud de cambio de turno');
+      toast.error('No se pudo responder la solicitud', err.response?.data?.mensaje || 'Error al responder la solicitud de cambio de turno.');
     }
   };
 
@@ -101,8 +101,6 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   return (
     <div>
       <CardHead title="Cambios de Turno" hint={!loading ? `${cambios.length} solicitudes` : undefined} />
-
-      {mensaje && <p className={styles.mensajeExito}>{mensaje}</p>}
 
       <h3 className={styles.seccionTitulo}>Solicitudes Recibidas</h3>
       {recibidas.length === 0 ? (

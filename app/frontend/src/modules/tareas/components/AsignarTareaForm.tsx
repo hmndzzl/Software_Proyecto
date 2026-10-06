@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
 
@@ -32,7 +33,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<string>('');
   const [personaSeleccionada, setPersonaSeleccionada] = useState<string>('');
-  const [mensaje, setMensaje] = useState<string>('');
+  const toast = useToast();
 
   useEffect(() => {
     apiClient.get('/api/tareas')
@@ -85,7 +86,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
     e.preventDefault();
 
     if (!tareaSeleccionada || !personaSeleccionada) {
-      setMensaje('Por favor, selecciona una tarea y un ministro.');
+      toast.error('Faltan datos', 'Por favor, selecciona una tarea y un ministro.');
       return;
     }
 
@@ -94,24 +95,18 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
         tarea_id: parseInt(tareaSeleccionada),
         persona_id: parseInt(personaSeleccionada)
       });
-      setMensaje('¡Asignación guardada con éxito!');
+      toast.success('Tarea asignada', `${nombrePersonaSeleccionada} fue asignado a "${tareaSeleccionadaObj?.titulo ?? 'la tarea'}".`);
       setTareaSeleccionada('');
       setPersonaSeleccionada('');
       if (onAsignacionExitosa) onAsignacionExitosa();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Hubo un error de red al intentar guardar la asignación.');
+      toast.error('No se pudo asignar la tarea', error.response?.data?.mensaje || 'Hubo un error de red al intentar guardar la asignación.');
     }
   };
 
   return (
     <div>
       <h3 className={styles.sectionTitle}>Asignar Tarea a Ministro</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>

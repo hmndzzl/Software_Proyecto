@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { ROLES, usuarioTieneRol } from '../../../utils/roles';
 import type { DestinatarioInfo, Evento, NotificacionTipo } from '../../../types';
 import Btn from '../../../components/ui/Btn';
@@ -21,7 +22,7 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
   const [destinatarios,  setDestinatarios]  = useState<DestinatarioInfo[]>([]);
   const [seleccionados,  setSeleccionados]  = useState<number[]>([]);
   const [enviando,       setEnviando]       = useState(false);
-  const [error,          setError]          = useState<string | null>(null);
+  const toast = useToast();
   const [gruposAbiertos, setGruposAbiertos] = useState<Set<string>>(new Set());
   const [requiereConfirmacion, setRequiereConfirmacion] = useState(false);
   const [eventos,        setEventos]        = useState<Evento[]>([]);
@@ -82,14 +83,13 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
-    if (!mensaje.trim()) { setError('El mensaje es obligatorio.'); return; }
+    if (!mensaje.trim()) { toast.error('Faltan datos', 'El mensaje es obligatorio.'); return; }
     if (tipo !== 'global' && seleccionados.length === 0) {
-      setError('Selecciona al menos un destinatario.'); return;
+      toast.error('Faltan datos', 'Selecciona al menos un destinatario.'); return;
     }
     if (requiereConfirmacion && !eventoId) {
-      setError('Selecciona el evento al que aplica la confirmación de asistencia.'); return;
+      toast.error('Faltan datos', 'Selecciona el evento al que aplica la confirmación de asistencia.'); return;
     }
 
     setEnviando(true);
@@ -101,9 +101,10 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
         requiere_confirmacion: requiereConfirmacion,
         evento_id: requiereConfirmacion ? Number(eventoId) : null,
       });
+      toast.success('Notificación enviada', 'Los destinatarios la verán en su bandeja de notificaciones.');
       onEnviada();
     } catch {
-      setError('Error al enviar la notificación. Intenta de nuevo.');
+      toast.error('No se pudo enviar la notificación', 'Error al enviar la notificación. Intenta de nuevo.');
     } finally {
       setEnviando(false);
     }
@@ -248,8 +249,6 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
           Esta notificación será enviada a <strong>todos los usuarios</strong> del sistema.
         </p>
       )}
-
-      {error && <p className={styles.error}>{error}</p>}
 
       <div className={styles.footer}>
         <Btn kind="ghost" size="md" type="button" onClick={onCancelar}>

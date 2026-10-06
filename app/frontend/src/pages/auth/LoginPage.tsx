@@ -1,13 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SignIn } from '@clerk/react';
+import { SignIn, useAuth as useClerkAuth } from '@clerk/react';
 import { loginApi } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
-import { CLERK_ENABLED } from '../../auth/clerkSession';
+import { CLERK_ENABLED, getLoginError, setLoginError, subscribeLoginError } from '../../auth/clerkSession';
+import Spinner from '../../components/ui/Spinner';
 import styles from './LoginPage.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
 
+// Formulario de Clerk. Mientras hay sesión de Clerk pero la app aún no validó al usuario
+// (/api/auth/me), se muestra un estado de carga en lugar de dejar parpadear el formulario.
+function ClerkSignInPanel() {
+  const { isLoaded, isSignedIn } = useClerkAuth();
+
+  if (isLoaded && isSignedIn) {
+    return (
+      <div className={styles.validando}>
+        <Spinner size="md" label="Validando tu sesión…" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Sin registro público: las cuentas las crea el administrador. */}
+      <SignIn
+        routing="hash"
+        forceRedirectUrl="/login"
+        withSignUp={false}
+        appearance={{ elements: { footerAction: { display: 'none' } } }}
+      />
+    </>
+  );
+}
+
 export default function LoginPage() {
+  const loginError = useSyncExternalStore(subscribeLoginError, getLoginError);
+
   const [email, setEmail]               = useState('');
   const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -83,13 +112,15 @@ export default function LoginPage() {
 
           {!useLegacyLogin ? (
             <>
-              {/* Sin registro público: las cuentas las crea el administrador. */}
-              <SignIn
-                routing="hash"
-                forceRedirectUrl="/login"
-                withSignUp={false}
-                appearance={{ elements: { footerAction: { display: 'none' } } }}
-              />
+              {loginError && (
+                <div className={styles.alerta} role="alert">
+                  <span>{loginError}</span>
+                  <button type="button" className={styles.alertaCerrar} onClick={() => setLoginError(null)} aria-label="Cerrar mensaje">
+                    ×
+                  </button>
+                </div>
+              )}
+              <ClerkSignInPanel />
               <div className={styles.forgotRow}>
                 <button type="button" className={styles.forgotLink} onClick={() => setUseLegacyLogin(true)}>
                   Usar el acceso anterior

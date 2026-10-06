@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { CardHead } from '../.././../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
@@ -10,7 +11,7 @@ import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { ROLES } from '../../../utils/roles';
-import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
+import { ESTADOS_RESERVA, avisoCambioEstadoReserva } from '../../../utils/estadosReserva';
 import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
@@ -98,12 +99,16 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     apiClient.get('/api/espacios').then(res => setEspacios(res.data)).catch(() => {});
   }, [refreshKey]);
 
+  const toast = useToast();
+
   const cambiarEstado = async (id: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: nuevoEstado });
+      const aviso = avisoCambioEstadoReserva(nuevoEstado);
+      toast.success(aviso.titulo, aviso.mensaje);
       fetchReservas();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cambiar el estado de la reserva');
+      toast.error('No se pudo actualizar la reserva', err.response?.data?.message || 'Error al cambiar el estado de la reserva.');
     }
   };
 

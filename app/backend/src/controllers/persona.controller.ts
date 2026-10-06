@@ -4,13 +4,15 @@ import bcrypt from 'bcryptjs';
 import pool from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
+import { isClerkEnabled } from '../config/clerk';
+import { sincronizarPerfilEnClerk } from '../services/clerkProfile.service';
 
 export const getCoordinadoresGrupo = async (_req: Request, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT p.id, p.nombre
        FROM persona p
-       WHERE p.rol_id = 3
+       WHERE p.rol_id = 3 AND p.estado_cuenta = 'activa'
        ORDER BY p.nombre ASC`
     );
     res.status(HttpStatus.OK).json(rows);
@@ -31,7 +33,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
         `SELECT p.id, p.nombre, p.correo, p.disponible
          FROM persona p
          INNER JOIN coordinador_ministro cm ON cm.ministro_id = p.id
-         WHERE cm.coordinador_id = ?
+         WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'
          ORDER BY p.nombre ASC`,
         [req.user.id]
       );
@@ -43,7 +45,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
       `SELECT p.id, p.nombre, p.correo, p.disponible
        FROM persona p
        INNER JOIN rol r ON r.id = p.rol_id
-       WHERE LOWER(TRIM(r.detalle)) = 'ministro'
+       WHERE LOWER(TRIM(r.detalle)) = 'ministro' AND p.estado_cuenta = 'activa'
        ORDER BY p.nombre ASC`
     );
 
@@ -60,7 +62,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
 export const getEncargadosEvento = async (_req: Request, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, nombre FROM persona ORDER BY nombre ASC'
+      "SELECT id, nombre FROM persona WHERE estado_cuenta = 'activa' ORDER BY nombre ASC"
     );
     res.status(HttpStatus.OK).json(rows);
   } catch (error) {
@@ -129,7 +131,8 @@ export const actualizarDisponibilidad = async (req: Request, res: Response): Pro
 };
 
 // PUT /api/personas/:id — editar perfil propio
-// Campos editables: nombre, correo, password (opcional).
+// Campos editables: nombre, correo, password (opcional). Si la persona está vinculada a Clerk,
+// la nueva contraseña y el nuevo correo también se actualizan allá.
 // rol_id: solo Admin puede modificarlo.
 export const editarPerfil = async (req: Request, res: Response): Promise<void> => {
   const targetId = Number(req.params.id);
@@ -162,7 +165,7 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
   try {
     // Verificar que la persona existe
     const [existing] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, nombre, correo, rol_id FROM persona WHERE id = ?',
+      'SELECT id, nombre, correo, rol_id, clerk_user_id FROM persona WHERE id = ?',
       [targetId]
     );
     if (existing.length === 0) {
@@ -178,6 +181,21 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
       );
       if (correoRows.length > 0) {
         res.status(HttpStatus.CONFLICT).json({ mensaje: 'El correo ya está en uso por otra persona' });
+        return;
+      }
+    }
+
+    // Clerk guarda su propia contraseña y correo: se cambian primero allá, para que si los
+    // rechaza (o no responde) no quede la BD distinta a lo que Clerk usa para iniciar sesión.
+    if ((password || correo) && isClerkEnabled() && existing[0].clerk_user_id) {
+      const correoCambio = correo && correo.toLowerCase() !== String(existing[0].correo).toLowerCase();
+      const errorClerk = await sincronizarPerfilEnClerk(existing[0].clerk_user_id, {
+        password: password || undefined,
+        correoNuevo: correoCambio ? correo : undefined,
+        correoAnterior: existing[0].correo,
+      });
+      if (errorClerk) {
+        res.status(errorClerk.status).json({ mensaje: errorClerk.mensaje });
         return;
       }
     }

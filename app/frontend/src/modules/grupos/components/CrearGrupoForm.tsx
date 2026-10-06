@@ -2,47 +2,42 @@ import { useState, useEffect } from 'react';
 import { Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
+import { useToast } from '../../../context/ToastContext';
 
 export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () => void }) {
   const [nombre, setNombre] = useState('');
   const [coordinadorId, setCoordinadorId] = useState('');
   const [personas, setPersonas] = useState<Persona[]>([]);
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     apiClient.get('/api/personas/coordinadores-grupo')
       .then(res => setPersonas(res.data))
-      .catch(() => setMensaje('Error al cargar la lista de coordinadores.'));
+      .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar la lista de coordinadores.'));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!nombre || !coordinadorId) {
-      setMensaje('Por favor completa todos los campos.');
+      toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     try {
       await apiClient.post('/api/grupos', { nombre, coordinador_id: parseInt(coordinadorId) });
-      setMensaje('¡Grupo creado con éxito!');
+      toast.success('Grupo creado', `El grupo "${nombre}" ya está disponible.`);
       setNombre('');
       setCoordinadorId('');
       if (onGrupoCreado) onGrupoCreado();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar crear el grupo.');
+      toast.error('No se pudo crear el grupo', error.response?.data?.mensaje || 'Error de red al intentar crear el grupo.');
     }
   };
 
   return (
     <div>
       <h3 className={styles.sectionTitle}>Crear Nuevo Grupo</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CrearReservaForm from './CrearReservaForm';
+import { ToastProvider } from '../../../context/ToastContext';
 import apiClient from '../../../api/client';
 
 vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
@@ -14,7 +15,7 @@ beforeEach(() => {
 });
 
 function mostrar(props: Parameters<typeof CrearReservaForm>[0] = {}) {
-  render(<MemoryRouter><CrearReservaForm {...props} /></MemoryRouter>);
+  render(<ToastProvider><MemoryRouter><CrearReservaForm {...props} /></MemoryRouter></ToastProvider>);
 }
 
 async function completar() {
@@ -32,34 +33,43 @@ afterEach(() => vi.useRealTimers());
 const enviar = () => fireEvent.click(screen.getByRole('button', { name: 'Solicitar Reserva' }));
 
 describe('CrearReservaForm', () => {
-  it('confirma el envío con espacio, fecha, horario, estado pendiente y enlace a Mis Reservas', async () => {
+  it('avisa con un toast el espacio, fecha, horario y estado pendiente, y limpia el formulario', async () => {
     const onReservaCreada = vi.fn();
     mostrar({ onReservaCreada });
     await completar();
     enviar();
 
-    const confirmacion = await screen.findByRole('status');
-    expect(confirmacion).toHaveTextContent('Solicitud enviada');
-    expect(confirmacion).toHaveTextContent('Salón Parroquial');
-    expect(confirmacion).toHaveTextContent('Ensayo del coro');
-    expect(confirmacion).toHaveTextContent('18:00 a 20:00');
-    expect(confirmacion).toHaveTextContent('pendiente de aprobación');
-    expect(screen.getByRole('link', { name: /Mis Reservas/ })).toHaveAttribute('href', '/mis-reservas');
+    const aviso = await screen.findByRole('status');
+    expect(aviso).toHaveTextContent('Solicitud enviada');
+    expect(aviso).toHaveTextContent('Salón Parroquial');
+    expect(aviso).toHaveTextContent('Ensayo del coro');
+    expect(aviso).toHaveTextContent('18:00 a 20:00');
+    expect(aviso).toHaveTextContent('pendiente de aprobación del sacerdote');
+    expect(aviso).toHaveTextContent('Puedes revisar su estado en Mis Reservas.');
     expect(onReservaCreada).toHaveBeenCalledOnce();
     expect(screen.getByLabelText('Título del Evento:')).toHaveValue('');
   });
 
-  it('al Sacerdote le indica que puede aprobar su propia solicitud, sin enlace a Mis Reservas', async () => {
+  it('no deja un cuadro de confirmación dentro de la página, solo el toast', async () => {
+    mostrar();
+    await completar();
+    enviar();
+
+    await screen.findByRole('status');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: /Mis Reservas/ })).not.toBeInTheDocument();
+  });
+
+  it('al Sacerdote le indica que puede aprobar su propia solicitud', async () => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 1 }));
     mostrar();
     await completar();
     enviar();
 
-    const confirmacion = await screen.findByRole('status');
-    expect(confirmacion).toHaveTextContent('pendiente de aprobación.');
-    expect(confirmacion).not.toHaveTextContent('del sacerdote');
-    expect(confirmacion).toHaveTextContent('Puedes aprobarla tú mismo');
-    expect(screen.queryByRole('link', { name: /Mis Reservas/ })).not.toBeInTheDocument();
+    const aviso = await screen.findByRole('status');
+    expect(aviso).toHaveTextContent('pendiente de aprobación.');
+    expect(aviso).not.toHaveTextContent('del sacerdote');
+    expect(aviso).toHaveTextContent('Puedes aprobarla tú mismo');
   });
 
   it('muestra los errores como alerta y oculta una confirmación previa', async () => {

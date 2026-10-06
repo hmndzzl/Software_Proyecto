@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import LoadingState from '../../components/ui/LoadingState';
@@ -47,7 +48,7 @@ export default function MinistrosPage() {
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [accionError, setAccionError] = useState('');
+  const toast = useToast();
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
 
   const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(ministros, SORT_VALUE);
@@ -68,13 +69,13 @@ export default function MinistrosPage() {
 
   const toggleDisponibilidad = async (ministro: Ministro) => {
     const nuevoValor = !ministro.disponible;
-    setAccionError('');
     setActualizandoId(ministro.id);
     try {
       await apiClient.patch(`/api/personas/${ministro.id}/disponibilidad`, { disponible: nuevoValor });
       setMinistros(prev => prev.map(m => (m.id === ministro.id ? { ...m, disponible: nuevoValor } : m)));
+      toast.success('Disponibilidad actualizada', `${ministro.nombre} ahora figura como ${nuevoValor ? 'disponible' : 'no disponible'}.`);
     } catch {
-      setAccionError('No se pudo actualizar la disponibilidad. Intenta de nuevo.');
+      toast.error('No se pudo actualizar la disponibilidad', 'Intenta de nuevo en unos momentos.');
     } finally {
       setActualizandoId(null);
     }
@@ -96,9 +97,6 @@ export default function MinistrosPage() {
 
         {loading && <LoadingState label="Cargando ministros..." />}
         {error   && <ErrorState message={error} onRetry={cargarMinistros} />}
-        {!loading && !error && accionError && (
-          <p className={`${styles.msg} ${styles.msgError}`}>{accionError}</p>
-        )}
 
         {!loading && !error && ministros.length === 0 && (
           <EmptyState message="No hay ministros registrados." />

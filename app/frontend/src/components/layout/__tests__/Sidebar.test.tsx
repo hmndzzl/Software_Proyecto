@@ -49,6 +49,16 @@ describe('Sidebar Component', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/reservas');
   });
 
+  it.each([ROLES.ADMIN, ROLES.SACERDOTE])('muestra el enlace "Cuentas" al rol %s', (rol) => {
+    renderWithRouterAndAuth(rol);
+    expect(screen.getByText('Cuentas')).toBeInTheDocument();
+  });
+
+  it.each([ROLES.MINISTRO, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS])('oculta el enlace "Cuentas" al rol %s', (rol) => {
+    renderWithRouterAndAuth(rol);
+    expect(screen.queryByText('Cuentas')).not.toBeInTheDocument();
+  });
+
   it('NO renderiza botón "Nueva Reserva" si el usuario es ministro', () => {
     renderWithRouterAndAuth(ROLES.MINISTRO);
     expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
 import EmptyState from '../../../components/ui/EmptyState';
 import styles from '../../../styles/Form.module.css';
@@ -26,7 +27,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [tareaId, setTareaId] = useState('');
   const [destinatarioId, setDestinatarioId] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,24 +46,23 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
     e.preventDefault();
 
     if (!tareaId || !destinatarioId) {
-      setMensaje('Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
+      toast.error('Faltan datos', 'Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
       return;
     }
 
     setLoading(true);
-    setMensaje('');
 
     try {
       const res = await apiClient.post('/api/cambios-turno', {
         tarea_id: Number(tareaId),
         destinatario_id: Number(destinatarioId),
       });
-      setMensaje(res.data.mensaje || '¡Solicitud de cambio de turno enviada!');
+      toast.success('Solicitud enviada', res.data.mensaje || 'Tu solicitud de cambio de turno fue enviada.');
       setTareaId('');
       setDestinatarioId('');
       if (onSolicitudEnviada) onSolicitudEnviada();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al solicitar el cambio de turno.');
+      toast.error('No se pudo enviar la solicitud', error.response?.data?.mensaje || 'Error de red al solicitar el cambio de turno.');
     } finally {
       setLoading(false);
     }
@@ -71,12 +71,6 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
   return (
     <div>
       <h3 className={styles.sectionTitle}>Solicitar Cambio de Turno</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('enviada') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       {misTareas.length === 0 ? (
         <EmptyState message="No tienes tareas asignadas actualmente para solicitar un cambio." />

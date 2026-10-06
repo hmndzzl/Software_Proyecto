@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import EnviarNotificacionForm from './EnviarNotificacionForm';
+import { ToastProvider } from '../../../context/ToastContext';
 import apiClient from '../../../api/client';
 import { AuthProvider } from '../../../context/AuthContext';
 import { MemoryRouter } from 'react-router-dom';
@@ -43,11 +44,11 @@ describe('EnviarNotificacionForm', () => {
 
   function renderForm() {
     render(
-      <MemoryRouter>
+      <ToastProvider><MemoryRouter>
         <AuthProvider>
           <EnviarNotificacionForm onEnviada={onEnviada} onCancelar={onCancelar} />
         </AuthProvider>
-      </MemoryRouter>
+      </MemoryRouter></ToastProvider>
     );
   }
 

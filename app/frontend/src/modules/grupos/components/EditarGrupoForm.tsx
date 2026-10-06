@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Grupo, Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
+import { useToast } from '../../../context/ToastContext';
 
 export default function EditarGrupoForm({
   grupo,
@@ -15,34 +16,33 @@ export default function EditarGrupoForm({
   const [nombre, setNombre] = useState(grupo.nombre);
   const [coordinadorId, setCoordinadorId] = useState(String(grupo.coordinador_id));
   const [personas, setPersonas] = useState<Persona[]>([]);
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     setNombre(grupo.nombre);
     setCoordinadorId(String(grupo.coordinador_id));
-    setMensaje('');
   }, [grupo]);
 
   useEffect(() => {
     apiClient.get('/api/personas/coordinadores-grupo')
       .then(res => setPersonas(res.data))
-      .catch(() => setMensaje('Error al cargar la lista de coordinadores.'));
+      .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar la lista de coordinadores.'));
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!nombre || !coordinadorId) {
-      setMensaje('Por favor completa todos los campos.');
+      toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     try {
       await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_id: parseInt(coordinadorId) });
-      setMensaje('¡Grupo actualizado con éxito!');
+      toast.success('Grupo actualizado', `Los cambios en "${nombre}" se guardaron.`);
       if (onGrupoActualizado) onGrupoActualizado();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar actualizar el grupo.');
+      toast.error('No se pudo actualizar el grupo', error.response?.data?.mensaje || 'Error de red al intentar actualizar el grupo.');
     }
   };
 
@@ -51,21 +51,16 @@ export default function EditarGrupoForm({
 
     try {
       await apiClient.delete(`/api/grupos/${grupo.id}`);
+      toast.success('Grupo eliminado', `El grupo "${grupo.nombre}" fue eliminado.`);
       if (onGrupoActualizado) onGrupoActualizado();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar eliminar el grupo.');
+      toast.error('No se pudo eliminar el grupo', error.response?.data?.mensaje || 'Error de red al intentar eliminar el grupo.');
     }
   };
 
   return (
     <div className={styles.editSection}>
       <h3 className={styles.sectionTitle}>Editar Grupo</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleUpdate} className={styles.form}>
         <div className={styles.field}>

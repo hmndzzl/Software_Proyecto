@@ -69,7 +69,7 @@ describe('Auth Middleware - Sesiones de Clerk', () => {
   it('adjunta la persona y su rol de la BD cuando el token de Clerk es válido', async () => {
     (isClerkEnabled as any).mockReturnValue(true);
     (verifyClerkSessionToken as any).mockResolvedValue('user_123');
-    (resolvePersonaFromClerk as any).mockResolvedValue({ id: 7, rol_id: ROLES.COORDINADOR_GRUPOS });
+    (resolvePersonaFromClerk as any).mockResolvedValue({ id: 7, rol_id: ROLES.COORDINADOR_GRUPOS, estado_cuenta: 'activa' });
 
     await ejecutar();
 
@@ -98,6 +98,22 @@ describe('Auth Middleware - Sesiones de Clerk', () => {
     await ejecutar();
 
     expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['pendiente', 'CUENTA_PENDIENTE'],
+    ['rechazada', 'CUENTA_RECHAZADA'],
+  ])('retorna 403 y no adjunta usuario si la cuenta está %s', async (estado, codigo) => {
+    (isClerkEnabled as any).mockReturnValue(true);
+    (verifyClerkSessionToken as any).mockResolvedValue('user_123');
+    (resolvePersonaFromClerk as any).mockResolvedValue({ id: 9, rol_id: ROLES.MINISTRO, estado_cuenta: estado });
+
+    await ejecutar();
+
+    expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ codigo }));
+    expect(req.user).toBeUndefined();
     expect(next).not.toHaveBeenCalled();
   });
 

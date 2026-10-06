@@ -5,6 +5,7 @@ import { HttpStatus } from '../utils/httpStatus';
 import { JWT_SECRET } from '../config/env';
 import { isClerkEnabled, verifyClerkSessionToken } from '../config/clerk';
 import { resolvePersonaFromClerk } from '../services/clerkAuth.service';
+import { ESTADOS_CUENTA, respuestaCuentaNoActiva } from '../config/cuentas';
 
 export interface JwtPayload {
   id: number;
@@ -85,7 +86,12 @@ async function authenticateWithClerk(token: string, req: Request, res: Response,
       return;
     }
 
-    req.user = persona;
+    if (persona.estado_cuenta !== ESTADOS_CUENTA.ACTIVA) {
+      res.status(HttpStatus.FORBIDDEN).json(respuestaCuentaNoActiva(persona.estado_cuenta));
+      return;
+    }
+
+    req.user = { id: persona.id, rol_id: persona.rol_id };
     next();
   } catch (error) {
     console.error('Error al validar la sesión de Clerk:', error);

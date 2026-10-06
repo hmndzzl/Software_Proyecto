@@ -65,6 +65,7 @@ CREATE TABLE `persona` (
   `rol_id` int(11) NOT NULL,
   `disponible` tinyint(1) NOT NULL DEFAULT 1,
   `clerk_user_id` varchar(64) DEFAULT NULL,
+  `estado_cuenta` enum('pendiente','activa','rechazada') NOT NULL DEFAULT 'activa',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_persona_correo` (`correo`),
   UNIQUE KEY `uq_persona_clerk_user_id` (`clerk_user_id`),

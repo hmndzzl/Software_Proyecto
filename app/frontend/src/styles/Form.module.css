@@ -127,40 +127,6 @@
 .messageSuccess { color: var(--color-ok); }
 .messageError   { color: var(--color-bad); }
 
-.confirmBox {
-  background-color: var(--color-okBg);
-  border: 1px solid var(--color-ok);
-  border-left-width: 5px;
-  border-radius: var(--radius-input);
-  padding: 14px 18px;
-  margin-bottom: 18px;
-  scroll-margin-top: calc(var(--topbar-h) + 16px);
-}
-
-.confirmTitle {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-ok);
-  margin: 0 0 6px 0;
-}
-
-.confirmText {
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--color-ink);
-  margin: 0 0 4px 0;
-}
-
-.confirmLink {
-  color: var(--color-rojo);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.confirmLink:hover { text-decoration: underline; }
-
 /* ── Botones inline (legacy — prefer Btn component) ── */
 .buttonRow {
   display: flex;
