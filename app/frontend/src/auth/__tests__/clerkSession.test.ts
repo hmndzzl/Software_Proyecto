@@ -66,3 +66,26 @@ describe('clerkSession', () => {
     expect(await getClerkToken()).toBeNull();
   });
 });
+
+describe('mensaje de error de login', () => {
+  it('guarda, notifica y limpia el mensaje', async () => {
+    const { getLoginError, setLoginError, subscribeLoginError } = await import('../clerkSession');
+    const listener = vi.fn();
+    const unsubscribe = subscribeLoginError(listener);
+
+    setLoginError('Tu cuenta está pendiente de aprobación.');
+    expect(getLoginError()).toBe('Tu cuenta está pendiente de aprobación.');
+    expect(sessionStorage.getItem('loginError')).toBe('Tu cuenta está pendiente de aprobación.');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    setLoginError(null);
+    expect(getLoginError()).toBeNull();
+    expect(sessionStorage.getItem('loginError')).toBeNull();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    setLoginError('otro');
+    expect(listener).toHaveBeenCalledTimes(2);
+    setLoginError(null);
+  });
+});
