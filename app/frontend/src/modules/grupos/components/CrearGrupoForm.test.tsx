@@ -22,6 +22,13 @@ describe('CrearGrupoForm - avisos', () => {
     await userEvent.selectOptions(screen.getByRole('combobox'), '7');
   };
 
+  it('avisa con un toast si no se pueden cargar los coordinadores', async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('red'));
+    mostrar();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar los datosError al cargar la lista de coordinadores.');
+  });
+
   it('avisa con un toast cuando faltan datos', async () => {
     mostrar();
     await screen.findByText('Ana Coordinadora');
@@ -54,6 +61,17 @@ describe('CrearGrupoForm - avisos', () => {
     rerender(<div>formulario cerrado</div>);
 
     expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('usa un mensaje genérico si falla sin respuesta del servidor', async () => {
+    vi.mocked(apiClient.post).mockRejectedValue(new Error('red'));
+    mostrar();
+    await screen.findByText('Ana Coordinadora');
+
+    await llenar();
+    await userEvent.click(screen.getByRole('button', { name: /crear grupo/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Error de red al intentar crear el grupo.');
   });
 
   it('muestra el mensaje del servidor si falla', async () => {

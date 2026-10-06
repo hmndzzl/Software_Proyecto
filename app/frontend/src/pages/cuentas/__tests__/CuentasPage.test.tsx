@@ -98,6 +98,27 @@ describe('CuentasPage', () => {
     expect(screen.queryByText('ana@gmail.com')).not.toBeInTheDocument();
   });
 
+  it('el modal de rechazo se puede cerrar con la ×', async () => {
+    render(<CuentasPage />, { wrapper: ToastProvider });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+
+    expect(rechazarCuentaApi).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Rechazar cuenta' })).not.toBeInTheDocument();
+  });
+
+  it('muestra el mensaje del servidor si falla el rechazo y conserva la cuenta', async () => {
+    vi.mocked(rechazarCuentaApi).mockRejectedValue({ response: { data: { mensaje: 'No puedes rechazar tu propia cuenta' } } });
+    render(<CuentasPage />, { wrapper: ToastProvider });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo rechazar la cuentaNo puedes rechazar tu propia cuenta');
+    expect(screen.getByText('ana@gmail.com')).toBeInTheDocument();
+  });
+
   it('cancelar el rechazo no cambia nada', async () => {
     render(<CuentasPage />, { wrapper: ToastProvider });
 
@@ -180,6 +201,16 @@ describe('CuentasPage', () => {
       expect(aviso).toHaveTextContent('Luis Pérez quedó registrado como Ministro.');
       expect(aviso).toHaveTextContent('No se pudo crear el usuario en Clerk');
       expect(aviso).not.toHaveTextContent('ya puede iniciar sesión como Ministro con su correo');
+    });
+
+    it('avisa si faltan el nombre o el correo, sin llamar al servidor', async () => {
+      render(<CuentasPage />, { wrapper: ToastProvider });
+      await abrirFormulario();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datosCompleta el nombre y el correo.');
+      expect(crearCuentaApi).not.toHaveBeenCalled();
     });
 
     it('exige una contraseña de al menos 8 caracteres sin llamar al servidor', async () => {
@@ -284,6 +315,33 @@ describe('CuentasPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Cerrar aviso' }));
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('usa un mensaje genérico si aprobar o rechazar fallan sin respuesta del servidor', async () => {
+    vi.mocked(aprobarCuentaApi).mockRejectedValue(new Error('red'));
+    vi.mocked(rechazarCuentaApi).mockRejectedValue(new Error('red'));
+    render(<CuentasPage />, { wrapper: ToastProvider });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo aprobar la cuentaIntenta de nuevo en unos momentos.');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se pudo rechazar la cuentaIntenta de nuevo en unos momentos.'));
+  });
+
+  it('usa un mensaje genérico si crear la cuenta falla sin respuesta del servidor', async () => {
+    vi.mocked(crearCuentaApi).mockRejectedValue(new Error('red'));
+    render(<CuentasPage />, { wrapper: ToastProvider });
+    await screen.findByText('Ana López');
+    await userEvent.click(screen.getByRole('button', { name: 'Nueva cuenta' }));
+    await userEvent.type(screen.getByLabelText('Nombre completo'), 'Luis Pérez');
+    await userEvent.type(screen.getByLabelText('Correo electrónico'), 'luis@parroquia.com');
+    await userEvent.type(screen.getByLabelText('Contraseña inicial'), 'clave-segura');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo crear la cuentaIntenta de nuevo en unos momentos.');
   });
 
   it('muestra error con opción de reintentar si falla la carga', async () => {

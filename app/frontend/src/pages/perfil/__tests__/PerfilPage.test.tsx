@@ -44,6 +44,17 @@ describe('PerfilPage - avisos', () => {
     expect(apiClient.put).not.toHaveBeenCalled();
   });
 
+  it('avisa si no hay nada que guardar (nombre y correo vacíos, sin contraseña)', async () => {
+    mostrar();
+
+    await userEvent.clear(screen.getByLabelText('Nombre completo'));
+    await userEvent.clear(screen.getByLabelText('Correo electrónico'));
+    await guardar();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sin cambiosNo hay cambios para guardar.');
+    expect(apiClient.put).not.toHaveBeenCalled();
+  });
+
   it('avisa el correo repetido (409)', async () => {
     vi.mocked(apiClient.put).mockRejectedValue({ response: { status: 409, data: { mensaje: 'x' } } });
     mostrar();
