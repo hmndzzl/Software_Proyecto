@@ -358,6 +358,7 @@ export const getDestinatarios = async (req: Request, res: Response): Promise<voi
         `SELECT p.id, p.nombre, r.id AS rol_id, r.detalle AS rol_nombre
          FROM persona p
          INNER JOIN rol r ON r.id = p.rol_id
+         WHERE p.estado_cuenta = 'activa'
          ORDER BY r.id ASC, p.nombre ASC`
       );
     } else if (rolId === ROLES.COORDINADOR_MINISTROS) {
@@ -431,7 +432,7 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
 
     if (tipo === 'global') {
       // Auto-poblar con todos los usuarios del sistema
-      const [personas] = await conn.execute<RowDataPacket[]>('SELECT id FROM persona');
+      const [personas] = await conn.execute<RowDataPacket[]>("SELECT id FROM persona WHERE estado_cuenta = 'activa'");
       ids = (personas as RowDataPacket[]).map((p) => p.id as number);
     } else {
       // individual o grupo: requiere destinatarios
