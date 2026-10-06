@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Evento, Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
+import { useToast } from '../../../context/ToastContext';
 
 export default function EditarEventoForm({
   evento,
@@ -15,25 +16,24 @@ export default function EditarEventoForm({
   const [descripcion, setDescripcion] = useState(evento.descripcion);
   const [encargadoId, setEncargadoId] = useState(String(evento.encargado_id));
   const [personas, setPersonas]       = useState<Persona[]>([]);
-  const [mensaje, setMensaje]         = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     setDescripcion(evento.descripcion);
     setEncargadoId(String(evento.encargado_id));
-    setMensaje('');
   }, [evento]);
 
   useEffect(() => {
     apiClient.get('/api/personas/encargados-evento')
       .then(res => setPersonas(res.data))
-      .catch(() => setMensaje('Error al cargar las personas disponibles.'));
+      .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar las personas disponibles.'));
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!descripcion || !encargadoId) {
-      setMensaje('La descripción y el encargado son requeridos.');
+      toast.error('Faltan datos', 'La descripción y el encargado son requeridos.');
       return;
     }
 
@@ -42,10 +42,10 @@ export default function EditarEventoForm({
         descripcion,
         encargado_id: Number(encargadoId),
       });
-      setMensaje('¡Evento actualizado con éxito!');
+      toast.success('Evento actualizado', `Los cambios en "${descripcion}" se guardaron.`);
       if (onEventoActualizado) onEventoActualizado();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar actualizar el evento.');
+      toast.error('No se pudo actualizar el evento', error.response?.data?.mensaje || 'Error de red al intentar actualizar el evento.');
     }
   };
 
@@ -54,21 +54,16 @@ export default function EditarEventoForm({
 
     try {
       await apiClient.delete(`/api/eventos/${evento.id}`);
+      toast.success('Evento eliminado', `El evento "${evento.descripcion}" fue eliminado.`);
       if (onEventoActualizado) onEventoActualizado();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar eliminar el evento.');
+      toast.error('No se pudo eliminar el evento', error.response?.data?.mensaje || 'Error de red al intentar eliminar el evento.');
     }
   };
 
   return (
     <div className={styles.editSection}>
       <h3 className={styles.sectionTitle}>Editar Evento</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleUpdate} className={styles.form}>
         <div className={styles.field}>
