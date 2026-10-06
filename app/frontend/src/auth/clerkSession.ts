@@ -7,6 +7,36 @@ export const CLERK_ENABLED = Boolean(CLERK_PUBLISHABLE_KEY);
 // Marca en localStorage qué proveedor creó la sesión actual.
 export const AUTH_PROVIDER_KEY = 'authProvider';
 
+// Mensaje de error del último intento de entrar con Clerk (p. ej. "cuenta pendiente de
+// aprobación"). Vive aparte del toast global: la pantalla de login lo muestra hasta que se
+// cierra o se vuelve a intentar, y sobrevive a una recarga de la página.
+const LOGIN_ERROR_KEY = 'loginError';
+const loginErrorListeners = new Set<() => void>();
+
+function leerLoginErrorGuardado(): string | null {
+  try { return sessionStorage.getItem(LOGIN_ERROR_KEY); } catch { return null; }
+}
+
+let loginError: string | null = leerLoginErrorGuardado();
+
+export function getLoginError(): string | null {
+  return loginError;
+}
+
+export function setLoginError(mensaje: string | null) {
+  loginError = mensaje;
+  try {
+    if (mensaje) sessionStorage.setItem(LOGIN_ERROR_KEY, mensaje);
+    else sessionStorage.removeItem(LOGIN_ERROR_KEY);
+  } catch { /* sin sessionStorage el mensaje solo vive en memoria */ }
+  loginErrorListeners.forEach((listener) => listener());
+}
+
+export function subscribeLoginError(listener: () => void) {
+  loginErrorListeners.add(listener);
+  return () => { loginErrorListeners.delete(listener); };
+}
+
 // Si Clerk no termina de cargar, no se bloquean las peticiones para siempre.
 const READY_TIMEOUT_MS = 5_000;
 
