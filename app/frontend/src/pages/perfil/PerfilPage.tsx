@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
@@ -34,8 +35,7 @@ export default function PerfilPage() {
   });
 
   const [saving,  setSaving]  = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error,   setError]   = useState('');
+  const toast = useToast();
 
   // Sincroniza el formulario si el contexto cambia 
   useEffect(() => {
@@ -49,17 +49,13 @@ export default function PerfilPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setSuccess('');
-    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccess('');
-    setError('');
 
     if (formData.password && formData.password !== formData.confirmar) {
-      setError('Las contraseñas no coinciden.');
+      toast.error('Revisa tus datos', 'Las contraseñas no coinciden.');
       return;
     }
 
@@ -69,7 +65,7 @@ export default function PerfilPage() {
     if (formData.password)       body.password = formData.password;
 
     if (Object.keys(body).length === 0) {
-      setError('No hay cambios para guardar.');
+      toast.error('Sin cambios', 'No hay cambios para guardar.');
       return;
     }
 
@@ -88,13 +84,13 @@ export default function PerfilPage() {
       });
 
       setFormData(prev => ({ ...prev, password: '', confirmar: '' }));
-      setSuccess('Perfil actualizado correctamente.');
+      toast.success('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
     } catch (err: any) {
       if (err?.response?.status === 409) {
-        setError('El correo ya está en uso por otra cuenta.');
+        toast.error('No se pudo guardar el perfil', 'El correo ya está en uso por otra cuenta.');
       } else {
         const msg = err?.response?.data?.mensaje;
-        setError(msg ?? 'Error al actualizar el perfil. Inténtalo de nuevo.');
+        toast.error('No se pudo guardar el perfil', msg ?? 'Error al actualizar el perfil. Inténtalo de nuevo.');
       }
     } finally {
       setSaving(false);
@@ -201,9 +197,6 @@ export default function PerfilPage() {
                 </div>
               </div>
             </div>
-
-            {success && <p className={`${form.message} ${form.messageSuccess}`}>{success}</p>}
-            {error   && <p className={`${form.message} ${form.messageError}`}>{error}</p>}
 
             <div className={form.buttonRow}>
               <Btn type="submit" kind="primary" disabled={saving}>
