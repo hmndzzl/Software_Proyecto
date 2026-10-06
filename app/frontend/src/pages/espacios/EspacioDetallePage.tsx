@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
+import { useToast } from '../../context/ToastContext';
+import { avisoCambioEstadoReserva } from '../../utils/estadosReserva';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -58,13 +60,17 @@ export default function EspacioDetallePage() {
     cargarEspacio();
   }, [id]);
 
+  const toast = useToast();
+
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
+      const aviso = avisoCambioEstadoReserva(nuevoEstado);
+      toast.success(aviso.titulo, aviso.mensaje);
       const res = await apiClient.get(`/api/reservas?espacio_id=${id}`);
       setReservas(res.data);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cambiar el estado de la reserva');
+      toast.error('No se pudo actualizar la reserva', err.response?.data?.message || 'Error al cambiar el estado de la reserva.');
     }
   };
 
