@@ -47,7 +47,6 @@ async function main() {
         const creado = await clerk.users.createUser({
           emailAddress: [persona.correo],
           firstName: persona.nombre,
-          externalId: String(persona.id),
           passwordDigest: persona.password,
           passwordHasher: 'bcrypt',
         });
