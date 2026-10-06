@@ -3,49 +3,44 @@ import { ReservaDisponible } from '../../../types';
 import apiClient from '../../../api/client';
 import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
+import { useToast } from '../../../context/ToastContext';
 
 export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: () => void }) {
   const [descripcion, setDescripcion]   = useState('');
   const [reservaId, setReservaId]       = useState('');
   const [reservas, setReservas]         = useState<ReservaDisponible[]>([]);
-  const [mensaje, setMensaje]           = useState('');
+  const toast = useToast();
 
   const reservaSeleccionada = reservas.find(r => String(r.id) === reservaId) ?? null;
 
   useEffect(() => {
     apiClient.get('/api/eventos/reservas-disponibles')
       .then(r => setReservas(r.data))
-      .catch(() => setMensaje('Error al cargar reservas disponibles.'));
+      .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar reservas disponibles.'));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!descripcion || !reservaId) {
-      setMensaje('Por favor completa todos los campos.');
+      toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     try {
       await apiClient.post('/api/eventos', { descripcion, reserva_id: parseInt(reservaId) });
-      setMensaje('¡Evento creado con éxito!');
+      toast.success('Evento creado', `El evento "${descripcion}" ya quedó registrado.`);
       setDescripcion('');
       setReservaId('');
       if (onEventoCreado) onEventoCreado();
     } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar crear el evento.');
+      toast.error('No se pudo crear el evento', error.response?.data?.mensaje || 'Error de red al intentar crear el evento.');
     }
   };
 
   return (
     <div>
       <h3 className={styles.sectionTitle}>Crear Nuevo Evento</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>
