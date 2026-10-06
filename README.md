@@ -177,6 +177,12 @@ Ministro (4)       → [4]
 
 Los grupos parroquiales no tienen cuentas propias: su coordinador comunica los avisos a sus integrantes por los medios acordados.
 
+### Aprobación de cuentas
+
+No hay registro público: las cuentas las crea Admin/Sacerdote (`POST /api/auth/register`, quedan `activa`). Si alguien entra con Clerk con un correo verificado que no pertenece a ninguna persona, se crea una cuenta `pendiente` (rol Ministro provisional, sin acceso). Admin o Sacerdote la revisan en `/cuentas`: **aprobar** (eligiendo el rol; solo Admin puede otorgar Admin) o **rechazar** (reversible, se puede aprobar después). También se puede rechazar una cuenta ya activa (p. ej. la persona dejó la parroquia), salvo la propia; solo un Admin puede rechazar a otro Admin. Con Clerk el bloqueo es inmediato; con el acceso anterior, el refresh token deja de renovarse y el access token vigente expira en 15 min. Una cuenta `pendiente` o `rechazada` recibe 403 con `codigo` `CUENTA_PENDIENTE`/`CUENTA_RECHAZADA` y no aparece en los directorios ni como destinataria de notificaciones.
+
+Sobre bases existentes, ejecutar una vez `app/database/migrations/20261005_persona_estado_cuenta.sql` (las personas actuales quedan `activa`).
+
 ## Rutas de la aplicación
 
 | Ruta | Descripción |
@@ -190,6 +196,7 @@ Los grupos parroquiales no tienen cuentas propias: su coordinador comunica los a
 | `/espacios`, `/espacios/:id` | Espacios y disponibilidad por horario. |
 | `/eventos`, `/grupos` | Administración de eventos y grupos. |
 | `/notificaciones` | Bandeja, asistencia e inasistencias. |
+| `/cuentas` | Aprobación de cuentas pendientes (Sacerdote/Admin). |
 | `/perfil` | Perfil del usuario autenticado. |
 
 ## Modelo de Base de Datos
@@ -199,7 +206,7 @@ Los grupos parroquiales no tienen cuentas propias: su coordinador comunica los a
 | `rol` | Catálogo de roles del sistema |
 | `estado_reserva` | 1=Pendiente, 2=Confirmada, 3=Rechazada |
 | `espacio` | Salones y áreas físicas |
-| `persona` | Usuarios (correo + password hasheado + rol) |
+| `persona` | Usuarios (correo + password hasheado + rol + `estado_cuenta` pendiente/activa/rechazada) |
 | `telefono` | Teléfonos de contacto por persona |
 | `grupo` | Grupos parroquiales con coordinador asignado |
 | `coordinador_ministro` | N:M coordinadores ↔ ministros |
@@ -224,6 +231,13 @@ Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer 
 | POST | `/refresh` | Cookie | Renueva access token |
 | POST | `/logout` | No | Limpia cookie |
 | POST | `/register` | Sacerdote/Admin | Registra persona |
+
+### Cuentas — `/api/cuentas`
+| Método | Ruta | Roles | Descripción |
+|---|---|---|---|
+| GET | `/?estado=pendiente\|activa\|rechazada` | Sacerdote/Admin | Lista cuentas por estado (por defecto, pendientes) |
+| PATCH | `/:id/aprobar` | Sacerdote/Admin | Body `{ rol_id }`: activa la cuenta con ese rol (409 si ya está activa) |
+| PATCH | `/:id/rechazar` | Sacerdote/Admin | Rechaza una cuenta pendiente o activa (403 si es la propia; 409 si ya está rechazada) |
 
 ### Notificaciones — `/api/notificaciones`
 | Método | Ruta | Roles | Descripción |
