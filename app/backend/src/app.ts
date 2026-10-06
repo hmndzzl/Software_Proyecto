@@ -16,6 +16,7 @@ import notificacionRoutes from './routes/notificacion.routes';
 import cambioTurnoRoutes from './routes/cambioTurno.routes';
 import ausenciaRoutes from './routes/ausencia.routes';
 import contactoRoutes from './routes/contacto.routes';
+import cuentaRoutes from './routes/cuenta.routes';
 
 dotenv.config();
 validateEnv();
@@ -65,6 +66,7 @@ app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/cambios-turno', cambioTurnoRoutes);
 app.use('/api/ausencias', ausenciaRoutes);
 app.use('/api/contacto', contactoRoutes);
+app.use('/api/cuentas', cuentaRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {
