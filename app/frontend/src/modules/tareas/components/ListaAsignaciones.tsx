@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import Btn from '../../../components/ui/Btn';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
@@ -48,7 +49,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [ministros, setMinistros] = useState<MinistroOpcion[]>([]);
   const [editandoKey, setEditandoKey] = useState<string | null>(null);
   const [reasignando, setReasignando] = useState(false);
-  const [aviso, setAviso] = useState('');
+  const toast = useToast();
 
   const [editandoTarea, setEditandoTarea] = useState<Asignacion | null>(null);
   const [editTitulo, setEditTitulo] = useState('');
@@ -56,7 +57,6 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
   const [editHoraFin, setEditHoraFin] = useState('');
-  const [editMensaje, setEditMensaje] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
   const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
@@ -99,7 +99,6 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
 
   const reasignar = async (tareaId: number, personaActualId: number, personaNuevaId: number) => {
     setReasignando(true);
-    setAviso('');
     try {
       const res = await apiClient.put('/api/tareas/asignar', {
         tarea_id: tareaId,
@@ -110,11 +109,11 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
       const avisos: string[] = [];
       if (alerta?.ministro_no_disponible) avisos.push('está marcado como no disponible');
       if (alerta?.tope_servicios_superado) avisos.push(`tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes})`);
-      setAviso(avisos.length > 0 ? `Responsable actualizado. Atención: ${avisos.join(' y ')}.` : 'Responsable actualizado correctamente.');
+      toast.success('Responsable actualizado', avisos.length > 0 ? `Atención: ${avisos.join(' y ')}.` : 'El cambio se guardó correctamente.');
       setEditandoKey(null);
       cargarAsignaciones();
     } catch (err: any) {
-      alert(err.response?.data?.mensaje || 'Error al reasignar la tarea');
+      toast.error('No se pudo reasignar la tarea', err.response?.data?.mensaje || 'Error al reasignar la tarea.');
     } finally {
       setReasignando(false);
     }
@@ -127,26 +126,23 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     setEditFecha(asignacion.fecha);
     setEditHoraInicio(asignacion.hora_inicio.substring(0, 5));
     setEditHoraFin(asignacion.hora_fin.substring(0, 5));
-    setEditMensaje('');
   };
 
   const cerrarEdicionTarea = () => {
     setEditandoTarea(null);
-    setEditMensaje('');
   };
 
   const guardarEdicionTarea = async () => {
     if (!editandoTarea) return;
     if (!editFecha || !editHoraInicio || !editHoraFin || !editTitulo || !editDescripcion) {
-      setEditMensaje('Por favor completa todos los campos.');
+      toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
     if (editHoraInicio >= editHoraFin) {
-      setEditMensaje('La hora de inicio debe ser menor que la hora de fin.');
+      toast.error('Horario inválido', 'La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
     setEditLoading(true);
-    setEditMensaje('');
     try {
       await apiClient.put(`/api/tareas/${editandoTarea.tarea_id}`, {
         fecha: editFecha,
@@ -155,10 +151,11 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
         titulo: editTitulo,
         descripcion: editDescripcion,
       });
+      toast.success('Tarea actualizada', `Los cambios en "${editTitulo}" se guardaron.`);
       cerrarEdicionTarea();
       cargarAsignaciones();
     } catch (err: any) {
-      setEditMensaje(err.response?.data?.mensaje || 'Error al guardar los cambios.');
+      toast.error('No se pudo actualizar la tarea', err.response?.data?.mensaje || 'Error al guardar los cambios.');
     } finally {
       setEditLoading(false);
     }
@@ -175,10 +172,6 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
         <div className={formStyles.modalOverlay}>
           <div className={formStyles.modalCard}>
             <h4 className={formStyles.modalTitle}>Editar Tarea #{editandoTarea.tarea_id}</h4>
-
-            {editMensaje && (
-              <p className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>
-            )}
 
             <div className={formStyles.form}>
               <div className={formStyles.field}>
@@ -220,7 +213,6 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
         </div>
       )}
 
-      {!esMinistro && aviso && <p className={styles.aviso}>{aviso}</p>}
 
       {asignaciones.length === 0 ? (
         <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
