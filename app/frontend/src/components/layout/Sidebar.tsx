@@ -28,6 +28,18 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
     ),
   },
   {
+    to: '/cuentas',
+    label: 'Cuentas',
+    roles: [ROLES.SACERDOTE, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M17 11l2 2 4-4"/>
+      </svg>
+    ),
+  },
+  {
     to: '/tareas',
     label: 'Tareas',
     roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO, ROLES.ADMIN],
