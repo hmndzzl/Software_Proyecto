@@ -6,6 +6,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "coverage": "vitest run --coverage",
     "test:k6": "../../tests/k6/run-tests.sh",
     "test:k6:all": "../../tests/k6/run-tests.sh all",
@@ -24,6 +25,7 @@
     "mysql2": "^3.9.0"
   },
   "devDependencies": {
+    "@testcontainers/mariadb": "^12.2.0",
     "@types/bcryptjs": "^2.4.0",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.0",
