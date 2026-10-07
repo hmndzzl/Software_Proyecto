@@ -18,29 +18,29 @@ async function mockApi(page: Page, handler?: (route: Route, url: URL) => Promise
   });
 }
 
-test('el acceso válido conserva la sesión y abre el dashboard', async ({ page }) => {
-  await mockApi(page, async (route, url) => {
-    if (url.pathname !== '/api/auth/login') return false;
-    expect(route.request().postDataJSON()).toEqual({
-      correo: 'diego@parroquia.com',
-      password: 'admin123',
-    });
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ token: 'jwt-de-regresion', usuario: admin, mensaje: 'Inicio de sesión exitoso' }),
-    });
-    return true;
-  });
+// El login ahora es solo con Clerk (el formulario de correo/contraseña se eliminó),
+// y Clerk no se puede ejercitar sin red ni clave. Por eso la regresión del acceso se
+// divide en: sesión válida abre el dashboard, y sin sesión se redirige al login.
+test('una sesión válida conserva el acceso y abre el dashboard', async ({ page }) => {
+  await authenticate(page);
+  await mockApi(page);
 
-  await page.goto('/login');
-  await page.locator('input[type="email"]').fill('diego@parroquia.com');
-  await page.locator('input[type="password"]').fill('admin123');
-  await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
+  await page.goto('/dashboard');
 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Bienvenido, Diego' })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('token'))).toBe('jwt-de-regresion');
+});
+
+test('sin sesión se redirige al login y no se ofrece el formulario heredado', async ({ page }) => {
+  await mockApi(page);
+
+  await page.goto('/dashboard');
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { name: 'Hola, de nuevo' })).toBeVisible();
+  await expect(page.locator('input[type="email"]')).toHaveCount(0);
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
 
 test('un ministro no puede abrir la administración de cuentas', async ({ page }) => {
