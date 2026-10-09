@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CuentasPage from '../CuentasPage';
 import { ToastProvider } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
+import { authValue } from '../../../test/authValue';
 import { aprobarCuentaApi, crearCuentaApi, listarCuentasApi, rechazarCuentaApi, type Cuenta } from '../../../api/cuentas';
 import { ROLES } from '../../../utils/roles';
 
@@ -18,11 +19,7 @@ vi.mock('../../../api/cuentas', () => ({
 const pendiente = { id: 12, nombre: 'Ana López', correo: 'ana@gmail.com', rol_id: ROLES.MINISTRO, estado_cuenta: 'pendiente' as const };
 
 function comoUsuario(rol_id: number) {
-  vi.mocked(useAuth).mockReturnValue({
-    usuario: { id: 1, nombre: 'Aprobador', correo: 'a@parroquia.com', rol_id },
-    setAuth: vi.fn(),
-    logout: vi.fn(),
-  });
+  vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Aprobador', correo: 'a@parroquia.com', rol_id }));
 }
 
 describe('CuentasPage', () => {
