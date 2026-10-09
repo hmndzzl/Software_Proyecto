@@ -413,3 +413,13 @@ git push origin feature/nombre-funcionalidad
 ---
 
 *Universidad del Valle de Guatemala — Ingeniería en Software 1, Sección 30 — 2026*
+# Agenda pública (HU-32, Sprint 9)
+
+`GET /api/public/agenda` permite a la landing consultar, sin iniciar sesión, los
+eventos marcados explícitamente como públicos con reserva confirmada y que aún no
+han terminado. Incluye título, descripción, fecha, horarios y salón; admite paginación.
+Solo Admin/Sacerdote puede cambiar la publicación con `PATCH /api/eventos/:id/publico`.
+
+En bases existentes aplicar `app/database/migrations/20261009_evento_publico.sql`;
+los eventos existentes y nuevos permanecen privados por defecto.
+Ver [contrato, ejemplos y pruebas de la agenda pública](docs/hu32/agenda-publica.md).
