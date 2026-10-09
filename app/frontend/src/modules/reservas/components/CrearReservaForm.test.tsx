@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CrearReservaForm from './CrearReservaForm';
 import { ToastProvider } from '../../../context/ToastContext';
+import { AuthProvider } from '../../../context/AuthContext';
 import apiClient from '../../../api/client';
 
 vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
@@ -15,7 +16,7 @@ beforeEach(() => {
 });
 
 function mostrar(props: Parameters<typeof CrearReservaForm>[0] = {}) {
-  render(<ToastProvider><MemoryRouter><CrearReservaForm {...props} /></MemoryRouter></ToastProvider>);
+  render(<ToastProvider><MemoryRouter><AuthProvider><CrearReservaForm {...props} /></AuthProvider></MemoryRouter></ToastProvider>);
 }
 
 async function completar() {
