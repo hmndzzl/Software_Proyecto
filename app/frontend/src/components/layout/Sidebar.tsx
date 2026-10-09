@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
-import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles?: number[]; icon: React.ReactNode }[] = [
@@ -167,12 +167,12 @@ const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COOR
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, tieneRol } = useAuth();
 
   const navItems = NAV_ITEMS.filter(({ roles, exactRoles }) => exactRoles !== undefined
     ? usuario !== null && exactRoles.includes(usuario.rol_id)
-    : roles === null || usuarioTieneRol(roles));
-  const puedeVerReservas = usuarioTieneRol(ROLES_RESERVAS);
+    : roles === null || tieneRol(roles));
+  const puedeVerReservas = tieneRol(ROLES_RESERVAS);
 
   return (
     <aside className={styles.sidebar}>
