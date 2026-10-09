@@ -10,7 +10,8 @@ import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
-import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
+import { ROLES } from '../../utils/roles';
 import styles from './MinistrosPage.module.css';
 
 interface Ministro {
@@ -33,7 +34,6 @@ function getInitials(nombre: string): string {
   return nombre.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
 
-const puedeGestionarDisponibilidad = () => usuarioTieneRol([ROLES.COORDINADOR_MINISTROS]);
 
 type SortKey = 'nombre' | 'correo' | 'rol' | 'disponibilidad';
 
@@ -53,7 +53,8 @@ export default function MinistrosPage() {
 
   const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(ministros, SORT_VALUE);
 
-  const puedeGestionar = puedeGestionarDisponibilidad();
+  const { tieneRol } = useAuth();
+  const puedeGestionar = tieneRol([ROLES.COORDINADOR_MINISTROS]);
 
   const cargarMinistros = () => {
     setLoading(true);
