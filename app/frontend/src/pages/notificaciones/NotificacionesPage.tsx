@@ -15,7 +15,8 @@ import ModalExcusaAsistencia from '../../modules/notificaciones/components/Modal
 import { useNotificaciones } from '../../modules/notificaciones/hooks/useNotificaciones';
 import { usePapelera } from '../../modules/notificaciones/hooks/usePapelera';
 import { useNotificacionesEnviadas } from '../../modules/notificaciones/hooks/useNotificacionesEnviadas';
-import { usuarioTieneRol, ROLES } from '../../utils/roles';
+import { ROLES } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
 import type { Notificacion } from '../../types';
 import styles from './NotificacionesPage.module.css';
 
@@ -38,7 +39,8 @@ export default function NotificacionesPage() {
     refetch,
   } = useNotificaciones();
 
-  const puedeEnviar = usuarioTieneRol(ROLES_PUEDEN_ENVIAR);
+  const { tieneRol } = useAuth();
+  const puedeEnviar = tieneRol(ROLES_PUEDEN_ENVIAR);
   const { enviadas, cargando: cargandoEnviadas, error: errorEnviadas, refetch: refetchEnviadas } = useNotificacionesEnviadas(puedeEnviar);
   const { papelera, cargando: cargandoPapelera, error: errorPapelera, restaurar, vaciar, refetch: refetchPapelera } = usePapelera();
 
