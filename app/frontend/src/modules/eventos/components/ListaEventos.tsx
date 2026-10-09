@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Evento } from '../../../types';
-import { usuarioTieneRol, ROLES } from '../../../utils/roles';
+import { ROLES } from '../../../utils/roles';
+import { useAuth } from '../../../context/AuthContext';
 import apiClient from '../../../api/client';
 import { CardHead } from '../../../components/ui/Card';
 import Btn from '../../../components/ui/Btn';
@@ -35,7 +36,8 @@ export default function ListaEventos({
 
   const { sortKey, sortDir, toggleSort, sortedData: eventosOrdenados } = useSortableTable(eventos, SORT_VALUE);
 
-  const puedeEditar = usuarioTieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
+  const { tieneRol } = useAuth();
+  const puedeEditar = tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
 
   const fetchEventos = async () => {
     setLoading(true);
