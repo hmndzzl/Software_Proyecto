@@ -216,6 +216,7 @@ CREATE TABLE `evento` (
   `encargado_id` int(11) NOT NULL,
   `reserva_id` int(11) NOT NULL,
   `descripcion` text NOT NULL,
+  `publico` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_evento_reserva` (`reserva_id`),
   KEY `fk_evento_encargado_idx` (`encargado_id`),
