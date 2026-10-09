@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { formatFecha } from '../../../utils/date';
 import EmptyState from '../../../components/ui/EmptyState';
 import styles from '../../../styles/Form.module.css';
@@ -20,8 +21,7 @@ interface Ministro {
 }
 
 export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSolicitudEnviada?: () => void }) {
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
 
   const [misTareas, setMisTareas] = useState<MiTarea[]>([]);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
