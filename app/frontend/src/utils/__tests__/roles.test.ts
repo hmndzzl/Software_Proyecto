@@ -1,44 +1,35 @@
-import { usuarioTieneRol, ROLES } from '../roles';
+import { rolTieneAcceso, ROLES } from '../roles';
 
 describe('roles utils', () => {
-  describe('usuarioTieneRol', () => {
-    beforeEach(() => {
-      localStorage.clear();
+  describe('rolTieneAcceso', () => {
+    it('retorna false si no hay rol', () => {
+      expect(rolTieneAcceso(undefined, [ROLES.ADMIN])).toBe(false);
+      expect(rolTieneAcceso(null, [ROLES.ADMIN])).toBe(false);
     });
 
-    it('retorna false si no hay usuario guardado', () => {
-      expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
-    });
-
-    it('retorna false si falla el parseo', () => {
-      localStorage.setItem('usuario', 'no_es_json');
-      expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
-    });
-
-    it('retorna false si no hay rol_id', () => {
-      localStorage.setItem('usuario', JSON.stringify({ nombre: 'Juan' }));
-      expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
+    it('retorna false si el rol no es numérico', () => {
+      expect(rolTieneAcceso('no_es_numero', [ROLES.ADMIN])).toBe(false);
     });
 
     it('retorna true si es admin', () => {
-      localStorage.setItem('usuario', JSON.stringify({ rol_id: ROLES.ADMIN }));
-      expect(usuarioTieneRol([ROLES.MINISTRO])).toBe(true);
+      expect(rolTieneAcceso(ROLES.ADMIN, [ROLES.MINISTRO])).toBe(true);
     });
-    
+
     it('retorna true si el usuario tiene el rol pedido exactamente', () => {
-      localStorage.setItem('usuario', JSON.stringify({ rol_id: ROLES.COORDINADOR_MINISTROS }));
-      expect(usuarioTieneRol([ROLES.COORDINADOR_MINISTROS])).toBe(true);
+      expect(rolTieneAcceso(ROLES.COORDINADOR_MINISTROS, [ROLES.COORDINADOR_MINISTROS])).toBe(true);
     });
 
     it('retorna false si el rol jerarquico no incluye el pedido', () => {
-      localStorage.setItem('usuario', JSON.stringify({ rol_id: ROLES.MINISTRO }));
-      expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
+      expect(rolTieneAcceso(ROLES.MINISTRO, [ROLES.ADMIN])).toBe(false);
     });
 
     it('retorna el rol por defecto si no existe en la jerarquia', () => {
-      localStorage.setItem('usuario', JSON.stringify({ rol_id: 999 }));
-      expect(usuarioTieneRol([999])).toBe(true);
-      expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
+      expect(rolTieneAcceso(999, [999])).toBe(true);
+      expect(rolTieneAcceso(999, [ROLES.ADMIN])).toBe(false);
+    });
+
+    it('acepta el rol como texto numérico', () => {
+      expect(rolTieneAcceso('5', [ROLES.MINISTRO])).toBe(true);
     });
   });
 });
