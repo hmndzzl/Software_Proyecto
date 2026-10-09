@@ -14,7 +14,8 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva } from '../../utils/estadosReserva';
-import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA, usuarioTieneRol } from '../../utils/roles';
+import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
 import styles from './MisReservasPage.module.css';
 
 interface MiReserva {
@@ -50,7 +51,8 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
 
 export default function MisReservasPage() {
   const navigate = useNavigate();
-  const puedeReservar = usuarioTieneRol(ROLES_RESERVAS);
+  const { tieneRol } = useAuth();
+  const puedeReservar = tieneRol(ROLES_RESERVAS);
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
