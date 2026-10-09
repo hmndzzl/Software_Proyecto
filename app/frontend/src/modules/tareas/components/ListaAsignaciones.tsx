@@ -7,6 +7,7 @@ import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
+import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import { formatFecha, formatHora } from '../../../utils/date';
 import styles from './ListaAsignaciones.module.css';
@@ -38,8 +39,7 @@ const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
 };
 
 export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number }) {
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
   const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
 
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);

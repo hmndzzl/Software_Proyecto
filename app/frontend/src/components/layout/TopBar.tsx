@@ -31,11 +31,9 @@ function getInitials(nombre: string): string {
 }
 
 export default function TopBar() {
-  const { logout } = useAuth();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
-  const raw = localStorage.getItem('usuario');
-  const usuario = raw ? JSON.parse(raw) : null;
   const initials = usuario?.nombre ? getInitials(usuario.nombre) : '—';
   const rolLabel = usuario?.rol_id ? (ROL_LABEL[usuario.rol_id] ?? 'Usuario') : 'Usuario';
 

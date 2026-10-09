@@ -11,7 +11,8 @@ import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
-import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { ROLES } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
 import { partesFecha, formatHora as fmtH } from '../../utils/date';
 import styles from './EspacioDetallePage.module.css';
 
@@ -36,7 +37,8 @@ export default function EspacioDetallePage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const esAdminOSacerdote = usuarioTieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
+  const { tieneRol } = useAuth();
+  const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
 
   const cargarEspacio = () => {
     setCargando(true);

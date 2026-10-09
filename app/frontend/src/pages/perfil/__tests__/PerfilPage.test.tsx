@@ -4,12 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PerfilPage from '../PerfilPage';
 import apiClient from '../../../api/client';
 import { useAuth } from '../../../context/AuthContext';
+import { authValue } from '../../../test/authValue';
 import { ToastProvider } from '../../../context/ToastContext';
 
 vi.mock('../../../api/client', () => ({ default: { put: vi.fn() } }));
 vi.mock('../../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const setAuth = vi.fn();
+const actualizarUsuario = vi.fn();
 const usuario = { id: 4, nombre: 'Ana López', correo: 'ana@test.com', rol_id: 4 };
 
 const mostrar = () => render(<PerfilPage />, { wrapper: ToastProvider });
@@ -19,7 +20,7 @@ describe('PerfilPage - avisos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    vi.mocked(useAuth).mockReturnValue({ usuario, setAuth, logout: vi.fn() });
+    vi.mocked(useAuth).mockReturnValue(authValue(usuario, { actualizarUsuario }));
     vi.mocked(apiClient.put).mockResolvedValue({ data: { persona: { ...usuario, nombre: 'Ana María' } } });
   });
 
@@ -31,6 +32,7 @@ describe('PerfilPage - avisos', () => {
     await guardar();
 
     expect(await screen.findByRole('status')).toHaveTextContent('Perfil actualizadoTus cambios se guardaron correctamente.');
+    expect(actualizarUsuario).toHaveBeenCalledWith({ ...usuario, nombre: 'Ana María' });
   });
 
   it('avisa si las contraseñas no coinciden, sin llamar al servidor', async () => {

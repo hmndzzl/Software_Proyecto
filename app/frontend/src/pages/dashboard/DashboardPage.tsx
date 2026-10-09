@@ -1,6 +1,7 @@
 import { useEffect, useState, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../components/ui/ProtectedRoute';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
@@ -123,7 +124,7 @@ function buildKicker(): string {
 }
 
 export default function DashboardPage() {
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const { usuario } = useAuth();
   const rolId = Number(usuario?.rol_id);
 
   const visibleStats = ALL_STATS.filter(s => canAccess(rolId, s.allowedRoles));

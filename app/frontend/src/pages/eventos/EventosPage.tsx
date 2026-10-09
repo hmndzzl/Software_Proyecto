@@ -2,7 +2,8 @@ import { useState } from 'react';
 import ListaEventos from '../../modules/eventos/components/ListaEventos';
 import EditarEventoForm from '../../modules/eventos/components/EditarEventoForm';
 import { Evento } from '../../types';
-import { usuarioTieneRol, ROLES } from '../../utils/roles';
+import { ROLES } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import styles from './EventosPage.module.css';
@@ -11,7 +12,8 @@ export default function EventosPage() {
   const [refreshKey, setRefreshKey]                 = useState(0);
   const [eventoSeleccionado, setEventoSeleccionado] = useState<Evento | null>(null);
 
-  const puedeEditar = usuarioTieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
+  const { tieneRol } = useAuth();
+  const puedeEditar = tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
 
   const handleChanged = () => {
     setRefreshKey(k => k + 1);

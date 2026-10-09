@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import MisReservasPage from './MisReservasPage';
+import { AuthProvider } from '../../context/AuthContext';
 import { ToastProvider } from '../../context/ToastContext';
 import apiClient from '../../api/client';
 import { ROLES } from '../../utils/roles';
@@ -16,12 +17,12 @@ function Destino() {
 function mostrar(rolId: number) {
   localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: rolId }));
   render(
-    <ToastProvider><MemoryRouter initialEntries={['/mis-reservas']}>
+    <ToastProvider><MemoryRouter initialEntries={['/mis-reservas']}><AuthProvider>
       <Routes>
         <Route path="/mis-reservas" element={<MisReservasPage />} />
         <Route path="/reservas" element={<Destino />} />
       </Routes>
-    </MemoryRouter></ToastProvider>
+    </AuthProvider></MemoryRouter></ToastProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { CardHead } from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
@@ -58,8 +59,7 @@ const SORT_VALUE_ENVIADAS: Record<SortKey, (c: CambioTurno) => string> = {
 };
 
 export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number }) {
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
 
   const [cambios, setCambios] = useState<CambioTurno[]>([]);
   const [loading, setLoading] = useState(true);

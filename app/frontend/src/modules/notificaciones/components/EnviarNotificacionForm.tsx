@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
-import { ROLES, usuarioTieneRol } from '../../../utils/roles';
+import { useAuth } from '../../../context/AuthContext';
+import { ROLES } from '../../../utils/roles';
 import type { DestinatarioInfo, Evento, NotificacionTipo } from '../../../types';
 import Btn from '../../../components/ui/Btn';
 import { Field, SelectUI, TextareaUI } from '../../../components/ui/Field';
@@ -12,9 +13,6 @@ interface Props {
   onEnviada: () => void;
   onCancelar: () => void;
 }
-
-const esAdminOSacerdote = () => usuarioTieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
-const esCoordMin        = () => usuarioTieneRol([ROLES.COORDINADOR_MINISTROS]);
 
 export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props) {
   const [mensaje,        setMensaje]        = useState('');
@@ -28,8 +26,9 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
   const [eventos,        setEventos]        = useState<Evento[]>([]);
   const [eventoId,       setEventoId]       = useState('');
 
-  const puedeEnviarGlobal = esAdminOSacerdote();
-  const soloIndividual    = esCoordMin();
+  const { tieneRol } = useAuth();
+  const puedeEnviarGlobal = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
+  const soloIndividual    = tieneRol([ROLES.COORDINADOR_MINISTROS]);
 
   useEffect(() => {
     if (tipo === 'global') return;

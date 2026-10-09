@@ -20,7 +20,6 @@ vi.mock('axios', () => ({
 }));
 
 vi.mock('../../auth/clerkSession', () => ({
-  AUTH_PROVIDER_KEY: 'authProvider',
   CLERK_ENABLED: true,
   getClerkToken: vi.fn(),
 }));

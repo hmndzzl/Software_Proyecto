@@ -4,9 +4,6 @@
 export const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
 export const CLERK_ENABLED = Boolean(CLERK_PUBLISHABLE_KEY);
 
-// Marca en localStorage qué proveedor creó la sesión actual.
-export const AUTH_PROVIDER_KEY = 'authProvider';
-
 // Mensaje de error del último intento de entrar con Clerk (p. ej. "cuenta pendiente de
 // aprobación"). Vive aparte del toast global: la pantalla de login lo muestra hasta que se
 // cierra o se vuelve a intentar, y sobrevive a una recarga de la página.

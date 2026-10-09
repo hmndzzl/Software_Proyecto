@@ -54,6 +54,36 @@ test('un ministro no puede abrir la administración de cuentas', async ({ page }
   await expect(page.getByRole('heading', { name: 'Bienvenido, Ministro' })).toBeVisible();
 });
 
+// DT-10: el estado de autenticación vive en un solo lugar, así que las rutas protegidas
+// reaccionan en vivo cuando la sesión cambia en otra pestaña (evento storage).
+test('si la sesión se cierra en otra pestaña, la ruta protegida redirige al login sin recargar', async ({ page }) => {
+  await authenticate(page);
+  await mockApi(page);
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { name: 'Bienvenido, Diego' })).toBeVisible();
+
+  await page.evaluate(() => {
+    localStorage.clear();
+    window.dispatchEvent(new StorageEvent('storage', { key: null }));
+  });
+
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test('si el rol cambia mientras se navega, la ruta protegida pierde el acceso', async ({ page }) => {
+  await authenticate(page);
+  await mockApi(page);
+  await page.goto('/cuentas');
+  await expect(page).toHaveURL(/\/cuentas$/);
+
+  await page.evaluate((user) => {
+    localStorage.setItem('usuario', JSON.stringify(user));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'usuario' }));
+  }, ministro);
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
+
 test('una solicitud de reserva válida envía todos los datos y confirma el resultado', async ({ page }) => {
   await authenticate(page);
   let reserva: Record<string, unknown> | undefined;

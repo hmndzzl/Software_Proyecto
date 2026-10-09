@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
-import { ROLES, usuarioTieneRol } from '../../../utils/roles';
+import { ROLES } from '../../../utils/roles';
+import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Form.module.css';
 
 interface Espacio {
@@ -28,7 +29,8 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
   const [loading, setLoading] = useState(false);
   const espacioRef = useRef<HTMLSelectElement>(null);
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
-  const puedeAprobar = usuarioTieneRol([ROLES.SACERDOTE]);
+  const { tieneRol } = useAuth();
+  const puedeAprobar = tieneRol([ROLES.SACERDOTE]);
 
   useEffect(() => {
     if (!autoFocus) return;

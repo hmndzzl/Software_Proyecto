@@ -24,7 +24,7 @@ interface FormState {
 }
 
 export default function PerfilPage() {
-  const { usuario, setAuth } = useAuth();
+  const { usuario, actualizarUsuario } = useAuth();
 
   // Formulario precargado 
   const [formData, setFormData] = useState<FormState>({
@@ -74,9 +74,8 @@ export default function PerfilPage() {
       const res = await apiClient.put(`/api/personas/${usuario!.id}`, body);
       const actualizado = res.data.persona;
 
-      // Actualizar contexto y localStorage para reflejar los cambios en toda la app
-      const token = localStorage.getItem('token') ?? '';
-      setAuth(token, {
+      // Actualizar la sesión para reflejar los cambios en toda la app
+      actualizarUsuario({
         id:     actualizado.id,
         nombre: actualizado.nombre,
         correo: actualizado.correo,

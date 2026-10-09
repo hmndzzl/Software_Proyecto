@@ -10,6 +10,7 @@ import type { BadgeKind } from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
+import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva } from '../../../utils/estadosReserva';
 import { formatFecha, formatHora } from '../../../utils/date';
@@ -73,8 +74,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [editMensaje, setEditMensaje] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
   const esAdminOSacerdote = usuario && (
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );

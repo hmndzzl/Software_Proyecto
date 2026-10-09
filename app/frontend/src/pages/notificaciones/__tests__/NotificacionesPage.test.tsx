@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NotificacionesPage from '../NotificacionesPage';
+import { AuthProvider } from '../../../context/AuthContext';
 import { ToastProvider } from '../../../context/ToastContext';
 import apiClient from '../../../api/client';
 
@@ -65,11 +66,11 @@ beforeEach(() => {
 
 function mostrar(initialEntry = '/notificaciones') {
   render(
-    <ToastProvider><MemoryRouter initialEntries={[initialEntry]}>
+    <ToastProvider><MemoryRouter initialEntries={[initialEntry]}><AuthProvider>
       <Routes>
         <Route path="/notificaciones" element={<NotificacionesPage />} />
       </Routes>
-    </MemoryRouter></ToastProvider>
+    </AuthProvider></MemoryRouter></ToastProvider>
   );
 }
 

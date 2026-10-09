@@ -17,4 +17,20 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
     },
   },
+  // DT-10: el estado de autenticación se lee solo con useAuth(); sessionStore.ts es el único
+  // módulo que toca localStorage (las pruebas pueden sembrarlo para preparar escenarios).
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/auth/sessionStore.ts', 'src/**/*.test.{ts,tsx}', 'src/**/__tests__/**'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'localStorage', message: 'Usa useAuth() (o sessionStore en código fuera de React). Ver DT-10.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'localStorage', message: 'Usa useAuth() (o sessionStore en código fuera de React). Ver DT-10.' },
+      ],
+    },
+  },
 );

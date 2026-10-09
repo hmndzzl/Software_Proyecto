@@ -3,6 +3,7 @@ import CrearGrupoForm from '../../modules/grupos/components/CrearGrupoForm';
 import ListaGrupos from '../../modules/grupos/components/ListaGrupos';
 import EditarGrupoForm from '../../modules/grupos/components/EditarGrupoForm';
 import { Grupo } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import styles from './gruposPage.module.css';
@@ -13,8 +14,8 @@ export default function GruposPage() {
   const [refreshKey, setRefreshKey]         = useState(0);
   const [grupoSeleccionado, setGrupoSelected] = useState<Grupo | null>(null);
 
-  const usuario  = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const puedeCrear = ROLES_CREAR_GRUPO.includes(usuario?.rol_id);
+  const { usuario } = useAuth();
+  const puedeCrear = usuario !== null && ROLES_CREAR_GRUPO.includes(usuario.rol_id);
 
   const handleChanged = () => {
     setRefreshKey(k => k + 1);
