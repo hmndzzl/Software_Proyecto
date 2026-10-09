@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
+import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
@@ -28,6 +28,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text'],
+      // Utilidades de prueba (setup, authValue): no son código de la app.
+      exclude: [...coverageConfigDefaults.exclude, 'src/test/**'],
       thresholds: {
         lines: 100,
         statements: 99,
