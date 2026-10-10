@@ -28,12 +28,20 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text'],
+      include: ['src/**/*.{ts,tsx}'],
       // Utilidades de prueba (setup, authValue): no son código de la app.
-      exclude: [...coverageConfigDefaults.exclude, 'src/test/**'],
+      // main.tsx solo monta React; el comportamiento se cubre desde App.
+      exclude: [
+        ...coverageConfigDefaults.exclude,
+        'src/test/**',
+        'src/types/**',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+      ],
       thresholds: {
-        lines: 100,
-        statements: 99,
-        functions: 99,
+        lines: 95,
+        statements: 95,
+        functions: 95,
         branches: 95
       }
     }

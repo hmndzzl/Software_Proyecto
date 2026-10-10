@@ -78,4 +78,20 @@ describe('PerfilPage - avisos', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo guardar el perfilContraseña filtrada.');
   });
+
+  it('usa el error genérico cuando el servidor no devuelve detalle', async () => {
+    vi.mocked(apiClient.put).mockRejectedValue(new Error('sin red'));
+    mostrar();
+    await guardar();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Error al actualizar el perfil');
+  });
+
+  it('admite un contexto sin usuario y muestra valores de respaldo', async () => {
+    vi.mocked(useAuth).mockReturnValue(authValue(null, { actualizarUsuario }));
+    mostrar();
+    expect(screen.getAllByText('—')).toHaveLength(2);
+    expect(screen.getByText('Desconocido')).toBeInTheDocument();
+    await guardar();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sin cambios');
+  });
 });
