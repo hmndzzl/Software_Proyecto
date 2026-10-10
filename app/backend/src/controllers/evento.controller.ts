@@ -7,7 +7,7 @@ import { HttpStatus } from '../utils/httpStatus';
 export const getEventos = async (_req: Request, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT e.id, e.descripcion, e.encargado_id, e.reserva_id,
+      `SELECT e.id, e.descripcion, e.encargado_id, e.reserva_id, e.publico,
               p.nombre  AS nombre_encargado,
               r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS nombre_espacio
@@ -28,7 +28,7 @@ export const getEventoById = async (req: Request, res: Response): Promise<void> 
   const { id } = req.params;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT e.id, e.descripcion, e.encargado_id, e.reserva_id,
+      `SELECT e.id, e.descripcion, e.encargado_id, e.reserva_id, e.publico,
               p.nombre  AS nombre_encargado,
               r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS nombre_espacio
@@ -172,6 +172,33 @@ export const updateEvento = async (req: Request, res: Response): Promise<void> =
   } catch (error) {
     console.error('Error en updateEvento:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar el evento' });
+  }
+};
+
+// Publicar es una decisión explícita de Admin/Sacerdote, independiente de crear una reserva.
+export const actualizarPublicoEvento = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { publico } = req.body;
+  if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El id debe ser un identificador válido' });
+    return;
+  }
+  if (typeof publico !== 'boolean') {
+    res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'El campo publico debe ser booleano' });
+    return;
+  }
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'UPDATE evento SET publico = ? WHERE id = ?', [publico ? 1 : 0, Number(id)]
+    );
+    if (result.affectedRows === 0) {
+      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Evento no encontrado' });
+      return;
+    }
+    res.status(HttpStatus.OK).json({ mensaje: 'Visibilidad actualizada', evento: { id: Number(id), publico } });
+  } catch (error) {
+    console.error('Error en actualizarPublicoEvento:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar la visibilidad del evento' });
   }
 };
 

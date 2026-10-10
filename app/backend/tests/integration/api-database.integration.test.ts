@@ -99,6 +99,81 @@ describe('integración API y MariaDB', () => {
     });
   });
 
+  it('publica solo eventos explícitamente públicos, confirmados y no terminados', async () => {
+    const login = await request(app).post('/api/auth/login')
+      .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    const ids: number[] = [];
+    for (const [titulo, estado, publico, fecha] of [
+      ['Público futuro', 2, 1, '2099-12-01'],
+      ['Privado futuro', 2, 0, '2099-12-01'],
+      ['Público pendiente', 1, 1, '2099-12-01'],
+      ['Público rechazado', 3, 1, '2099-12-01'],
+      ['Público cancelado', 4, 1, '2099-12-01'],
+      ['Público terminado', 2, 1, '2000-01-01'],
+    ] as const) {
+      const [reserva] = await pool.execute<mysql.ResultSetHeader>(
+        'INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [fecha, '09:00:00', '11:00:00', 2, estado, 1],
+      );
+      const [evento] = await pool.execute<mysql.ResultSetHeader>(
+        'INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id) VALUES (?, ?, ?, ?)',
+        [titulo, 'Información del evento', 1, reserva.insertId],
+      );
+      ids.push(evento.insertId);
+      const [privadoPorDefecto] = await pool.query<RowDataPacket[]>('SELECT publico FROM evento WHERE id = ?', [evento.insertId]);
+      expect(privadoPorDefecto[0].publico).toBe(0);
+      if (publico) {
+        await request(app).patch(`/api/eventos/${evento.insertId}/publico`)
+          .auth(token, { type: 'bearer' }).send({ publico: true }).expect(200);
+      }
+    }
+
+    const agenda = await request(app).get('/api/public/agenda').expect(200);
+    expect(agenda.body).toHaveLength(1);
+    expect(agenda.body[0]).toEqual({
+      id: ids[0], titulo: 'Público futuro', descripcion: 'Información del evento',
+      fecha: '2099-12-01', hora_inicio: '09:00:00', hora_fin: '11:00:00', nombre_espacio: expect.any(String),
+    });
+
+    // En curso: la fecha y el horario se calculan en Guatemala, incluso si cruzan medianoche.
+    const [enCursoReserva] = await pool.execute<mysql.ResultSetHeader>(
+      `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
+       VALUES (DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00')), '00:00:00', '23:59:59', NULL, 2, 1)`
+    );
+    const [enCurso] = await pool.execute<mysql.ResultSetHeader>(
+      'INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id, publico) VALUES (?, ?, ?, ?, 1)',
+      ['Evento de hoy', 'Abierto durante el día', 1, enCursoReserva.insertId]
+    );
+    const primeraPagina = await request(app).get('/api/public/agenda?limite=1').expect(200);
+    expect(primeraPagina.body[0]).toMatchObject({ id: enCurso.insertId, nombre_espacio: null });
+    const segundaPagina = await request(app).get('/api/public/agenda?limite=1&pagina=2').expect(200);
+    expect(segundaPagina.body[0].id).toBe(ids[0]);
+
+    // Quitar la publicación retira el evento inmediatamente sin eliminarlo.
+    await request(app).patch(`/api/eventos/${ids[0]}/publico`)
+      .auth(token, { type: 'bearer' }).send({ publico: false }).expect(200);
+    const retirada = await request(app).get('/api/public/agenda').expect(200);
+    expect(retirada.body.map((evento: { id: number }) => evento.id)).toEqual([enCurso.insertId]);
+  });
+
+  it('la migración de agenda mantiene privados los eventos existentes y puede repetirse', async () => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.query('CREATE TEMPORARY TABLE evento_migracion (id INT PRIMARY KEY)');
+      await connection.query('INSERT INTO evento_migracion (id) VALUES (1)');
+      const migration = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261009_evento_publico.sql'), 'utf8')
+        .replace('ALTER TABLE evento', 'ALTER TABLE evento_migracion');
+      await connection.query(migration);
+      await connection.query(migration);
+      const [rows] = await connection.query<RowDataPacket[]>('SELECT id, publico FROM evento_migracion');
+      expect(rows).toEqual([{ id: 1, publico: 0 }]);
+    } finally {
+      await connection.query('DROP TEMPORARY TABLE IF EXISTS evento_migracion');
+      connection.release();
+    }
+  });
+
   it('persiste un contacto y notifica a cada sacerdote y administrador', async () => {
     const response = await request(app)
       .post('/api/contacto')
