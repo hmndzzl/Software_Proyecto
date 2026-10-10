@@ -181,4 +181,27 @@ describe('ClerkSessionSync', () => {
 
     expect(meApi).toHaveBeenCalledTimes(2);
   });
+
+  it('no sincroniza mientras Clerk todavía está cargando', async () => {
+    Object.assign(clerk, { isLoaded: false });
+    mostrar();
+    await act(async () => {});
+    expect(clerk.getToken).not.toHaveBeenCalled();
+    expect(meApi).not.toHaveBeenCalled();
+  });
+
+  it('termina la validación sin consultar /me si Clerk no entrega token', async () => {
+    clerk.getToken.mockResolvedValue(null);
+    mostrar();
+    await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent('anonimo'));
+    expect(meApi).not.toHaveBeenCalled();
+  });
+
+  it('usa el mensaje de respaldo cuando /me falla sin respuesta HTTP', async () => {
+    vi.mocked(meApi).mockRejectedValue(new Error('red'));
+    mostrar();
+    await waitFor(() => expect(clerk.signOut).toHaveBeenCalled());
+    expect(getLoginError()).toBe('No se pudo validar tu sesión. Intenta de nuevo.');
+  });
+
 });
