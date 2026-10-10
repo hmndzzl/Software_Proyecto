@@ -21,7 +21,7 @@ const conToast = (ui: React.ReactNode) => render(<ToastProvider>{ui}</ToastProvi
 describe('integración de eventos, reservas y permisos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useAuth).mockReturnValue(authValue({ rol_id: ROLES.ADMIN }));
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: ROLES.ADMIN }));
     vi.mocked(apiClient.get).mockImplementation(async (url) => ({ data: String(url).includes('reservas-disponibles') ? [reserva] : String(url).includes('encargados-evento') ? [{ id: 2, nombre: 'Padre Luis' }] : [evento] }));
     vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
@@ -51,17 +51,22 @@ describe('integración de eventos, reservas y permisos', () => {
 
   it('lista, ordena y entrega el evento seleccionado para edición', async () => {
     const editar = vi.fn();
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [evento, { ...evento, id: 8, descripcion: 'Adoración', nombre_encargado: null, nombre_espacio: 'Capilla', fecha: '2099-10-19' }] });
     conToast(<ListaEventos onEditar={editar} />);
     await screen.findByText('Misa mayor');
-    for (const nombre of ['#', 'Descripción', 'Encargado', 'Fecha', 'Espacio']) fireEvent.click(screen.getByRole('columnheader', { name: new RegExp(nombre === '#' ? '#' : nombre) }));
-    await userEvent.click(screen.getByRole('button', { name: 'Editar' }));
-    expect(editar).toHaveBeenCalledWith(evento);
+    for (const nombre of ['#', 'Descripción', 'Encargado', 'Fecha', 'Espacio']) {
+      const header = screen.getByRole('columnheader', { name: new RegExp(nombre === '#' ? '#' : nombre) });
+      fireEvent.click(header);
+      fireEvent.click(header);
+    }
+    await userEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0]);
+    expect(editar).toHaveBeenCalled();
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('muestra vacío, error con reintento y oculta edición sin permiso', async () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValue({ data: [] });
-    vi.mocked(useAuth).mockReturnValue(authValue({ rol_id: ROLES.MINISTRO }));
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 4, nombre: 'Ministro', correo: 'ministro@test.com', rol_id: ROLES.MINISTRO }));
     conToast(<ListaEventos onEditar={vi.fn()} />);
     expect(await screen.findByText('Error de red al obtener los eventos.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));

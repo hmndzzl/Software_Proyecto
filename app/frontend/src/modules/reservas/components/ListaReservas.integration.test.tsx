@@ -17,7 +17,7 @@ const reservas = [1, 2, 3, 4, 99].map((estado, i) => ({ ...base, id: i + 1, esta
 function preparar(datos = reservas) {
   vi.mocked(apiClient.get).mockImplementation(async (url) => ({ data: url === '/api/espacios' ? [{ id: 2, nombre: 'Salón' }] : datos }));
   vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
-  vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, rol_id: ROLES.ADMIN }));
+  vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: ROLES.ADMIN }));
 }
 
 function mostrar() { return render(<ToastProvider><ListaReservas /></ToastProvider>); }
@@ -38,7 +38,7 @@ describe('integración de reservas, estados y edición', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
     preparar();
-    vi.mocked(useAuth).mockReturnValue(authValue({ id: 99, rol_id: ROLES.ADMIN }));
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 99, nombre: 'Otro admin', correo: 'otro@test.com', rol_id: ROLES.ADMIN }));
     const { unmount } = mostrar();
     await screen.findAllByText('Pendiente');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));

@@ -34,7 +34,7 @@ function prepararApi() {
   vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
 }
 
-function mostrar(rol = ROLES.ADMIN) {
+function mostrar(rol: number = ROLES.ADMIN) {
   vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Admin', correo: 'a@a.com', rol_id: rol }));
   return render(<ToastProvider><TareasPage /></ToastProvider>);
 }
@@ -123,7 +123,11 @@ describe('integración de tareas, asignaciones y permisos', () => {
       .mockResolvedValue({ data: {} });
     mostrar();
     const fila = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
-    await userEvent.click(screen.getByRole('columnheader', { name: /Tarea/ }));
+    for (const label of ['Tarea', 'Ministro Asignado', 'Fecha', 'Horario']) {
+      const header = screen.getByRole('columnheader', { name: new RegExp(label) });
+      await userEvent.click(header);
+      await userEvent.click(header);
+    }
     await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
     await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/tareas/asignar', {
@@ -173,5 +177,47 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(screen.queryByText('Ministro Asignado')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: { persona_id: 1 } });
+  });
+
+  it('reasigna sin advertencias y recupera un error específico de reasignación', async () => {
+    vi.mocked(apiClient.put)
+      .mockResolvedValueOnce({ data: {} })
+      .mockRejectedValueOnce({ response: { data: { mensaje: 'Ministro incompatible' } } });
+    mostrar();
+    let fila = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
+    await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
+    await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
+    expect(await screen.findByRole('status')).toHaveTextContent('El cambio se guardó correctamente');
+
+    fila = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
+    await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
+    await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ministro incompatible');
+  });
+
+  it('valida el horario y conserva el modal cuando falla la edición', async () => {
+    mostrar();
+    await userEvent.click((await screen.findAllByRole('button', { name: 'Editar' }))[0]);
+    const modal = screen.getByText('Editar Tarea #1').parentElement!;
+    const tiempos = Array.from(modal.querySelectorAll<HTMLInputElement>('input[type="time"]'));
+    fireEvent.change(tiempos[0], { target: { value: '17:00' } });
+    fireEvent.change(tiempos[1], { target: { value: '16:00' } });
+    await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Horario inválido');
+
+    fireEvent.change(tiempos[0], { target: { value: '15:00' } });
+    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { mensaje: 'La fecha está cerrada' } } });
+    await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('La fecha está cerrada');
+    expect(screen.getByText('Editar Tarea #1')).toBeInTheDocument();
+  });
+
+  it('presenta estados vacíos distintos para administración y ministro', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? personas : [] }));
+    const vista = mostrar();
+    expect(await screen.findByText('No hay tareas asignadas en este momento.')).toBeInTheDocument();
+    vista.unmount();
+    mostrar(ROLES.MINISTRO);
+    expect(await screen.findByText('No tienes tareas asignadas en este momento.')).toBeInTheDocument();
   });
 });
