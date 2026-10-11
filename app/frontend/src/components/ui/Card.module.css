@@ -11,6 +11,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 10px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--color-lineSoft);
   gap: 12px;
