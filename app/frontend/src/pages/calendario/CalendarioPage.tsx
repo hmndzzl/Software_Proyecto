@@ -3,6 +3,7 @@ import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
+import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
 import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey } from '../../utils/date';
 import styles from './CalendarioPage.module.css';
 
@@ -59,6 +60,7 @@ export default function CalendarioPage() {
   const [tareas, setTareas]           = useState<Tarea[]>([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState('');
+  const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
 
   const activeMonday = getMonday(currentDate);
 
@@ -197,7 +199,12 @@ export default function CalendarioPage() {
                       const ministerName = t.persona_nombre || t.asignados?.[0]?.nombre;
 
                       return (
-                        <div key={t.id} className={styles.taskCard}>
+                        <button
+                          key={t.id}
+                          type="button"
+                          className={styles.taskCard}
+                          onClick={() => setTareaSeleccionada(t)}
+                        >
                           <div className={styles.timeRow}>
                             <svg className={styles.clockIcon} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -219,7 +226,7 @@ export default function CalendarioPage() {
                               <span className={styles.unassignedBadge}>Sin asignar</span>
                             )}
                           </div>
-                        </div>
+                        </button>
                       );
                     })
                   )}
@@ -228,6 +235,31 @@ export default function CalendarioPage() {
             );
           })}
         </div>
+      )}
+
+      {tareaSeleccionada && (
+        <DetalleEventoModal
+          open
+          onClose={() => setTareaSeleccionada(null)}
+          titulo={tareaSeleccionada.titulo}
+          fecha={tareaSeleccionada.fecha}
+          horaInicio={tareaSeleccionada.hora_inicio}
+          horaFin={tareaSeleccionada.hora_fin}
+          descripcion={tareaSeleccionada.descripcion}
+          extra={
+            <div className={styles.modalAsignados}>
+              {(tareaSeleccionada.asignados?.length ?? 0) > 0 ? (
+                tareaSeleccionada.asignados.map(a => (
+                  <span key={a.persona_id} className={styles.modalAsignadoChip}>{a.nombre}</span>
+                ))
+              ) : tareaSeleccionada.persona_nombre ? (
+                <span className={styles.modalAsignadoChip}>{tareaSeleccionada.persona_nombre}</span>
+              ) : (
+                <span className={styles.unassignedBadge}>Sin asignar</span>
+              )}
+            </div>
+          }
+        />
       )}
     </div>
   );
