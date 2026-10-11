@@ -109,6 +109,16 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.reservaCard:hover {
+  border-color: var(--color-oro);
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
 }
 
 .timeRow {

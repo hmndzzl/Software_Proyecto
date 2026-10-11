@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardHead, CardBody } from '../../../components/ui/Card';
+import DetalleEventoModal from '../../../components/ui/DetalleEventoModal';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey, formatHora } from '../../../utils/date';
 import styles from './EspacioCalendarioReservas.module.css';
@@ -42,6 +43,7 @@ function agruparConfirmadasPorDia(reservas: ReservaCalendario[]): Map<string, Re
 
 export default function EspacioCalendarioReservas({ reservas }: EspacioCalendarioReservasProps) {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [reservaSeleccionada, setReservaSeleccionada] = useState<ReservaCalendario | null>(null);
 
   const activeMonday = getMonday(currentDate);
   const activeSunday = new Date(activeMonday);
@@ -109,13 +111,18 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
                     <div className={styles.libre}>Libre</div>
                   ) : (
                     reservasDelDia.map(r => (
-                      <div key={r.id} className={styles.reservaCard}>
+                      <button
+                        key={r.id}
+                        type="button"
+                        className={styles.reservaCard}
+                        onClick={() => setReservaSeleccionada(r)}
+                      >
                         <div className={styles.timeRow}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                           <span>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</span>
                         </div>
                         <p className={styles.reservaTitulo}>{r.evento_titulo || `Reserva #${r.id}`}</p>
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
@@ -124,6 +131,18 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
           })}
         </div>
       </CardBody>
+
+      {reservaSeleccionada && (
+        <DetalleEventoModal
+          open
+          onClose={() => setReservaSeleccionada(null)}
+          titulo={reservaSeleccionada.evento_titulo || `Reserva #${reservaSeleccionada.id}`}
+          fecha={reservaSeleccionada.fecha}
+          horaInicio={reservaSeleccionada.hora_inicio}
+          horaFin={reservaSeleccionada.hora_fin}
+          descripcion={reservaSeleccionada.evento_descripcion}
+        />
+      )}
     </Card>
   );
 }
