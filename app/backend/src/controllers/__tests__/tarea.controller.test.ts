@@ -531,12 +531,26 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     });
 
-    it('debería retornar 204 al eliminar asignación exitosamente', async () => {
+    it('debería retornar 204 al eliminar asignación exitosamente y notificar a la persona desasignada', async () => {
       req.body = { tarea_id: 1, persona_id: 2 };
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      req.user = { id: 9 } as any;
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // DELETE
+      (pool.execute as any).mockResolvedValueOnce([[{ titulo: 'Misa dominical' }]]); // SELECT titulo
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 77 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
 
       await desasignarTarea(req as Request, res as Response);
 
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('INSERT INTO notificacion'),
+        ['Se te quitó la asignación de la tarea: Misa dominical', expect.any(String), 9]
+      );
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        4,
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [2, 77]
+      );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.NO_CONTENT);
     });
 
