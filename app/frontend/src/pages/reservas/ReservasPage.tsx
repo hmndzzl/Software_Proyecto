@@ -8,9 +8,10 @@ import styles from './ReservasPage.module.css';
 
 export default function ReservasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
-  // Llegada desde "Nueva reserva" (Sidebar / Mis Reservas): se enfoca el formulario.
+  // Llegada desde "Nueva reserva" (Sidebar / Mis Reservas) o desde el QR de un espacio: se enfoca el formulario.
   const [searchParams] = useSearchParams();
-  const enfocarFormulario = searchParams.get('nueva') === '1';
+  const espacioInicial = searchParams.get('espacio_id') ?? undefined;
+  const enfocarFormulario = searchParams.get('nueva') === '1' || Boolean(espacioInicial);
 
   return (
     <div className={styles.page}>
@@ -25,6 +26,7 @@ export default function ReservasPage() {
         <CardBody>
           <CrearReservaForm
             autoFocus={enfocarFormulario}
+            espacioInicial={espacioInicial}
             onReservaCreada={() => setRefreshKey(k => k + 1)}
           />
         </CardBody>
