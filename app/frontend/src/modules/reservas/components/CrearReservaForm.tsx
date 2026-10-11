@@ -26,6 +26,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [espacios, setEspacios] = useState<Espacio[]>([]);
+  const [espaciosCargados, setEspaciosCargados] = useState(false);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const espacioRef = useRef<HTMLSelectElement>(null);
@@ -36,11 +37,14 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
 
   useEffect(() => {
     if (!autoFocus) return;
-    // Si el espacio ya llegó resuelto (QR), el salto útil es a la fecha, no a re-elegir el salón.
-    const campo = espacioInicial ? fechaRef.current : espacioRef.current;
+    // Si viene de un QR, hay que esperar a saber si ese espacio existe antes de decidir el foco.
+    if (espacioInicial && !espaciosCargados) return;
+    const espacioResuelto = espacioInicial && espacios.some((esp) => String(esp.id) === espacioInicial);
+    // Con el espacio ya resuelto, el salto útil es a la fecha; si no se pudo resolver, vuelve al selector.
+    const campo = espacioResuelto ? fechaRef.current : espacioRef.current;
     campo?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
     campo?.focus();
-  }, [autoFocus, espacioInicial]);
+  }, [autoFocus, espacioInicial, espaciosCargados, espacios]);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -49,6 +53,8 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         setEspacios(response.data);
       } catch {
         // silencioso, el select quedará vacío
+      } finally {
+        setEspaciosCargados(true);
       }
     };
     fetchEspacios();
