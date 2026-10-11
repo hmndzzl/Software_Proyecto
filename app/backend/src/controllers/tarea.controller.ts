@@ -374,7 +374,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
   let conn: PoolConnection | null = null;
   try {
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, titulo, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -440,6 +440,29 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
     await conn.execute(
       'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
       [tarea_id, persona_nueva_id]
+    );
+
+    // Se notifica tanto al nuevo responsable como a quien dejó de estar asignado.
+    const tituloTarea: string = tarea.titulo;
+    const remitenteId: number = req.user!.id;
+    const hoy = new Date().toISOString().split('T')[0];
+
+    const [notifNueva] = await conn.execute<ResultSetHeader>(
+      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+      [`Se te asignó la tarea: ${tituloTarea}`, hoy, remitenteId]
+    );
+    await conn.execute(
+      'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+      [persona_nueva_id, notifNueva.insertId]
+    );
+
+    const [notifAnterior] = await conn.execute<ResultSetHeader>(
+      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+      [`Se te reasignó la tarea "${tituloTarea}" a otra persona`, hoy, remitenteId]
+    );
+    await conn.execute(
+      'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+      [persona_actual_id, notifAnterior.insertId]
     );
 
     await conn.commit();
