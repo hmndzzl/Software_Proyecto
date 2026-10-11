@@ -138,7 +138,7 @@ export default function EspacioDetallePage() {
         </div>
 
         {/* Panel derecho — reservas */}
-        <Card>
+        <Card className={styles.reservasCard}>
           <CardHead
             title="Próximas Reservas"
             hint={`${reservas.length} registradas`}
