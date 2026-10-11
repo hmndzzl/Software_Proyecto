@@ -130,9 +130,21 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     }
   };
 
+  // Solo mientras la selección siga siendo la que trajo el QR: si la persona la cambia a mano, se oculta.
+  const nombreEspacioInicial = espacioId === espacioInicial
+    ? espacios.find((esp) => String(esp.id) === espacioId)?.nombre
+    : undefined;
+
   return (
     <div>
       <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
+
+      {nombreEspacioInicial && (
+        <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
+          <span className={styles.infoBoxLabel}>Espacio seleccionado:</span>
+          {nombreEspacioInicial}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>
