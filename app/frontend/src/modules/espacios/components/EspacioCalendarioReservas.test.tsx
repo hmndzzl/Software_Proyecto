@@ -95,6 +95,18 @@ describe('EspacioCalendarioReservas', () => {
     expect(screen.queryByText('Clase para jóvenes del grupo de confirmación.')).not.toBeInTheDocument();
   });
 
+  it('usa "Reserva #id" como título del detalle cuando no hay evento_titulo', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const reservas = [
+      { id: 11, fecha: fechaDelDia(0), hora_inicio: '08:00:00', hora_fin: '09:00:00', estado_reserva_id: 2, evento_titulo: null, evento_descripcion: null },
+    ];
+
+    render(<EspacioCalendarioReservas reservas={reservas} />);
+
+    await user.click(screen.getByText('Reserva #11'));
+    expect(screen.getByRole('heading', { name: 'Reserva #11' })).toBeInTheDocument();
+  });
+
   it('resalta la columna del día actual', () => {
     const { container } = render(<EspacioCalendarioReservas reservas={[]} />);
     const columnas = within(container).getAllByText('Libre').map(el => el.parentElement?.parentElement);
