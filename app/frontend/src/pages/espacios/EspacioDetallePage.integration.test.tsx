@@ -124,6 +124,13 @@ describe('integración del detalle de un espacio', () => {
     expect(screen.getByText(/No tienes permisos para reservar este salón/i)).toBeInTheDocument();
   });
 
+  it('muestra el calendario de reservas confirmadas junto a la lista existente, sin reemplazarla', async () => {
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.getByRole('heading', { name: 'Próximas Reservas' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Calendario del Espacio' })).toBeInTheDocument();
+  });
+
   it('usa mensajes de red de respaldo al cargar y cambiar estado', async () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValueOnce({ data: [] });
     const vista = mostrar();
