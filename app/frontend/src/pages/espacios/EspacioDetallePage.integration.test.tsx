@@ -116,6 +116,14 @@ describe('integración del detalle de un espacio', () => {
     expect(screen.queryByRole('button', { name: /Ver código QR/i })).not.toBeInTheDocument();
   });
 
+  it('un Ministro ve el salón en modo solo lectura, sin botón Reservar', async () => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 4, nombre: 'Ministro', correo: 'm@test.com', rol_id: ROLES.MINISTRO }));
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.queryByRole('button', { name: 'Reservar' })).not.toBeInTheDocument();
+    expect(screen.getByText(/No tienes permisos para reservar este salón/i)).toBeInTheDocument();
+  });
+
   it('usa mensajes de red de respaldo al cargar y cambiar estado', async () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValueOnce({ data: [] });
     const vista = mostrar();
