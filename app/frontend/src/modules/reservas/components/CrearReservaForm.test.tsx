@@ -139,6 +139,13 @@ describe('CrearReservaForm', () => {
     expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
   });
 
+  it('avisa y enfoca el selector si el espacio del QR ya no existe en el catálogo', async () => {
+    mostrar({ autoFocus: true, espacioInicial: '999' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByText('El espacio del enlace ya no está disponible. Selecciona uno manualmente.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Espacio:')).toHaveFocus());
+  });
+
   it('lista espacios sin capacidad y tolera que falle la carga de espacios', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 3, nombre: 'Capilla', capacidad: null }] });
     mostrar();
