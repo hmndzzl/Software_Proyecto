@@ -349,6 +349,27 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       [estadoReservaId, id]
     );
 
+    // Si quien cambió el estado no es el propio solicitante, se le notifica el resultado.
+    if (reserva.solicitante_id != null && reserva.solicitante_id !== req.user!.id) {
+      const verbos: Record<number, string> = {
+        [ESTADOS_RESERVA.PENDIENTE]: 'vuelve a estar pendiente de aprobación',
+        [ESTADOS_RESERVA.CONFIRMADA]: 'fue aprobada',
+        [ESTADOS_RESERVA.RECHAZADA]: 'fue rechazada',
+        [ESTADOS_RESERVA.CANCELADA]: 'fue cancelada',
+      };
+      const mensajeNotificacion = `Tu reserva del ${reserva.fecha} (${reserva.hora_inicio}–${reserva.hora_fin}) ${verbos[estadoReservaId]}.`;
+      const fechaHoy = new Date().toISOString().split('T')[0];
+
+      const [notifResult]: any = await db.query(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+        [mensajeNotificacion, fechaHoy, req.user!.id]
+      );
+      await db.query(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [reserva.solicitante_id, notifResult.insertId]
+      );
+    }
+
     const mensajes: Record<number, string> = {
       [ESTADOS_RESERVA.PENDIENTE]: 'Reserva marcada como pendiente nuevamente',
       [ESTADOS_RESERVA.CONFIRMADA]: 'Reserva aprobada correctamente',
