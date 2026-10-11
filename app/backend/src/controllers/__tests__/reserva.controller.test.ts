@@ -508,6 +508,58 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
     });
 
+    it('debería notificar al solicitante cuando otra persona aprueba su reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 2 }; // aprobar
+      req.user = { id: 99, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([[]]); // sin conflictos
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+      (db.query as any).mockResolvedValueOnce([{ insertId: 55 }]); // INSERT notificacion
+      (db.query as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notificacion'),
+        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00–11:00) fue aprobada.', expect.any(String), 99])
+      );
+      expect(db.query).toHaveBeenCalledWith(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [1, 55]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería notificar al solicitante cuando otra persona rechaza su reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 99, rol_id: ROLES.SACERDOTE } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+      (db.query as any).mockResolvedValueOnce([{ insertId: 56 }]); // INSERT notificacion
+      (db.query as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notificacion'),
+        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00–11:00) fue rechazada.', expect.any(String), 99])
+      );
+    });
+
+    it('no debería notificar cuando el propio solicitante cambia el estado de su reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 4 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledTimes(2);
+    });
+
     it('debería retornar 400 si el solicitante intenta cancelar una reserva ya Rechazada', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 4 };
