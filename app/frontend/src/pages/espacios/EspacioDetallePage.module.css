@@ -130,6 +130,18 @@
   margin-top: 16px;
 }
 
+.avisoSoloLectura {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color-muted);
+  background: var(--color-crema);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-input);
+  padding: 10px 16px;
+  margin: 0 24px 0;
+}
+
 /* Lista de reservas */
 .reservaList {
   overflow-y: auto;

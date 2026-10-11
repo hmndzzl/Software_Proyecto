@@ -151,6 +151,12 @@ export default function EspacioDetallePage() {
             }
           />
 
+          {!puedeReservar && (
+            <p className={styles.avisoSoloLectura}>
+              No tienes permisos para reservar este salón. Si necesitas coordinarlo, contacta a tu coordinador.
+            </p>
+          )}
+
           {reservas.length === 0 ? (
             <EmptyState message="No hay reservas para este espacio." />
           ) : (
