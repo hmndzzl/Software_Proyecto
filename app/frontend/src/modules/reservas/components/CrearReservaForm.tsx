@@ -29,15 +29,18 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const espacioRef = useRef<HTMLSelectElement>(null);
+  const fechaRef = useRef<HTMLInputElement>(null);
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
   const { tieneRol } = useAuth();
   const puedeAprobar = tieneRol([ROLES.SACERDOTE]);
 
   useEffect(() => {
     if (!autoFocus) return;
-    espacioRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    espacioRef.current?.focus();
-  }, [autoFocus]);
+    // Si el espacio ya llegó resuelto (QR), el salto útil es a la fecha, no a re-elegir el salón.
+    const campo = espacioInicial ? fechaRef.current : espacioRef.current;
+    campo?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    campo?.focus();
+  }, [autoFocus, espacioInicial]);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -153,6 +156,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         <div className={styles.field}>
           <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
+            ref={fechaRef}
             type="date"
             id="fecha"
             className={styles.input}
