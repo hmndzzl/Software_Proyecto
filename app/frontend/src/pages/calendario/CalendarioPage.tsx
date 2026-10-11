@@ -3,6 +3,7 @@ import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
+import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey } from '../../utils/date';
 import styles from './CalendarioPage.module.css';
 
 interface AsignadoInfo {
@@ -23,53 +24,7 @@ interface Tarea {
   asignados: AsignadoInfo[];
 }
 
-const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
-
-// Helper to get the Monday of a given date's week
-const getMonday = (d: Date): Date => {
-  const date = new Date(d);
-  date.setHours(0, 0, 0, 0);
-  const day = date.getDay();
-  // in JS: Sunday=0, Monday=1, ..., Saturday=6
-  // difference to Monday (1)
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  date.setDate(diff);
-  return date;
-};
-
-// Helper to format date as YYYY-MM-DD
-const formatYYYYMMDD = (d: Date): string => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
-// Helper to format the range header text
-const formatRangeText = (mon: Date, sun: Date): string => {
-  const monDay = mon.getDate();
-  const monMonth = MESES[mon.getMonth()];
-  const sunDay = sun.getDate();
-  const sunMonth = MESES[sun.getMonth()];
-  const sunYear = sun.getFullYear();
-
-  if (mon.getMonth() === sun.getMonth()) {
-    return `${monDay} al ${sunDay} de ${monMonth}, ${sunYear}`;
-  } else {
-    return `${monDay} de ${monMonth} al ${sunDay} de ${sunMonth}, ${sunYear}`;
-  }
-};
-
 const formatHora = (h?: string | null): string => (h ? h.substring(0, 5) : '--:--');
-
-// La API puede devolver 'YYYY-MM-DD' o un ISO completo ('YYYY-MM-DDTHH:mm:ss.sssZ').
-// Nos quedamos siempre con la parte de fecha, sin volver a parsear a Date
-// (parsear reintroduciria el desfase de zona horaria).
-const fechaKey = (fecha?: string | null): string => (fecha ? fecha.slice(0, 10) : '');
 
 // Ordena por hora de inicio y, en empate, por hora de fin, para que el orden
 // dentro de la columna no dependa del ORDER BY de la API.
