@@ -149,34 +149,36 @@ export default function NotificacionesPage() {
             ) : notificaciones.length === 0 ? (
               <EmptyState message="No tienes notificaciones." />
             ) : (
-              <table className={styles.table}>
-                <thead className={styles.thead}>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Mensaje</th>
-                    <th>Remitente</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {notificaciones.map((n) => (
-                    <NotificacionRow
-                      key={n.id}
-                      notificacion={n}
-                      onMarcarLeida={marcarLeida}
-                      onMarcarNoLeida={marcarNoLeida}
-                      onConfirmarAsistencia={confirmarAsistencia}
-                      onCancelarAsistencia={cancelarAsistencia}
-                      onCancelarInasistencia={cancelarInasistencia}
-                      onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
-                      onEliminar={handleEliminar}
-                      resaltada={n.id === resaltarId}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead className={styles.thead}>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Mensaje</th>
+                      <th>Remitente</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {notificaciones.map((n) => (
+                      <NotificacionRow
+                        key={n.id}
+                        notificacion={n}
+                        onMarcarLeida={marcarLeida}
+                        onMarcarNoLeida={marcarNoLeida}
+                        onConfirmarAsistencia={confirmarAsistencia}
+                        onCancelarAsistencia={cancelarAsistencia}
+                        onCancelarInasistencia={cancelarInasistencia}
+                        onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
+                        onEliminar={handleEliminar}
+                        resaltada={n.id === resaltarId}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardBody>
         </Card>
@@ -196,29 +198,31 @@ export default function NotificacionesPage() {
             ) : enviadas.length === 0 ? (
               <EmptyState message="No has enviado notificaciones." />
             ) : (
-              <table className={styles.table} style={{ tableLayout: 'fixed' }}>
-                <colgroup>
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '38%' }} />
-                  <col style={{ width: '26%' }} />
-                  <col style={{ width: '9%' }} />
-                  <col style={{ width: '12%' }} />
-                </colgroup>
-                <thead className={styles.thead}>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Mensaje</th>
-                    <th>Destinatarios</th>
-                    <th>Tipo</th>
-                    <th>Lecturas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {enviadas.map((n) => (
-                    <EnviadaRow key={n.id} notificacion={n} />
-                  ))}
-                </tbody>
-              </table>
+              <div className={styles.tableWrap}>
+                <table className={styles.table} style={{ tableLayout: 'fixed', minWidth: 700 }}>
+                  <colgroup>
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '32%' }} />
+                    <col style={{ width: '24%' }} />
+                    <col style={{ width: '10%' }} />
+                    <col style={{ width: '22%' }} />
+                  </colgroup>
+                  <thead className={styles.thead}>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Mensaje</th>
+                      <th>Destinatarios</th>
+                      <th>Tipo</th>
+                      <th>Lecturas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enviadas.map((n) => (
+                      <EnviadaRow key={n.id} notificacion={n} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardBody>
         </Card>
@@ -245,22 +249,24 @@ export default function NotificacionesPage() {
             ) : papelera.length === 0 ? (
               <EmptyState message="La papelera está vacía." />
             ) : (
-              <table className={styles.table}>
-                <thead className={styles.thead}>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Mensaje</th>
-                    <th>Remitente</th>
-                    <th>Tipo</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {papelera.map((n) => (
-                    <PapeleraRow key={n.id} notificacion={n} onRestaurar={handleRestaurar} />
-                  ))}
-                </tbody>
-              </table>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead className={styles.thead}>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Mensaje</th>
+                      <th>Remitente</th>
+                      <th>Tipo</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {papelera.map((n) => (
+                      <PapeleraRow key={n.id} notificacion={n} onRestaurar={handleRestaurar} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardBody>
         </Card>
