@@ -15,9 +15,10 @@ interface Espacio {
 interface CrearReservaFormProps {
   onReservaCreada?: () => void;
   autoFocus?: boolean;
+  espacioInicial?: string;
 }
 
-export default function CrearReservaForm({ onReservaCreada, autoFocus = false }: CrearReservaFormProps) {
+export default function CrearReservaForm({ onReservaCreada, autoFocus = false, espacioInicial }: CrearReservaFormProps) {
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
@@ -49,6 +50,14 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
     };
     fetchEspacios();
   }, []);
+
+  // Preselecciona el espacio del QR solo si existe en el catálogo cargado del backend.
+  useEffect(() => {
+    if (!espacioInicial) return;
+    if (espacios.some((esp) => String(esp.id) === espacioInicial)) {
+      setEspacioId(espacioInicial);
+    }
+  }, [espacioInicial, espacios]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
