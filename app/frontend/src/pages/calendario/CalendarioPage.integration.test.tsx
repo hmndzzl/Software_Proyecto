@@ -97,6 +97,22 @@ describe('integración del calendario semanal', () => {
     expect(screen.queryByRole('heading', { name: 'Lectura mañana' })).not.toBeInTheDocument();
   });
 
+  it('en el detalle usa persona_nombre si no hay asignados, y "Sin asignar" si no hay ninguno', async () => {
+    render(<CalendarioPage />);
+    await screen.findByText('Lectura tarde');
+
+    await userEvent.click(screen.getByText('Lectura tarde'));
+    const headingAna = screen.getByRole('heading', { name: 'Lectura tarde' });
+    expect(within(headingAna.closest('[class*="panel"]') as HTMLElement).getByText('Ana')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Cerrar'));
+
+    const tarjetaSinAsignar = screen.getByText('Sin asignar', { selector: 'p' });
+    await userEvent.click(tarjetaSinAsignar);
+    const headingSinAsignar = screen.getByRole('heading', { name: 'Sin asignar' });
+    const modalSinAsignar = within(headingSinAsignar.closest('[class*="panel"]') as HTMLElement);
+    expect(modalSinAsignar.getAllByText('Sin asignar').length).toBeGreaterThan(0);
+  });
+
   it('calcula correctamente el lunes cuando la fecha actual es domingo', async () => {
     vi.setSystemTime(new Date(2026, 9, 11, 12));
     render(<CalendarioPage />);
