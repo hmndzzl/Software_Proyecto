@@ -12,7 +12,7 @@ import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
-import { ROLES } from '../../utils/roles';
+import { ROLES, ROLES_RESERVAS } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 import { partesFecha, formatHora as fmtH } from '../../utils/date';
 import styles from './EspacioDetallePage.module.css';
@@ -41,6 +41,7 @@ export default function EspacioDetallePage() {
 
   const { tieneRol } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
+  const puedeReservar = tieneRol(ROLES_RESERVAS);
 
   const cargarEspacio = () => {
     setCargando(true);
@@ -141,10 +142,12 @@ export default function EspacioDetallePage() {
             title="Próximas Reservas"
             hint={`${reservas.length} registradas`}
             right={
-              <Btn kind="gold" size="sm" onClick={() => navigate('/reservas')}
-                icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}>
-                Reservar
-              </Btn>
+              puedeReservar && (
+                <Btn kind="gold" size="sm" onClick={() => navigate('/reservas')}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}>
+                  Reservar
+                </Btn>
+              )
             }
           />
 
