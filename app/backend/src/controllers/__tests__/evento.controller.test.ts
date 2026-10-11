@@ -217,11 +217,14 @@ describe('Evento Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Evento actualizado exitosamente' });
     });
 
-    it('debería reasignar el encargado cuando se envía encargado_id válido', async () => {
+    it('debería reasignar el encargado cuando se envía encargado_id válido y notificarlo', async () => {
       req.params = { id: '1' };
       req.body = { descripcion: 'Nueva desc', encargado_id: 7 };
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 7 }]]);
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      req.user = { id: 3 } as any;
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 7 }]]); // SELECT persona
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 401 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
 
       await updateEvento(req as Request, res as Response);
 
@@ -230,6 +233,16 @@ describe('Evento Controller - Pruebas Unitarias', () => {
         2,
         'UPDATE evento SET descripcion = ?, encargado_id = ? WHERE id = ?',
         ['Nueva desc', 7, '1']
+      );
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('INSERT INTO notificacion'),
+        ['Se te asignó como encargado del evento: Nueva desc', expect.any(String), 3]
+      );
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        4,
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [7, 401]
       );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
     });
