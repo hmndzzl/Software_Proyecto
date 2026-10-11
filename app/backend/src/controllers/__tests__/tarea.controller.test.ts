@@ -560,7 +560,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
   });
 
   describe('reasignarTarea', () => {
-    const tareaBase = { id: 1, fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' };
+    const tareaBase = { id: 1, titulo: 'Misa dominical', fecha: '2026-08-15', hora_inicio: '09:00:00', hora_fin: '10:00:00' };
 
     it('debería retornar 400 si faltan ids', async () => {
       req.body = { tarea_id: 1, persona_actual_id: 2 };
@@ -626,6 +626,7 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     it('debería reasignar correctamente en una transacción', async () => {
       req.body = { tarea_id: 1, persona_actual_id: 2, persona_nueva_id: 3 };
+      req.user = { id: 9 } as any;
       (pool.execute as any).mockResolvedValueOnce([[tareaBase]]);
       (pool.execute as any).mockResolvedValueOnce([[{ 1: 1 }]]);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 3, disponible: 1 }]]);
@@ -634,7 +635,11 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
       mockConnection.execute
         .mockResolvedValueOnce([{ affectedRows: 1 }]) // DELETE
-        .mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT IGNORE
+        .mockResolvedValueOnce([{ affectedRows: 1 }]) // INSERT IGNORE
+        .mockResolvedValueOnce([{ insertId: 101 }]) // INSERT notificacion (nueva persona)
+        .mockResolvedValueOnce([{}]) // INSERT persona_notificacion (nueva persona)
+        .mockResolvedValueOnce([{ insertId: 102 }]) // INSERT notificacion (persona anterior)
+        .mockResolvedValueOnce([{}]); // INSERT persona_notificacion (persona anterior)
 
       await reasignarTarea(req as Request, res as Response);
 
@@ -647,6 +652,26 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
         2,
         expect.stringContaining('INSERT IGNORE INTO asignacion_tarea'),
         [1, 3]
+      );
+      expect(mockConnection.execute).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('INSERT INTO notificacion'),
+        ['Se te asignó la tarea: Misa dominical', expect.any(String), 9]
+      );
+      expect(mockConnection.execute).toHaveBeenNthCalledWith(
+        4,
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [3, 101]
+      );
+      expect(mockConnection.execute).toHaveBeenNthCalledWith(
+        5,
+        expect.stringContaining('INSERT INTO notificacion'),
+        ['Se te reasignó la tarea "Misa dominical" a otra persona', expect.any(String), 9]
+      );
+      expect(mockConnection.execute).toHaveBeenNthCalledWith(
+        6,
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [2, 102]
       );
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
@@ -674,7 +699,11 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
       mockConnection.execute
         .mockResolvedValueOnce([{ affectedRows: 1 }])
-        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([{ insertId: 101 }])
+        .mockResolvedValueOnce([{}])
+        .mockResolvedValueOnce([{ insertId: 102 }])
+        .mockResolvedValueOnce([{}]);
 
       await reasignarTarea(req as Request, res as Response);
 
@@ -694,7 +723,11 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
       mockConnection.execute
         .mockResolvedValueOnce([{ affectedRows: 1 }])
-        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([{ insertId: 101 }])
+        .mockResolvedValueOnce([{}])
+        .mockResolvedValueOnce([{ insertId: 102 }])
+        .mockResolvedValueOnce([{}]);
 
       await reasignarTarea(req as Request, res as Response);
 
