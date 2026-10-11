@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../api/client';
@@ -80,6 +80,21 @@ describe('integración del calendario semanal', () => {
     expect(await screen.findByText('Error al cargar las tareas del calendario.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));
     await waitFor(() => expect(screen.getAllByText('Sin tareas')).toHaveLength(7));
+  });
+
+  it('muestra el detalle de la tarea al hacer click y lo cierra', async () => {
+    render(<CalendarioPage />);
+    await screen.findByText('Lectura mañana');
+
+    await userEvent.click(screen.getByText('Lectura mañana'));
+
+    const heading = screen.getByRole('heading', { name: 'Lectura mañana' });
+    const modal = within(heading.closest('[class*="panel"]') as HTMLElement);
+    expect(modal.getByText('08:00 – 09:00')).toBeInTheDocument();
+    expect(modal.getByText('Luis')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText('Cerrar'));
+    expect(screen.queryByRole('heading', { name: 'Lectura mañana' })).not.toBeInTheDocument();
   });
 
   it('calcula correctamente el lunes cuando la fecha actual es domingo', async () => {
