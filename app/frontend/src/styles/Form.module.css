@@ -167,6 +167,17 @@
 
 .btnDanger:hover { background-color: var(--color-badBgHover); }
 
+.warningBox {
+  background-color: var(--color-warnBg);
+  border-left: 4px solid var(--color-warn);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-warn);
+  font-weight: 600;
+}
+
 /* ── Modal ── */
 .modalOverlay {
   position: fixed;

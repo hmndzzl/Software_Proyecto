@@ -141,6 +141,10 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     ? espacios.find((esp) => String(esp.id) === espacioId)?.nombre
     : undefined;
 
+  const espacioInicialNoEncontrado = Boolean(espacioInicial)
+    && espaciosCargados
+    && !espacios.some((esp) => String(esp.id) === espacioInicial);
+
   return (
     <div>
       <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
@@ -149,6 +153,12 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
           <span className={styles.infoBoxLabel}>Espacio seleccionado:</span>
           {nombreEspacioInicial}
+        </div>
+      )}
+
+      {espacioInicialNoEncontrado && (
+        <div className={`${styles.warningBox} ${styles.infoBoxMargin}`}>
+          El espacio del enlace ya no está disponible. Selecciona uno manualmente.
         </div>
       )}
 
