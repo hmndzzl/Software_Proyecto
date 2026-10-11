@@ -98,6 +98,24 @@ describe('integración del detalle de un espacio', () => {
     expect(await screen.findByText('Destino /espacios')).toBeInTheDocument();
   });
 
+  it('abre y cierra el modal de código QR para Admin/Sacerdote', async () => {
+    mostrar();
+    await screen.findByText('Catequesis');
+
+    await userEvent.click(screen.getByRole('button', { name: /Ver código QR/i }));
+    expect(await screen.findByText(/Código QR · Salón Mayor/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Cerrar'));
+    expect(screen.queryByText(/Código QR · Salón Mayor/i)).not.toBeInTheDocument();
+  });
+
+  it('no muestra el botón de código QR a un Ministro', async () => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 4, nombre: 'Ministro', correo: 'm@test.com', rol_id: ROLES.MINISTRO }));
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.queryByRole('button', { name: /Ver código QR/i })).not.toBeInTheDocument();
+  });
+
   it('usa mensajes de red de respaldo al cargar y cambiar estado', async () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValueOnce({ data: [] });
     const vista = mostrar();
