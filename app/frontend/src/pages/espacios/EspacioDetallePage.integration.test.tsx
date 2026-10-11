@@ -20,7 +20,7 @@ const reservas = [
   { id: 4, fecha: '2099-10-23', hora_inicio: '14:00:00', hora_fin: '15:00:00', estado_reserva_id: 99, evento_titulo: null, evento_descripcion: 'Descripción sola' },
 ];
 
-function Destino() { return <p>Destino {useLocation().pathname}</p>; }
+function Destino() { const loc = useLocation(); return <p>Destino {loc.pathname}{loc.search}</p>; }
 function mostrar() {
   return render(
     <ToastProvider><MemoryRouter initialEntries={['/espacios/5']}><Routes>
@@ -50,7 +50,7 @@ describe('integración del detalle de un espacio', () => {
     expect(screen.getByText('Rechazada')).toBeInTheDocument();
     expect(screen.getByText('Desconocido')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Reservar' }));
-    expect(await screen.findByText('Destino /reservas')).toBeInTheDocument();
+    expect(await screen.findByText('Destino /reservas?espacio_id=5')).toBeInTheDocument();
   });
 
   it('aprueba y rechaza una reserva, notifica y vuelve a consultar', async () => {
