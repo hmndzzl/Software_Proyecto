@@ -40,8 +40,12 @@ export default function LoginPage() {
   const { usuario } = useAuth();
 
   // Con Clerk, ClerkSessionSync carga el usuario tras iniciar sesión; al tenerlo, se entra.
+  // Si ProtectedRoute guardó a dónde volver (ej. un salón abierto desde un QR), se respeta.
   useEffect(() => {
-    if (CLERK_ENABLED && usuario) navigate('/dashboard', { replace: true });
+    if (!CLERK_ENABLED || !usuario) return;
+    const returnTo = sessionStorage.getItem('returnTo');
+    sessionStorage.removeItem('returnTo');
+    navigate(returnTo || '/dashboard', { replace: true });
   }, [usuario, navigate]);
 
   return (
