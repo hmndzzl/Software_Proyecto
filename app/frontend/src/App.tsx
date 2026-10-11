@@ -117,7 +117,7 @@ function AppContent() {
         <Route
           path="/espacios/:id"
           element={
-            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN]}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <EspacioDetallePage />
             </ProtectedRoute>
           }
