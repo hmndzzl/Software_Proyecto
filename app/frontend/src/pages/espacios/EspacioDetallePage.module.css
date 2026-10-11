@@ -126,6 +126,10 @@
   color: var(--color-carbon);
 }
 
+.qrBtnWrap {
+  margin-top: 16px;
+}
+
 /* Lista de reservas */
 .reservaList {
   overflow-y: auto;

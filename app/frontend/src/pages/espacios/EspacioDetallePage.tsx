@@ -4,6 +4,7 @@ import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import { avisoCambioEstadoReserva } from '../../utils/estadosReserva';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
+import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
@@ -36,6 +37,7 @@ export default function EspacioDetallePage() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [qrAbierto, setQrAbierto] = useState(false);
 
   const { tieneRol } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
@@ -122,6 +124,15 @@ export default function EspacioDetallePage() {
               <span className={styles.infoCardValue}>Parroquial</span>
             </div>
           </div>
+
+          {esAdminOSacerdote && (
+            <div className={styles.qrBtnWrap}>
+              <Btn kind="cream" size="sm" onClick={() => setQrAbierto(true)}
+                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>}>
+                Ver código QR
+              </Btn>
+            </div>
+          )}
         </div>
 
         {/* Panel derecho — reservas */}
@@ -180,6 +191,12 @@ export default function EspacioDetallePage() {
         </Card>
 
       </div>
+
+      <EspacioQrModal
+        open={qrAbierto}
+        espacio={espacio}
+        onClose={() => setQrAbierto(false)}
+      />
     </div>
   );
 }
