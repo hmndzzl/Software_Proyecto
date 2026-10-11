@@ -67,6 +67,8 @@ export const aprobarCuenta = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    await notificarCambioCuenta(id, req.user!.id, 'Tu cuenta fue aprobada. Ya puedes iniciar sesión.');
+
     res.status(HttpStatus.OK).json({ mensaje: 'Cuenta aprobada' });
   } catch (error) {
     console.error('Error en aprobarCuenta:', error);
@@ -114,6 +116,8 @@ export const rechazarCuenta = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    await notificarCambioCuenta(id, req.user!.id, 'Tu cuenta fue rechazada. Si crees que es un error, contacta al administrador parroquial.');
+
     res.status(HttpStatus.OK).json({ mensaje: 'Cuenta rechazada' });
   } catch (error) {
     console.error('Error en rechazarCuenta:', error);
@@ -130,4 +134,18 @@ async function responderCuentaYaActiva(id: number, res: Response): Promise<void>
     return;
   }
   res.status(HttpStatus.CONFLICT).json({ mensaje: 'La cuenta ya está activa' });
+}
+
+// Notifica a la persona cuya cuenta cambió de estado. Queda en su bandeja aunque
+// todavía no pueda iniciar sesión (p. ej. si estaba pendiente).
+async function notificarCambioCuenta(personaId: number, remitenteId: number, mensaje: string): Promise<void> {
+  const hoy = new Date().toISOString().split('T')[0];
+  const [notifResult] = await pool.execute<ResultSetHeader>(
+    `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+    [mensaje, hoy, remitenteId]
+  );
+  await pool.execute(
+    'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+    [personaId, notifResult.insertId]
+  );
 }
