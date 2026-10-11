@@ -64,15 +64,27 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
   });
 
   describe('aprobarCuenta', () => {
-    it('Admin aprueba la cuenta y le asigna el rol elegido', async () => {
+    it('Admin aprueba la cuenta y le asigna el rol elegido, y notifica a la persona', async () => {
       req.body = { rol_id: ROLES.COORDINADOR_MINISTROS };
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 201 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
 
       await aprobarCuenta(req as Request, res as Response);
 
       const [sql, params] = (pool.execute as any).mock.calls[0];
       expect(sql).toContain('UPDATE persona SET estado_cuenta');
       expect(params).toEqual(['activa', ROLES.COORDINADOR_MINISTROS, 12, 'activa']);
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('INSERT INTO notificacion'),
+        ['Tu cuenta fue aprobada. Ya puedes iniciar sesión.', expect.any(String), 1]
+      );
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        3,
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [12, 201]
+      );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
     });
 
@@ -80,6 +92,8 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       req.user = { id: 6, rol_id: ROLES.SACERDOTE };
       req.body = { rol_id: ROLES.MINISTRO };
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 202 }]);
+      (pool.execute as any).mockResolvedValueOnce([{}]);
 
       await aprobarCuenta(req as Request, res as Response);
 
@@ -99,6 +113,8 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
     it('Admin sí puede otorgar el rol de Administrador', async () => {
       req.body = { rol_id: ROLES.ADMIN };
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 203 }]);
+      (pool.execute as any).mockResolvedValueOnce([{}]);
 
       await aprobarCuenta(req as Request, res as Response);
 
@@ -155,19 +171,33 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
     const cuenta = (rol_id: number, estado_cuenta: string) =>
       (pool.execute as any).mockResolvedValueOnce([[{ rol_id, estado_cuenta }]]);
 
-    it('rechaza una cuenta pendiente', async () => {
+    it('rechaza una cuenta pendiente y notifica a la persona', async () => {
       cuenta(ROLES.MINISTRO, 'pendiente');
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 301 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
 
       await rechazarCuenta(req as Request, res as Response);
 
       expect((pool.execute as any).mock.calls[1][1]).toEqual(['rechazada', 12, 'pendiente', 'activa']);
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('INSERT INTO notificacion'),
+        ['Tu cuenta fue rechazada. Si crees que es un error, contacta al administrador parroquial.', expect.any(String), 1]
+      );
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        4,
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [12, 301]
+      );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
     });
 
     it('rechaza (desactiva) una cuenta que ya estaba activa', async () => {
       cuenta(ROLES.MINISTRO, 'activa');
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 302 }]);
+      (pool.execute as any).mockResolvedValueOnce([{}]);
 
       await rechazarCuenta(req as Request, res as Response);
 
@@ -197,6 +227,8 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
     it('un Admin sí puede rechazar la cuenta de otro Administrador', async () => {
       cuenta(ROLES.ADMIN, 'activa');
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 303 }]);
+      (pool.execute as any).mockResolvedValueOnce([{}]);
 
       await rechazarCuenta(req as Request, res as Response);
 
