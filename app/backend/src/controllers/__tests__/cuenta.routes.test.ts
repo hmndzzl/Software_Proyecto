@@ -57,7 +57,10 @@ describe('RBAC en rutas de aprobación de cuentas', () => {
     });
 
     it('aprueba una cuenta asignando el rol', async () => {
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any)
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([{ insertId: 1 }])
+        .mockResolvedValueOnce([{}]);
 
       const res = await request(app)
         .patch('/api/cuentas/5/aprobar')
@@ -71,7 +74,9 @@ describe('RBAC en rutas de aprobación de cuentas', () => {
     it('rechaza una cuenta (pendiente o activa)', async () => {
       (pool.execute as any)
         .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' }]])
-        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([{ insertId: 1 }])
+        .mockResolvedValueOnce([{}]);
 
       const res = await request(app).patch('/api/cuentas/5/rechazar').set(auth(rol));
 
@@ -87,7 +92,10 @@ describe('RBAC en rutas de aprobación de cuentas', () => {
     expect(sacerdote.status).toBe(403);
     expect(pool.execute).not.toHaveBeenCalled();
 
-    (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+    (pool.execute as any)
+      .mockResolvedValueOnce([{ affectedRows: 1 }])
+      .mockResolvedValueOnce([{ insertId: 1 }])
+      .mockResolvedValueOnce([{}]);
     const admin = await request(app)
       .patch('/api/cuentas/5/aprobar')
       .set(auth(ROLES.ADMIN))
