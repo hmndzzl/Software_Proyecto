@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { avisoCambioEstadoReserva } from '../../utils/estadosReserva';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
+import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import type { BadgeKind } from '../../components/ui/Badge';
@@ -200,6 +201,8 @@ export default function EspacioDetallePage() {
         </Card>
 
       </div>
+
+      <EspacioCalendarioReservas reservas={reservas} />
 
       <EspacioQrModal
         open={qrAbierto}
