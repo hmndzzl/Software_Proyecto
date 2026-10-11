@@ -168,6 +168,18 @@ export const updateEvento = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    if (encargado_id !== undefined) {
+      const hoy = new Date().toISOString().split('T')[0];
+      const [notifResult] = await pool.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+        [`Se te asignó como encargado del evento: ${descripcion}`, hoy, req.user!.id]
+      );
+      await pool.execute(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [Number(encargado_id), notifResult.insertId]
+      );
+    }
+
     res.status(HttpStatus.OK).json({ mensaje: 'Evento actualizado exitosamente' });
   } catch (error) {
     console.error('Error en updateEvento:', error);
