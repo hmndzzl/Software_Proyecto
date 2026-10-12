@@ -33,6 +33,7 @@ import ClerkSessionSync from './auth/ClerkSessionSync';
 import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
 import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
 import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
+import ContenidoPublicoPage from './pages/contenido-publico/ContenidoPublicoPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -218,6 +219,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <ConfiguracionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/contenido-publico"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+              <ContenidoPublicoPage />
             </ProtectedRoute>
           }
         />
