@@ -4,21 +4,10 @@ import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { formatFecha } from '../../../utils/date';
 import EmptyState from '../../../components/ui/EmptyState';
+import type { Tarea, Ministro } from '../../../types';
 import styles from '../../../styles/Form.module.css';
 
-interface MiTarea {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-}
-
-interface Ministro {
-  id: number;
-  nombre: string;
-}
+type MiTarea = Tarea;
 
 export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSolicitudEnviada?: () => void }) {
   const { usuario } = useAuth();
