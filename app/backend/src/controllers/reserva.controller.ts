@@ -260,10 +260,12 @@ export const obtenerReservas = async (req: Request, res: Response) => {
              r.espacio_id, r.solicitante_id,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
-             ev.descripcion AS evento_descripcion
+             ev.descripcion AS evento_descripcion,
+             p.nombre AS solicitante_nombre
       FROM reserva r
       LEFT JOIN espacio e ON e.id = r.espacio_id
       LEFT JOIN evento ev ON ev.reserva_id = r.id
+      LEFT JOIN persona p ON p.id = r.solicitante_id
       ${filtro}
       ORDER BY r.fecha ASC, r.hora_inicio ASC
     `, params);
