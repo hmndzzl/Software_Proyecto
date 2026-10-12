@@ -63,9 +63,15 @@ export default function LandingPage() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
 
+  const seleccionarSeccion = (indice: number) => {
+    setActive(indice);
+    setOpen(false);
+  };
+
   useEffect(() => {
     const onScroll = () => {
-      const y = window.scrollY + 120;
+      const alturaNav = document.querySelector<HTMLElement>('.landing .nav')?.getBoundingClientRect().height || 76;
+      const y = window.scrollY + alturaNav + 16;
       let cur = 0;
       NAV_LINKS.forEach((l, i) => {
         const el = document.getElementById(l.id);
@@ -82,7 +88,7 @@ export default function LandingPage() {
     <div className="landing">
       <nav className={`nav${open ? ' open' : ''}`}>
         <div className="wrap nav-in">
-          <a href="#home" className="brand">
+          <a href="#home" className="brand" onClick={() => seleccionarSeccion(0)}>
             <img src={logoImg} alt="Parroquia San Pedro Nolasco" className="brand-logo" />
             <span className="brand-txt">
               <span className="brand-top">PARROQUIA</span>
@@ -91,7 +97,7 @@ export default function LandingPage() {
           </a>
           <div className="nav-links">
             {NAV_LINKS.map((l, i) => (
-              <a key={l.id} href={`#${l.id}`} className={i === active ? 'active' : undefined} onClick={() => setOpen(false)}>
+              <a key={l.id} href={`#${l.id}`} className={i === active ? 'active' : undefined} onClick={() => seleccionarSeccion(i)}>
                 {l.label}
               </a>
             ))}
@@ -112,8 +118,8 @@ export default function LandingPage() {
             <div className="rule" />
             <p>Somos una parroquia viva al servicio de las familias de nuestro barrio. Celebramos, acompañamos y servimos — con las puertas siempre abiertas para quien busca consuelo, formación o un lugar donde pertenecer.</p>
             <div className="hero-cta">
-              <a href="#contacto" className="btn btn-gold">CONÓCENOS</a>
-              <a href="#valores" className="btn btn-outline">NUESTROS VALORES</a>
+              <a href="#quienes-somos" className="btn btn-gold" onClick={() => seleccionarSeccion(0)}>CONÓCENOS</a>
+              <a href="#valores" className="btn btn-outline" onClick={() => seleccionarSeccion(1)}>NUESTROS VALORES</a>
             </div>
             <div className="hero-stats">
               <div><div className="stat-n">12</div><div className="stat-l">Grupos pastorales</div></div>
@@ -234,7 +240,7 @@ export default function LandingPage() {
             </div>
             <div>
               <h4>NAVEGACIÓN</h4>
-              {NAV_LINKS.map(l => <a key={l.id} href={`#${l.id}`}>{l.label}</a>)}
+              {NAV_LINKS.map((l, i) => <a key={l.id} href={`#${l.id}`} onClick={() => seleccionarSeccion(i)}>{l.label}</a>)}
               <Link to="/login">Iniciar Sesión</Link>
             </div>
             <div>
