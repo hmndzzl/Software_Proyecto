@@ -239,3 +239,16 @@
   margin-top: 20px;
   justify-content: flex-end;
 }
+
+@media (max-width: 600px) {
+  .fieldRow { flex-direction: column; }
+
+  .modalOverlay { align-items: flex-end; padding: 12px; }
+
+  .modalCard {
+    max-height: calc(100vh - 24px);
+    padding: 22px 18px;
+  }
+
+  .modalActions { flex-wrap: wrap; }
+}
