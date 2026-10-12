@@ -5,6 +5,7 @@
   border-right: 1px solid var(--color-line);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* ── Header ── */
@@ -12,6 +13,39 @@
   padding: 22px 20px 18px;
   border-bottom: 1px solid var(--color-line);
   flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.headerTextos {
+  min-width: 0;
+}
+
+.colapsado .header {
+  padding: 22px 12px 18px;
+  justify-content: center;
+}
+
+.btnAlternar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--color-line);
+  background: var(--color-blanco);
+  color: var(--color-tierra);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.btnAlternar:hover {
+  background: var(--color-cremaDk);
+  color: var(--color-rojo);
 }
 
 .kicker {
@@ -51,6 +85,11 @@
   text-decoration: none;
   border-left: 3px solid transparent;
   transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.colapsado .navLink {
+  justify-content: center;
+  padding: 0;
 }
 
 .navLink:hover {
@@ -103,6 +142,13 @@
   box-shadow: var(--shadow-btn-primary);
   transition: background-color var(--transition);
   flex-shrink: 0;
+}
+
+.colapsado .btnNuevo {
+  width: 40px;
+  height: 40px;
+  margin: 10px auto 14px;
+  padding: 0;
 }
 
 .btnNuevo:hover {

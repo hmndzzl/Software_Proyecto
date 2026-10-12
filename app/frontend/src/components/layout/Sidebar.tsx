@@ -165,7 +165,12 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
 
 const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
 
-export default function Sidebar() {
+interface SidebarProps {
+  colapsado: boolean;
+  onAlternar: () => void;
+}
+
+export default function Sidebar({ colapsado, onAlternar }: SidebarProps) {
   const navigate = useNavigate();
   const { usuario, tieneRol } = useAuth();
 
@@ -175,10 +180,25 @@ export default function Sidebar() {
   const puedeVerReservas = tieneRol(ROLES_RESERVAS);
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar}${colapsado ? ` ${styles.colapsado}` : ''}`}>
       <div className={styles.header}>
-        <p className={styles.kicker}>Administración</p>
-        <p className={styles.subtitle}>San Pedro Nolasco</p>
+        {!colapsado && (
+          <div className={styles.headerTextos}>
+            <p className={styles.kicker}>Administración</p>
+            <p className={styles.subtitle}>San Pedro Nolasco</p>
+          </div>
+        )}
+        <button
+          type="button"
+          className={styles.btnAlternar}
+          onClick={onAlternar}
+          title={colapsado ? 'Mostrar menú' : 'Ocultar menú'}
+          aria-label={colapsado ? 'Mostrar menú' : 'Ocultar menú'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: colapsado ? 'rotate(180deg)' : undefined }}>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
       </div>
 
       <nav className={styles.nav}>
@@ -189,26 +209,34 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `${styles.navLink}${isActive ? ` ${styles.active}` : ''}`
             }
+            title={colapsado ? label : undefined}
           >
             <span className={styles.navIcon}>{icon}</span>
-            <span className={styles.navLabel}>{label}</span>
+            {!colapsado && <span className={styles.navLabel}>{label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {puedeVerReservas && (
-        <button type="button" className={styles.btnNuevo} onClick={() => navigate('/reservas')}>
+        <button
+          type="button"
+          className={styles.btnNuevo}
+          onClick={() => navigate('/reservas')}
+          title={colapsado ? 'Nueva Reserva' : undefined}
+        >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Nueva Reserva
+          {!colapsado && 'Nueva Reserva'}
         </button>
       )}
 
-      <footer className={styles.footer}>
-        <a href="#" className={styles.footerLink}>Configuración</a>
-        <a href="#" className={styles.footerLink}>Ayuda y Soporte</a>
-      </footer>
+      {!colapsado && (
+        <footer className={styles.footer}>
+          <a href="#" className={styles.footerLink}>Configuración</a>
+          <a href="#" className={styles.footerLink}>Ayuda y Soporte</a>
+        </footer>
+      )}
     </aside>
   );
 }
