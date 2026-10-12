@@ -5,25 +5,8 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
 import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey } from '../../utils/date';
+import type { Tarea } from '../../types';
 import styles from './CalendarioPage.module.css';
-
-interface AsignadoInfo {
-  persona_id: number;
-  nombre: string;
-  correo: string;
-  rol: string;
-}
-
-interface Tarea {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  titulo: string;
-  descripcion: string;
-  persona_nombre?: string | null;
-  asignados: AsignadoInfo[];
-}
 
 const formatHora = (h?: string | null): string => (h ? h.substring(0, 5) : '--:--');
 
