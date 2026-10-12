@@ -175,6 +175,57 @@ describe('integración API y MariaDB', () => {
     }
   });
 
+  it('persiste cambios de landing y conserva los campos no enviados', async () => {
+    const inicial = await request(app).get('/api/public/landing').expect(200);
+    expect(inicial.body).toMatchObject({ nombre_parroquia: 'Parroquia San Pedro Nolasco', cantidad_grupos: 12, cantidad_espacios: 7 });
+    expect(inicial.body.contacto.direccion).toContain('\nCiudad de Guatemala');
+    const login = await request(app).post('/api/auth/login')
+      .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const [cantidadesAntes] = await pool.query<RowDataPacket[]>('SELECT (SELECT COUNT(*) FROM grupo) AS grupos, (SELECT COUNT(*) FROM espacio) AS espacios');
+    const cambios = {
+      quienes_somos: { descripcion: 'Nueva descripción pública' }, cantidad_grupos: 18, cantidad_espacios: 9,
+      contacto: { telefono: '+502 5555 1234' },
+      horarios_misa: [{ dias: 'Domingo', horas: ['07:30', '12:00'] }],
+      valores: [{ titulo: 'Solidaridad', descripcion: 'Acompañamos a nuestra comunidad' }],
+    };
+    const actualizado = await request(app).patch('/api/landing').auth(login.body.token, { type: 'bearer' }).send(cambios).expect(200);
+    expect(actualizado.body.quienes_somos.mision).toBe(inicial.body.quienes_somos.mision);
+    expect(actualizado.body.contacto.correo).toBe(inicial.body.contacto.correo);
+    const publico = await request(app).get('/api/public/landing').expect(200);
+    expect(publico.body).toEqual(actualizado.body);
+    expect(publico.body).toMatchObject(cambios);
+    const [guardado] = await pool.query<RowDataPacket[]>('SELECT contenido FROM contenido_landing WHERE id = 1');
+    expect(JSON.parse(guardado[0].contenido)).toEqual(publico.body);
+    const [cantidadesDespues] = await pool.query<RowDataPacket[]>('SELECT (SELECT COUNT(*) FROM grupo) AS grupos, (SELECT COUNT(*) FROM espacio) AS espacios');
+    expect(cantidadesDespues).toEqual(cantidadesAntes);
+
+    await request(app).patch('/api/landing').auth(login.body.token, { type: 'bearer' }).send({ cantidad_grupos: -1 }).expect(400);
+    const sinCambios = await request(app).get('/api/public/landing').expect(200);
+    expect(sinCambios.body).toEqual(publico.body);
+  });
+
+  it('conserva ambas ediciones concurrentes y la migración no sobrescribe contenido editado', async () => {
+    const login = await request(app).post('/api/auth/login')
+      .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    await Promise.all([
+      request(app).patch('/api/landing').auth(login.body.token, { type: 'bearer' }).send({ quienes_somos: { mision: 'Misión actualizada' } }).expect(200),
+      request(app).patch('/api/landing').auth(login.body.token, { type: 'bearer' }).send({ quienes_somos: { comunidad: 'Comunidad actualizada' }, cantidad_espacios: 0 }).expect(200),
+    ]);
+    const anterior = await request(app).get('/api/public/landing').expect(200);
+    expect(anterior.body).toMatchObject({ quienes_somos: { mision: 'Misión actualizada', comunidad: 'Comunidad actualizada' }, cantidad_espacios: 0 });
+    const migration = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261011_contenido_landing.sql'), 'utf8');
+    const connection = await mysql.createConnection({
+      host: container.getHost(), port: container.getPort(), user: container.getUsername(),
+      password: container.getUserPassword(), database: container.getDatabase(), multipleStatements: true,
+    });
+    try {
+      await connection.query(migration);
+      await connection.query(migration);
+    } finally { await connection.end(); }
+    const despues = await request(app).get('/api/public/landing').expect(200);
+    expect(despues.body).toEqual(anterior.body);
+  });
+
   it('persiste un contacto y notifica a cada sacerdote y administrador', async () => {
     const response = await request(app)
       .post('/api/contacto')
