@@ -248,6 +248,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]); // Pertenece al 1
       mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno más)
 
       await editarReserva(req as Request, res as Response);
 
@@ -263,11 +264,39 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
       mockConnection.query.mockResolvedValueOnce([{}]);
       mockConnection.query.mockResolvedValueOnce([{}]);
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno)
 
       await editarReserva(req as Request, res as Response);
 
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('notifica a los aprobadores (excepto al editor) que la reserva editada necesita re-aprobación', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+      req.user = { id: 5, rol_id: ROLES.ADMIN } as any; // Admin edita la reserva de otro
+
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
+      mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
+      mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
+      mockConnection.query.mockResolvedValueOnce([[{ id: 9 }]]); // SELECT aprobadores (otro Sacerdote)
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 50 }]); // INSERT notificacion
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+
+      await editarReserva(req as Request, res as Response);
+
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('rol_id IN'),
+        [ROLES.SACERDOTE, ROLES.ADMIN, 5]
+      );
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        6,
+        expect.stringContaining('persona_notificacion'),
+        [9, 50]
+      );
+      expect(mockConnection.commit).toHaveBeenCalled();
     });
 
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
