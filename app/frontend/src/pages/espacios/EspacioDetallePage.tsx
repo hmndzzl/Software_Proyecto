@@ -26,6 +26,7 @@ interface Reserva {
   estado_reserva_id: number;
   evento_titulo: string | null;
   evento_descripcion: string | null;
+  solicitante_nombre: string | null;
 }
 
 const ESTADO_LABEL: Record<number, string>   = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
@@ -179,6 +180,7 @@ export default function EspacioDetallePage() {
                     {!r.evento_titulo && !r.evento_descripcion && (
                       <p className={styles.eventTitle}>Reserva #{r.id}</p>
                     )}
+                    <p className={styles.eventSolicitante}>Registrado por: {r.solicitante_nombre ?? 'Desconocido'}</p>
                   </div>
 
                   {/* Badge + acciones */}
