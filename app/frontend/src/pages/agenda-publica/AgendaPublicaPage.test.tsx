@@ -31,6 +31,9 @@ describe('AgendaPublicaPage', () => {
     mostrar();
 
     expect(await screen.findByRole('heading', { name: 'Encuentro parroquial' })).toBeInTheDocument();
+    expect(document.querySelector('.agenda-publica.public-portal')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Quiénes Somos' })[0]).toHaveAttribute('href', '/#quienes-somos');
     expect(apiClient.get).toHaveBeenCalledWith('/api/public/agenda');
     expect(screen.getByText('20 de octubre de 2099')).toBeInTheDocument();
     expect(screen.getByText('09:00 – 11:00')).toBeInTheDocument();
