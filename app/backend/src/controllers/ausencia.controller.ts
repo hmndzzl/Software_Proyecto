@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
-import { PoolConnection } from 'mysql2/promise';
-import pool from '../config/db';
 import { ROLES } from '../config/roles';
 import { HttpStatus } from '../utils/httpStatus';
 import { AusenciaCreada } from '../types/ausencia.types';
+import { withTransaction } from '../utils/withTransaction';
 
 function esFecha(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '1000-01-01') return false;
@@ -39,54 +38,46 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
     return;
   }
 
-  let conn: PoolConnection | undefined;
   try {
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
-    const [ministros] = await conn.execute<RowDataPacket[]>(
-      'SELECT id, nombre, correo FROM persona WHERE id = ? AND rol_id = ?',
-      [ministro_id, req.user.rol_id]
-    );
-    if (!ministros.length) {
-      await conn.rollback();
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Usuario no encontrado o rol actualizado' });
-      return;
-    }
-    const [destinatarios] = await conn.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.COORDINADOR_MINISTROS, ROLES.SACERDOTE]
-    );
-    if (!destinatarios.length) {
-      await conn.rollback();
-      res.status(HttpStatus.CONFLICT).json({ mensaje: 'No hay coordinadores de ministros ni sacerdotes registrados para recibir la notificación' });
-      return;
-    }
-    const { id, nombre, correo } = ministros[0];
-    const mensaje = `${titulo}\n${nombre} (${correo}) notificó un periodo de ausencia del ${fecha_inicio} al ${fecha_fin}, ambos días incluidos.\nJustificación: ${justificacion}`;
-    const [notificacion] = await conn.execute<ResultSetHeader>(
-      "INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)",
-      [mensaje, ministro_id]
-    );
-    for (const destinatario of destinatarios) {
-      await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
-        [destinatario.id, notificacion.insertId]);
-    }
-    const [resultado] = await conn.execute<ResultSetHeader>(
-      'INSERT INTO periodo_ausencia (ministro_id, fecha_inicio, fecha_fin, notificacion_id, titulo, justificacion) VALUES (?, ?, ?, ?, ?, ?)',
-      [ministro_id, fecha_inicio, fecha_fin, notificacion.insertId, titulo, justificacion]
-    );
-    await conn.commit();
-    const ausencia: AusenciaCreada = {
-      id: resultado.insertId, ministro_id, ministro: { id, nombre, correo },
-      fecha_inicio, fecha_fin, titulo, justificacion, notificacion_id: notificacion.insertId,
-    };
-    res.status(HttpStatus.CREATED).json({ mensaje: 'Periodo de ausencia registrado; coordinadores de ministros y sacerdote notificados', ausencia });
+    await withTransaction(async (conn) => {
+      const [ministros] = await conn.execute<RowDataPacket[]>(
+        'SELECT id, nombre, correo FROM persona WHERE id = ? AND rol_id = ?',
+        [ministro_id, req.user!.rol_id]
+      );
+      if (!ministros.length) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Usuario no encontrado o rol actualizado' });
+        return 'rollback';
+      }
+      const [destinatarios] = await conn.execute<RowDataPacket[]>(
+        'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.COORDINADOR_MINISTROS, ROLES.SACERDOTE]
+      );
+      if (!destinatarios.length) {
+        res.status(HttpStatus.CONFLICT).json({ mensaje: 'No hay coordinadores de ministros ni sacerdotes registrados para recibir la notificación' });
+        return 'rollback';
+      }
+      const { id, nombre, correo } = ministros[0];
+      const mensaje = `${titulo}\n${nombre} (${correo}) notificó un periodo de ausencia del ${fecha_inicio} al ${fecha_fin}, ambos días incluidos.\nJustificación: ${justificacion}`;
+      const [notificacion] = await conn.execute<ResultSetHeader>(
+        "INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)",
+        [mensaje, ministro_id]
+      );
+      for (const destinatario of destinatarios) {
+        await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+          [destinatario.id, notificacion.insertId]);
+      }
+      const [resultado] = await conn.execute<ResultSetHeader>(
+        'INSERT INTO periodo_ausencia (ministro_id, fecha_inicio, fecha_fin, notificacion_id, titulo, justificacion) VALUES (?, ?, ?, ?, ?, ?)',
+        [ministro_id, fecha_inicio, fecha_fin, notificacion.insertId, titulo, justificacion]
+      );
+      const ausencia: AusenciaCreada = {
+        id: resultado.insertId, ministro_id, ministro: { id, nombre, correo },
+        fecha_inicio, fecha_fin, titulo, justificacion, notificacion_id: notificacion.insertId,
+      };
+      res.status(HttpStatus.CREATED).json({ mensaje: 'Periodo de ausencia registrado; coordinadores de ministros y sacerdote notificados', ausencia });
+      return 'commit';
+    });
   } catch (error) {
-    if (conn) {
-      try { await conn.rollback(); } catch (rollbackError) { console.error('Error al revertir ausencia:', rollbackError); }
-    }
     console.error('Error en crearAusencia:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al registrar el periodo de ausencia' });
-  } finally {
-    conn?.release();
   }
 };
