@@ -60,3 +60,28 @@
   /* ── Transiciones ── */
   --transition: 150ms ease-out;
 }
+
+@media (max-width: 1024px) {
+  :root {
+    --main-px: 28px;
+    --main-py: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --topbar-h: 64px;
+    --main-px: 20px;
+    --main-py: 24px;
+    --gap-card: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --main-px: 14px;
+    --main-py: 18px;
+    --gap-card: 14px;
+    --gap-sm: 12px;
+  }
+}
