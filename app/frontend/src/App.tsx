@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/react';
 import { esES } from '@clerk/localizations';
@@ -30,6 +30,8 @@ import AusenciasPage from './pages/ausencias/AusenciasPage';
 import CuentasPage from './pages/cuentas/CuentasPage';
 import ClerkSessionSync from './auth/ClerkSessionSync';
 import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
+import { leerReducirMovimiento, UI_PREFERENCES_EVENT } from './auth/sessionStore';
+import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -38,6 +40,19 @@ const ALL_ROLES = [
   ROLES.COORDINADOR_GRUPOS,
   ROLES.MINISTRO,
 ];
+
+function SincronizarPreferenciasUI() {
+  useEffect(() => {
+    const sincronizar = () => {
+      document.documentElement.dataset.reducirMovimiento = leerReducirMovimiento() ? 'true' : 'false';
+    };
+    sincronizar();
+    window.addEventListener(UI_PREFERENCES_EVENT, sincronizar);
+    return () => window.removeEventListener(UI_PREFERENCES_EVENT, sincronizar);
+  }, []);
+
+  return null;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -192,6 +207,15 @@ function AppContent() {
           }
         />
 
+        <Route
+          path="/configuracion"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <ConfiguracionPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
@@ -222,6 +246,7 @@ function App() {
     <ErrorProvider>
       <ErrorBoundary>
         <BrowserRouter>
+          <SincronizarPreferenciasUI />
           <MaybeClerkProvider>
             <ToastProvider>
               <AuthProvider>
