@@ -89,9 +89,16 @@ test('el selector del header acompaña a las tres secciones y conserva la selecc
     await link.click();
     await expect(link).toHaveAttribute('aria-current', 'location');
     await expect.poll(async () => {
-      const top = await page.locator(`#${id}`).evaluate(element => element.getBoundingClientRect().top);
-      const navHeight = await page.locator('.nav').evaluate(element => element.getBoundingClientRect().height);
-      return Math.abs(top - navHeight);
+      return page.locator(`#${id}`).evaluate(element => {
+        const navHeight = document.querySelector<HTMLElement>('.nav')?.getBoundingClientRect().height ?? 0;
+        const documentTop = element.getBoundingClientRect().top + window.scrollY;
+        const documentHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+        const maxScroll = Math.max(0, documentHeight - window.innerHeight);
+        // La última sección no puede superar el final del documento. En ese caso,
+        // la mejor posición posible puede quedar por debajo del encabezado fijo.
+        const expectedTop = Math.max(navHeight, documentTop - maxScroll);
+        return Math.abs(element.getBoundingClientRect().top - expectedTop);
+      });
     }).toBeLessThanOrEqual(16);
     await expect(link).toHaveAttribute('aria-current', 'location');
   }
