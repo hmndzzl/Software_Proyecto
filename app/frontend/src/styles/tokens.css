@@ -13,6 +13,8 @@
   --color-muted:    #7a6f63;
   --color-line:     #E4DECF;
   --color-lineSoft: #EFE9DB;
+  --color-on-primary: #F3F1E9;
+  --color-topbar: var(--color-rojo);
 
   /* ── Estados semánticos ── */
   --color-ok:      #2f7a4d;
@@ -59,6 +61,45 @@
 
   /* ── Transiciones ── */
   --transition: 150ms ease-out;
+}
+
+/* Tema oscuro: conserva el borgoña y el oro litúrgicos sobre superficies cálidas. */
+html[data-tema='oscuro'] {
+  color-scheme: dark;
+
+  --color-rojo:     #C65A63;
+  --color-rojoDk:   #AD444D;
+  --color-oro:      #E5B85D;
+  --color-oroSoft:  #4B3A20;
+  --color-tierra:   #D2AD7D;
+  --color-crema:    #1F1B18;
+  --color-cremaDk:  #2B2520;
+  --color-blanco:   #332C26;
+  --color-carbon:   #F7EEE2;
+  --color-ink:      #E5D8C8;
+  --color-muted:    #C3B3A0;
+  --color-line:     #5A4C40;
+  --color-lineSoft: #443A32;
+  --color-on-primary: #FFF7EB;
+  --color-topbar:   #631F2A;
+
+  --color-ok:      #75C797;
+  --color-okDk:    #58A77A;
+  --color-okBg:    #223F30;
+  --color-warn:    #F0C864;
+  --color-warnBg:  #4C3D1D;
+  --color-bad:     #EE8A8A;
+  --color-badDk:   #D36B6B;
+  --color-badBg:   #4C2929;
+  --color-badBgHover: #623232;
+  --color-info:    #8CC5E8;
+  --color-infoBg:  #243C4D;
+
+  --shadow-card: 0 1px 0 rgba(255, 247, 235, .03), 0 4px 16px rgba(0, 0, 0, .22);
+  --shadow-topbar: 0 1px 0 rgba(0, 0, 0, .35), 0 6px 20px rgba(0, 0, 0, .3);
+  --shadow-btn-primary: 0 4px 14px rgba(198, 90, 99, .25);
+  --shadow-btn-gold: 0 4px 14px rgba(229, 184, 93, .22);
+  --shadow-sidebar-active: 0 1px 0 #5A4C40, 0 2px 6px rgba(198, 90, 99, .12);
 }
 
 @media (max-width: 1024px) {
