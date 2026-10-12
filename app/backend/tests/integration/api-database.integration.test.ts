@@ -35,6 +35,7 @@ describe('integración API y MariaDB', () => {
     const initDir = path.resolve(__dirname, '../../../database/init');
     await connection.query(fs.readFileSync(path.join(initDir, '01_schema.sql'), 'utf8'));
     await connection.query(fs.readFileSync(path.join(initDir, '02_seeds.sql'), 'utf8'));
+    await connection.query(fs.readFileSync(path.join(initDir, '03_landing.sql'), 'utf8'));
     await connection.end();
 
     vi.resetModules();
