@@ -80,6 +80,9 @@ test('el portal público se adapta a móvil, tableta y escritorio sin desbordars
 test('el selector del header acompaña a las tres secciones y conserva la selección al terminar el desplazamiento', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
+  // La animación se valida visualmente; aquí se comprueba que cada ancla y su
+  // selector terminan en el estado correcto, sin depender de su duración en CI.
+  await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
 
   for (const id of ['quienes-somos', 'valores', 'contacto']) {
     const link = page.locator(`.nav-links a[href="#${id}"]`);
