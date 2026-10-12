@@ -116,11 +116,58 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
       mockConnection.query.mockResolvedValueOnce([{ insertId: 5 }]); // INSERT reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // INSERT evento
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno)
 
       await crearReserva(req as Request, res as Response);
 
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+    });
+
+    it('notifica a Sacerdote y Admin (excepto al solicitante) de la nueva solicitud pendiente', async () => {
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+
+      mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 5 }]); // INSERT reserva
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT evento
+      mockConnection.query.mockResolvedValueOnce([[{ id: 2 }, { id: 3 }]]); // SELECT aprobadores
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 99 }]); // INSERT notificacion
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT persona_notificacion #1
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT persona_notificacion #2
+
+      await crearReserva(req as Request, res as Response);
+
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('rol_id IN'),
+        [ROLES.SACERDOTE, ROLES.ADMIN, 1]
+      );
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        6,
+        expect.stringContaining('persona_notificacion'),
+        [2, 99]
+      );
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        7,
+        expect.stringContaining('persona_notificacion'),
+        [3, 99]
+      );
+      expect(mockConnection.commit).toHaveBeenCalled();
+    });
+
+    it('no notifica a nadie si el solicitante ya es el único Sacerdote/Admin', async () => {
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+
+      mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 5 }]); // INSERT reserva
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT evento
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores: ninguno distinto de sí mismo
+
+      await crearReserva(req as Request, res as Response);
+
+      expect(mockConnection.query).toHaveBeenCalledTimes(4);
+      expect(mockConnection.commit).toHaveBeenCalled();
     });
 
     it('debería hacer rollback y retornar 500 en caso de error', async () => {
