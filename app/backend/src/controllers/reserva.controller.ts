@@ -78,6 +78,27 @@ export const crearReserva = async (req: Request, res: Response) => {
       [titulo, descripcion, solicitante_id, reservaId]
     );
 
+    // Avisa a quienes aprueban reservas (Sacerdote/Admin) que hay una solicitud nueva esperando,
+    // salvo que el propio solicitante ya sea uno de ellos (no tiene sentido notificarse a sí mismo).
+    const [aprobadores]: any = await conn.query(
+      `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+      [ROLES.SACERDOTE, ROLES.ADMIN, solicitante_id]
+    );
+
+    if (aprobadores.length > 0) {
+      const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${hora_inicio}–${hora_fin}) pendiente de tu aprobación.`;
+      const [notifResult]: any = await conn.query(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
+        [mensajeNotificacion, solicitante_id]
+      );
+      for (const aprobador of aprobadores) {
+        await conn.query(
+          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+          [aprobador.id, notifResult.insertId]
+        );
+      }
+    }
+
     await conn.commit();
 
     return res.status(HttpStatus.CREATED).json({
