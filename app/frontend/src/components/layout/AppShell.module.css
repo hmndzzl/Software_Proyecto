@@ -15,7 +15,6 @@
 
 .sidebarColapsado {
   width: var(--sidebar-w-collapsed);
-  overflow: visible;
 }
 
 .main {
