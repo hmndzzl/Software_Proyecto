@@ -78,6 +78,15 @@ export function esClaveDeSesion(key: string | null): boolean {
 // No es dato de sesión, pero vive aquí porque este es el único módulo autorizado
 // a tocar localStorage (DT-10); no amerita un segundo módulo exceptuado.
 const SIDEBAR_COLAPSADO_KEY = 'sidebar_colapsado';
+const INTERVALO_NOTIFICACIONES_KEY = 'intervalo_notificaciones';
+const REDUCIR_MOVIMIENTO_KEY = 'reducir_movimiento';
+
+/** Evento interno para aplicar preferencias sin recargar la aplicación. */
+export const UI_PREFERENCES_EVENT = 'ui-preferences-changed';
+
+function notificarCambioDePreferencias() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(UI_PREFERENCES_EVENT));
+}
 
 export function leerSidebarColapsado(): boolean {
   return leer(SIDEBAR_COLAPSADO_KEY) === '1';
@@ -85,4 +94,32 @@ export function leerSidebarColapsado(): boolean {
 
 export function guardarSidebarColapsado(colapsado: boolean) {
   escribir(SIDEBAR_COLAPSADO_KEY, colapsado ? '1' : '0');
+  notificarCambioDePreferencias();
+}
+
+export type IntervaloNotificaciones = 60 | 300;
+
+export function leerIntervaloNotificaciones(): IntervaloNotificaciones {
+  return leer(INTERVALO_NOTIFICACIONES_KEY) === '300' ? 300 : 60;
+}
+
+export function guardarIntervaloNotificaciones(intervalo: IntervaloNotificaciones) {
+  escribir(INTERVALO_NOTIFICACIONES_KEY, String(intervalo));
+  notificarCambioDePreferencias();
+}
+
+export function leerReducirMovimiento(): boolean {
+  return leer(REDUCIR_MOVIMIENTO_KEY) === '1';
+}
+
+export function guardarReducirMovimiento(reducir: boolean) {
+  escribir(REDUCIR_MOVIMIENTO_KEY, reducir ? '1' : '0');
+  notificarCambioDePreferencias();
+}
+
+export function restaurarPreferenciasUI() {
+  escribir(SIDEBAR_COLAPSADO_KEY, '0');
+  escribir(INTERVALO_NOTIFICACIONES_KEY, '60');
+  escribir(REDUCIR_MOVIMIENTO_KEY, '0');
+  notificarCambioDePreferencias();
 }

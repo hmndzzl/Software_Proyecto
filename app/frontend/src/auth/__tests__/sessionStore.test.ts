@@ -9,6 +9,12 @@ import {
   saveSession,
   saveToken,
   saveUsuario,
+  guardarIntervaloNotificaciones,
+  guardarReducirMovimiento,
+  leerIntervaloNotificaciones,
+  leerReducirMovimiento,
+  leerSidebarColapsado,
+  restaurarPreferenciasUI,
 } from '../sessionStore';
 
 const usuario = { id: 1, nombre: 'Ana', correo: 'ana@test.com', rol_id: 4 };
@@ -66,5 +72,17 @@ describe('sessionStore', () => {
     expect(esClaveDeSesion('token')).toBe(true);
     expect(esClaveDeSesion(null)).toBe(true); // localStorage.clear() en otra pestaña
     expect(esClaveDeSesion('otra')).toBe(false);
+  });
+
+  it('guarda, lee y restablece las preferencias de interfaz', () => {
+    guardarIntervaloNotificaciones(300);
+    guardarReducirMovimiento(true);
+    expect(leerIntervaloNotificaciones()).toBe(300);
+    expect(leerReducirMovimiento()).toBe(true);
+
+    restaurarPreferenciasUI();
+    expect(leerSidebarColapsado()).toBe(false);
+    expect(leerIntervaloNotificaciones()).toBe(60);
+    expect(leerReducirMovimiento()).toBe(false);
   });
 });
