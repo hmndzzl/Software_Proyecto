@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -29,12 +29,15 @@ describe('navegación del portal público', () => {
     Object.defineProperty(document.getElementById('valores')!, 'offsetTop', { configurable: true, value: 300 });
     Object.defineProperty(document.getElementById('contacto')!, 'offsetTop', { configurable: true, value: 900 });
     fireEvent.scroll(window);
-    expect(screen.getAllByRole('link', { name: 'Nuestros Valores' })[0]).toHaveClass('active');
+    expect(quienesSomos).toHaveClass('active');
+    await waitFor(() => expect(screen.getAllByRole('link', { name: 'Nuestros Valores' })[0]).toHaveClass('active'));
   });
 
-  it('dirige el CTA Conócenos a la sección Quiénes somos', () => {
+  it('mantiene la agenda como único CTA del hero', () => {
     render(<MemoryRouter><LandingPage /></MemoryRouter>);
-    expect(screen.getByRole('link', { name: 'CONÓCENOS' })).toHaveAttribute('href', '#quienes-somos');
+    const agenda = screen.getByRole('link', { name: 'AGENDA PARROQUIAL' });
+    expect(agenda).toHaveAttribute('href', '/agenda');
+    expect(agenda.closest('.hero-cta')?.querySelectorAll('a')).toHaveLength(1);
   });
 
   it('enlaza el portal con la agenda pública', () => {

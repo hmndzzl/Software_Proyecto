@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { formatFecha, formatHora, partesFecha } from '../../utils/date';
-import logoImg from '../../assets/logo-parroquia.jpeg';
+import PublicPortalLayout from '../public-portal/PublicPortalLayout';
 import './AgendaPublicaPage.css';
 
 interface EventoPublico {
@@ -65,33 +65,17 @@ export default function AgendaPublicaPage() {
   }, [cargarAgenda]);
 
   return (
-    <div className="agenda-publica">
-      <header className="agenda-header">
-        <div className="agenda-wrap agenda-header-inner">
-          <Link className="agenda-brand" to="/" aria-label="Volver al portal de Parroquia San Pedro Nolasco">
-            <img src={logoImg} alt="" />
-            <span>
-              <small>PARROQUIA</small>
-              <strong>SAN PEDRO NOLASCO</strong>
-            </span>
-          </Link>
-          <nav aria-label="Navegación pública">
-            <Link to="/">Volver al portal</Link>
-            <Link className="agenda-login" to="/login">Iniciar sesión</Link>
-          </nav>
-        </div>
-      </header>
-
+    <PublicPortalLayout page="agenda-publica">
       <main>
         <section className="agenda-hero" aria-labelledby="agenda-titulo">
-          <div className="agenda-wrap">
+          <div className="wrap">
             <p className="agenda-kicker">Comunidad en movimiento</p>
             <h1 id="agenda-titulo">Agenda parroquial</h1>
             <p>Conoce las próximas actividades públicas de nuestra comunidad.</p>
           </div>
         </section>
 
-        <section className="agenda-content agenda-wrap" aria-live="polite" aria-busy={cargando}>
+        <section className="agenda-content wrap" aria-live="polite" aria-busy={cargando}>
           {cargando && (
             <div className="agenda-state" role="status">
               <span className="agenda-loader" aria-hidden="true" />
@@ -149,13 +133,6 @@ export default function AgendaPublicaPage() {
           )}
         </section>
       </main>
-
-      <footer className="agenda-footer">
-        <div className="agenda-wrap">
-          <p>Parroquia San Pedro Nolasco · Guatemala</p>
-          <Link to="/">Inicio</Link>
-        </div>
-      </footer>
-    </div>
+    </PublicPortalLayout>
   );
 }

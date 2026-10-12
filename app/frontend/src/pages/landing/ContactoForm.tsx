@@ -88,7 +88,7 @@ export default function ContactoForm() {
   return (
     <form className="form" onSubmit={enviar} aria-label="Envíanos un mensaje" aria-busy={enviando}>
       <h3>Envíanos un mensaje</h3>
-      <p className="muted" style={{ fontSize: 15 }}>Completa el formulario y la oficina parroquial te contactará.</p>
+      <p className="muted form-intro">Completa el formulario y la oficina parroquial te contactará.</p>
       <fieldset disabled={enviando} style={{ border: 'none', padding: 0, margin: 0 }}>
         <div className="fgrid">
           <div className="field">
