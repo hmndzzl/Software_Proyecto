@@ -14,10 +14,10 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const espacio = { id: 5, nombre: 'Salón Mayor', capacidad: 120, disponible: true };
 const reservas = [
-  { id: 1, fecha: '2099-10-20', hora_inicio: '08:00:00', hora_fin: '09:00:00', estado_reserva_id: 1, evento_titulo: 'Catequesis', evento_descripcion: 'Grupo juvenil' },
-  { id: 2, fecha: '2099-10-21', hora_inicio: '10:00:00', hora_fin: '11:00:00', estado_reserva_id: 2, evento_titulo: null, evento_descripcion: null },
-  { id: 3, fecha: '2099-10-22', hora_inicio: '12:00:00', hora_fin: '13:00:00', estado_reserva_id: 3, evento_titulo: 'Reunión', evento_descripcion: null },
-  { id: 4, fecha: '2099-10-23', hora_inicio: '14:00:00', hora_fin: '15:00:00', estado_reserva_id: 99, evento_titulo: null, evento_descripcion: 'Descripción sola' },
+  { id: 1, fecha: '2099-10-20', hora_inicio: '08:00:00', hora_fin: '09:00:00', estado_reserva_id: 1, evento_titulo: 'Catequesis', evento_descripcion: 'Grupo juvenil', solicitante_nombre: 'Luis Pérez' },
+  { id: 2, fecha: '2099-10-21', hora_inicio: '10:00:00', hora_fin: '11:00:00', estado_reserva_id: 2, evento_titulo: null, evento_descripcion: null, solicitante_nombre: null },
+  { id: 3, fecha: '2099-10-22', hora_inicio: '12:00:00', hora_fin: '13:00:00', estado_reserva_id: 3, evento_titulo: 'Reunión', evento_descripcion: null, solicitante_nombre: 'Ana Gómez' },
+  { id: 4, fecha: '2099-10-23', hora_inicio: '14:00:00', hora_fin: '15:00:00', estado_reserva_id: 99, evento_titulo: null, evento_descripcion: 'Descripción sola', solicitante_nombre: 'Ana Gómez' },
 ];
 
 function Destino() { const loc = useLocation(); return <p>Destino {loc.pathname}{loc.search}</p>; }
@@ -49,6 +49,9 @@ describe('integración del detalle de un espacio', () => {
     expect(screen.getByText('Confirmada')).toBeInTheDocument();
     expect(screen.getByText('Rechazada')).toBeInTheDocument();
     expect(screen.getByText('Desconocido')).toBeInTheDocument();
+    expect(screen.getByText('Registrado por: Luis Pérez')).toBeInTheDocument();
+    expect(screen.getAllByText('Registrado por: Ana Gómez').length).toBe(2);
+    expect(screen.getByText('Registrado por: Desconocido')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Reservar' }));
     expect(await screen.findByText('Destino /reservas?espacio_id=5')).toBeInTheDocument();
   });
