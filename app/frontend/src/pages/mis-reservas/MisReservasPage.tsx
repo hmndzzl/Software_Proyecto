@@ -5,7 +5,6 @@ import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
-import type { BadgeKind } from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
@@ -13,25 +12,13 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
-import { ESTADOS_RESERVA, avisoCambioEstadoReserva } from '../../utils/estadosReserva';
+import { ESTADOS_RESERVA, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND, avisoCambioEstadoReserva } from '../../utils/estadosReserva';
 import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
+import type { Reserva } from '../../types';
 import styles from './MisReservasPage.module.css';
 
-interface MiReserva {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  espacio_nombre: string | null;
-  estado_reserva_id: number;
-  evento_id: number | null;
-  evento_descripcion: string | null;
-  evento_titulo: string | null;
-}
-
-const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada', 4: 'Cancelada' };
-const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada', 4: 'cancelada' };
+type MiReserva = Reserva;
 
 const KPI_ITEMS = [
   { label: 'Pendientes',  estadoId: 1, bg: 'var(--color-warnBg)', color: 'var(--color-warn)'  },
@@ -46,7 +33,7 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
-  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+  estado: (r) => ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? '',
 };
 
 export default function MisReservasPage() {
@@ -159,8 +146,8 @@ export default function MisReservasPage() {
                     <td className={styles.mono}>{formatFecha(r.fecha)}</td>
                     <td className={styles.horaCell}>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</td>
                     <td>
-                      <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                        {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
+                      <Badge kind={ESTADO_RESERVA_KIND[r.estado_reserva_id] ?? 'neutral'}>
+                        {ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                       </Badge>
                     </td>
                     <td>
