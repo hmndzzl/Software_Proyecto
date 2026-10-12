@@ -120,6 +120,7 @@ export default function LandingPage() {
             <div className="hero-cta">
               <a href="#quienes-somos" className="btn btn-gold" onClick={() => seleccionarSeccion(0)}>CONÓCENOS</a>
               <a href="#valores" className="btn btn-outline" onClick={() => seleccionarSeccion(1)}>NUESTROS VALORES</a>
+              <Link to="/agenda" className="btn btn-outline">AGENDA PARROQUIAL</Link>
             </div>
             <div className="hero-stats">
               <div><div className="stat-n">12</div><div className="stat-l">Grupos pastorales</div></div>
@@ -241,6 +242,7 @@ export default function LandingPage() {
             <div>
               <h4>NAVEGACIÓN</h4>
               {NAV_LINKS.map((l, i) => <a key={l.id} href={`#${l.id}`} onClick={() => seleccionarSeccion(i)}>{l.label}</a>)}
+              <Link to="/agenda">Agenda parroquial</Link>
               <Link to="/login">Iniciar Sesión</Link>
             </div>
             <div>

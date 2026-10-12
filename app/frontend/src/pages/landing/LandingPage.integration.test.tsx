@@ -37,6 +37,11 @@ describe('navegación del portal público', () => {
     expect(screen.getByRole('link', { name: 'CONÓCENOS' })).toHaveAttribute('href', '#quienes-somos');
   });
 
+  it('enlaza el portal con la agenda pública', () => {
+    render(<MemoryRouter><LandingPage /></MemoryRouter>);
+    expect(screen.getByRole('link', { name: 'AGENDA PARROQUIAL' })).toHaveAttribute('href', '/agenda');
+  });
+
   it('elimina el listener de desplazamiento al desmontarse', () => {
     const remove = vi.spyOn(window, 'removeEventListener');
     const vista = render(<MemoryRouter><LandingPage /></MemoryRouter>);

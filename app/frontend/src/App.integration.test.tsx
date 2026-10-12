@@ -76,6 +76,7 @@ describe('integración del enrutador con los módulos principales', () => {
     '/cuentas',
     '/perfil',
     '/configuracion',
+    '/agenda',
     '/ruta-inexistente',
   ])('monta la ruta %s con sus proveedores y consultas reales', async (ruta) => {
     await abrir(ruta);

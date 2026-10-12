@@ -12,6 +12,7 @@ import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
 
 import LoginPage from './pages/auth/LoginPage';
 import LandingPage from './pages/landing/LandingPage';
+import AgendaPublicaPage from './pages/agenda-publica/AgendaPublicaPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
@@ -58,9 +59,14 @@ function AppContent() {
   const location = useLocation();
   const isLogin = location.pathname === '/login';
   const isLanding = location.pathname === '/';
+  const isAgendaPublica = location.pathname === '/agenda';
 
   if (isLanding) {
     return <LandingPage />;
+  }
+
+  if (isAgendaPublica) {
+    return <AgendaPublicaPage />;
   }
 
   if (isLogin) {
