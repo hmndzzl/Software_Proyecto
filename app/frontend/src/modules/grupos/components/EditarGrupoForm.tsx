@@ -3,6 +3,7 @@ import { Grupo, Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 export default function EditarGrupoForm({
   grupo,
@@ -24,7 +25,7 @@ export default function EditarGrupoForm({
   }, [grupo]);
 
   useEffect(() => {
-    apiClient.get('/api/personas/coordinadores-grupo')
+    apiClient.get<Persona[]>('/api/personas/coordinadores-grupo')
       .then(res => setPersonas(res.data))
       .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar la lista de coordinadores.'));
   }, []);
@@ -41,8 +42,8 @@ export default function EditarGrupoForm({
       await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_id: parseInt(coordinadorId) });
       toast.success('Grupo actualizado', `Los cambios en "${nombre}" se guardaron.`);
       if (onGrupoActualizado) onGrupoActualizado();
-    } catch (error: any) {
-      toast.error('No se pudo actualizar el grupo', error.response?.data?.mensaje || 'Error de red al intentar actualizar el grupo.');
+    } catch (error: unknown) {
+      toast.error('No se pudo actualizar el grupo', getApiErrorMessage(error, 'Error de red al intentar actualizar el grupo.'));
     }
   };
 
@@ -53,8 +54,8 @@ export default function EditarGrupoForm({
       await apiClient.delete(`/api/grupos/${grupo.id}`);
       toast.success('Grupo eliminado', `El grupo "${grupo.nombre}" fue eliminado.`);
       if (onGrupoActualizado) onGrupoActualizado();
-    } catch (error: any) {
-      toast.error('No se pudo eliminar el grupo', error.response?.data?.mensaje || 'Error de red al intentar eliminar el grupo.');
+    } catch (error: unknown) {
+      toast.error('No se pudo eliminar el grupo', getApiErrorMessage(error, 'Error de red al intentar eliminar el grupo.'));
     }
   };
 

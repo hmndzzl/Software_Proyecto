@@ -3,6 +3,7 @@ import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
 import { ROLES } from '../../../utils/roles';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import { useAuth } from '../../../context/AuthContext';
 import type { Espacio } from '../../espacios/components/EspacioCard';
 import styles from '../../../styles/Form.module.css';
@@ -44,7 +45,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   useEffect(() => {
     const fetchEspacios = async () => {
       try {
-        const response = await apiClient.get('/api/espacios');
+        const response = await apiClient.get<Espacio[]>('/api/espacios');
         setEspacios(response.data);
       } catch {
         // silencioso, el select quedará vacío
@@ -124,8 +125,8 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       setTitulo('');
       setDescripcion('');
       if (onReservaCreada) onReservaCreada();
-    } catch (error: any) {
-      toast.error('No se pudo crear la reserva', error.response?.data?.message || 'Error de red al intentar crear la reserva.');
+    } catch (error: unknown) {
+      toast.error('No se pudo crear la reserva', getApiErrorMessage(error, 'Error de red al intentar crear la reserva.', 'message'));
     } finally {
       setLoading(false);
     }

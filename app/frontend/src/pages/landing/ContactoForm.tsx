@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
-import axios from 'axios';
 import { enviarContacto } from '../../api/contacto';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TELEFONO_LOCAL_REGEX = /^\d{8}$/;
@@ -76,9 +76,8 @@ export default function ContactoForm() {
       });
       setExito(true);
       setNombre(''); setTelefonoLocal(''); setCorreo(''); setMotivo(MOTIVOS[0]); setMotivoOtro(''); setMensaje('');
-    } catch (err) {
-      const mensajeApi = axios.isAxiosError<{ mensaje?: string }>(err) ? err.response?.data?.mensaje : undefined;
-      setError(mensajeApi || 'No se pudo enviar el mensaje. Tus datos se conservaron; vuelve a intentarlo.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'No se pudo enviar el mensaje. Tus datos se conservaron; vuelve a intentarlo.'));
     } finally {
       enCurso.current = false;
       setEnviando(false);

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () => void }) {
   const [titulo, setTitulo] = useState('');
@@ -39,8 +40,8 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
       setHoraInicio('');
       setHoraFin('');
       if (onTareaCreada) onTareaCreada();
-    } catch (error: any) {
-      toast.error('No se pudo crear la tarea', error.response?.data?.mensaje || 'Error de red al intentar crear la tarea.');
+    } catch (error: unknown) {
+      toast.error('No se pudo crear la tarea', getApiErrorMessage(error, 'Error de red al intentar crear la tarea.'));
     }
   };
 

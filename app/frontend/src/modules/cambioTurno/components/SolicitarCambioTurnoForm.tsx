@@ -3,6 +3,7 @@ import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { formatFecha } from '../../../utils/date';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import EmptyState from '../../../components/ui/EmptyState';
 import type { Tarea, Ministro } from '../../../types';
 import styles from '../../../styles/Form.module.css';
@@ -22,12 +23,12 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
   useEffect(() => {
     if (!usuario) return;
 
-    apiClient.get('/api/tareas', { params: { persona_id: usuario.id } })
+    apiClient.get<Tarea[]>('/api/tareas', { params: { persona_id: usuario.id } })
       .then(res => setMisTareas(res.data))
       .catch(() => {});
 
-    apiClient.get('/api/personas')
-      .then(res => setMinistros(res.data.filter((m: Ministro) => m.id !== usuario.id)))
+    apiClient.get<Ministro[]>('/api/personas')
+      .then(res => setMinistros(res.data.filter((m) => m.id !== usuario.id)))
       .catch(() => {});
   }, []);
 
@@ -42,7 +43,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
     setLoading(true);
 
     try {
-      const res = await apiClient.post('/api/cambios-turno', {
+      const res = await apiClient.post<{ mensaje?: string }>('/api/cambios-turno', {
         tarea_id: Number(tareaId),
         destinatario_id: Number(destinatarioId),
       });
@@ -50,8 +51,8 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
       setTareaId('');
       setDestinatarioId('');
       if (onSolicitudEnviada) onSolicitudEnviada();
-    } catch (error: any) {
-      toast.error('No se pudo enviar la solicitud', error.response?.data?.mensaje || 'Error de red al solicitar el cambio de turno.');
+    } catch (error: unknown) {
+      toast.error('No se pudo enviar la solicitud', getApiErrorMessage(error, 'Error de red al solicitar el cambio de turno.'));
     } finally {
       setLoading(false);
     }

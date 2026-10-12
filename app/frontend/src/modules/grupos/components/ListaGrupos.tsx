@@ -43,7 +43,7 @@ export default function ListaGrupos({
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get('/api/grupos');
+      const response = await apiClient.get<Grupo[]>('/api/grupos');
       setGrupos(response.data);
     } catch {
       setError('Error de red al obtener los grupos.');

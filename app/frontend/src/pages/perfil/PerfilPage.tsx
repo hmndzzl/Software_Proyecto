@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, type Usuario } from '../../context/AuthContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
+import { getApiErrorMessage, getApiErrorStatus } from '../../utils/apiError';
 import form from '../../styles/Form.module.css';
 import styles from './PerfilPage.module.css';
 
@@ -21,6 +22,10 @@ interface FormState {
   correo:    string;
   password:  string;
   confirmar: string;
+}
+
+interface PerfilActualizadoResponse {
+  persona: Usuario;
 }
 
 export default function PerfilPage() {
@@ -71,7 +76,7 @@ export default function PerfilPage() {
 
     setSaving(true);
     try {
-      const res = await apiClient.put(`/api/personas/${usuario!.id}`, body);
+      const res = await apiClient.put<PerfilActualizadoResponse>(`/api/personas/${usuario!.id}`, body);
       const actualizado = res.data.persona;
 
       // Actualizar la sesión para reflejar los cambios en toda la app
@@ -84,12 +89,11 @@ export default function PerfilPage() {
 
       setFormData(prev => ({ ...prev, password: '', confirmar: '' }));
       toast.success('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 409) {
         toast.error('No se pudo guardar el perfil', 'El correo ya está en uso por otra cuenta.');
       } else {
-        const msg = err?.response?.data?.mensaje;
-        toast.error('No se pudo guardar el perfil', msg ?? 'Error al actualizar el perfil. Inténtalo de nuevo.');
+        toast.error('No se pudo guardar el perfil', getApiErrorMessage(err, 'Error al actualizar el perfil. Inténtalo de nuevo.'));
       }
     } finally {
       setSaving(false);

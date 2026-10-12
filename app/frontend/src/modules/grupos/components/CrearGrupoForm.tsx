@@ -3,6 +3,7 @@ import { Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () => void }) {
   const [nombre, setNombre] = useState('');
@@ -11,7 +12,7 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
   const toast = useToast();
 
   useEffect(() => {
-    apiClient.get('/api/personas/coordinadores-grupo')
+    apiClient.get<Persona[]>('/api/personas/coordinadores-grupo')
       .then(res => setPersonas(res.data))
       .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar la lista de coordinadores.'));
   }, []);
@@ -30,8 +31,8 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
       setNombre('');
       setCoordinadorId('');
       if (onGrupoCreado) onGrupoCreado();
-    } catch (error: any) {
-      toast.error('No se pudo crear el grupo', error.response?.data?.mensaje || 'Error de red al intentar crear el grupo.');
+    } catch (error: unknown) {
+      toast.error('No se pudo crear el grupo', getApiErrorMessage(error, 'Error de red al intentar crear el grupo.'));
     }
   };
 

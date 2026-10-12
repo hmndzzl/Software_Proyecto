@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { meApi } from '../api/auth';
 import { clearClerkSession, registerClerkSession, setLoginError } from './clerkSession';
 import { readAuthProvider, saveAuthProvider } from './sessionStore';
+import { getApiErrorMessage, getApiErrorStatus } from '../utils/apiError';
 
 /**
  * Sincroniza la sesión de Clerk con el AuthContext, que es la única fuente del estado
@@ -59,9 +60,9 @@ export default function ClerkSessionSync() {
         const user = await meApi();
         saveAuthProvider('clerk');
         setAuth(token, user);
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Se guarda antes de cerrar la sesión: al redirigir al login, ese mensaje es el que se muestra.
-        setLoginError(err.response?.data?.mensaje || 'No se pudo validar tu sesión. Intenta de nuevo.');
+        setLoginError(getApiErrorMessage(err, 'No se pudo validar tu sesión. Intenta de nuevo.'));
         await signOut();
         terminarValidacion();
       }
@@ -77,10 +78,10 @@ export default function ClerkSessionSync() {
       if (document.visibilityState !== 'visible') return;
       try {
         await refrescarUsuario();
-      } catch (err: any) {
-        const status = err?.response?.status;
+      } catch (err: unknown) {
+        const status = getApiErrorStatus(err);
         if (status === 401 || status === 403) {
-          setLoginError(err.response?.data?.mensaje || null);
+          setLoginError(getApiErrorMessage(err, '') || null);
           cerrarSesion();
         }
         // Otros errores (red, 5xx) no cierran la sesión: se reintenta la próxima vez.

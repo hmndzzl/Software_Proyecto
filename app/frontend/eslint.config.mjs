@@ -10,11 +10,19 @@ export default tseslint.config(
     files: ['src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       'no-useless-assignment': 'off',
       'react-hooks/rules-of-hooks': 'error',
+    },
+  },
+  // Los dobles de prueba de Axios y componentes externos requieren tipos parciales.
+  // El código de aplicación se mantiene libre de `any` explícito.
+  {
+    files: ['src/**/*.test.{ts,tsx}', 'src/**/__tests__/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   // DT-10: el estado de autenticación se lee solo con useAuth(); sessionStore.ts es el único

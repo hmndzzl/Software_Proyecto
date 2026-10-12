@@ -18,6 +18,7 @@ import { SelectUI } from '../../components/ui/Field';
 import NuevaCuentaModal from './NuevaCuentaModal';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
+import { getApiErrorMessage } from '../../utils/apiError';
 import styles from './CuentasPage.module.css';
 
 const ROL_OPCIONES: { id: number; label: string }[] = [
@@ -92,8 +93,8 @@ export default function CuentasPage() {
       await aprobarCuentaApi(cuenta.id, rolId);
       quitarDeLista(cuenta.id);
       toast.success('Cuenta aprobada', `${cuenta.nombre} ya puede iniciar sesión como ${rol}.`);
-    } catch (err: any) {
-      toast.error('No se pudo aprobar la cuenta', err.response?.data?.mensaje || 'Intenta de nuevo en unos momentos.');
+    } catch (err: unknown) {
+      toast.error('No se pudo aprobar la cuenta', getApiErrorMessage(err, 'Intenta de nuevo en unos momentos.'));
     } finally {
       setActuandoId(null);
     }
@@ -110,8 +111,8 @@ export default function CuentasPage() {
         'Cuenta rechazada',
         `${cuenta.nombre} ${cuenta.estado_cuenta === 'activa' ? 'ya no tiene acceso al sistema' : 'no podrá entrar al sistema'}. Puedes volver a aprobarla desde la pestaña Rechazadas.`
       );
-    } catch (err: any) {
-      toast.error('No se pudo rechazar la cuenta', err.response?.data?.mensaje || 'Intenta de nuevo en unos momentos.');
+    } catch (err: unknown) {
+      toast.error('No se pudo rechazar la cuenta', getApiErrorMessage(err, 'Intenta de nuevo en unos momentos.'));
     } finally {
       setActuandoId(null);
       setPorRechazar(null);

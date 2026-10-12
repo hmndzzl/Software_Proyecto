@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
-import axios from 'axios';
 import { notificarAusencia } from '../../../api/ausencias';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import Btn from '../../../components/ui/Btn';
@@ -17,7 +17,6 @@ export default function NotificarAusenciaForm() {
   const [enviando, setEnviando] = useState(false);
   const toast = useToast();
   const enCurso = useRef(false);
-  console.log("USUARIO:", usuario);
   const fechasInvalidas = Boolean(inicio && fin && inicio > fin);
 
   async function enviar(event: FormEvent<HTMLFormElement>) {
@@ -39,9 +38,8 @@ export default function NotificarAusenciaForm() {
         titulo: titulo.trim(), justificacion: justificacion.trim() });
       toast.success('Ausencia registrada', 'Se notificó a los coordinadores de ministros y sacerdotes.');
       setInicio(''); setFin(''); setTitulo(''); setJustificacion('');
-    } catch (err) {
-      const mensaje = axios.isAxiosError<{ mensaje?: string }>(err) ? err.response?.data?.mensaje : undefined;
-      toast.error('No se pudo enviar la notificación', mensaje || 'Tus datos se conservaron; vuelve a intentarlo.');
+    } catch (err: unknown) {
+      toast.error('No se pudo enviar la notificación', getApiErrorMessage(err, 'Tus datos se conservaron; vuelve a intentarlo.'));
     } finally {
       enCurso.current = false;
       setEnviando(false);

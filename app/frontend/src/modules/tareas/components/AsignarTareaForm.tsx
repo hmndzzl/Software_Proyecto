@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import type { Tarea, Ministro } from '../../../types';
 import styles from '../../../styles/Form.module.css';
 
@@ -18,11 +19,11 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
   const toast = useToast();
 
   useEffect(() => {
-    apiClient.get('/api/tareas')
+    apiClient.get<Tarea[]>('/api/tareas')
       .then(res => setTareas(res.data))
       .catch(error => console.error(error));
 
-    apiClient.get('/api/personas')
+    apiClient.get<Persona[]>('/api/personas')
       .then(res => setPersonas(res.data))
       .catch(error => console.error(error));
   }, [refreshKey]);
@@ -81,8 +82,8 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
       setTareaSeleccionada('');
       setPersonaSeleccionada('');
       if (onAsignacionExitosa) onAsignacionExitosa();
-    } catch (error: any) {
-      toast.error('No se pudo asignar la tarea', error.response?.data?.mensaje || 'Hubo un error de red al intentar guardar la asignación.');
+    } catch (error: unknown) {
+      toast.error('No se pudo asignar la tarea', getApiErrorMessage(error, 'Hubo un error de red al intentar guardar la asignación.'));
     }
   };
 
