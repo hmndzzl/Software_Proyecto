@@ -3,6 +3,7 @@ import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
+import { withTransaction } from '../utils/withTransaction';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
@@ -44,75 +45,70 @@ export const crearReserva = async (req: Request, res: Response) => {
   }
 
   const solicitante_id = req.user!.id;
-  const conn = await db.getConnection();
 
   try {
-    const [conflictos]: any = await conn.query(
-      `SELECT * FROM reserva
-       WHERE espacio_id = ?
-         AND fecha = ?
-         AND estado_reserva_id = ?
-         AND (hora_inicio < ? AND hora_fin > ?)`,
-      [espacio_id, fecha, ESTADOS_RESERVA.CONFIRMADA, hora_fin, hora_inicio]
-    );
-
-    if (conflictos.length > 0) {
-      conn.release();
-      return res.status(HttpStatus.CONFLICT).json({
-        message: 'No se puede crear la reserva porque ya existe una reserva aprobada para este espacio en el mismo horario'
-      });
-    }
-
-    await conn.beginTransaction();
-
-    const [resResult]: any = await conn.query(
-      `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, solicitante_id]
-    );
-
-    const reservaId = resResult.insertId;
-
-    await conn.query(
-      `INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id) VALUES (?, ?, ?, ?)`,
-      [titulo, descripcion, solicitante_id, reservaId]
-    );
-
-    // Avisa a quienes aprueban reservas (Sacerdote/Admin) que hay una solicitud nueva esperando,
-    // salvo que el propio solicitante ya sea uno de ellos (no tiene sentido notificarse a sí mismo).
-    const [aprobadores]: any = await conn.query(
-      `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
-      [ROLES.SACERDOTE, ROLES.ADMIN, solicitante_id]
-    );
-
-    if (aprobadores.length > 0) {
-      const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${hora_inicio}–${hora_fin}) pendiente de tu aprobación.`;
-      const [notifResult]: any = await conn.query(
-        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
-        [mensajeNotificacion, solicitante_id]
+    await withTransaction(async (conn) => {
+      const [conflictos]: any = await conn.query(
+        `SELECT * FROM reserva
+         WHERE espacio_id = ?
+           AND fecha = ?
+           AND estado_reserva_id = ?
+           AND (hora_inicio < ? AND hora_fin > ?)`,
+        [espacio_id, fecha, ESTADOS_RESERVA.CONFIRMADA, hora_fin, hora_inicio]
       );
-      for (const aprobador of aprobadores) {
-        await conn.query(
-          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
-          [aprobador.id, notifResult.insertId]
-        );
+
+      if (conflictos.length > 0) {
+        res.status(HttpStatus.CONFLICT).json({
+          message: 'No se puede crear la reserva porque ya existe una reserva aprobada para este espacio en el mismo horario'
+        });
+        return 'rollback';
       }
-    }
 
-    await conn.commit();
+      const [resResult]: any = await conn.query(
+        `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, solicitante_id]
+      );
 
-    return res.status(HttpStatus.CREATED).json({
-      message: 'Solicitud de reserva y evento creados correctamente',
-      reservaId
+      const reservaId = resResult.insertId;
+
+      await conn.query(
+        `INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id) VALUES (?, ?, ?, ?)`,
+        [titulo, descripcion, solicitante_id, reservaId]
+      );
+
+      // Avisa a quienes aprueban reservas (Sacerdote/Admin) que hay una solicitud nueva esperando,
+      // salvo que el propio solicitante ya sea uno de ellos (no tiene sentido notificarse a sí mismo).
+      const [aprobadores]: any = await conn.query(
+        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+        [ROLES.SACERDOTE, ROLES.ADMIN, solicitante_id]
+      );
+
+      if (aprobadores.length > 0) {
+        const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${hora_inicio}–${hora_fin}) pendiente de tu aprobación.`;
+        const [notifResult]: any = await conn.query(
+          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
+          [mensajeNotificacion, solicitante_id]
+        );
+        for (const aprobador of aprobadores) {
+          await conn.query(
+            'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+            [aprobador.id, notifResult.insertId]
+          );
+        }
+      }
+
+      res.status(HttpStatus.CREATED).json({
+        message: 'Solicitud de reserva y evento creados correctamente',
+        reservaId
+      });
+      return 'commit';
     });
   } catch (error) {
-    await conn.rollback();
     console.error('Error al crear reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al crear la reserva'
     });
-  } finally {
-    conn.release();
   }
 };
 
@@ -156,69 +152,63 @@ export const editarReserva = async (req: Request, res: Response) => {
     });
   }
 
-  const conn = await db.getConnection();
-
   try {
-    const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ?', [id]);
+    await withTransaction(async (conn) => {
+      const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ?', [id]);
 
-    if (!rows || rows.length === 0) {
-      conn.release();
-      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
-    }
-
-    const esSolicitante = rows[0].solicitante_id === req.user!.id;
-    const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
-    if (!esSolicitante && !esPrivilegiado) {
-      conn.release();
-      return res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
-    }
-
-    await conn.beginTransaction();
-
-    await conn.query(
-      `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = ? WHERE id = ?`,
-      [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, id]
-    );
-
-    await conn.query(
-      `UPDATE evento SET titulo = ?, descripcion = ? WHERE reserva_id = ?`,
-      [titulo, descripcion, id]
-    );
-
-    // La edición resetea la reserva a Pendiente: los aprobadores necesitan saber que
-    // hay (de nuevo) algo esperando su decisión, igual que al crear una solicitud nueva.
-    const [aprobadores]: any = await conn.query(
-      `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
-      [ROLES.SACERDOTE, ROLES.ADMIN, req.user!.id]
-    );
-
-    if (aprobadores.length > 0) {
-      const mensajeNotificacion = `La reserva del ${fecha} (${hora_inicio}–${hora_fin}) fue editada y está pendiente de tu aprobación.`;
-      const [notifResult]: any = await conn.query(
-        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
-        [mensajeNotificacion, req.user!.id]
-      );
-      for (const aprobador of aprobadores) {
-        await conn.query(
-          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
-          [aprobador.id, notifResult.insertId]
-        );
+      if (!rows || rows.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
+        return 'rollback';
       }
-    }
 
-    await conn.commit();
+      const esSolicitante = rows[0].solicitante_id === req.user!.id;
+      const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
+      if (!esSolicitante && !esPrivilegiado) {
+        res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
+        return 'rollback';
+      }
 
-    return res.status(HttpStatus.OK).json({
-      message: 'Reserva actualizada. Vuelve a estado Pendiente para re-aprobación.'
+      await conn.query(
+        `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = ? WHERE id = ?`,
+        [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, id]
+      );
+
+      await conn.query(
+        `UPDATE evento SET titulo = ?, descripcion = ? WHERE reserva_id = ?`,
+        [titulo, descripcion, id]
+      );
+
+      // La edición resetea la reserva a Pendiente: los aprobadores necesitan saber que
+      // hay (de nuevo) algo esperando su decisión, igual que al crear una solicitud nueva.
+      const [aprobadores]: any = await conn.query(
+        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+        [ROLES.SACERDOTE, ROLES.ADMIN, req.user!.id]
+      );
+
+      if (aprobadores.length > 0) {
+        const mensajeNotificacion = `La reserva del ${fecha} (${hora_inicio}–${hora_fin}) fue editada y está pendiente de tu aprobación.`;
+        const [notifResult]: any = await conn.query(
+          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
+          [mensajeNotificacion, req.user!.id]
+        );
+        for (const aprobador of aprobadores) {
+          await conn.query(
+            'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+            [aprobador.id, notifResult.insertId]
+          );
+        }
+      }
+
+      res.status(HttpStatus.OK).json({
+        message: 'Reserva actualizada. Vuelve a estado Pendiente para re-aprobación.'
+      });
+      return 'commit';
     });
   } catch (error) {
-    await conn.rollback();
     console.error('Error al editar reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al editar la reserva'
     });
-  } finally {
-    conn.release();
   }
 };
 

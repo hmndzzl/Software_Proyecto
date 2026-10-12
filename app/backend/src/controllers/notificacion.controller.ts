@@ -4,6 +4,7 @@ import pool from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import type { NotificacionConLeida, NotificacionCreateInput, DestinatarioInfo } from '../types/notificacion.types';
+import { withTransaction } from '../utils/withTransaction';
 
 // GET /api/notificaciones — notificaciones del usuario autenticado con nombre de remitente
 export const getNotificaciones = async (req: Request, res: Response): Promise<void> => {
@@ -407,80 +408,72 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
     return;
   }
 
-  const conn = await pool.getConnection();
   try {
-    await conn.beginTransaction();
-
-    if (evento_id) {
-      const [eventos] = await conn.execute<RowDataPacket[]>('SELECT id FROM evento WHERE id = ?', [evento_id]);
-      if (eventos.length === 0) {
-        await conn.rollback();
-        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'El evento indicado no existe' });
-        return;
-      }
-    }
-
-    const fecha = new Date().toISOString().slice(0, 10);
-    const [result] = await conn.execute<ResultSetHeader>(
-      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, grupo_id, evento_id, requiere_confirmacion)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [mensaje, fecha, tipo, remitenteId, grupo_id ?? null, evento_id ?? null, requiere_confirmacion ? 1 : 0]
-    );
-
-    const notificacionId = result.insertId;
-    let ids: number[] = [];
-
-    if (tipo === 'global') {
-      // Auto-poblar con todos los usuarios del sistema
-      const [personas] = await conn.execute<RowDataPacket[]>("SELECT id FROM persona WHERE estado_cuenta = 'activa'");
-      ids = (personas as RowDataPacket[]).map((p) => p.id as number);
-    } else {
-      // individual o grupo: requiere destinatarios
-      if (!destinatarios || destinatarios.length === 0) {
-        await conn.rollback();
-        res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'destinatarios requeridos para tipo individual/grupo' });
-        return;
-      }
-
-      // CoordMinistros: validar que todos los destinatarios sean sus ministros
-      if (rolId === ROLES.COORDINADOR_MINISTROS) {
-        const [mis] = await conn.execute<RowDataPacket[]>(
-          `SELECT ministro_id FROM coordinador_ministro WHERE coordinador_id = ?`,
-          [remitenteId]
-        );
-        const misIds = (mis as RowDataPacket[]).map((r) => r.ministro_id as number);
-        const invalidos = destinatarios.filter((d) => !misIds.includes(d));
-        if (invalidos.length > 0) {
-          await conn.rollback();
-          res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo puedes notificar a tus ministros asignados' });
-          return;
+    await withTransaction(async (conn) => {
+      if (evento_id) {
+        const [eventos] = await conn.execute<RowDataPacket[]>('SELECT id FROM evento WHERE id = ?', [evento_id]);
+        if (eventos.length === 0) {
+          res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'El evento indicado no existe' });
+          return 'rollback';
         }
       }
 
-      ids = destinatarios;
-    }
-
-    for (const personaId of ids) {
-      await conn.execute(
-        `INSERT IGNORE INTO persona_notificacion (persona_id, notificacion_id, leida)
-         VALUES (?, ?, 0)`,
-        [personaId, notificacionId]
+      const fecha = new Date().toISOString().slice(0, 10);
+      const [result] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, grupo_id, evento_id, requiere_confirmacion)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [mensaje, fecha, tipo, remitenteId, grupo_id ?? null, evento_id ?? null, requiere_confirmacion ? 1 : 0]
       );
-    }
 
-    await conn.commit();
+      const notificacionId = result.insertId;
+      let ids: number[] = [];
 
-    res.status(HttpStatus.CREATED).json({
-      mensaje: 'Notificación creada exitosamente',
-      id: notificacionId,
-      destinatarios: ids.length,
+      if (tipo === 'global') {
+        // Auto-poblar con todos los usuarios del sistema
+        const [personas] = await conn.execute<RowDataPacket[]>("SELECT id FROM persona WHERE estado_cuenta = 'activa'");
+        ids = (personas as RowDataPacket[]).map((p) => p.id as number);
+      } else {
+        // individual o grupo: requiere destinatarios
+        if (!destinatarios || destinatarios.length === 0) {
+          res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'destinatarios requeridos para tipo individual/grupo' });
+          return 'rollback';
+        }
+
+        // CoordMinistros: validar que todos los destinatarios sean sus ministros
+        if (rolId === ROLES.COORDINADOR_MINISTROS) {
+          const [mis] = await conn.execute<RowDataPacket[]>(
+            `SELECT ministro_id FROM coordinador_ministro WHERE coordinador_id = ?`,
+            [remitenteId]
+          );
+          const misIds = (mis as RowDataPacket[]).map((r) => r.ministro_id as number);
+          const invalidos = destinatarios.filter((d) => !misIds.includes(d));
+          if (invalidos.length > 0) {
+            res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo puedes notificar a tus ministros asignados' });
+            return 'rollback';
+          }
+        }
+
+        ids = destinatarios;
+      }
+
+      for (const personaId of ids) {
+        await conn.execute(
+          `INSERT IGNORE INTO persona_notificacion (persona_id, notificacion_id, leida)
+           VALUES (?, ?, 0)`,
+          [personaId, notificacionId]
+        );
+      }
+
+      res.status(HttpStatus.CREATED).json({
+        mensaje: 'Notificación creada exitosamente',
+        id: notificacionId,
+        destinatarios: ids.length,
+      });
+      return 'commit';
     });
   } catch (error) {
-    await conn.rollback();
     console.error('Error en createNotificacion:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al crear notificación' });
-  } finally {
-    conn.release();
   }
 };
 
@@ -540,83 +533,75 @@ export const reportarInasistencia = async (req: Request, res: Response): Promise
     return;
   }
 
-  let conn: Awaited<ReturnType<typeof pool.getConnection>> | null = null;
   try {
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
-
-    const [notificaciones] = await conn.execute<RowDataPacket[]>(
-      `SELECT n.id, n.evento_id, p.nombre AS ministro_nombre,
-              COALESCE(e.titulo, e.descripcion, 'evento sin especificar') AS evento_nombre
-       FROM notificacion n
-       INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
-       INNER JOIN persona p ON p.id = pn.persona_id
-       LEFT JOIN evento e ON e.id = n.evento_id
-       WHERE n.id = ?
-         AND pn.persona_id = ?
-         AND n.requiere_confirmacion = 1`,
-      [id, personaId]
-    );
-
-    if (notificaciones.length === 0) {
-      await conn.rollback();
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación de asistencia no encontrada para este usuario' });
-      return;
-    }
-
-    const [coordinadores] = await conn.execute<RowDataPacket[]>(
-      'SELECT coordinador_id FROM coordinador_ministro WHERE ministro_id = ?',
-      [personaId]
-    );
-
-    if (coordinadores.length === 0) {
-      await conn.rollback();
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No se encontró un coordinador de ministros para este ministro' });
-      return;
-    }
-
-    const [actualizacion] = await conn.execute<ResultSetHeader>(
-      `UPDATE persona_notificacion
-       SET asistencia_confirmada = 0, inasistencia_reportada = 1, motivo_excusa = ?, leida = 1
-       WHERE notificacion_id = ? AND persona_id = ?`,
-      [motivo, id, personaId]
-    );
-
-    if (actualizacion.affectedRows === 0) {
-      await conn.rollback();
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
-      return;
-    }
-
-    const notificacion = notificaciones[0];
-    const fecha = new Date().toISOString().slice(0, 10);
-    const mensaje = `${notificacion.ministro_nombre} indicó que no podrá asistir a ${notificacion.evento_nombre}. Motivo: ${motivo}`;
-
-    for (const coordinador of coordinadores) {
-      const [notificacionCoordinador] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, evento_id)
-         VALUES (?, ?, 'individual', ?, ?)`,
-        [mensaje, fecha, personaId, notificacion.evento_id]
+    await withTransaction(async (conn) => {
+      const [notificaciones] = await conn.execute<RowDataPacket[]>(
+        `SELECT n.id, n.evento_id, p.nombre AS ministro_nombre,
+                COALESCE(e.titulo, e.descripcion, 'evento sin especificar') AS evento_nombre
+         FROM notificacion n
+         INNER JOIN persona_notificacion pn ON pn.notificacion_id = n.id
+         INNER JOIN persona p ON p.id = pn.persona_id
+         LEFT JOIN evento e ON e.id = n.evento_id
+         WHERE n.id = ?
+           AND pn.persona_id = ?
+           AND n.requiere_confirmacion = 1`,
+        [id, personaId]
       );
 
-      await conn.execute(
-        'INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)',
-        [coordinador.coordinador_id, notificacionCoordinador.insertId]
-      );
-    }
+      if (notificaciones.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación de asistencia no encontrada para este usuario' });
+        return 'rollback';
+      }
 
-    await conn.commit();
-    res.status(HttpStatus.OK).json({
-      mensaje: 'Inasistencia registrada y coordinador notificado',
-      motivo,
-      coordinadores_notificados: coordinadores.length,
+      const [coordinadores] = await conn.execute<RowDataPacket[]>(
+        'SELECT coordinador_id FROM coordinador_ministro WHERE ministro_id = ?',
+        [personaId]
+      );
+
+      if (coordinadores.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'No se encontró un coordinador de ministros para este ministro' });
+        return 'rollback';
+      }
+
+      const [actualizacion] = await conn.execute<ResultSetHeader>(
+        `UPDATE persona_notificacion
+         SET asistencia_confirmada = 0, inasistencia_reportada = 1, motivo_excusa = ?, leida = 1
+         WHERE notificacion_id = ? AND persona_id = ?`,
+        [motivo, id, personaId]
+      );
+
+      if (actualizacion.affectedRows === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Notificación no encontrada para este usuario' });
+        return 'rollback';
+      }
+
+      const notificacion = notificaciones[0];
+      const fecha = new Date().toISOString().slice(0, 10);
+      const mensaje = `${notificacion.ministro_nombre} indicó que no podrá asistir a ${notificacion.evento_nombre}. Motivo: ${motivo}`;
+
+      for (const coordinador of coordinadores) {
+        const [notificacionCoordinador] = await conn.execute<ResultSetHeader>(
+          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id, evento_id)
+           VALUES (?, ?, 'individual', ?, ?)`,
+          [mensaje, fecha, personaId, notificacion.evento_id]
+        );
+
+        await conn.execute(
+          'INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)',
+          [coordinador.coordinador_id, notificacionCoordinador.insertId]
+        );
+      }
+
+      res.status(HttpStatus.OK).json({
+        mensaje: 'Inasistencia registrada y coordinador notificado',
+        motivo,
+        coordinadores_notificados: coordinadores.length,
+      });
+      return 'commit';
     });
   } catch (error) {
-    if (conn) await conn.rollback();
     console.error('Error en reportarInasistencia:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al registrar la inasistencia' });
-  } finally {
-    if (conn) conn.release();
   }
 };
 
