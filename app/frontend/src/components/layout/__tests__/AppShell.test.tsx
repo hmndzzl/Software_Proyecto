@@ -48,4 +48,13 @@ describe('AppShell', () => {
     mostrar();
     expect(screen.getByRole('button', { name: 'Mostrar menú' })).toBeInTheDocument();
   });
+
+  it('abre y cierra el menú lateral desde el control móvil', () => {
+    mostrar();
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    expect(screen.getByRole('button', { name: 'Cerrar menú' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar menú' }));
+    expect(screen.queryByRole('button', { name: 'Cerrar menú' })).not.toBeInTheDocument();
+  });
 });

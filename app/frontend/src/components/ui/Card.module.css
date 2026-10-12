@@ -60,3 +60,10 @@
 .body {
   padding: 20px 24px;
 }
+
+@media (max-width: 600px) {
+  .head { padding: 15px 18px; }
+  .body { padding: 18px; }
+  .headLeft { min-width: 0; }
+  .headTitle { font-size: 14px; }
+}

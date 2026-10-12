@@ -38,6 +38,8 @@ describe('Sidebar Component', () => {
     renderWithRouterAndAuth();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Notificaciones')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Configuración' })).toHaveAttribute('href', '/configuracion');
+    expect(screen.queryByText('Ayuda y Soporte')).not.toBeInTheDocument();
   });
 
   it('renderiza botón "Nueva Reserva" si el usuario tiene rol para reservas y navega al hacer click', () => {

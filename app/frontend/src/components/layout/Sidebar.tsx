@@ -168,9 +168,10 @@ const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COOR
 interface SidebarProps {
   colapsado: boolean;
   onAlternar: () => void;
+  onNavegar?: () => void;
 }
 
-export default function Sidebar({ colapsado, onAlternar }: SidebarProps) {
+export default function Sidebar({ colapsado, onAlternar, onNavegar }: SidebarProps) {
   const navigate = useNavigate();
   const { usuario, tieneRol } = useAuth();
 
@@ -210,6 +211,7 @@ export default function Sidebar({ colapsado, onAlternar }: SidebarProps) {
               `${styles.navLink}${isActive ? ` ${styles.active}` : ''}`
             }
             title={colapsado ? label : undefined}
+            onClick={onNavegar}
           >
             <span className={styles.navIcon}>{icon}</span>
             {!colapsado && <span className={styles.navLabel}>{label}</span>}
@@ -221,7 +223,10 @@ export default function Sidebar({ colapsado, onAlternar }: SidebarProps) {
         <button
           type="button"
           className={styles.btnNuevo}
-          onClick={() => navigate('/reservas')}
+          onClick={() => {
+            onNavegar?.();
+            navigate('/reservas');
+          }}
           title={colapsado ? 'Nueva Reserva' : undefined}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -233,8 +238,7 @@ export default function Sidebar({ colapsado, onAlternar }: SidebarProps) {
 
       {!colapsado && (
         <footer className={styles.footer}>
-          <a href="#" className={styles.footerLink}>Configuración</a>
-          <a href="#" className={styles.footerLink}>Ayuda y Soporte</a>
+          <NavLink to="/configuracion" className={styles.footerLink} onClick={onNavegar}>Configuración</NavLink>
         </footer>
       )}
     </aside>

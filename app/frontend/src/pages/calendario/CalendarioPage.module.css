@@ -296,3 +296,10 @@
   padding: 4px 10px;
   border-radius: var(--radius-badge);
 }
+
+@media (max-width: 650px) {
+  .controlsRow { align-items: stretch; flex-direction: column; padding: 16px; }
+  .btnGroup { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .navBtn { justify-content: center; padding: 8px; font-size: 13px; }
+  .dayColumn { min-height: 0; }
+}

@@ -118,7 +118,7 @@
   font-weight: 700;
   line-height: 1.07;
   letter-spacing: .03em;
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   margin: 0 0 20px 0;
   max-width: 480px;
 }

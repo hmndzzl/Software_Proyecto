@@ -56,3 +56,11 @@
   gap: 10px;
   flex-shrink: 0;
 }
+
+@media (max-width: 600px) {
+  .header { margin-bottom: 20px; }
+  .kicker { font-size: 10px; letter-spacing: .18em; }
+  .title { font-size: clamp(24px, 8vw, 30px); }
+  .subtitle { font-size: 15px; }
+  .actions { width: 100%; }
+}
