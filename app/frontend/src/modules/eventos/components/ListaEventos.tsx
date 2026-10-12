@@ -43,7 +43,7 @@ export default function ListaEventos({
     setLoading(true);
     setError('');
     try {
-      const res = await apiClient.get('/api/eventos');
+      const res = await apiClient.get<Evento[]>('/api/eventos');
       setEventos(res.data);
     } catch {
       setError('Error de red al obtener los eventos.');

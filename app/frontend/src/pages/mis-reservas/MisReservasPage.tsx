@@ -14,6 +14,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
 import { ESTADOS_RESERVA, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND, avisoCambioEstadoReserva } from '../../utils/estadosReserva';
 import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
+import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
 import type { Reserva } from '../../types';
 import styles from './MisReservasPage.module.css';
@@ -49,7 +50,7 @@ export default function MisReservasPage() {
   const cargarReservas = () => {
     setLoading(true);
     setError('');
-    apiClient.get('/api/reservas/mis-reservas')
+    apiClient.get<MiReserva[]>('/api/reservas/mis-reservas')
       .then(res => setReservas(res.data))
       .catch(() => setError('Error al cargar tus reservas.'))
       .finally(() => setLoading(false));
@@ -68,8 +69,8 @@ export default function MisReservasPage() {
       const aviso = avisoCambioEstadoReserva(ESTADOS_RESERVA.CANCELADA);
       toast.success(aviso.titulo, aviso.mensaje);
       cargarReservas();
-    } catch (err: any) {
-      toast.error('No se pudo cancelar la reserva', err.response?.data?.message || 'Error al cancelar la reserva.');
+    } catch (err: unknown) {
+      toast.error('No se pudo cancelar la reserva', getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
     }
   };
 

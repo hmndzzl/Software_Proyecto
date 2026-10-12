@@ -8,6 +8,7 @@ import { Field, InputUI } from '../../components/ui/Field';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
+import { getApiErrorMessage } from '../../utils/apiError';
 import styles from './EspaciosPage.module.css';
 
 export default function EspaciosPage() {
@@ -51,14 +52,14 @@ export default function EspaciosPage() {
     setError('');
     setCargando(true);
 
-    apiClient.get('/api/espacios', { params: todosCompletos ? filtros : undefined })
+    apiClient.get<Espacio[]>('/api/espacios', { params: todosCompletos ? filtros : undefined })
       .then(res => {
         if (cancelado) return;
         setEspacios(res.data);
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         if (cancelado) return;
-        setError(err.response?.data?.message || 'Error al cargar los espacios');
+        setError(getApiErrorMessage(err, 'Error al cargar los espacios', 'message'));
       })
       .finally(() => {
         if (!cancelado) setCargando(false);

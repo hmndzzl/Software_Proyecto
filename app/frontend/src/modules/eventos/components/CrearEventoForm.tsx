@@ -4,6 +4,7 @@ import apiClient from '../../../api/client';
 import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: () => void }) {
   const [descripcion, setDescripcion]   = useState('');
@@ -14,7 +15,7 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
   const reservaSeleccionada = reservas.find(r => String(r.id) === reservaId) ?? null;
 
   useEffect(() => {
-    apiClient.get('/api/eventos/reservas-disponibles')
+    apiClient.get<ReservaDisponible[]>('/api/eventos/reservas-disponibles')
       .then(r => setReservas(r.data))
       .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar reservas disponibles.'));
   }, []);
@@ -33,8 +34,8 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
       setDescripcion('');
       setReservaId('');
       if (onEventoCreado) onEventoCreado();
-    } catch (error: any) {
-      toast.error('No se pudo crear el evento', error.response?.data?.mensaje || 'Error de red al intentar crear el evento.');
+    } catch (error: unknown) {
+      toast.error('No se pudo crear el evento', getApiErrorMessage(error, 'Error de red al intentar crear el evento.'));
     }
   };
 

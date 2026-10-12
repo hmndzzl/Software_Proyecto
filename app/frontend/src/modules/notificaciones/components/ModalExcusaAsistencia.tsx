@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Modal from '../../../components/ui/Modal';
 import Btn from '../../../components/ui/Btn';
 import type { Notificacion } from '../../../types';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ModalExcusaAsistencia.module.css';
 
 interface Props {
@@ -43,8 +44,8 @@ export default function ModalExcusaAsistencia({
       await onConfirmar(notificacion.id, motivoTrim);
       setMotivo('');
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.mensaje ?? 'Error al guardar la excusa. Intenta de nuevo.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Error al guardar la excusa. Intenta de nuevo.'));
     } finally {
       setEnviando(false);
     }

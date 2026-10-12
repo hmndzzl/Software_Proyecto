@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import axios from 'axios';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardBody, CardHead } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
@@ -12,6 +11,7 @@ import {
   type HorarioOficina,
 } from '../../api/landing';
 import styles from './ContenidoPublicoPage.module.css';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 function clonarContenido(contenido: ContenidoLanding): ContenidoLanding {
   return {
@@ -57,11 +57,6 @@ function obtenerCambios(original: ContenidoLanding, borrador: ContenidoLanding):
   if (JSON.stringify(original.horarios_oficina) !== JSON.stringify(borrador.horarios_oficina)) cambios.horarios_oficina = borrador.horarios_oficina;
 
   return cambios;
-}
-
-function mensajeDeError(error: unknown, alternativa: string): string {
-  if (axios.isAxiosError<{ mensaje?: string }>(error)) return error.response?.data?.mensaje || alternativa;
-  return alternativa;
 }
 
 interface CampoTextoProps {
@@ -110,7 +105,7 @@ export default function ContenidoPublicoPage() {
       setOriginal(clonarContenido(contenido));
       setBorrador(clonarContenido(contenido));
     } catch (errorCarga) {
-      setError(mensajeDeError(errorCarga, 'No se pudo cargar el contenido público. Intenta nuevamente.'));
+      setError(getApiErrorMessage(errorCarga, 'No se pudo cargar el contenido público. Intenta nuevamente.'));
     } finally {
       setCargando(false);
     }
@@ -146,7 +141,7 @@ export default function ContenidoPublicoPage() {
       }
       setMensaje('Los cambios se publicaron y ya están disponibles en el portal.');
     } catch (errorGuardado) {
-      setError(mensajeDeError(errorGuardado, 'No se pudieron publicar los cambios. Tus datos permanecen en el formulario.'));
+      setError(getApiErrorMessage(errorGuardado, 'No se pudieron publicar los cambios. Tus datos permanecen en el formulario.'));
     } finally {
       setGuardando(false);
     }

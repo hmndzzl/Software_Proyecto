@@ -5,6 +5,7 @@ import Modal from '../../components/ui/Modal';
 import Btn from '../../components/ui/Btn';
 import { Field, InputUI, SelectUI } from '../../components/ui/Field';
 import { ROLES } from '../../utils/roles';
+import { getApiErrorMessage } from '../../utils/apiError';
 import styles from './CuentasPage.module.css';
 
 const PASSWORD_MIN = 8;
@@ -51,8 +52,8 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
       const rolCreado = rolId;
       cerrar();
       onCreada(creada, rolCreado, advertencia);
-    } catch (err: any) {
-      toast.error('No se pudo crear la cuenta', err.response?.data?.mensaje || 'Intenta de nuevo en unos momentos.');
+    } catch (err: unknown) {
+      toast.error('No se pudo crear la cuenta', getApiErrorMessage(err, 'Intenta de nuevo en unos momentos.'));
     } finally {
       setEnviando(false);
     }

@@ -52,7 +52,7 @@ export default function MinistrosPage() {
   const cargarMinistros = () => {
     setLoading(true);
     setError('');
-    apiClient.get('/api/personas')
+    apiClient.get<Ministro[]>('/api/personas')
       .then(res => { setMinistros(res.data); setLoading(false); })
       .catch(() => { setError('Error al obtener ministros'); setLoading(false); });
   };

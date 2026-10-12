@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import { avisoCambioEstadoReserva, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND } from '../../utils/estadosReserva';
+import { getApiErrorMessage } from '../../utils/apiError';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
@@ -35,16 +36,16 @@ export default function EspacioDetallePage() {
     setCargando(true);
     setError('');
     Promise.all([
-      apiClient.get(`/api/espacios/${id}`),
-      apiClient.get(`/api/reservas?espacio_id=${id}`),
+      apiClient.get<Espacio>(`/api/espacios/${id}`),
+      apiClient.get<Reserva[]>(`/api/reservas?espacio_id=${id}`),
     ])
       .then(([resEspacio, resReservas]) => {
         setEspacio(resEspacio.data);
         setReservas(resReservas.data);
         setCargando(false);
       })
-      .catch(err => {
-        setError(err.response?.data?.message || 'Espacio no encontrado');
+      .catch((err: unknown) => {
+        setError(getApiErrorMessage(err, 'Espacio no encontrado', 'message'));
         setCargando(false);
       });
   };
@@ -60,10 +61,10 @@ export default function EspacioDetallePage() {
       await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
       const aviso = avisoCambioEstadoReserva(nuevoEstado);
       toast.success(aviso.titulo, aviso.mensaje);
-      const res = await apiClient.get(`/api/reservas?espacio_id=${id}`);
+      const res = await apiClient.get<Reserva[]>(`/api/reservas?espacio_id=${id}`);
       setReservas(res.data);
-    } catch (err: any) {
-      toast.error('No se pudo actualizar la reserva', err.response?.data?.message || 'Error al cambiar el estado de la reserva.');
+    } catch (err: unknown) {
+      toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
     }
   };
 

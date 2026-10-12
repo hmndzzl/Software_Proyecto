@@ -10,7 +10,8 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import { formatFecha, formatHora } from '../../../utils/date';
-import type { Ministro } from '../../../types';
+import type { Ministro, Tarea } from '../../../types';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaAsignaciones.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -23,6 +24,17 @@ interface Asignacion {
   hora_inicio: string;
   hora_fin: string;
   nombre_persona: string;
+}
+
+interface AlertaReasignacion {
+  ministro_no_disponible?: boolean;
+  tope_servicios_superado?: boolean;
+  servicios_en_el_mes?: number;
+  tope_servicios_mes?: number;
+}
+
+interface RespuestaReasignacion {
+  alerta?: AlertaReasignacion;
 }
 
 type MinistroOpcion = Ministro;
@@ -61,17 +73,17 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
 
   useEffect(() => {
     if (esMinistro) return;
-    apiClient.get('/api/personas').then(res => setMinistros(res.data)).catch(() => {});
+    apiClient.get<Ministro[]>('/api/personas').then(res => setMinistros(res.data)).catch(() => {});
   }, [esMinistro]);
 
   const cargarAsignaciones = () => {
     setCargando(true);
     setError('');
     const params = esMinistro && usuario ? { persona_id: usuario.id } : undefined;
-    apiClient.get('/api/tareas', { params })
+    apiClient.get<Tarea[]>('/api/tareas', { params })
       .then((res) => {
-        const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea: any) =>
-          tarea.asignados.map((asignado: any) => ({
+        const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea) =>
+          tarea.asignados.map((asignado) => ({
             tarea_id: tarea.id,
             persona_id: asignado.persona_id,
             titulo_tarea: tarea.titulo,
@@ -98,7 +110,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const reasignar = async (tareaId: number, personaActualId: number, personaNuevaId: number) => {
     setReasignando(true);
     try {
-      const res = await apiClient.put('/api/tareas/asignar', {
+      const res = await apiClient.put<RespuestaReasignacion>('/api/tareas/asignar', {
         tarea_id: tareaId,
         persona_actual_id: personaActualId,
         persona_nueva_id: personaNuevaId,
@@ -110,8 +122,8 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
       toast.success('Responsable actualizado', avisos.length > 0 ? `Atención: ${avisos.join(' y ')}.` : 'El cambio se guardó correctamente.');
       setEditandoKey(null);
       cargarAsignaciones();
-    } catch (err: any) {
-      toast.error('No se pudo reasignar la tarea', err.response?.data?.mensaje || 'Error al reasignar la tarea.');
+    } catch (err: unknown) {
+      toast.error('No se pudo reasignar la tarea', getApiErrorMessage(err, 'Error al reasignar la tarea.'));
     } finally {
       setReasignando(false);
     }
@@ -152,8 +164,8 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
       toast.success('Tarea actualizada', `Los cambios en "${editTitulo}" se guardaron.`);
       cerrarEdicionTarea();
       cargarAsignaciones();
-    } catch (err: any) {
-      toast.error('No se pudo actualizar la tarea', err.response?.data?.mensaje || 'Error al guardar los cambios.');
+    } catch (err: unknown) {
+      toast.error('No se pudo actualizar la tarea', getApiErrorMessage(err, 'Error al guardar los cambios.'));
     } finally {
       setEditLoading(false);
     }

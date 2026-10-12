@@ -12,6 +12,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import { ESTADOS_RESERVA, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND, avisoCambioEstadoReserva } from '../../../utils/estadosReserva';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import { formatFecha, formatHora } from '../../../utils/date';
 import type { Espacio } from '../../espacios/components/EspacioCard';
 import type { Reserva } from '../../../types';
@@ -55,7 +56,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get('/api/reservas');
+      const response = await apiClient.get<Reserva[]>('/api/reservas');
       setReservas(response.data);
     } catch {
       setError('Error de red al obtener las reservas.');
@@ -66,7 +67,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   useEffect(() => {
     fetchReservas();
-    apiClient.get('/api/espacios').then(res => setEspacios(res.data)).catch(() => {});
+    apiClient.get<Espacio[]>('/api/espacios').then(res => setEspacios(res.data)).catch(() => {});
   }, [refreshKey]);
 
   const toast = useToast();
@@ -77,8 +78,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       const aviso = avisoCambioEstadoReserva(nuevoEstado);
       toast.success(aviso.titulo, aviso.mensaje);
       fetchReservas();
-    } catch (err: any) {
-      toast.error('No se pudo actualizar la reserva', err.response?.data?.message || 'Error al cambiar el estado de la reserva.');
+    } catch (err: unknown) {
+      toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
     }
   };
 
@@ -107,8 +108,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       await apiClient.put(`/api/reservas/${editando.id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
       cerrarEdicion();
       fetchReservas();
-    } catch (err: any) {
-      setEditMensaje(err.response?.data?.message || 'Error al cancelar la reserva.');
+    } catch (err: unknown) {
+      setEditMensaje(getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
     } finally {
       setEditLoading(false);
     }
@@ -136,8 +137,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       });
       cerrarEdicion();
       fetchReservas();
-    } catch (err: any) {
-      setEditMensaje(err.response?.data?.message || 'Error al guardar los cambios.');
+    } catch (err: unknown) {
+      setEditMensaje(getApiErrorMessage(err, 'Error al guardar los cambios.', 'message'));
     } finally {
       setEditLoading(false);
     }

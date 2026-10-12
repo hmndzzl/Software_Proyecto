@@ -12,6 +12,7 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import { formatFecha } from '../../../utils/date';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaCambiosTurno.module.css';
 
 type CambioTurnoEstado = 'pendiente' | 'aceptado' | 'rechazado';
@@ -69,7 +70,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   const cargarCambios = () => {
     setLoading(true);
     setError('');
-    apiClient.get('/api/cambios-turno')
+    apiClient.get<CambioTurno[]>('/api/cambios-turno')
       .then(res => setCambios(res.data))
       .catch(() => setError('Error al cargar las solicitudes de cambio de turno.'))
       .finally(() => setLoading(false));
@@ -81,11 +82,11 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
 
   const responder = async (id: number, aceptar: boolean) => {
     try {
-      const res = await apiClient.put(`/api/cambios-turno/${id}/responder`, { aceptar });
+      const res = await apiClient.put<{ mensaje: string }>(`/api/cambios-turno/${id}/responder`, { aceptar });
       toast.success(aceptar ? 'Cambio aceptado' : 'Cambio rechazado', res.data.mensaje);
       cargarCambios();
-    } catch (err: any) {
-      toast.error('No se pudo responder la solicitud', err.response?.data?.mensaje || 'Error al responder la solicitud de cambio de turno.');
+    } catch (err: unknown) {
+      toast.error('No se pudo responder la solicitud', getApiErrorMessage(err, 'Error al responder la solicitud de cambio de turno.'));
     }
   };
 

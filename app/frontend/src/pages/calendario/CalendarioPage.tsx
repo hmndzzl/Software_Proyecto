@@ -67,7 +67,7 @@ export default function CalendarioPage() {
     const startStr = formatYYYYMMDD(activeMonday);
     const endStr   = formatYYYYMMDD(activeSunday);
 
-    apiClient.get(`/api/tareas?fecha_inicio=${startStr}&fecha_fin=${endStr}`)
+    apiClient.get<Tarea[]>(`/api/tareas?fecha_inicio=${startStr}&fecha_fin=${endStr}`)
       .then(res => {
         setTareas(res.data);
         if (silent) setError('');

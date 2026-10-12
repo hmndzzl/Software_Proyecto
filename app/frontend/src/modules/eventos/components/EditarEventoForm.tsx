@@ -3,6 +3,7 @@ import { Evento, Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 export default function EditarEventoForm({
   evento,
@@ -24,7 +25,7 @@ export default function EditarEventoForm({
   }, [evento]);
 
   useEffect(() => {
-    apiClient.get('/api/personas/encargados-evento')
+    apiClient.get<Persona[]>('/api/personas/encargados-evento')
       .then(res => setPersonas(res.data))
       .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar las personas disponibles.'));
   }, []);
@@ -44,8 +45,8 @@ export default function EditarEventoForm({
       });
       toast.success('Evento actualizado', `Los cambios en "${descripcion}" se guardaron.`);
       if (onEventoActualizado) onEventoActualizado();
-    } catch (error: any) {
-      toast.error('No se pudo actualizar el evento', error.response?.data?.mensaje || 'Error de red al intentar actualizar el evento.');
+    } catch (error: unknown) {
+      toast.error('No se pudo actualizar el evento', getApiErrorMessage(error, 'Error de red al intentar actualizar el evento.'));
     }
   };
 
@@ -56,8 +57,8 @@ export default function EditarEventoForm({
       await apiClient.delete(`/api/eventos/${evento.id}`);
       toast.success('Evento eliminado', `El evento "${evento.descripcion}" fue eliminado.`);
       if (onEventoActualizado) onEventoActualizado();
-    } catch (error: any) {
-      toast.error('No se pudo eliminar el evento', error.response?.data?.mensaje || 'Error de red al intentar eliminar el evento.');
+    } catch (error: unknown) {
+      toast.error('No se pudo eliminar el evento', getApiErrorMessage(error, 'Error de red al intentar eliminar el evento.'));
     }
   };
 
