@@ -40,6 +40,16 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
     ),
   },
   {
+    to: '/contenido-publico',
+    label: 'Contenido público',
+    roles: [ROLES.SACERDOTE, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16v16H4z" /><path d="M8 8h8M8 12h8M8 16h5" />
+      </svg>
+    ),
+  },
+  {
     to: '/tareas',
     label: 'Tareas',
     roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO, ROLES.ADMIN],
