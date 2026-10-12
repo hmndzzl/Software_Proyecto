@@ -12,15 +12,8 @@ import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
+import type { Ministro } from '../../types';
 import styles from './MinistrosPage.module.css';
-
-interface Ministro {
-  id: number;
-  nombre: string;
-  correo: string;
-  rol_id?: number;
-  disponible: boolean;
-}
 
 const ROL_LABEL: Record<number, string> = {
   1: 'Sacerdote',
