@@ -184,7 +184,7 @@
 
 /* Bloque fecha */
 .dateBlock {
-  width: 60px;
+  min-width: 60px;
   flex-shrink: 0;
   background: var(--color-crema);
   border: 1px solid var(--color-line);
@@ -198,7 +198,9 @@
 
 .dateMes  { font-family: var(--font-display); font-size: 9px; color: var(--color-tierra); font-weight: 700; letter-spacing: .08em; }
 .dateDay  { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--color-rojo); line-height: 1; }
-.dateHora { font-family: var(--font-mono); font-size: 10px; color: var(--color-muted); white-space: nowrap; }
+/* Rango de hora: puede ser más ancho que el bloque (ej. "12:20–15:20"); se permite
+   envolver a dos líneas en vez de escapar del contenedor con un nowrap sin salida. */
+.dateHora { font-family: var(--font-mono); font-size: 10px; color: var(--color-muted); text-align: center; overflow-wrap: anywhere; }
 
 /* Info evento */
 .eventInfo { flex: 1; min-width: 0; }
