@@ -30,43 +30,34 @@ Ejemplo de edición parcial:
   "cantidad_espacios": 8,
   "contacto": {
     "telefono": "+502 5555 1234"
-  },
-  "horarios_misa": [
-    { "dias": "Domingo", "horas": ["08:00", "11:00", "18:00"] },
-    { "dias": "Lunes a viernes", "horas": ["18:30"] }
-  ]
+  }
 }
 ```
 
 Los campos omitidos se conservan, también dentro de `quienes_somos`,
-`valores_encabezado` y `contacto`. Las listas se reemplazan completas; `[]` las vacía.
+`contacto`. Solo se pueden editar esas dos secciones y las cantidades mostradas.
 Las ediciones se publican inmediatamente: no hay borradores ni aprobación adicional.
 La transacción bloquea la fila al combinar cambios para evitar perder campos de
 ediciones simultáneas. Cuando dos editores modifican el mismo campo, prevalece la
 última edición confirmada.
 
-## Documento público y validaciones
+## Campos editables y validaciones
 
 | Campo | Forma / límites |
 | --- | --- |
-| `nombre_parroquia`, `lema`, `titulo_principal` | Texto no vacío, hasta 255 caracteres |
-| `descripcion_principal` | Texto no vacío, hasta 5000 caracteres |
 | `quienes_somos` | Objeto: `titulo` (255), `descripcion`, `mision`, `comunidad`, `servicio` (5000 cada uno); textos no vacíos |
 | `cantidad_grupos`, `cantidad_espacios` | Enteros JSON entre 0 y 1 000 000 |
-| `valores_encabezado` | Objeto con `titulo` (255) y `descripcion` (5000), no vacíos |
-| `valores` | Hasta 20 objetos completos con `titulo` (255) y `descripcion` (2000), no vacíos |
-| `horarios_misa` | Hasta 30 objetos completos con `dias` (texto hasta 255) y `horas` (hasta 24 horas `HH:mm`, de 00:00 a 23:59) |
-| `horarios_oficina` | Hasta 30 objetos completos con `dias` (255) y `horario` (500), no vacíos; horario es texto para permitir rangos |
 | `contacto` | Objeto con `titulo` (255, no vacío), `direccion` (1000), `correo` (255, formato email) y `telefono` (50, dígitos, espacios, guiones, paréntesis y prefijo `+` opcional) |
-| `texto_pie` | Texto hasta 2000 caracteres |
 
-`direccion`, `correo`, `telefono` y `texto_pie` admiten `""` para ocultar información.
+`direccion`, `correo` y `telefono` admiten `""` para ocultar información.
 Los textos se recortan en los extremos. No se aceptan `null`, tipos incorrectos,
-campos desconocidos ni objetos vacíos en un PATCH. Los elementos de listas deben
-contener todos sus campos; los cambios de secciones sí pueden ser parciales.
+campos desconocidos ni objetos vacíos en un PATCH. Los cambios de secciones pueden ser parciales.
 Campos de imágenes o archivos se rechazan como cualquier campo desconocido.
 
-Los horarios son informativos en hora local de Guatemala y no generan eventos o reservas.
+Nombre, lema, título y descripción principal, valores (incluido su encabezado),
+horarios y texto del pie de página son de solo lectura. Siguen apareciendo en el GET
+para conservar el contrato de lectura, pero enviarlos en PATCH devuelve 400 sin
+guardar ningún cambio, incluso si se mezclan con campos editables. No requiere otra migración.
 Las cantidades de grupos y espacios son contenido editorial: no calculan ni alteran
 las tablas `grupo` o `espacio`. Si cambia una cantidad, el editor debe revisar también
 los textos que la mencionen (por ejemplo, `quienes_somos.comunidad`).
@@ -108,6 +99,31 @@ No contiene credenciales; copiar un token válido de Admin/Sacerdote para la edi
 3. Repetir GET público: comprobar que el valor cambió y los campos omitidos permanecen.
 4. PATCH sin token: comprobar 401; con un rol sin permiso: 403.
 5. Enviar `{ "cantidad_grupos": -1 }`: comprobar 400 y que no se guardó.
+6. Enviar `{ "texto_pie": "Otro pie" }`: comprobar 400 por campo no permitido.
+
+Para probar cada sección, usar el mismo `PATCH http://localhost:3001/api/landing`
+con Authorization Bearer de Admin/Sacerdote y Body → raw → JSON:
+
+Quiénes somos:
+
+```json
+{ "quienes_somos": { "descripcion": "Somos una comunidad al servicio de las familias." } }
+```
+
+Cantidades mostradas:
+
+```json
+{ "cantidad_grupos": 15, "cantidad_espacios": 8 }
+```
+
+Contacto:
+
+```json
+{ "contacto": { "direccion": "Ciudad de Guatemala", "correo": "contacto@sanpedronolasco.gt", "telefono": "+502 5555 1234" } }
+```
+
+Después de cada PATCH, comprobar los cambios con `GET http://localhost:3001/api/public/landing`
+sin autenticación. Los cambios exitosos devuelven 200 y el documento completo.
 
 ## Pruebas automatizadas
 

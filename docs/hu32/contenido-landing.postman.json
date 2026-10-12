@@ -42,7 +42,7 @@
       }
     },
     {
-      "name": "Editar contenido como Admin/Sacerdote",
+      "name": "Editar Quiénes somos",
       "request": {
         "method": "PATCH",
         "auth": {
@@ -63,7 +63,71 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"quienes_somos\": {\n    \"descripcion\": \"Somos una comunidad parroquial al servicio de las familias.\"\n  },\n  \"cantidad_grupos\": 15,\n  \"cantidad_espacios\": 8\n}",
+          "raw": "{\r\n  \"quienes_somos\": {\r\n    \"descripcion\": \"Somos una comunidad al servicio de las familias.\"\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar cantidades mostradas",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"cantidad_grupos\": 15,\r\n  \"cantidad_espacios\": 8\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar datos de contacto",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"contacto\": {\r\n    \"direccion\": \"Ciudad de Guatemala\",\r\n    \"correo\": \"contacto@sanpedronolasco.gt\",\r\n    \"telefono\": \"+502 5555 1234\"\r\n  }\r\n}",
           "options": {
             "raw": {
               "language": "json"

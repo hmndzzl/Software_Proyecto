@@ -14,8 +14,7 @@ export interface ContenidoLanding {
   texto_pie: string;
 }
 
-export type CambiosLanding = Partial<Omit<ContenidoLanding, 'quienes_somos' | 'valores_encabezado' | 'contacto'>> & {
+export type CambiosLanding = Partial<Pick<ContenidoLanding, 'cantidad_grupos' | 'cantidad_espacios'>> & {
   quienes_somos?: Partial<ContenidoLanding['quienes_somos']>;
-  valores_encabezado?: Partial<ContenidoLanding['valores_encabezado']>;
   contacto?: Partial<ContenidoLanding['contacto']>;
 };

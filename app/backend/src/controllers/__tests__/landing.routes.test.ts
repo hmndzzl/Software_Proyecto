@@ -60,17 +60,19 @@ describe('contenido editable de landing', () => {
     expect(conn.release).toHaveBeenCalledOnce();
   });
 
-  it('reemplaza listas completas y permite vaciarlas', async () => {
+  it('edita el contacto parcialmente y conserva los campos fijos', async () => {
     const response = await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
-      .send({ valores: [], horarios_misa: [{ dias: 'Domingo', horas: ['08:00', '18:30'] }] }).expect(200);
-    expect(response.body.valores).toEqual([]);
-    expect(response.body.horarios_misa[0].horas).toEqual(['08:00', '18:30']);
-    expect(response.body.contacto).toEqual(contenido.contacto);
+      .send({ contacto: { telefono: '', direccion: 'Nueva dirección' }, cantidad_espacios: 8 }).expect(200);
+    expect(response.body.contacto).toEqual({ ...contenido.contacto, telefono: '', direccion: 'Nueva dirección' });
+    expect(response.body.cantidad_espacios).toBe(8);
+    for (const campo of ['nombre_parroquia', 'lema', 'titulo_principal', 'descripcion_principal', 'valores', 'valores_encabezado', 'horarios_misa', 'horarios_oficina', 'texto_pie'] as const) {
+      expect(response.body[campo]).toEqual(contenido[campo]);
+    }
   });
 
   it.each([
     {}, [], null, { cantidad_grupos: -1 }, { cantidad_espacios: '7' }, { cantidad_grupos: 1.5 }, { cantidad_grupos: 1000001 },
-    { titulo_principal: ' ' }, { descripcion_principal: 'a'.repeat(5001) }, { imagen: 'foto.png' },
+    { titulo_principal: ' ' }, { quienes_somos: { descripcion: 'a'.repeat(5001) } }, { imagen: 'foto.png' },
     { quienes_somos: {} }, { quienes_somos: { imagen: 'foto' } }, { contacto: { correo: 'incorrecto' } },
     { contacto: { telefono: 'abc' } }, { valores: [{ titulo: 'Fe' }] }, { valores: Array(21).fill({ titulo: 'Fe', descripcion: 'Test' }) },
     { horarios_misa: [{ dias: 'Domingo', horas: ['25:00'] }] }, { horarios_oficina: [{ dias: 'Domingo', horario: 123 }] },
@@ -83,6 +85,17 @@ describe('contenido editable de landing', () => {
   it('rechaza claves que intentan alterar el prototipo', async () => {
     await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
       .set('Content-Type', 'application/json').send('{"__proto__":{"publico":true}}').expect(400);
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { nombre_parroquia: 'Otra parroquia' }, { lema: 'Otro lema' },
+    { titulo_principal: 'Otro título' }, { descripcion_principal: 'Otra presentación' },
+    { valores: [] }, { valores_encabezado: { titulo: 'Otros valores' } }, { texto_pie: 'Otro pie' },
+    { horarios_misa: [] }, { horarios_oficina: [] },
+  ])('rechaza campos fijos incluso junto a cambios permitidos: %j', async camposFijos => {
+    await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
+      .send({ cantidad_grupos: 15, ...camposFijos }).expect(400);
     expect(pool.getConnection).not.toHaveBeenCalled();
   });
 

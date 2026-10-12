@@ -185,8 +185,6 @@ describe('integración API y MariaDB', () => {
     const cambios = {
       quienes_somos: { descripcion: 'Nueva descripción pública' }, cantidad_grupos: 18, cantidad_espacios: 9,
       contacto: { telefono: '+502 5555 1234' },
-      horarios_misa: [{ dias: 'Domingo', horas: ['07:30', '12:00'] }],
-      valores: [{ titulo: 'Solidaridad', descripcion: 'Acompañamos a nuestra comunidad' }],
     };
     const actualizado = await request(app).patch('/api/landing').auth(login.body.token, { type: 'bearer' }).send(cambios).expect(200);
     expect(actualizado.body.quienes_somos.mision).toBe(inicial.body.quienes_somos.mision);
@@ -194,6 +192,9 @@ describe('integración API y MariaDB', () => {
     const publico = await request(app).get('/api/public/landing').expect(200);
     expect(publico.body).toEqual(actualizado.body);
     expect(publico.body).toMatchObject(cambios);
+    for (const campo of ['nombre_parroquia', 'lema', 'titulo_principal', 'descripcion_principal', 'valores', 'valores_encabezado', 'horarios_misa', 'horarios_oficina', 'texto_pie']) {
+      expect(publico.body[campo]).toEqual(inicial.body[campo]);
+    }
     const [guardado] = await pool.query<RowDataPacket[]>('SELECT contenido FROM contenido_landing WHERE id = 1');
     expect(JSON.parse(guardado[0].contenido)).toEqual(publico.body);
     const [cantidadesDespues] = await pool.query<RowDataPacket[]>('SELECT (SELECT COUNT(*) FROM grupo) AS grupos, (SELECT COUNT(*) FROM espacio) AS espacios');
