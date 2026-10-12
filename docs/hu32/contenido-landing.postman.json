@@ -1,0 +1,237 @@
+{
+  "info": {
+    "name": "HU-32 — Contenido de landing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Leer contenido público",
+      "request": {
+        "method": "GET",
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{base_url}}/api/public/landing"
+      }
+    },
+    {
+      "name": "Leer contenido como Admin/Sacerdote",
+      "request": {
+        "method": "GET",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar Quiénes somos",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"quienes_somos\": {\r\n    \"descripcion\": \"Somos una comunidad al servicio de las familias.\"\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar cantidades mostradas",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"cantidad_grupos\": 15,\r\n  \"cantidad_espacios\": 8\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar datos de contacto",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"contacto\": {\r\n    \"direccion\": \"Ciudad de Guatemala\",\r\n    \"correo\": \"contacto@sanpedronolasco.gt\",\r\n    \"telefono\": \"+502 5555 1234\"\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar presentación principal",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"lema\": \"Casa de fe y comunidad\",\r\n  \"titulo_principal\": \"Bienvenidos\",\r\n  \"descripcion_principal\": \"Una parroquia al servicio de todos.\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar nuestros valores",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"valores_encabezado\": {\r\n    \"descripcion\": \"Principios de nuestra comunidad\"\r\n  },\r\n  \"valores\": [\r\n    {\r\n      \"descripcion\": \"Acompañamos a quienes lo necesitan.\",\r\n      \"titulo\": \"Servicio\"\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar horarios",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"horarios_misa\": [\r\n    {\r\n      \"horas\": [\r\n        \"08:00\",\r\n        \"11:00\"\r\n      ],\r\n      \"dias\": \"Domingo\"\r\n    }\r\n  ],\r\n  \"horarios_oficina\": [\r\n    {\r\n      \"horario\": \"09:00 – 13:00\",\r\n      \"dias\": \"Lunes a viernes\"\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    }
+  ]
+}
