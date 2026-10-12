@@ -17,7 +17,7 @@ function mostrar() {
 describe('ConfiguracionPage', () => {
   beforeEach(() => localStorage.clear());
 
-  it('guarda preferencias de navegación, notificaciones y movimiento', () => {
+  it('guarda preferencias de navegación, notificaciones y tema', () => {
     mostrar();
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Menú lateral contraído' }));
@@ -26,20 +26,20 @@ describe('ConfiguracionPage', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Cada 5 minutos' }));
     expect(localStorage.getItem('intervalo_notificaciones')).toBe('300');
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Reducir animaciones' }));
-    expect(localStorage.getItem('reducir_movimiento')).toBe('1');
+    fireEvent.click(screen.getByRole('radio', { name: 'Oscuro' }));
+    expect(localStorage.getItem('tema_aplicacion')).toBe('oscuro');
   });
 
   it('restablece las preferencias y enlaza al perfil', () => {
     localStorage.setItem('sidebar_colapsado', '1');
     localStorage.setItem('intervalo_notificaciones', '300');
-    localStorage.setItem('reducir_movimiento', '1');
+    localStorage.setItem('tema_aplicacion', 'oscuro');
     mostrar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Restablecer preferencias' }));
     expect(localStorage.getItem('sidebar_colapsado')).toBe('0');
     expect(localStorage.getItem('intervalo_notificaciones')).toBe('60');
-    expect(localStorage.getItem('reducir_movimiento')).toBe('0');
+    expect(localStorage.getItem('tema_aplicacion')).toBe('claro');
     expect(screen.getByRole('link', { name: 'Ir a mi perfil' })).toHaveAttribute('href', '/perfil');
   });
 });

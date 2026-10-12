@@ -10,10 +10,10 @@ import {
   saveToken,
   saveUsuario,
   guardarIntervaloNotificaciones,
-  guardarReducirMovimiento,
+  guardarTemaAplicacion,
   leerIntervaloNotificaciones,
-  leerReducirMovimiento,
   leerSidebarColapsado,
+  leerTemaAplicacion,
   restaurarPreferenciasUI,
 } from '../sessionStore';
 
@@ -76,13 +76,13 @@ describe('sessionStore', () => {
 
   it('guarda, lee y restablece las preferencias de interfaz', () => {
     guardarIntervaloNotificaciones(300);
-    guardarReducirMovimiento(true);
+    guardarTemaAplicacion('oscuro');
     expect(leerIntervaloNotificaciones()).toBe(300);
-    expect(leerReducirMovimiento()).toBe(true);
+    expect(leerTemaAplicacion()).toBe('oscuro');
 
     restaurarPreferenciasUI();
     expect(leerSidebarColapsado()).toBe(false);
     expect(leerIntervaloNotificaciones()).toBe(60);
-    expect(leerReducirMovimiento()).toBe(false);
+    expect(leerTemaAplicacion()).toBe('claro');
   });
 });

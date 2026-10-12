@@ -6,13 +6,14 @@ import Btn from '../../components/ui/Btn';
 import { useToast } from '../../context/ToastContext';
 import {
   guardarIntervaloNotificaciones,
-  guardarReducirMovimiento,
   guardarSidebarColapsado,
+  guardarTemaAplicacion,
   leerIntervaloNotificaciones,
-  leerReducirMovimiento,
   leerSidebarColapsado,
+  leerTemaAplicacion,
   restaurarPreferenciasUI,
   type IntervaloNotificaciones,
+  type TemaAplicacion,
 } from '../../auth/sessionStore';
 import styles from './ConfiguracionPage.module.css';
 
@@ -20,7 +21,7 @@ export default function ConfiguracionPage() {
   const toast = useToast();
   const [sidebarColapsado, setSidebarColapsado] = useState(leerSidebarColapsado);
   const [intervaloNotificaciones, setIntervaloNotificaciones] = useState<IntervaloNotificaciones>(leerIntervaloNotificaciones);
-  const [reducirMovimiento, setReducirMovimiento] = useState(leerReducirMovimiento);
+  const [tema, setTema] = useState<TemaAplicacion>(leerTemaAplicacion);
 
   const cambiarSidebar = (colapsado: boolean) => {
     setSidebarColapsado(colapsado);
@@ -33,16 +34,17 @@ export default function ConfiguracionPage() {
     toast.success('Preferencia guardada', `Las notificaciones se actualizarán cada ${intervalo === 60 ? 'minuto' : '5 minutos'}.`);
   };
 
-  const cambiarMovimiento = (reducir: boolean) => {
-    setReducirMovimiento(reducir);
-    guardarReducirMovimiento(reducir);
+  const cambiarTema = (nuevoTema: TemaAplicacion) => {
+    setTema(nuevoTema);
+    guardarTemaAplicacion(nuevoTema);
+    toast.success('Tema actualizado', `Se aplicó el tema ${nuevoTema}.`);
   };
 
   const restaurar = () => {
     restaurarPreferenciasUI();
     setSidebarColapsado(false);
     setIntervaloNotificaciones(60);
-    setReducirMovimiento(false);
+    setTema('claro');
     toast.success('Preferencias restablecidas', 'Se aplicaron los valores predeterminados de la interfaz.');
   };
 
@@ -92,20 +94,20 @@ export default function ConfiguracionPage() {
         </Card>
 
         <Card>
-          <CardHead title="Accesibilidad" />
+          <CardHead title="Apariencia" />
           <CardBody>
-            <label className={styles.option}>
-              <span>
-                <strong>Reducir animaciones</strong>
-                <small>Disminuye transiciones y movimientos para una experiencia visual más estable.</small>
-              </span>
-              <input
-                type="checkbox"
-                checked={reducirMovimiento}
-                onChange={(event) => cambiarMovimiento(event.target.checked)}
-                aria-label="Reducir animaciones"
-              />
-            </label>
+            <fieldset className={styles.fieldset}>
+              <legend>Tema de la interfaz</legend>
+              <p className={styles.help}>El tema claro conserva la paleta actual; el oscuro usa tonos cálidos de borgoña y oro.</p>
+              <label className={styles.radioOption}>
+                <input type="radio" name="tema-aplicacion" checked={tema === 'claro'} onChange={() => cambiarTema('claro')} />
+                Claro
+              </label>
+              <label className={styles.radioOption}>
+                <input type="radio" name="tema-aplicacion" checked={tema === 'oscuro'} onChange={() => cambiarTema('oscuro')} />
+                Oscuro
+              </label>
+            </fieldset>
           </CardBody>
         </Card>
 

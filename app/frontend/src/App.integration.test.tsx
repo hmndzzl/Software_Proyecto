@@ -1,4 +1,4 @@
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import apiClient from './api/client';
@@ -86,5 +86,17 @@ describe('integración del enrutador con los módulos principales', () => {
     localStorage.clear();
     await abrir('/dashboard');
     await waitFor(() => expect(window.location.pathname).toBe('/login'));
+  });
+
+  it('aplica el tema guardado en las preferencias de interfaz', async () => {
+    localStorage.setItem('tema_aplicacion', 'oscuro');
+    await abrir('/dashboard');
+    expect(document.documentElement).toHaveAttribute('data-tema', 'oscuro');
+  });
+
+  it('cambia el tema sin recargar la aplicación', async () => {
+    await abrir('/configuracion');
+    fireEvent.click(screen.getByRole('radio', { name: 'Oscuro' }));
+    expect(document.documentElement).toHaveAttribute('data-tema', 'oscuro');
   });
 });

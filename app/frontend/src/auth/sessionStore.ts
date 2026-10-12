@@ -79,7 +79,7 @@ export function esClaveDeSesion(key: string | null): boolean {
 // a tocar localStorage (DT-10); no amerita un segundo módulo exceptuado.
 const SIDEBAR_COLAPSADO_KEY = 'sidebar_colapsado';
 const INTERVALO_NOTIFICACIONES_KEY = 'intervalo_notificaciones';
-const REDUCIR_MOVIMIENTO_KEY = 'reducir_movimiento';
+const TEMA_APLICACION_KEY = 'tema_aplicacion';
 
 /** Evento interno para aplicar preferencias sin recargar la aplicación. */
 export const UI_PREFERENCES_EVENT = 'ui-preferences-changed';
@@ -108,18 +108,20 @@ export function guardarIntervaloNotificaciones(intervalo: IntervaloNotificacione
   notificarCambioDePreferencias();
 }
 
-export function leerReducirMovimiento(): boolean {
-  return leer(REDUCIR_MOVIMIENTO_KEY) === '1';
+export type TemaAplicacion = 'claro' | 'oscuro';
+
+export function leerTemaAplicacion(): TemaAplicacion {
+  return leer(TEMA_APLICACION_KEY) === 'oscuro' ? 'oscuro' : 'claro';
 }
 
-export function guardarReducirMovimiento(reducir: boolean) {
-  escribir(REDUCIR_MOVIMIENTO_KEY, reducir ? '1' : '0');
+export function guardarTemaAplicacion(tema: TemaAplicacion) {
+  escribir(TEMA_APLICACION_KEY, tema);
   notificarCambioDePreferencias();
 }
 
 export function restaurarPreferenciasUI() {
   escribir(SIDEBAR_COLAPSADO_KEY, '0');
   escribir(INTERVALO_NOTIFICACIONES_KEY, '60');
-  escribir(REDUCIR_MOVIMIENTO_KEY, '0');
+  escribir(TEMA_APLICACION_KEY, 'claro');
   notificarCambioDePreferencias();
 }

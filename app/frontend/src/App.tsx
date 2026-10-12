@@ -30,7 +30,7 @@ import AusenciasPage from './pages/ausencias/AusenciasPage';
 import CuentasPage from './pages/cuentas/CuentasPage';
 import ClerkSessionSync from './auth/ClerkSessionSync';
 import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
-import { leerReducirMovimiento, UI_PREFERENCES_EVENT } from './auth/sessionStore';
+import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
 import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
 
 const ALL_ROLES = [
@@ -44,7 +44,7 @@ const ALL_ROLES = [
 function SincronizarPreferenciasUI() {
   useEffect(() => {
     const sincronizar = () => {
-      document.documentElement.dataset.reducirMovimiento = leerReducirMovimiento() ? 'true' : 'false';
+      document.documentElement.dataset.tema = leerTemaAplicacion();
     };
     sincronizar();
     window.addEventListener(UI_PREFERENCES_EVENT, sincronizar);

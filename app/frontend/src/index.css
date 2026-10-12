@@ -33,19 +33,6 @@ body {
   line-height: 1.5;
 }
 
-html[data-reducir-movimiento='true'] {
-  scroll-behavior: auto !important;
-}
-
-html[data-reducir-movimiento='true'] *,
-html[data-reducir-movimiento='true'] *::before,
-html[data-reducir-movimiento='true'] *::after {
-  animation-duration: .01ms !important;
-  animation-iteration-count: 1 !important;
-  scroll-behavior: auto !important;
-  transition-duration: .01ms !important;
-}
-
 button, input, select, textarea {
   font-family: inherit;
   font-size: inherit;
@@ -109,7 +96,7 @@ a {
   border-radius: var(--radius-btn);
   border: none;
   background-color: var(--color-rojo);
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
