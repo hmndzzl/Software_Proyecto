@@ -60,7 +60,8 @@ test('el portal público se adapta a móvil, tableta y escritorio sin desbordars
     await page.goto('/');
 
     await expect(page.locator('.landing')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'CONÓCENOS' })).toHaveAttribute('href', '#quienes-somos');
+    await expect(page.getByRole('link', { name: 'AGENDA PARROQUIAL', exact: true })).toHaveAttribute('href', '/agenda');
+    await expect(page.locator('.hero-cta a')).toHaveCount(1);
     expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)))
       .toBeLessThanOrEqual(viewport.width);
 
@@ -73,6 +74,23 @@ test('el portal público se adapta a móvil, tableta y escritorio sin desbordars
       await valores.click();
       await expect(valores).toHaveClass(/active/);
     }
+  }
+});
+
+test('el selector del header acompaña a las tres secciones y conserva la selección al terminar el desplazamiento', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+
+  for (const id of ['quienes-somos', 'valores', 'contacto']) {
+    const link = page.locator(`.nav-links a[href="#${id}"]`);
+    await link.click();
+    await expect(link).toHaveAttribute('aria-current', 'location');
+    await expect.poll(async () => {
+      const top = await page.locator(`#${id}`).evaluate(element => element.getBoundingClientRect().top);
+      const navHeight = await page.locator('.nav').evaluate(element => element.getBoundingClientRect().height);
+      return Math.abs(top - navHeight);
+    }).toBeLessThanOrEqual(16);
+    await expect(link).toHaveAttribute('aria-current', 'location');
   }
 });
 
