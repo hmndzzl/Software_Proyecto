@@ -10,6 +10,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import { formatFecha, formatHora } from '../../../utils/date';
+import type { Ministro } from '../../../types';
 import styles from './ListaAsignaciones.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
@@ -24,10 +25,7 @@ interface Asignacion {
   nombre_persona: string;
 }
 
-interface MinistroOpcion {
-  id: number;
-  nombre: string;
-}
+type MinistroOpcion = Ministro;
 
 type SortKey = 'tarea' | 'responsable' | 'fecha' | 'horario';
 
