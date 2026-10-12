@@ -2,28 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
+import type { Tarea, Ministro } from '../../../types';
 import styles from '../../../styles/Form.module.css';
 
-interface AsignadoInfo {
-  persona_id: number;
-  nombre: string;
-}
-
-interface Tarea {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  asignados: AsignadoInfo[];
-}
-
-interface Persona {
-  id: number;
-  nombre: string;
-  disponible: boolean;
-}
+type Persona = Ministro;
 
 // Debe coincidir con TOPE_SERVICIOS_MES en app/backend/src/config/constants.ts
 const TOPE_SERVICIOS_MES = 8;
