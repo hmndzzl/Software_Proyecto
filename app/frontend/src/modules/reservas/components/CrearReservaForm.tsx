@@ -4,13 +4,8 @@ import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
 import { ROLES } from '../../../utils/roles';
 import { useAuth } from '../../../context/AuthContext';
+import type { Espacio } from '../../espacios/components/EspacioCard';
 import styles from '../../../styles/Form.module.css';
-
-interface Espacio {
-  id: number;
-  nombre: string;
-  capacidad: number | null;
-}
 
 interface CrearReservaFormProps {
   onReservaCreada?: () => void;

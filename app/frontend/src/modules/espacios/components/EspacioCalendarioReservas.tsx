@@ -3,18 +3,10 @@ import { Card, CardHead, CardBody } from '../../../components/ui/Card';
 import DetalleEventoModal from '../../../components/ui/DetalleEventoModal';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey, formatHora } from '../../../utils/date';
+import type { Reserva } from '../../../types';
 import styles from './EspacioCalendarioReservas.module.css';
 
-export interface ReservaCalendario {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  estado_reserva_id: number;
-  evento_titulo: string | null;
-  evento_descripcion: string | null;
-  solicitante_nombre: string | null;
-}
+export type ReservaCalendario = Reserva;
 
 interface EspacioCalendarioReservasProps {
   reservas: ReservaCalendario[];

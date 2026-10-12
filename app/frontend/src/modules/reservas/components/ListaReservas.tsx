@@ -6,49 +6,17 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import Badge from '../../../components/ui/Badge';
-import type { BadgeKind } from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
-import { ESTADOS_RESERVA, avisoCambioEstadoReserva } from '../../../utils/estadosReserva';
+import { ESTADOS_RESERVA, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND, avisoCambioEstadoReserva } from '../../../utils/estadosReserva';
 import { formatFecha, formatHora } from '../../../utils/date';
+import type { Espacio } from '../../espacios/components/EspacioCard';
+import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
-
-interface Espacio {
-  id: number;
-  nombre: string;
-}
-
-interface Reserva {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  espacio_id: number | null;
-  espacio_nombre: string | null;
-  estado_reserva_id: number;
-  solicitante_id: number;
-  solicitante_nombre: string | null;
-  evento_titulo: string | null;
-  evento_descripcion: string | null;
-}
-
-const ESTADO_LABEL: Record<number, string> = {
-  1: 'Pendiente',
-  2: 'Confirmada',
-  3: 'Rechazada',
-  4: 'Cancelada',
-};
-
-const ESTADO_KIND: Record<number, BadgeKind> = {
-  1: 'pendiente',
-  2: 'confirmada',
-  3: 'rechazada',
-  4: 'cancelada',
-};
 
 type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante';
 
@@ -56,7 +24,7 @@ const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
-  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+  estado: (r) => ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? '',
   solicitante: (r) => (r.solicitante_nombre ?? '').toLowerCase(),
 };
 
@@ -290,8 +258,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.evento_descripcion ?? '—'}</td>
                   <td>{r.solicitante_nombre ?? '—'}</td>
                   <td>
-                    <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                      {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
+                    <Badge kind={ESTADO_RESERVA_KIND[r.estado_reserva_id] ?? 'neutral'}>
+                      {ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                     </Badge>
                   </td>
                   <td>

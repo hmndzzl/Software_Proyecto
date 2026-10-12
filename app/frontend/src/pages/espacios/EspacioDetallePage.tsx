@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
-import { avisoCambioEstadoReserva } from '../../utils/estadosReserva';
+import { avisoCambioEstadoReserva, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND } from '../../utils/estadosReserva';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
-import type { BadgeKind } from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
@@ -16,21 +15,8 @@ import EmptyState from '../../components/ui/EmptyState';
 import { ROLES, ROLES_RESERVAS } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 import { partesFecha, formatHora as fmtH } from '../../utils/date';
+import type { Reserva } from '../../types';
 import styles from './EspacioDetallePage.module.css';
-
-interface Reserva {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  estado_reserva_id: number;
-  evento_titulo: string | null;
-  evento_descripcion: string | null;
-  solicitante_nombre: string | null;
-}
-
-const ESTADO_LABEL: Record<number, string>   = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
-const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada' };
 
 export default function EspacioDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -185,8 +171,8 @@ export default function EspacioDetallePage() {
 
                   {/* Badge + acciones */}
                   <div className={styles.reservaAcciones}>
-                    <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                      {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
+                    <Badge kind={ESTADO_RESERVA_KIND[r.estado_reserva_id] ?? 'neutral'}>
+                      {ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
                     </Badge>
                     {esAdminOSacerdote && r.estado_reserva_id === 1 && (
                       <div className={styles.reservaBotones}>
