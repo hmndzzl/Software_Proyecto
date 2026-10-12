@@ -12,6 +12,20 @@
   flex-shrink: 0;
 }
 
+.menuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 8px;
+  background: rgba(255,255,255,.08);
+  color: var(--color-crema);
+  cursor: pointer;
+}
+
 /* ── Marca ── */
 .brand {
   display: flex;
@@ -282,4 +296,23 @@
 
 .btnLogout:hover {
   background: rgba(255,255,255,.16);
+}
+
+@media (max-width: 900px) {
+  .topbar { padding: 0 18px; gap: 10px; }
+  .menuBtn { display: flex; }
+  .brandName, .userInfo, .divider, .searchBtn { display: none; }
+  .brand { gap: 0; }
+  .logoImg { width: 42px; height: 42px; }
+  .actions { gap: 2px; }
+  .userLink { padding: 2px; }
+  .btnLogout { width: 38px; padding: 0; justify-content: center; margin-left: 0; }
+  .logoutLabel { display: none; }
+  .dropdown { width: min(320px, calc(100vw - 32px)); }
+}
+
+@media (max-width: 420px) {
+  .topbar { padding: 0 12px; }
+  .logoImg { width: 38px; height: 38px; padding: 4px; }
+  .menuBtn, .iconBtn, .avatar, .btnLogout { width: 36px; height: 36px; }
 }
