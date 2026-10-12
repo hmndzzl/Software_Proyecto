@@ -29,12 +29,22 @@ interface PublicPortalLayoutProps {
   page: 'landing' | 'agenda-publica';
   activeSection?: number;
   onSectionClick?: (index: number) => void;
+  nombreParroquia?: string;
+  textoPie?: string;
+  horariosOficina?: Array<{ dias: string; horario: string }>;
   children: ReactNode;
 }
 
-export default function PublicPortalLayout({ page, activeSection, onSectionClick, children }: PublicPortalLayoutProps) {
+const HORARIOS_OFICINA_POR_DEFECTO = [
+  { dias: 'Lunes a viernes', horario: '9:00 – 13:00 · 15:00 – 19:00' },
+  { dias: 'Sábados', horario: '9:00 – 13:00' },
+];
+
+export default function PublicPortalLayout({ page, activeSection, onSectionClick, nombreParroquia, textoPie, horariosOficina, children }: PublicPortalLayoutProps) {
   const [open, setOpen] = useState(false);
   const isLanding = page === 'landing';
+  const horarios = horariosOficina ?? HORARIOS_OFICINA_POR_DEFECTO;
+  const nombreVisible = (nombreParroquia || 'Parroquia San Pedro Nolasco').replace(/^Parroquia\s+/i, '').toUpperCase();
   const sectionHref = (id: string) => isLanding ? `#${id}` : `/#${id}`;
   const selectSection = (index: number) => {
     setOpen(false);
@@ -46,10 +56,10 @@ export default function PublicPortalLayout({ page, activeSection, onSectionClick
       <header className={`nav${open ? ' open' : ''}`}>
         <div className="wrap nav-in">
           <a href={isLanding ? '#home' : '/'} className="brand" onClick={() => selectSection(0)}>
-            <img src={logoImg} alt="Parroquia San Pedro Nolasco" className="brand-logo" />
+            <img src={logoImg} alt={nombreParroquia || 'Parroquia San Pedro Nolasco'} className="brand-logo" />
             <span className="brand-txt">
               <span className="brand-top">PARROQUIA</span>
-              <span className="brand-name">SAN PEDRO NOLASCO</span>
+              <span className="brand-name">{nombreVisible}</span>
             </span>
           </a>
           <nav id="navegacion-principal" className="nav-links" aria-label="Navegación principal">
@@ -78,9 +88,9 @@ export default function PublicPortalLayout({ page, activeSection, onSectionClick
             <div>
               <div className="brand foot-brand">
                 <img src={logoImg} alt="" className="brand-logo" />
-                <span className="brand-txt"><span className="brand-top">PARROQUIA</span><span className="brand-name">SAN PEDRO NOLASCO</span></span>
+                <span className="brand-txt"><span className="brand-top">PARROQUIA</span><span className="brand-name">{nombreVisible}</span></span>
               </div>
-              <p className="foot-description">Una comunidad de fe al servicio de las familias de nuestro barrio.</p>
+              <p className="foot-description">{textoPie || 'Una comunidad de fe al servicio de las familias de nuestro barrio.'}</p>
               <div className="foot-social">
                 {REDES.map(red => (
                   <a key={red.nombre} href={red.url} target="_blank" rel="noopener noreferrer" aria-label={red.nombre} title={red.nombre}>
@@ -95,13 +105,13 @@ export default function PublicPortalLayout({ page, activeSection, onSectionClick
               <Link to="/agenda">Agenda parroquial</Link>
               <Link to="/login">Iniciar Sesión</Link>
             </nav>
-            <div>
+            {horarios.length > 0 && <div>
               <h2>OFICINA PARROQUIAL</h2>
-              <p>Lunes a viernes<br />9:00 – 13:00 · 15:00 – 19:00<br />Sábados 9:00 – 13:00</p>
-            </div>
+              <p>{horarios.map((horario, indice) => <span key={`${horario.dias}-${indice}`}>{horario.dias}<br />{horario.horario}{indice < horarios.length - 1 && <br />}</span>)}</p>
+            </div>}
           </div>
           <div className="foot-bar">
-            <span>© {new Date().getFullYear()} Parroquia San Pedro Nolasco</span>
+            <span>© {new Date().getFullYear()} {nombreParroquia || 'Parroquia San Pedro Nolasco'}</span>
             <span>GUATEMALA</span>
           </div>
         </div>

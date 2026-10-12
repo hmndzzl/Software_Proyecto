@@ -1,12 +1,35 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LandingPage from './LandingPage';
+import apiClient from '../../api/client';
 
 vi.mock('./ContactoForm', () => ({ default: () => <form aria-label="contacto" /> }));
+vi.mock('../../api/client', () => ({ default: { get: vi.fn() } }));
+
+const contenidoPublicado = {
+  nombre_parroquia: 'Parroquia San Pedro Nolasco',
+  lema: 'Una iglesia cercana',
+  titulo_principal: 'Contenido publicado desde administración',
+  descripcion_principal: 'La descripción publicada para la comunidad.',
+  quienes_somos: { titulo: 'Nuestra historia', descripcion: 'Una historia compartida.', mision: 'Acompañar.', comunidad: 'Servir.', servicio: 'Celebrar.' },
+  cantidad_grupos: 14,
+  cantidad_espacios: 8,
+  valores_encabezado: { titulo: 'Valores publicados', descripcion: 'Nuestros principios.' },
+  valores: [{ titulo: 'Esperanza', descripcion: 'Miramos al futuro con fe.' }],
+  horarios_misa: [{ dias: 'Domingo', horas: ['09:00'] }],
+  horarios_oficina: [{ dias: 'Lunes', horario: '09:00 – 12:00' }],
+  contacto: { titulo: 'Hablemos', direccion: 'Guatemala', correo: 'hola@example.com', telefono: '+502 5555 5555' },
+  texto_pie: 'Un pie publicado.',
+};
 
 describe('navegación del portal público', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+  });
+
   it('abre y cierra el menú y actualiza la sección activa al desplazarse', async () => {
     render(<MemoryRouter><LandingPage /></MemoryRouter>);
     const menu = screen.getByRole('button', { name: 'Menú' });
@@ -43,6 +66,16 @@ describe('navegación del portal público', () => {
   it('enlaza el portal con la agenda pública', () => {
     render(<MemoryRouter><LandingPage /></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'AGENDA PARROQUIAL' })).toHaveAttribute('href', '/agenda');
+  });
+
+  it('consulta M3 y muestra el contenido publicado sin interpretar HTML', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: contenidoPublicado });
+    render(<MemoryRouter><LandingPage /></MemoryRouter>);
+
+    expect(await screen.findByRole('heading', { name: 'Contenido publicado desde administración' })).toBeInTheDocument();
+    expect(screen.getByText('14')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Esperanza' })).toBeInTheDocument();
+    expect(apiClient.get).toHaveBeenCalledWith('/api/public/landing');
   });
 
   it('elimina el listener de desplazamiento al desmontarse', () => {
