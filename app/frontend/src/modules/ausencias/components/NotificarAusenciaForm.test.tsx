@@ -86,7 +86,7 @@ describe('Notificar ausencia', () => {
 
   it.each([1, 2, 3])('oculta el acceso y redirige el rol %s', async rol_id => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id }));
-    render(<ToastProvider><MemoryRouter initialEntries={['/ausencias']}><AuthProvider><Sidebar /><Routes>
+    render(<ToastProvider><MemoryRouter initialEntries={['/ausencias']}><AuthProvider><Sidebar colapsado={false} onAlternar={() => {}} /><Routes>
       <Route path="/ausencias" element={<AusenciasPage />} />
       <Route path="/dashboard" element={<p>Inicio permitido</p>} />
     </Routes></AuthProvider></MemoryRouter></ToastProvider>);
@@ -97,7 +97,7 @@ describe('Notificar ausencia', () => {
 
   it('muestra el acceso al admin y envía su propia identidad', async () => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 5, nombre: 'Admin' }));
-    render(<ToastProvider><MemoryRouter><AuthProvider><Sidebar /><AusenciasPage /></AuthProvider></MemoryRouter></ToastProvider>);
+    render(<ToastProvider><MemoryRouter><AuthProvider><Sidebar colapsado={false} onAlternar={() => {}} /><AusenciasPage /></AuthProvider></MemoryRouter></ToastProvider>);
     expect(screen.getByRole('link', { name: 'Notificar Ausencia' })).toBeInTheDocument();
     completar(); enviar(); await screen.findByRole('status');
     expect(apiClient.post).toHaveBeenCalledWith('/api/ausencias', { ...payload, ministro_id: 1 });

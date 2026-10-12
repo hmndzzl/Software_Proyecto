@@ -31,6 +31,7 @@ interface Reserva {
   espacio_nombre: string | null;
   estado_reserva_id: number;
   solicitante_id: number;
+  solicitante_nombre: string | null;
   evento_titulo: string | null;
   evento_descripcion: string | null;
 }
@@ -49,13 +50,14 @@ const ESTADO_KIND: Record<number, BadgeKind> = {
   4: 'cancelada',
 };
 
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante';
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
   estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+  solicitante: (r) => (r.solicitante_nombre ?? '').toLowerCase(),
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
@@ -271,6 +273,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <th>Hora Fin</th>
                 <th>Título del Evento</th>
                 <th>Descripción</th>
+                <SortableTh label="Registrado por" sortKey="solicitante" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
               </tr>
@@ -285,6 +288,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td className={styles.horaCell}>{formatHora(r.hora_fin)}</td>
                   <td>{r.evento_titulo ?? '—'}</td>
                   <td>{r.evento_descripcion ?? '—'}</td>
+                  <td>{r.solicitante_nombre ?? '—'}</td>
                   <td>
                     <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
                       {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}

@@ -12,7 +12,7 @@ vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } 
 vi.mock('../../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const base = { fecha: '2099-10-20T00:00:00.000Z', hora_inicio: '14:00:00', hora_fin: '15:00:00', espacio_id: 2, espacio_nombre: 'Salón', solicitante_id: 1, evento_titulo: 'Reunión', evento_descripcion: 'Planificación' };
-const reservas = [1, 2, 3, 4, 99].map((estado, i) => ({ ...base, id: i + 1, estado_reserva_id: estado, solicitante_id: i === 1 ? 8 : 1, espacio_nombre: i === 4 ? null : 'Salón', evento_titulo: i === 4 ? null : 'Reunión', evento_descripcion: i === 4 ? null : 'Planificación' }));
+const reservas = [1, 2, 3, 4, 99].map((estado, i) => ({ ...base, id: i + 1, estado_reserva_id: estado, solicitante_id: i === 1 ? 8 : 1, solicitante_nombre: i === 4 ? null : 'Ana Gómez', espacio_nombre: i === 4 ? null : 'Salón', evento_titulo: i === 4 ? null : 'Reunión', evento_descripcion: i === 4 ? null : 'Planificación' }));
 
 function preparar(datos = reservas) {
   vi.mocked(apiClient.get).mockImplementation(async (url) => ({ data: url === '/api/espacios' ? [{ id: 2, nombre: 'Salón' }] : datos }));
@@ -29,7 +29,8 @@ describe('integración de reservas, estados y edición', () => {
     mostrar();
     await screen.findByText('Confirmada');
     for (const texto of ['Pendiente', 'Rechazada', 'Cancelada', 'Desconocido', '—']) expect(screen.getAllByText(texto).length).toBeGreaterThan(0);
-    for (const nombre of ['#', 'Espacio', 'Fecha', 'Estado']) fireEvent.click(screen.getByRole('columnheader', { name: new RegExp(nombre === '#' ? '#' : nombre) }));
+    expect(screen.getAllByText('Ana Gómez').length).toBeGreaterThan(0);
+    for (const nombre of ['#', 'Espacio', 'Fecha', 'Registrado por', 'Estado']) fireEvent.click(screen.getByRole('columnheader', { name: new RegExp(nombre === '#' ? '#' : nombre) }));
   });
 
   it('aprueba, cancela la propia y rechaza la reserva ajena', async () => {

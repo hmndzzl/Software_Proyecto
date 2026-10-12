@@ -73,3 +73,16 @@ export function clearSession() {
 export function esClaveDeSesion(key: string | null): boolean {
   return key === null || key === TOKEN_KEY || key === USUARIO_KEY;
 }
+
+// ── Preferencia de UI (sidebar colapsado) ──
+// No es dato de sesión, pero vive aquí porque este es el único módulo autorizado
+// a tocar localStorage (DT-10); no amerita un segundo módulo exceptuado.
+const SIDEBAR_COLAPSADO_KEY = 'sidebar_colapsado';
+
+export function leerSidebarColapsado(): boolean {
+  return leer(SIDEBAR_COLAPSADO_KEY) === '1';
+}
+
+export function guardarSidebarColapsado(colapsado: boolean) {
+  escribir(SIDEBAR_COLAPSADO_KEY, colapsado ? '1' : '0');
+}

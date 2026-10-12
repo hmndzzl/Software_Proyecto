@@ -1,0 +1,29 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--color-ink);
+}
+
+.row svg {
+  color: var(--color-tierra);
+  flex-shrink: 0;
+}
+
+.descripcion {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-ink);
+  line-height: 1.5;
+  margin: 4px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-lineSoft);
+}

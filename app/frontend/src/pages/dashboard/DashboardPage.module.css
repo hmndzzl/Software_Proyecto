@@ -104,6 +104,12 @@
   align-items: start;
 }
 
+@media (max-width: 1024px) {
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Tareas ── */
 .tareasList {
   padding: 4px 0;

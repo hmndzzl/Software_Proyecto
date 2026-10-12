@@ -78,7 +78,9 @@ describe('Resaltado de notificación desde el menú de la campana', () => {
   it('desplaza hasta la notificación indicada por ?resaltar= al cargar y quita parametro', async () => {
     mostrar('/notificaciones?resaltar=2');
     await screen.findByText('Segunda notificación');
-    expect(document.getElementById('notificacion-2')?.scrollIntoView).toHaveBeenCalled();
+    // El efecto de scroll depende de que `cargando` ya sea false, lo que puede resolver
+    // en un render posterior al que pinta el texto; se espera para evitar la carrera.
+    await waitFor(() => expect(document.getElementById('notificacion-2')?.scrollIntoView).toHaveBeenCalled());
 
     // Esperar el timeout real de 2.5s para cubrir las lineas de setSearchParams
     await new Promise(r => setTimeout(r, 2600));

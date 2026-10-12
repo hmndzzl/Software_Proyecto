@@ -42,6 +42,7 @@ describe('LoginPage con Clerk', () => {
     clerkAuth.isSignedIn = false;
     sesion.usuario = null;
     setLoginError(null);
+    sessionStorage.clear();
   });
 
   afterEach(() => setLoginError(null));
@@ -104,6 +105,16 @@ describe('LoginPage con Clerk', () => {
     renderLogin();
 
     expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+  });
+
+  it('navega a la ruta guardada por ProtectedRoute en vez del dashboard', () => {
+    sessionStorage.setItem('returnTo', '/espacios/5');
+    sesion.usuario = { id: 1 };
+
+    renderLogin();
+
+    expect(navigate).toHaveBeenCalledWith('/espacios/5', { replace: true });
+    expect(sessionStorage.getItem('returnTo')).toBeNull();
   });
 
   it('no ofrece el acceso anterior con correo y contraseña', () => {

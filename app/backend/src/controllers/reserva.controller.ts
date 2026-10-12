@@ -78,6 +78,27 @@ export const crearReserva = async (req: Request, res: Response) => {
       [titulo, descripcion, solicitante_id, reservaId]
     );
 
+    // Avisa a quienes aprueban reservas (Sacerdote/Admin) que hay una solicitud nueva esperando,
+    // salvo que el propio solicitante ya sea uno de ellos (no tiene sentido notificarse a sí mismo).
+    const [aprobadores]: any = await conn.query(
+      `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+      [ROLES.SACERDOTE, ROLES.ADMIN, solicitante_id]
+    );
+
+    if (aprobadores.length > 0) {
+      const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${hora_inicio}–${hora_fin}) pendiente de tu aprobación.`;
+      const [notifResult]: any = await conn.query(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
+        [mensajeNotificacion, solicitante_id]
+      );
+      for (const aprobador of aprobadores) {
+        await conn.query(
+          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+          [aprobador.id, notifResult.insertId]
+        );
+      }
+    }
+
     await conn.commit();
 
     return res.status(HttpStatus.CREATED).json({
@@ -164,6 +185,27 @@ export const editarReserva = async (req: Request, res: Response) => {
       [titulo, descripcion, id]
     );
 
+    // La edición resetea la reserva a Pendiente: los aprobadores necesitan saber que
+    // hay (de nuevo) algo esperando su decisión, igual que al crear una solicitud nueva.
+    const [aprobadores]: any = await conn.query(
+      `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+      [ROLES.SACERDOTE, ROLES.ADMIN, req.user!.id]
+    );
+
+    if (aprobadores.length > 0) {
+      const mensajeNotificacion = `La reserva del ${fecha} (${hora_inicio}–${hora_fin}) fue editada y está pendiente de tu aprobación.`;
+      const [notifResult]: any = await conn.query(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
+        [mensajeNotificacion, req.user!.id]
+      );
+      for (const aprobador of aprobadores) {
+        await conn.query(
+          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+          [aprobador.id, notifResult.insertId]
+        );
+      }
+    }
+
     await conn.commit();
 
     return res.status(HttpStatus.OK).json({
@@ -218,10 +260,12 @@ export const obtenerReservas = async (req: Request, res: Response) => {
              r.espacio_id, r.solicitante_id,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
-             ev.descripcion AS evento_descripcion
+             ev.descripcion AS evento_descripcion,
+             p.nombre AS solicitante_nombre
       FROM reserva r
       LEFT JOIN espacio e ON e.id = r.espacio_id
       LEFT JOIN evento ev ON ev.reserva_id = r.id
+      LEFT JOIN persona p ON p.id = r.solicitante_id
       ${filtro}
       ORDER BY r.fecha ASC, r.hora_inicio ASC
     `, params);
@@ -348,6 +392,27 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       'UPDATE reserva SET estado_reserva_id = ? WHERE id = ?',
       [estadoReservaId, id]
     );
+
+    // Si quien cambió el estado no es el propio solicitante, se le notifica el resultado.
+    if (reserva.solicitante_id != null && reserva.solicitante_id !== req.user!.id) {
+      const verbos: Record<number, string> = {
+        [ESTADOS_RESERVA.PENDIENTE]: 'vuelve a estar pendiente de aprobación',
+        [ESTADOS_RESERVA.CONFIRMADA]: 'fue aprobada',
+        [ESTADOS_RESERVA.RECHAZADA]: 'fue rechazada',
+        [ESTADOS_RESERVA.CANCELADA]: 'fue cancelada',
+      };
+      const mensajeNotificacion = `Tu reserva del ${reserva.fecha} (${reserva.hora_inicio}–${reserva.hora_fin}) ${verbos[estadoReservaId]}.`;
+      const fechaHoy = new Date().toISOString().split('T')[0];
+
+      const [notifResult]: any = await db.query(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+        [mensajeNotificacion, fechaHoy, req.user!.id]
+      );
+      await db.query(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [reserva.solicitante_id, notifResult.insertId]
+      );
+    }
 
     const mensajes: Record<number, string> = {
       [ESTADOS_RESERVA.PENDIENTE]: 'Reserva marcada como pendiente nuevamente',

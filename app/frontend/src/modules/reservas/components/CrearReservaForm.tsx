@@ -15,9 +15,10 @@ interface Espacio {
 interface CrearReservaFormProps {
   onReservaCreada?: () => void;
   autoFocus?: boolean;
+  espacioInicial?: string;
 }
 
-export default function CrearReservaForm({ onReservaCreada, autoFocus = false }: CrearReservaFormProps) {
+export default function CrearReservaForm({ onReservaCreada, autoFocus = false, espacioInicial }: CrearReservaFormProps) {
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
@@ -25,18 +26,25 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [espacios, setEspacios] = useState<Espacio[]>([]);
+  const [espaciosCargados, setEspaciosCargados] = useState(false);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const espacioRef = useRef<HTMLSelectElement>(null);
+  const fechaRef = useRef<HTMLInputElement>(null);
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
   const { tieneRol } = useAuth();
   const puedeAprobar = tieneRol([ROLES.SACERDOTE]);
 
   useEffect(() => {
     if (!autoFocus) return;
-    espacioRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    espacioRef.current?.focus();
-  }, [autoFocus]);
+    // Si viene de un QR, hay que esperar a saber si ese espacio existe antes de decidir el foco.
+    if (espacioInicial && !espaciosCargados) return;
+    const espacioResuelto = espacioInicial && espacios.some((esp) => String(esp.id) === espacioInicial);
+    // Con el espacio ya resuelto, el salto útil es a la fecha; si no se pudo resolver, vuelve al selector.
+    const campo = espacioResuelto ? fechaRef.current : espacioRef.current;
+    campo?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    campo?.focus();
+  }, [autoFocus, espacioInicial, espaciosCargados, espacios]);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -45,10 +53,20 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
         setEspacios(response.data);
       } catch {
         // silencioso, el select quedará vacío
+      } finally {
+        setEspaciosCargados(true);
       }
     };
     fetchEspacios();
   }, []);
+
+  // Preselecciona el espacio del QR solo si existe en el catálogo cargado del backend.
+  useEffect(() => {
+    if (!espacioInicial) return;
+    if (espacios.some((esp) => String(esp.id) === espacioInicial)) {
+      setEspacioId(espacioInicial);
+    }
+  }, [espacioInicial, espacios]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,9 +136,31 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
     }
   };
 
+  // Solo mientras la selección siga siendo la que trajo el QR: si la persona la cambia a mano, se oculta.
+  const nombreEspacioInicial = espacioId === espacioInicial
+    ? espacios.find((esp) => String(esp.id) === espacioId)?.nombre
+    : undefined;
+
+  const espacioInicialNoEncontrado = Boolean(espacioInicial)
+    && espaciosCargados
+    && !espacios.some((esp) => String(esp.id) === espacioInicial);
+
   return (
     <div>
       <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
+
+      {nombreEspacioInicial && (
+        <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
+          <span className={styles.infoBoxLabel}>Espacio seleccionado:</span>
+          {nombreEspacioInicial}
+        </div>
+      )}
+
+      {espacioInicialNoEncontrado && (
+        <div className={`${styles.warningBox} ${styles.infoBoxMargin}`}>
+          El espacio del enlace ya no está disponible. Selecciona uno manualmente.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>
@@ -144,6 +184,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
         <div className={styles.field}>
           <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
+            ref={fechaRef}
             type="date"
             id="fecha"
             className={styles.input}

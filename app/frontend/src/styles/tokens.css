@@ -55,6 +55,7 @@
   /* ── Dimensiones shell ── */
   --topbar-h:    72px;
   --sidebar-w:   260px;
+  --sidebar-w-collapsed: 72px;
 
   /* ── Transiciones ── */
   --transition: 150ms ease-out;

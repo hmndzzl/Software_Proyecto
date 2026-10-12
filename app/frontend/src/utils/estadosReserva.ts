@@ -1,3 +1,5 @@
+import type { BadgeKind } from '../components/ui/Badge';
+
 // Coincide con app/backend/src/config/estadosReserva.ts y la tabla estado_reserva del schema
 export const ESTADOS_RESERVA = {
   PENDIENTE: 1,
@@ -5,6 +7,20 @@ export const ESTADOS_RESERVA = {
   RECHAZADA: 3,
   CANCELADA: 4,
 } as const;
+
+export const ESTADO_RESERVA_LABEL: Record<number, string> = {
+  1: 'Pendiente',
+  2: 'Confirmada',
+  3: 'Rechazada',
+  4: 'Cancelada',
+};
+
+export const ESTADO_RESERVA_KIND: Record<number, BadgeKind> = {
+  1: 'pendiente',
+  2: 'confirmada',
+  3: 'rechazada',
+  4: 'cancelada',
+};
 
 /** Texto del aviso al cambiar el estado de una reserva (aprobar, rechazar o cancelar). */
 export function avisoCambioEstadoReserva(estadoId: number): { titulo: string; mensaje: string } {

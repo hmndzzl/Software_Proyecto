@@ -21,14 +21,14 @@ describe('Sidebar Component', () => {
     localStorage.clear();
   });
 
-  const renderWithRouterAndAuth = (rolId?: number) => {
+  const renderWithRouterAndAuth = (rolId?: number, colapsado = false, onAlternar = vi.fn()) => {
     if (rolId) {
       localStorage.setItem('usuario', JSON.stringify({ rol_id: rolId }));
     }
     return render(
       <BrowserRouter>
         <AuthProvider>
-          <Sidebar />
+          <Sidebar colapsado={colapsado} onAlternar={onAlternar} />
         </AuthProvider>
       </BrowserRouter>
     );
@@ -62,5 +62,23 @@ describe('Sidebar Component', () => {
   it('NO renderiza botón "Nueva Reserva" si el usuario es ministro', () => {
     renderWithRouterAndAuth(ROLES.MINISTRO);
     expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();
+  });
+
+  it('llama a onAlternar al hacer click en el botón de colapsar', () => {
+    const onAlternar = vi.fn();
+    renderWithRouterAndAuth(undefined, false, onAlternar);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar menú' }));
+    expect(onAlternar).toHaveBeenCalledOnce();
+  });
+
+  it('oculta los textos y usa tooltips en los enlaces cuando está colapsado', () => {
+    renderWithRouterAndAuth(ROLES.ADMIN, true);
+
+    expect(screen.queryByText('San Pedro Nolasco')).not.toBeInTheDocument();
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('title', 'Dashboard');
+    expect(screen.getByRole('button', { name: 'Mostrar menú' })).toBeInTheDocument();
   });
 });

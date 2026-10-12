@@ -27,3 +27,53 @@ export function partesFecha(fecha: string): { dia: string; mesAbrev: string } {
     .toUpperCase();
   return { dia, mesAbrev };
 }
+
+// ── Semana activa (usado por calendarios tipo grid 7 columnas: tareas, reservas) ──
+
+export const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
+/** Lunes de la semana de la fecha dada, a medianoche local. */
+export function getMonday(d: Date): Date {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  const day = date.getDay();
+  // en JS: Domingo=0, Lunes=1, ..., Sábado=6; diferencia hasta el lunes (1)
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  return date;
+}
+
+/** Formatea una fecha local como 'YYYY-MM-DD', sin pasar por UTC/ISO. */
+export function formatYYYYMMDD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Texto de cabecera tipo "13 al 19 de octubre, 2026" para el rango lunes-domingo. */
+export function formatRangeText(mon: Date, sun: Date): string {
+  const monDay = mon.getDate();
+  const monMonth = MESES[mon.getMonth()];
+  const sunDay = sun.getDate();
+  const sunMonth = MESES[sun.getMonth()];
+  const sunYear = sun.getFullYear();
+
+  if (mon.getMonth() === sun.getMonth()) {
+    return `${monDay} al ${sunDay} de ${monMonth}, ${sunYear}`;
+  }
+  return `${monDay} de ${monMonth} al ${sunDay} de ${sunMonth}, ${sunYear}`;
+}
+
+/**
+ * La API puede devolver 'YYYY-MM-DD' o un ISO completo ('YYYY-MM-DDTHH:mm:ss.sssZ').
+ * Nos quedamos siempre con la parte de fecha, sin volver a parsear a Date
+ * (parsear reintroduciría el desfase de zona horaria).
+ */
+export function fechaKey(fecha?: string | null): string {
+  return fecha ? fecha.slice(0, 10) : '';
+}

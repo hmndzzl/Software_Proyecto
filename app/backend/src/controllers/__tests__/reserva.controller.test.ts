@@ -116,11 +116,58 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
       mockConnection.query.mockResolvedValueOnce([{ insertId: 5 }]); // INSERT reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // INSERT evento
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno)
 
       await crearReserva(req as Request, res as Response);
 
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+    });
+
+    it('notifica a Sacerdote y Admin (excepto al solicitante) de la nueva solicitud pendiente', async () => {
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+
+      mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 5 }]); // INSERT reserva
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT evento
+      mockConnection.query.mockResolvedValueOnce([[{ id: 2 }, { id: 3 }]]); // SELECT aprobadores
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 99 }]); // INSERT notificacion
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT persona_notificacion #1
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT persona_notificacion #2
+
+      await crearReserva(req as Request, res as Response);
+
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('rol_id IN'),
+        [ROLES.SACERDOTE, ROLES.ADMIN, 1]
+      );
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        6,
+        expect.stringContaining('persona_notificacion'),
+        [2, 99]
+      );
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        7,
+        expect.stringContaining('persona_notificacion'),
+        [3, 99]
+      );
+      expect(mockConnection.commit).toHaveBeenCalled();
+    });
+
+    it('no notifica a nadie si el solicitante ya es el único Sacerdote/Admin', async () => {
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+
+      mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 5 }]); // INSERT reserva
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT evento
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores: ninguno distinto de sí mismo
+
+      await crearReserva(req as Request, res as Response);
+
+      expect(mockConnection.query).toHaveBeenCalledTimes(4);
+      expect(mockConnection.commit).toHaveBeenCalled();
     });
 
     it('debería hacer rollback y retornar 500 en caso de error', async () => {
@@ -201,6 +248,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]); // Pertenece al 1
       mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno más)
 
       await editarReserva(req as Request, res as Response);
 
@@ -216,11 +264,39 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
       mockConnection.query.mockResolvedValueOnce([{}]);
       mockConnection.query.mockResolvedValueOnce([{}]);
+      mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno)
 
       await editarReserva(req as Request, res as Response);
 
       expect(mockConnection.commit).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('notifica a los aprobadores (excepto al editor) que la reserva editada necesita re-aprobación', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+      req.user = { id: 5, rol_id: ROLES.ADMIN } as any; // Admin edita la reserva de otro
+
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
+      mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
+      mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
+      mockConnection.query.mockResolvedValueOnce([[{ id: 9 }]]); // SELECT aprobadores (otro Sacerdote)
+      mockConnection.query.mockResolvedValueOnce([{ insertId: 50 }]); // INSERT notificacion
+      mockConnection.query.mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+
+      await editarReserva(req as Request, res as Response);
+
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('rol_id IN'),
+        [ROLES.SACERDOTE, ROLES.ADMIN, 5]
+      );
+      expect(mockConnection.query).toHaveBeenNthCalledWith(
+        6,
+        expect.stringContaining('persona_notificacion'),
+        [9, 50]
+      );
+      expect(mockConnection.commit).toHaveBeenCalled();
     });
 
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
@@ -506,6 +582,58 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       await cambiarEstadoReserva(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    });
+
+    it('debería notificar al solicitante cuando otra persona aprueba su reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 2 }; // aprobar
+      req.user = { id: 99, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([[]]); // sin conflictos
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+      (db.query as any).mockResolvedValueOnce([{ insertId: 55 }]); // INSERT notificacion
+      (db.query as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notificacion'),
+        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00–11:00) fue aprobada.', expect.any(String), 99])
+      );
+      expect(db.query).toHaveBeenCalledWith(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [1, 55]
+      );
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería notificar al solicitante cuando otra persona rechaza su reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 3 };
+      req.user = { id: 99, rol_id: ROLES.SACERDOTE } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+      (db.query as any).mockResolvedValueOnce([{ insertId: 56 }]); // INSERT notificacion
+      (db.query as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notificacion'),
+        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00–11:00) fue rechazada.', expect.any(String), 99])
+      );
+    });
+
+    it('no debería notificar cuando el propio solicitante cambia el estado de su reserva', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 4 };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, estado_reserva_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+
+      await cambiarEstadoReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledTimes(2);
     });
 
     it('debería retornar 400 si el solicitante intenta cancelar una reserva ya Rechazada', async () => {

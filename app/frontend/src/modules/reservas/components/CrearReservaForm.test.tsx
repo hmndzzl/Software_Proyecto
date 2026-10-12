@@ -104,6 +104,48 @@ describe('CrearReservaForm', () => {
     expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
   });
 
+  it('preselecciona el espacio cuando espacioInicial existe en el catálogo', async () => {
+    mostrar({ espacioInicial: '2' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByLabelText('Espacio:')).toHaveValue('2');
+    expect(screen.getByText('Espacio seleccionado:')).toBeInTheDocument();
+    expect(screen.getAllByText('Salón Parroquial').length).toBeGreaterThan(0);
+  });
+
+  it('no preselecciona si espacioInicial no existe en el catálogo cargado', async () => {
+    mostrar({ espacioInicial: '999' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByLabelText('Espacio:')).toHaveValue('');
+    expect(screen.queryByText('Espacio seleccionado:')).not.toBeInTheDocument();
+  });
+
+  it('oculta el aviso de preselección si la persona cambia el espacio a mano', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: [
+        { id: 2, nombre: 'Salón Parroquial', capacidad: 80 },
+        { id: 3, nombre: 'Capilla', capacidad: 30 },
+      ],
+    });
+    mostrar({ espacioInicial: '2' });
+    await screen.findByText('Espacio seleccionado:');
+
+    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '3' } });
+    expect(screen.queryByText('Espacio seleccionado:')).not.toBeInTheDocument();
+  });
+
+  it('enfoca la fecha en vez del espacio cuando llega preseleccionado por el QR', async () => {
+    mostrar({ autoFocus: true, espacioInicial: '2' });
+    await waitFor(() => expect(screen.getByLabelText('Fecha:')).toHaveFocus());
+    expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
+  });
+
+  it('avisa y enfoca el selector si el espacio del QR ya no existe en el catálogo', async () => {
+    mostrar({ autoFocus: true, espacioInicial: '999' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByText('El espacio del enlace ya no está disponible. Selecciona uno manualmente.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Espacio:')).toHaveFocus());
+  });
+
   it('lista espacios sin capacidad y tolera que falle la carga de espacios', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 3, nombre: 'Capilla', capacidad: null }] });
     mostrar();

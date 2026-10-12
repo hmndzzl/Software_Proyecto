@@ -37,11 +37,19 @@ function mostrar(allowedRoles: number[]) {
 }
 
 describe('ProtectedRoute', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
 
   it('sin sesión redirige al login', () => {
     mostrar([ROLES.MINISTRO]);
     expect(screen.getByText('Pantalla de login')).toBeInTheDocument();
+  });
+
+  it('sin sesión guarda la ruta actual como retorno', () => {
+    mostrar([ROLES.MINISTRO]);
+    expect(sessionStorage.getItem('returnTo')).toBe('/privada');
   });
 
   it('con sesión y rol permitido muestra el contenido', () => {
