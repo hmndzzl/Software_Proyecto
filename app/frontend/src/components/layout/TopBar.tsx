@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { formatFecha } from '../../utils/date';
+import type { Notificacion } from '../../types';
 import styles from './TopBar.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
 
@@ -13,13 +14,6 @@ const ROL_LABEL: Record<number, string> = {
   4: 'Ministro',
   5: 'Administrador',
 };
-
-interface Notificacion {
-  id: number;
-  mensaje: string;
-  fecha: string;
-  leida: boolean;
-}
 
 function getInitials(nombre: string): string {
   return nombre
