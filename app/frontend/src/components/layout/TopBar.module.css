@@ -1,6 +1,6 @@
 .topbar {
   height: var(--topbar-h);
-  background-color: var(--color-rojo);
+  background-color: var(--color-topbar);
   box-shadow: var(--shadow-topbar);
   display: flex;
   align-items: center;
@@ -22,7 +22,7 @@
   border: 1px solid rgba(255,255,255,.32);
   border-radius: 8px;
   background: rgba(255,255,255,.08);
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   cursor: pointer;
 }
 
@@ -52,7 +52,7 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: .12em;
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   text-transform: uppercase;
   line-height: 1.2;
 }
@@ -82,7 +82,7 @@
 
 .iconBtn:hover {
   background: rgba(255,255,255,.1);
-  color: var(--color-crema);
+  color: var(--color-on-primary);
 }
 
 .bellWrap {
@@ -246,7 +246,7 @@
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   letter-spacing: .04em;
   flex-shrink: 0;
 }
@@ -261,7 +261,7 @@
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   line-height: 1.2;
 }
 
@@ -283,7 +283,7 @@
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,.32);
   background: rgba(255,255,255,.08);
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;

@@ -134,7 +134,7 @@
   border-radius: 10px;
   border: none;
   background-color: var(--color-rojo);
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
