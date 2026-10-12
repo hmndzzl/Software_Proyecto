@@ -54,6 +54,28 @@ test('un ministro no puede abrir la administración de cuentas', async ({ page }
   await expect(page.getByRole('heading', { name: 'Bienvenido, Ministro' })).toBeVisible();
 });
 
+test('el portal público se adapta a móvil, tableta y escritorio sin desbordarse', async ({ page }) => {
+  for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+
+    await expect(page.locator('.landing')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'CONÓCENOS' })).toHaveAttribute('href', '#quienes-somos');
+    expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)))
+      .toBeLessThanOrEqual(viewport.width);
+
+    if (viewport.width <= 768) {
+      const menu = page.getByRole('button', { name: 'Menú' });
+      await expect(menu).toBeVisible();
+      await menu.click();
+      const valores = page.locator('.nav-links a[href="#valores"]');
+      await expect(valores).toBeVisible();
+      await valores.click();
+      await expect(valores).toHaveClass(/active/);
+    }
+  }
+});
+
 // DT-10: el estado de autenticación vive en un solo lugar, así que las rutas protegidas
 // reaccionan en vivo cuando la sesión cambia en otra pestaña (evento storage).
 test('si la sesión se cierra en otra pestaña, la ruta protegida redirige al login sin recargar', async ({ page }) => {
