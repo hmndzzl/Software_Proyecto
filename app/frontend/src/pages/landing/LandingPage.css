@@ -1,5 +1,5 @@
 /* Landing pública — importada solo por LandingPage.tsx. Reglas de elementos acotadas a .landing. */
-html:has(.landing){scroll-behavior:smooth;scroll-padding-top:76px}
+html:has(.landing){scroll-behavior:smooth}
 .landing{--rojo:#9D2F38;--rojo-dk:#7d2530;--oro:#F2AF29;--tierra:#8B5A2D;--crema:#F3F1E9;--crema-dk:#ECE7DA;--blanco:#fff;--carbon:#1A1A1A;--ink:#3a3530;--muted:#7a6f63;--line:#E4DECF;--nav-h:76px;
   background:var(--crema);color:var(--carbon);font-family:'Noto Serif',Georgia,serif;font-size:17px;line-height:1.65;min-height:100vh}
 .landing *{box-sizing:border-box}
@@ -141,7 +141,7 @@ html:has(.landing){scroll-behavior:smooth;scroll-padding-top:76px}
 @media(min-width:1101px){
   .landing .nav-links a.btn-login{display:none}
 }
-@media(max-width:760px){
+@media(max-width:768px){
   .landing{--nav-h:68px;font-size:16px}
   .landing .sec{padding:64px 0}
   .landing .values,.landing .fgrid,.landing .foot-in{grid-template-columns:1fr}
@@ -149,4 +149,36 @@ html:has(.landing){scroll-behavior:smooth;scroll-padding-top:76px}
   .landing .hero-stats{gap:24px}
   .landing .form{padding:26px}
   .landing .hero-in{padding-inline:22px}
+}
+@media(max-width:480px){
+  .landing .wrap{padding-inline:18px}
+  .landing .nav-in{gap:10px;padding-inline:14px}
+  .landing .brand{gap:8px;min-width:0}
+  .landing .brand-logo{width:42px;height:42px;padding:4px}
+  .landing .brand-top{display:none}
+  .landing .brand-name{font-size:12.5px;letter-spacing:.08em;overflow:hidden;text-overflow:ellipsis}
+  .landing .burger{width:42px;height:42px;flex:0 0 auto}
+  .landing .nav.open .nav-links{padding-inline:14px}
+  .landing .hero-in{gap:34px;padding:48px 18px 56px}
+  .landing .hero h1{font-size:clamp(32px,10vw,38px)}
+  .landing .hero p{font-size:17px}
+  .landing .hero-photo{height:240px}
+  .landing .hero-cta{margin-top:28px}
+  .landing .hero-cta .btn{width:100%}
+  .landing .hero-stats{gap:20px;margin-top:34px;padding-top:24px}
+  .landing .stat-n{font-size:31px}
+  .landing .sec{padding:48px 0}
+  .landing .lede{font-size:16px}
+  .landing .about,.landing .contact{gap:32px}
+  .landing .about-media{grid-template-rows:150px 112px;gap:10px}
+  .landing .about-list{gap:18px;margin-top:26px}
+  .landing .about-item{gap:12px}
+  .landing .ico{width:40px;height:40px}
+  .landing .sec-head{margin-bottom:34px}
+  .landing .vcard-body{padding:22px}
+  .landing .form{padding:20px}
+  .landing .cmap{height:180px}
+  .landing .foot{padding:44px 0 28px}
+  .landing .foot-in{gap:30px}
+  .landing .foot-bar{margin-top:32px}
 }
