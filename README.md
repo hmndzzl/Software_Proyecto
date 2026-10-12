@@ -415,6 +415,11 @@ git push origin feature/nombre-funcionalidad
 *Universidad del Valle de Guatemala — Ingeniería en Software 1, Sección 30 — 2026*
 # Agenda pública (HU-32, Sprint 9)
 
+El contenido institucional también se puede consultar con `GET /api/public/landing`
+y editar como Admin/Sacerdote mediante `PATCH /api/landing`, sin imágenes.
+En bases existentes aplicar `app/database/migrations/20261011_contenido_landing.sql`.
+Ver [contrato y colección Postman de contenido editable](docs/hu32/contenido-landing.md).
+
 `GET /api/public/agenda` permite a la landing consultar, sin iniciar sesión, los
 eventos marcados explícitamente como públicos con reserva confirmada y que aún no
 han terminado. Incluye título, descripción, fecha, horarios y salón; admite paginación.
