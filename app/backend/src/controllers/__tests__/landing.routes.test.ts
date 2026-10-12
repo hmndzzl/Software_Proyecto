@@ -54,7 +54,9 @@ describe('contenido editable de landing', () => {
     await request(app).get('/api/landing').auth(token(rol), { type: 'bearer' }).expect(200);
     const response = await request(app).patch('/api/landing').auth(token(rol), { type: 'bearer' })
       .send({ quienes_somos: { descripcion: 'Nueva historia' }, cantidad_grupos: 0 }).expect(200);
-    expect(response.body).toEqual({ ...contenido, quienes_somos: { ...contenido.quienes_somos, descripcion: 'Nueva historia' }, cantidad_grupos: 0 });
+    expect(response.body).toEqual({ quienes_somos: { descripcion: 'Nueva historia' }, cantidad_grupos: 0 });
+    const guardado = JSON.parse(conn.execute.mock.calls[1][1][0]);
+    expect(guardado).toEqual({ ...contenido, quienes_somos: { ...contenido.quienes_somos, descripcion: 'Nueva historia' }, cantidad_grupos: 0 });
     expect(conn.execute).toHaveBeenCalledWith('SELECT contenido FROM contenido_landing WHERE id = 1 FOR UPDATE');
     expect(conn.commit).toHaveBeenCalledOnce();
     expect(conn.release).toHaveBeenCalledOnce();
@@ -63,10 +65,11 @@ describe('contenido editable de landing', () => {
   it('edita el contacto parcialmente y conserva los campos fijos', async () => {
     const response = await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
       .send({ contacto: { telefono: '', direccion: 'Nueva dirección' }, cantidad_espacios: 8 }).expect(200);
-    expect(response.body.contacto).toEqual({ ...contenido.contacto, telefono: '', direccion: 'Nueva dirección' });
-    expect(response.body.cantidad_espacios).toBe(8);
-    for (const campo of ['nombre_parroquia', 'lema', 'titulo_principal', 'descripcion_principal', 'valores', 'valores_encabezado', 'horarios_misa', 'horarios_oficina', 'texto_pie'] as const) {
-      expect(response.body[campo]).toEqual(contenido[campo]);
+    expect(response.body).toEqual({ contacto: { telefono: '', direccion: 'Nueva dirección' }, cantidad_espacios: 8 });
+    const guardado = JSON.parse(conn.execute.mock.calls[1][1][0]);
+    expect(guardado.contacto.correo).toBe(contenido.contacto.correo);
+    for (const campo of ['nombre_parroquia', 'texto_pie'] as const) {
+      expect(guardado[campo]).toEqual(contenido[campo]);
     }
   });
 
@@ -82,6 +85,34 @@ describe('contenido editable de landing', () => {
     expect(pool.getConnection).not.toHaveBeenCalled();
   });
 
+  it('edita presentación, valores y horarios y responde solo con cambios normalizados', async () => {
+    const cambios = {
+      lema: '  Comunidad de fe  ', titulo_principal: 'Bienvenidos a nuestra parroquia', descripcion_principal: 'Presentación actualizada',
+      valores_encabezado: { descripcion: 'Nuestros principios' }, valores: [{ titulo: 'Servicio', descripcion: 'Servimos a todos' }],
+      horarios_misa: [{ dias: 'Domingo', horas: ['08:00', '11:00'] }],
+      horarios_oficina: [{ dias: 'Lunes a viernes', horario: '09:00 – 13:00' }],
+    };
+    const response = await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' }).send(cambios).expect(200);
+    expect(response.body).toEqual({ ...cambios, lema: 'Comunidad de fe' });
+    const guardado = JSON.parse(conn.execute.mock.calls[1][1][0]);
+    expect(guardado.valores_encabezado.titulo).toBe(contenido.valores_encabezado.titulo);
+    expect(guardado.nombre_parroquia).toBe(contenido.nombre_parroquia);
+    expect(guardado.texto_pie).toBe(contenido.texto_pie);
+    expect(guardado.horarios_misa).toEqual(cambios.horarios_misa);
+  });
+
+  it('permite vaciar las listas para retirar valores u horarios', async () => {
+    const cambios = { valores: [], horarios_misa: [], horarios_oficina: [] };
+    const response = await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' }).send(cambios).expect(200);
+    expect(response.body).toEqual(cambios);
+  });
+
+  it('rechaza un horario sin horas', async () => {
+    await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
+      .send({ horarios_misa: [{ dias: 'Domingo', horas: [] }] }).expect(400);
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
   it('rechaza claves que intentan alterar el prototipo', async () => {
     await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
       .set('Content-Type', 'application/json').send('{"__proto__":{"publico":true}}').expect(400);
@@ -89,10 +120,7 @@ describe('contenido editable de landing', () => {
   });
 
   it.each([
-    { nombre_parroquia: 'Otra parroquia' }, { lema: 'Otro lema' },
-    { titulo_principal: 'Otro título' }, { descripcion_principal: 'Otra presentación' },
-    { valores: [] }, { valores_encabezado: { titulo: 'Otros valores' } }, { texto_pie: 'Otro pie' },
-    { horarios_misa: [] }, { horarios_oficina: [] },
+    { nombre_parroquia: 'Otra parroquia' }, { texto_pie: 'Otro pie' },
   ])('rechaza campos fijos incluso junto a cambios permitidos: %j', async camposFijos => {
     await request(app).patch('/api/landing').auth(token(ROLES.ADMIN), { type: 'bearer' })
       .send({ cantidad_grupos: 15, ...camposFijos }).expect(400);

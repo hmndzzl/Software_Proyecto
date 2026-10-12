@@ -136,6 +136,102 @@
         },
         "url": "{{base_url}}/api/landing"
       }
+    },
+    {
+      "name": "Editar presentación principal",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"lema\": \"Casa de fe y comunidad\",\r\n  \"titulo_principal\": \"Bienvenidos\",\r\n  \"descripcion_principal\": \"Una parroquia al servicio de todos.\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar nuestros valores",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"valores_encabezado\": {\r\n    \"descripcion\": \"Principios de nuestra comunidad\"\r\n  },\r\n  \"valores\": [\r\n    {\r\n      \"descripcion\": \"Acompañamos a quienes lo necesitan.\",\r\n      \"titulo\": \"Servicio\"\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
+    },
+    {
+      "name": "Editar horarios",
+      "request": {
+        "method": "PATCH",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"horarios_misa\": [\r\n    {\r\n      \"horas\": [\r\n        \"08:00\",\r\n        \"11:00\"\r\n      ],\r\n      \"dias\": \"Domingo\"\r\n    }\r\n  ],\r\n  \"horarios_oficina\": [\r\n    {\r\n      \"horario\": \"09:00 – 13:00\",\r\n      \"dias\": \"Lunes a viernes\"\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{base_url}}/api/landing"
+      }
     }
   ]
 }

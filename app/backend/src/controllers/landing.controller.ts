@@ -48,7 +48,8 @@ export const actualizarContenidoLanding = async (req: Request, res: Response): P
     await conn.execute('UPDATE contenido_landing SET contenido = ? WHERE id = 1', [JSON.stringify(contenido)]);
     await conn.commit();
     res.setHeader('Cache-Control', 'no-store');
-    res.status(HttpStatus.OK).json(contenido);
+    // Respuesta breve: solo los campos enviados, normalizados y guardados.
+    res.status(HttpStatus.OK).json(cambios);
   } catch (error) {
     if (conn) {
       try { await conn.rollback(); } catch (rollbackError) { console.error('Error al revertir contenido de landing:', rollbackError); }

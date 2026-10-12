@@ -14,7 +14,10 @@ export interface ContenidoLanding {
   texto_pie: string;
 }
 
-export type CambiosLanding = Partial<Pick<ContenidoLanding, 'cantidad_grupos' | 'cantidad_espacios'>> & {
+export type CambiosLanding = Partial<Pick<ContenidoLanding,
+  'lema' | 'titulo_principal' | 'descripcion_principal' | 'cantidad_grupos' | 'cantidad_espacios' |
+  'valores' | 'horarios_misa' | 'horarios_oficina'>> & {
   quienes_somos?: Partial<ContenidoLanding['quienes_somos']>;
   contacto?: Partial<ContenidoLanding['contacto']>;
+  valores_encabezado?: Partial<ContenidoLanding['valores_encabezado']>;
 };

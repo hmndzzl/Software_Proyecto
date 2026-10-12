@@ -185,14 +185,20 @@ describe('integración API y MariaDB', () => {
     const cambios = {
       quienes_somos: { descripcion: 'Nueva descripción pública' }, cantidad_grupos: 18, cantidad_espacios: 9,
       contacto: { telefono: '+502 5555 1234' },
+      lema: 'Comunidad de fe', titulo_principal: 'Bienvenidos', descripcion_principal: 'Presentación actualizada',
+      valores_encabezado: { descripcion: 'Principios de nuestra comunidad' },
+      valores: [{ titulo: 'Servicio', descripcion: 'Servimos a nuestra comunidad' }],
+      horarios_misa: [{ dias: 'Domingo', horas: ['08:00', '11:00'] }],
+      horarios_oficina: [{ dias: 'Lunes a viernes', horario: '09:00 – 13:00' }],
     };
     const actualizado = await request(app).patch('/api/landing').auth(login.body.token, { type: 'bearer' }).send(cambios).expect(200);
-    expect(actualizado.body.quienes_somos.mision).toBe(inicial.body.quienes_somos.mision);
-    expect(actualizado.body.contacto.correo).toBe(inicial.body.contacto.correo);
+    expect(actualizado.body).toEqual(cambios);
     const publico = await request(app).get('/api/public/landing').expect(200);
-    expect(publico.body).toEqual(actualizado.body);
+    expect(publico.body.quienes_somos.mision).toBe(inicial.body.quienes_somos.mision);
+    expect(publico.body.contacto.correo).toBe(inicial.body.contacto.correo);
+    expect(publico.body.valores_encabezado.titulo).toBe(inicial.body.valores_encabezado.titulo);
     expect(publico.body).toMatchObject(cambios);
-    for (const campo of ['nombre_parroquia', 'lema', 'titulo_principal', 'descripcion_principal', 'valores', 'valores_encabezado', 'horarios_misa', 'horarios_oficina', 'texto_pie']) {
+    for (const campo of ['nombre_parroquia', 'texto_pie']) {
       expect(publico.body[campo]).toEqual(inicial.body[campo]);
     }
     const [guardado] = await pool.query<RowDataPacket[]>('SELECT contenido FROM contenido_landing WHERE id = 1');

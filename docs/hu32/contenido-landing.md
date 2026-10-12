@@ -11,7 +11,7 @@ la regla está centralizada en `app/backend/src/routes/landing.routes.ts`.
 | --- | --- | --- |
 | `GET /api/public/landing` | Público, sin token | Documento completo de contenido |
 | `GET /api/landing` | Admin/Sacerdote | Mismo documento para el editor |
-| `PATCH /api/landing` | Admin/Sacerdote | Guarda cambios y devuelve el documento completo actualizado |
+| `PATCH /api/landing` | Admin/Sacerdote | Guarda y devuelve únicamente los campos enviados, normalizados |
 
 Base local: `http://localhost:3001`. Para las rutas administrativas usar
 `Authorization: Bearer <token válido>` (sesión de Clerk o JWT admitido por el backend).
@@ -35,7 +35,11 @@ Ejemplo de edición parcial:
 ```
 
 Los campos omitidos se conservan, también dentro de `quienes_somos`,
-`contacto`. Solo se pueden editar esas dos secciones y las cantidades mostradas.
+`contacto` y `valores_encabezado`. También se pueden editar lema, título y descripción
+principal, cantidades, valores y horarios. Las listas se reemplazan completas; `[]`
+permite retirar todos los elementos. Los días de misa enviados requieren al menos una hora.
+El PATCH responde solo con los cambios enviados y guardados, sin repetir el documento
+completo. Consultar GET si se necesita el contenido completo después de guardar.
 Las ediciones se publican inmediatamente: no hay borradores ni aprobación adicional.
 La transacción bloquea la fila al combinar cambios para evitar perder campos de
 ediciones simultáneas. Cuando dos editores modifican el mismo campo, prevalece la
@@ -45,8 +49,14 @@ ediciones simultáneas. Cuando dos editores modifican el mismo campo, prevalece 
 
 | Campo | Forma / límites |
 | --- | --- |
+| `lema`, `titulo_principal` | Texto no vacío, hasta 255 caracteres |
+| `descripcion_principal` | Texto no vacío, hasta 5000 caracteres |
 | `quienes_somos` | Objeto: `titulo` (255), `descripcion`, `mision`, `comunidad`, `servicio` (5000 cada uno); textos no vacíos |
 | `cantidad_grupos`, `cantidad_espacios` | Enteros JSON entre 0 y 1 000 000 |
+| `valores_encabezado` | Objeto con `titulo` (255) y `descripcion` (5000), no vacíos; admite cambios parciales |
+| `valores` | Hasta 20 objetos completos con `titulo` (255) y `descripcion` (2000), no vacíos |
+| `horarios_misa` | Hasta 30 objetos completos con `dias` (255) y `horas` (entre 1 y 24 horas `HH:mm`, de 00:00 a 23:59) |
+| `horarios_oficina` | Hasta 30 objetos completos con `dias` (255) y `horario` (500), no vacíos; horario es texto para permitir rangos |
 | `contacto` | Objeto con `titulo` (255, no vacío), `direccion` (1000), `correo` (255, formato email) y `telefono` (50, dígitos, espacios, guiones, paréntesis y prefijo `+` opcional) |
 
 `direccion`, `correo` y `telefono` admiten `""` para ocultar información.
@@ -54,8 +64,7 @@ Los textos se recortan en los extremos. No se aceptan `null`, tipos incorrectos,
 campos desconocidos ni objetos vacíos en un PATCH. Los cambios de secciones pueden ser parciales.
 Campos de imágenes o archivos se rechazan como cualquier campo desconocido.
 
-Nombre, lema, título y descripción principal, valores (incluido su encabezado),
-horarios y texto del pie de página son de solo lectura. Siguen apareciendo en el GET
+Nombre de la parroquia y texto del pie de página son de solo lectura. Siguen apareciendo en el GET
 para conservar el contrato de lectura, pero enviarlos en PATCH devuelve 400 sin
 guardar ningún cambio, incluso si se mezclan con campos editables. No requiere otra migración.
 Las cantidades de grupos y espacios son contenido editorial: no calculan ni alteran
@@ -122,8 +131,26 @@ Contacto:
 { "contacto": { "direccion": "Ciudad de Guatemala", "correo": "contacto@sanpedronolasco.gt", "telefono": "+502 5555 1234" } }
 ```
 
+Presentación principal:
+
+```json
+{ "lema": "Casa de fe y comunidad", "titulo_principal": "Bienvenidos", "descripcion_principal": "Una parroquia al servicio de todos." }
+```
+
+Nuestros valores (reemplaza la lista completa):
+
+```json
+{ "valores_encabezado": { "descripcion": "Principios que guían nuestra comunidad" }, "valores": [{ "titulo": "Servicio", "descripcion": "Acompañamos a quienes lo necesitan." }] }
+```
+
+Horarios (reemplaza las listas completas):
+
+```json
+{ "horarios_misa": [{ "dias": "Domingo", "horas": ["08:00", "11:00"] }], "horarios_oficina": [{ "dias": "Lunes a viernes", "horario": "09:00 – 13:00" }] }
+```
+
 Después de cada PATCH, comprobar los cambios con `GET http://localhost:3001/api/public/landing`
-sin autenticación. Los cambios exitosos devuelven 200 y el documento completo.
+sin autenticación. Los cambios exitosos devuelven 200 y solo los campos modificados.
 
 ## Pruebas automatizadas
 
