@@ -131,6 +131,20 @@
   font-weight: 600;
 }
 
+.solicitanteRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-ink);
+}
+
+.solicitanteRow svg {
+  color: var(--color-tierra);
+  flex-shrink: 0;
+}
+
 .reservaTitulo {
   font-family: var(--font-body);
   font-size: 12px;

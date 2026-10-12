@@ -13,6 +13,7 @@ export interface ReservaCalendario {
   estado_reserva_id: number;
   evento_titulo: string | null;
   evento_descripcion: string | null;
+  solicitante_nombre: string | null;
 }
 
 interface EspacioCalendarioReservasProps {
@@ -141,6 +142,12 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
           horaInicio={reservaSeleccionada.hora_inicio}
           horaFin={reservaSeleccionada.hora_fin}
           descripcion={reservaSeleccionada.evento_descripcion}
+          extra={
+            <div className={styles.solicitanteRow}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+              <span>Registrado por {reservaSeleccionada.solicitante_nombre ?? 'Desconocido'}</span>
+            </div>
+          }
         />
       )}
     </Card>
