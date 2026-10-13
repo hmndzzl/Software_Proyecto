@@ -202,7 +202,8 @@ describe('integración API y MariaDB', () => {
       expect(publico.body[campo]).toEqual(inicial.body[campo]);
     }
     const [guardado] = await pool.query<RowDataPacket[]>('SELECT contenido FROM contenido_landing WHERE id = 1');
-    expect(JSON.parse(guardado[0].contenido)).toEqual(publico.body);
+    const contenidoGuardado = typeof guardado[0].contenido === 'string' ? JSON.parse(guardado[0].contenido) : guardado[0].contenido;
+    expect(contenidoGuardado).toEqual(publico.body);
     const [cantidadesDespues] = await pool.query<RowDataPacket[]>('SELECT (SELECT COUNT(*) FROM grupo) AS grupos, (SELECT COUNT(*) FROM espacio) AS espacios');
     expect(cantidadesDespues).toEqual(cantidadesAntes);
 
