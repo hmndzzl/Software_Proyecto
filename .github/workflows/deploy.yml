@@ -16,17 +16,71 @@ jobs:
           username: root
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd ~/Software_Proyecto/app
-            # Forzar sincronización con GitHub sin conflictos
-            git fetch origin main
-            git reset --hard origin/main
-            # Build y deploy
-            docker compose down
-            docker compose up -d --build
-            # Esperar que los servicios inicien
-            echo "Waiting for services to start..."
-            sleep 15
-            # Mostrar estado
-            docker compose ps
-            # Limpiar imágenes viejas
-            docker image prune -f
+            set -Eeuo pipefail
+
+            REPO_DIR="$HOME/Software_Proyecto"
+            PROD_COMPOSE="docker-compose.prod.yml"
+            PREV_COMMIT=$(git -C "$REPO_DIR" rev-parse HEAD)
+            TARGET_COMMIT="${{ github.sha }}"
+
+            wait_for_backend() {
+              for _ in $(seq 1 24); do
+                if docker compose "$@" exec -T backend \
+                  wget --no-verbose --tries=1 --spider http://localhost:3001/health; then
+                  return 0
+                fi
+                sleep 5
+              done
+              return 1
+            }
+
+            rollback() {
+              echo "Restaurando commit anterior: $PREV_COMMIT"
+              git -C "$REPO_DIR" reset --hard "$PREV_COMMIT"
+              cd "$REPO_DIR/app"
+
+              if [ -f "$PROD_COMPOSE" ]; then
+                if ! docker compose -f "$PROD_COMPOSE" build \
+                  || ! docker compose -f "$PROD_COMPOSE" up -d --remove-orphans --wait --wait-timeout 120 \
+                  || ! wait_for_backend -f "$PROD_COMPOSE"; then
+                  return 1
+                fi
+              else
+                # Compatibilidad con el primer despliegue de esta separación.
+                if ! docker compose -f docker-compose.yml up -d --build \
+                  || ! wait_for_backend -f docker-compose.yml; then
+                  return 1
+                fi
+              fi
+              return 0
+            }
+
+            echo "Desplegando $TARGET_COMMIT (versión anterior: $PREV_COMMIT)"
+            git -C "$REPO_DIR" fetch origin "$TARGET_COMMIT"
+            git -C "$REPO_DIR" reset --hard "$TARGET_COMMIT"
+            cd "$REPO_DIR/app"
+
+            # El build ocurre antes de reemplazar cualquier contenedor.
+            if ! docker compose -f "$PROD_COMPOSE" build; then
+              git -C "$REPO_DIR" reset --hard "$PREV_COMMIT"
+              echo "El build falló; los contenedores actuales no fueron modificados."
+              exit 1
+            fi
+
+            if docker compose -f "$PROD_COMPOSE" up -d --remove-orphans --wait --wait-timeout 120 \
+              && wait_for_backend -f "$PROD_COMPOSE"; then
+              docker compose -f "$PROD_COMPOSE" ps
+              echo "Despliegue saludable completado."
+              exit 0
+            fi
+
+            echo "El despliegue no quedó saludable. Estado y logs:"
+            docker compose -f "$PROD_COMPOSE" ps || true
+            docker compose -f "$PROD_COMPOSE" logs --no-color --tail=200 || true
+
+            if rollback; then
+              echo "Rollback saludable completado; el workflow queda en rojo."
+            else
+              echo "ERROR: el rollback tampoco quedó saludable."
+            fi
+            exit 1
