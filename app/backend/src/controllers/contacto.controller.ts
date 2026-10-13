@@ -46,14 +46,13 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
   }
 
   try {
+    let contacto: ContactoCreado | null = null;
+
     await withTransaction(async (conn) => {
       const [destinatarios] = await conn.execute<RowDataPacket[]>(
         'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.SACERDOTE, ROLES.ADMIN]
       );
-      if (!destinatarios.length) {
-        res.status(HttpStatus.CONFLICT).json({ mensaje: 'No hay sacerdotes ni administradores registrados para recibir el mensaje' });
-        return 'rollback';
-      }
+      if (!destinatarios.length) return 'rollback';
 
       const textoNotificacion = [
         'Nuevo mensaje de contacto de la página web:',
@@ -77,16 +76,24 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
         [nombre, correo, telefono, motivo, mensaje, notificacion.insertId]
       );
 
-      const contacto: ContactoCreado = {
+      contacto = {
         id: resultado.insertId,
         nombre, correo, motivo, mensaje,
         telefono: telefono ?? undefined,
         fecha: new Date().toISOString().slice(0, 10),
         notificacion_id: notificacion.insertId,
       };
-      res.status(HttpStatus.CREATED).json({ mensaje: 'Mensaje enviado; la oficina parroquial te contactará pronto', contacto });
       return 'commit';
     });
+
+    if (!contacto) {
+      res.status(HttpStatus.CONFLICT).json({ mensaje: 'No hay sacerdotes ni administradores registrados para recibir el mensaje' });
+      return;
+    }
+
+    // Un 201 se responde únicamente después del commit: el mensaje y sus
+    // notificaciones ya son visibles para cualquier conexión a la base de datos.
+    res.status(HttpStatus.CREATED).json({ mensaje: 'Mensaje enviado; la oficina parroquial te contactará pronto', contacto });
   } catch (error) {
     console.error('Error en crearContacto:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al enviar el mensaje' });

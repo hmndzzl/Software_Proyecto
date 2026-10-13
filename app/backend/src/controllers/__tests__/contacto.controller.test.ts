@@ -46,6 +46,26 @@ describe('POST /api/contacto (HU-32)', () => {
     expect(res.status).toBe(201);
   });
 
+  it('responde 201 únicamente después de confirmar la transacción', async () => {
+    let confirmarCommit: (() => void) | undefined;
+    conn.commit.mockImplementationOnce(() => new Promise<void>(resolve => {
+      confirmarCommit = resolve;
+    }));
+    let respondio = false;
+    const respuesta = new Promise<request.Response>((resolve, reject) => {
+      enviar().then(resultado => {
+        respondio = true;
+        resolve(resultado);
+      }).catch(reject);
+    });
+
+    await vi.waitFor(() => expect(conn.commit).toHaveBeenCalledOnce());
+    expect(respondio).toBe(false);
+
+    confirmarCommit?.();
+    expect((await respuesta).status).toBe(201);
+  });
+
   it('guarda el mensaje y notifica a Sacerdote y Admin', async () => {
     const res = await enviar();
     expect(res.status).toBe(201);
