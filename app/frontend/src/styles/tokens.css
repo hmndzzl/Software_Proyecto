@@ -29,6 +29,16 @@
   --color-info:    #2c5d8a;
   --color-infoBg:  #deecf6;
 
+  /* Estados de reserva: nombres semánticos compartidos por badges y resúmenes. */
+  --estado-reserva-pendiente-fg: var(--color-warn);
+  --estado-reserva-pendiente-bg: var(--color-warnBg);
+  --estado-reserva-confirmada-fg: var(--color-ok);
+  --estado-reserva-confirmada-bg: var(--color-okBg);
+  --estado-reserva-rechazada-fg: var(--color-bad);
+  --estado-reserva-rechazada-bg: var(--color-badBg);
+  --estado-reserva-cancelada-fg: var(--color-bad);
+  --estado-reserva-cancelada-bg: var(--color-badBg);
+
   /* ── Tipografía ── */
   --font-display: 'Cinzel', serif;
   --font-body:    'Noto Serif', serif;

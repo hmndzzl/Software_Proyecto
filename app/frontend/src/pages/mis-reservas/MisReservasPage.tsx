@@ -4,7 +4,8 @@ import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
+import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
+import ResumenEstadosReserva from '../../components/ui/ResumenEstadosReserva';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
@@ -12,7 +13,7 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
-import { ESTADOS_RESERVA, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND, avisoCambioEstadoReserva } from '../../utils/estadosReserva';
+import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../utils/estadosReserva';
 import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
@@ -21,20 +22,13 @@ import styles from './MisReservasPage.module.css';
 
 type MiReserva = Reserva;
 
-const KPI_ITEMS = [
-  { label: 'Pendientes',  estadoId: 1, bg: 'var(--color-warnBg)', color: 'var(--color-warn)'  },
-  { label: 'Confirmadas', estadoId: 2, bg: 'var(--color-okBg)',   color: 'var(--color-ok)'    },
-  { label: 'Rechazadas',  estadoId: 3, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
-  { label: 'Canceladas',  estadoId: 4, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
-];
-
 type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
 
 const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
-  estado: (r) => ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? '',
+  estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
 };
 
 export default function MisReservasPage() {
@@ -89,16 +83,7 @@ export default function MisReservasPage() {
 
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
-        <div className={styles.kpiRow}>
-          {KPI_ITEMS.map(({ label, estadoId, bg, color }) => (
-            <div key={label} className={styles.kpiChip} style={{ background: bg }}>
-              <span className={styles.kpiNum} style={{ color }}>
-                {reservas.filter(r => r.estado_reserva_id === estadoId).length}
-              </span>
-              <span className={styles.kpiLabel} style={{ color }}>{label}</span>
-            </div>
-          ))}
-        </div>
+        <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />
       )}
 
       <Card>
@@ -147,12 +132,10 @@ export default function MisReservasPage() {
                     <td className={styles.mono}>{formatFecha(r.fecha)}</td>
                     <td className={styles.horaCell}>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</td>
                     <td>
-                      <Badge kind={ESTADO_RESERVA_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                        {ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                      </Badge>
+                      <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
                     <td>
-                      {(r.estado_reserva_id === 1 || r.estado_reserva_id === 2) && (
+                      {puedeCancelarReserva(r.estado_reserva_id) && (
                         <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
                       )}
                     </td>
