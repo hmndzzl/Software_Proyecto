@@ -22,7 +22,7 @@
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.0",
-    "mysql2": "^3.9.0"
+    "mysql2": "^3.24.5"
   },
   "devDependencies": {
     "@testcontainers/mariadb": "^12.2.0",
@@ -38,5 +38,10 @@
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.0",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "body-parser": "1.20.6",
+    "proxy-addr": "2.0.8",
+    "qs": "6.16.0"
   }
 }
