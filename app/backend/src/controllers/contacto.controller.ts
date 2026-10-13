@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
-import { PoolConnection } from 'mysql2/promise';
-import pool from '../config/db';
 import { ROLES } from '../config/roles';
 import { HttpStatus } from '../utils/httpStatus';
 import { ContactoCreado } from '../types/contacto.types';
+import { withTransaction } from '../utils/withTransaction';
 
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Formato genérico tipo E.164 (+código de país y número, sin espacios ni símbolos).
@@ -46,59 +45,57 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
     return;
   }
 
-  let conn: PoolConnection | undefined;
   try {
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
+    let contacto: ContactoCreado | null = null;
 
-    const [destinatarios] = await conn.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.SACERDOTE, ROLES.ADMIN]
-    );
-    if (!destinatarios.length) {
-      await conn.rollback();
+    await withTransaction(async (conn) => {
+      const [destinatarios] = await conn.execute<RowDataPacket[]>(
+        'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.SACERDOTE, ROLES.ADMIN]
+      );
+      if (!destinatarios.length) return 'rollback';
+
+      const textoNotificacion = [
+        'Nuevo mensaje de contacto de la página web:',
+        `Nombre: ${nombre}`,
+        `Correo: ${correo}`,
+        `Teléfono: ${telefono ?? 'No proporcionado'}`,
+        `Motivo: ${motivo}`,
+        `Mensaje: ${mensaje}`,
+      ].join('\n');
+      const [notificacion] = await conn.execute<ResultSetHeader>(
+        "INSERT INTO notificacion (mensaje, fecha, tipo) VALUES (?, CURDATE(), 'individual')",
+        [textoNotificacion]
+      );
+      for (const destinatario of destinatarios) {
+        await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)',
+          [destinatario.id, notificacion.insertId]);
+      }
+
+      const [resultado] = await conn.execute<ResultSetHeader>(
+        'INSERT INTO mensaje_contacto (nombre, correo, telefono, motivo, mensaje, fecha, notificacion_id) VALUES (?, ?, ?, ?, ?, CURDATE(), ?)',
+        [nombre, correo, telefono, motivo, mensaje, notificacion.insertId]
+      );
+
+      contacto = {
+        id: resultado.insertId,
+        nombre, correo, motivo, mensaje,
+        telefono: telefono ?? undefined,
+        fecha: new Date().toISOString().slice(0, 10),
+        notificacion_id: notificacion.insertId,
+      };
+      return 'commit';
+    });
+
+    if (!contacto) {
       res.status(HttpStatus.CONFLICT).json({ mensaje: 'No hay sacerdotes ni administradores registrados para recibir el mensaje' });
       return;
     }
 
-    const textoNotificacion = [
-      'Nuevo mensaje de contacto de la página web:',
-      `Nombre: ${nombre}`,
-      `Correo: ${correo}`,
-      `Teléfono: ${telefono ?? 'No proporcionado'}`,
-      `Motivo: ${motivo}`,
-      `Mensaje: ${mensaje}`,
-    ].join('\n');
-    const [notificacion] = await conn.execute<ResultSetHeader>(
-      "INSERT INTO notificacion (mensaje, fecha, tipo) VALUES (?, CURDATE(), 'individual')",
-      [textoNotificacion]
-    );
-    for (const destinatario of destinatarios) {
-      await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)',
-        [destinatario.id, notificacion.insertId]);
-    }
-
-    const [resultado] = await conn.execute<ResultSetHeader>(
-      'INSERT INTO mensaje_contacto (nombre, correo, telefono, motivo, mensaje, fecha, notificacion_id) VALUES (?, ?, ?, ?, ?, CURDATE(), ?)',
-      [nombre, correo, telefono, motivo, mensaje, notificacion.insertId]
-    );
-
-    await conn.commit();
-
-    const contacto: ContactoCreado = {
-      id: resultado.insertId,
-      nombre, correo, motivo, mensaje,
-      telefono: telefono ?? undefined,
-      fecha: new Date().toISOString().slice(0, 10),
-      notificacion_id: notificacion.insertId,
-    };
+    // Un 201 se responde únicamente después del commit: el mensaje y sus
+    // notificaciones ya son visibles para cualquier conexión a la base de datos.
     res.status(HttpStatus.CREATED).json({ mensaje: 'Mensaje enviado; la oficina parroquial te contactará pronto', contacto });
   } catch (error) {
-    if (conn) {
-      try { await conn.rollback(); } catch (rollbackError) { console.error('Error al revertir mensaje de contacto:', rollbackError); }
-    }
     console.error('Error en crearContacto:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al enviar el mensaje' });
-  } finally {
-    conn?.release();
   }
 };

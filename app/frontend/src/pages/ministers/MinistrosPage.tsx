@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
 import LoadingState from '../../components/ui/LoadingState';
@@ -9,16 +10,10 @@ import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
-import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
+import { ROLES } from '../../utils/roles';
+import type { Ministro } from '../../types';
 import styles from './MinistrosPage.module.css';
-
-interface Ministro {
-  id: number;
-  nombre: string;
-  correo: string;
-  rol_id?: number;
-  disponible: boolean;
-}
 
 const ROL_LABEL: Record<number, string> = {
   1: 'Sacerdote',
@@ -32,7 +27,6 @@ function getInitials(nombre: string): string {
   return nombre.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
 
-const puedeGestionarDisponibilidad = () => usuarioTieneRol([ROLES.COORDINADOR_MINISTROS]);
 
 type SortKey = 'nombre' | 'correo' | 'rol' | 'disponibilidad';
 
@@ -47,17 +41,18 @@ export default function MinistrosPage() {
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [accionError, setAccionError] = useState('');
+  const toast = useToast();
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
 
   const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(ministros, SORT_VALUE);
 
-  const puedeGestionar = puedeGestionarDisponibilidad();
+  const { tieneRol } = useAuth();
+  const puedeGestionar = tieneRol([ROLES.COORDINADOR_MINISTROS]);
 
   const cargarMinistros = () => {
     setLoading(true);
     setError('');
-    apiClient.get('/api/personas')
+    apiClient.get<Ministro[]>('/api/personas')
       .then(res => { setMinistros(res.data); setLoading(false); })
       .catch(() => { setError('Error al obtener ministros'); setLoading(false); });
   };
@@ -68,13 +63,13 @@ export default function MinistrosPage() {
 
   const toggleDisponibilidad = async (ministro: Ministro) => {
     const nuevoValor = !ministro.disponible;
-    setAccionError('');
     setActualizandoId(ministro.id);
     try {
       await apiClient.patch(`/api/personas/${ministro.id}/disponibilidad`, { disponible: nuevoValor });
       setMinistros(prev => prev.map(m => (m.id === ministro.id ? { ...m, disponible: nuevoValor } : m)));
+      toast.success('Disponibilidad actualizada', `${ministro.nombre} ahora figura como ${nuevoValor ? 'disponible' : 'no disponible'}.`);
     } catch {
-      setAccionError('No se pudo actualizar la disponibilidad. Intenta de nuevo.');
+      toast.error('No se pudo actualizar la disponibilidad', 'Intenta de nuevo en unos momentos.');
     } finally {
       setActualizandoId(null);
     }
@@ -96,9 +91,6 @@ export default function MinistrosPage() {
 
         {loading && <LoadingState label="Cargando ministros..." />}
         {error   && <ErrorState message={error} onRetry={cargarMinistros} />}
-        {!loading && !error && accionError && (
-          <p className={`${styles.msg} ${styles.msgError}`}>{accionError}</p>
-        )}
 
         {!loading && !error && ministros.length === 0 && (
           <EmptyState message="No hay ministros registrados." />

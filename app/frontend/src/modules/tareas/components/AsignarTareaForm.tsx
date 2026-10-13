@@ -1,28 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
+import { getApiErrorMessage } from '../../../utils/apiError';
+import type { Tarea, Ministro } from '../../../types';
 import styles from '../../../styles/Form.module.css';
 
-interface AsignadoInfo {
-  persona_id: number;
-  nombre: string;
-}
-
-interface Tarea {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  asignados: AsignadoInfo[];
-}
-
-interface Persona {
-  id: number;
-  nombre: string;
-  disponible: boolean;
-}
+type Persona = Ministro;
 
 // Debe coincidir con TOPE_SERVICIOS_MES en app/backend/src/config/constants.ts
 const TOPE_SERVICIOS_MES = 8;
@@ -32,14 +16,14 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<string>('');
   const [personaSeleccionada, setPersonaSeleccionada] = useState<string>('');
-  const [mensaje, setMensaje] = useState<string>('');
+  const toast = useToast();
 
   useEffect(() => {
-    apiClient.get('/api/tareas')
+    apiClient.get<Tarea[]>('/api/tareas')
       .then(res => setTareas(res.data))
       .catch(error => console.error(error));
 
-    apiClient.get('/api/personas')
+    apiClient.get<Persona[]>('/api/personas')
       .then(res => setPersonas(res.data))
       .catch(error => console.error(error));
   }, [refreshKey]);
@@ -85,7 +69,7 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
     e.preventDefault();
 
     if (!tareaSeleccionada || !personaSeleccionada) {
-      setMensaje('Por favor, selecciona una tarea y un ministro.');
+      toast.error('Faltan datos', 'Por favor, selecciona una tarea y un ministro.');
       return;
     }
 
@@ -94,24 +78,18 @@ export default function AsignarTareaForm({ refreshKey, onAsignacionExitosa }: { 
         tarea_id: parseInt(tareaSeleccionada),
         persona_id: parseInt(personaSeleccionada)
       });
-      setMensaje('¡Asignación guardada con éxito!');
+      toast.success('Tarea asignada', `${nombrePersonaSeleccionada} fue asignado a "${tareaSeleccionadaObj?.titulo ?? 'la tarea'}".`);
       setTareaSeleccionada('');
       setPersonaSeleccionada('');
       if (onAsignacionExitosa) onAsignacionExitosa();
-    } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Hubo un error de red al intentar guardar la asignación.');
+    } catch (error: unknown) {
+      toast.error('No se pudo asignar la tarea', getApiErrorMessage(error, 'Hubo un error de red al intentar guardar la asignación.'));
     }
   };
 
   return (
     <div>
       <h3 className={styles.sectionTitle}>Asignar Tarea a Ministro</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>

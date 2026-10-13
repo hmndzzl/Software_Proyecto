@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
-import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles?: number[]; icon: React.ReactNode }[] = [
@@ -24,6 +24,28 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
         <circle cx="9" cy="7" r="4"/>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/cuentas',
+    label: 'Cuentas',
+    roles: [ROLES.SACERDOTE, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M17 11l2 2 4-4"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/contenido-publico',
+    label: 'Contenido público',
+    roles: [ROLES.SACERDOTE, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16v16H4z" /><path d="M8 8h8M8 12h8M8 16h5" />
       </svg>
     ),
   },
@@ -153,20 +175,41 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
 
 const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
 
-export default function Sidebar() {
+interface SidebarProps {
+  colapsado: boolean;
+  onAlternar: () => void;
+  onNavegar?: () => void;
+}
+
+export default function Sidebar({ colapsado, onAlternar, onNavegar }: SidebarProps) {
   const navigate = useNavigate();
-  const { usuario } = useAuth();
+  const { usuario, tieneRol } = useAuth();
 
   const navItems = NAV_ITEMS.filter(({ roles, exactRoles }) => exactRoles !== undefined
     ? usuario !== null && exactRoles.includes(usuario.rol_id)
-    : roles === null || usuarioTieneRol(roles));
-  const puedeVerReservas = usuarioTieneRol(ROLES_RESERVAS);
+    : roles === null || tieneRol(roles));
+  const puedeVerReservas = tieneRol(ROLES_RESERVAS);
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar}${colapsado ? ` ${styles.colapsado}` : ''}`}>
       <div className={styles.header}>
-        <p className={styles.kicker}>Administración</p>
-        <p className={styles.subtitle}>San Pedro Nolasco</p>
+        {!colapsado && (
+          <div className={styles.headerTextos}>
+            <p className={styles.kicker}>Administración</p>
+            <p className={styles.subtitle}>San Pedro Nolasco</p>
+          </div>
+        )}
+        <button
+          type="button"
+          className={styles.btnAlternar}
+          onClick={onAlternar}
+          title={colapsado ? 'Mostrar menú' : 'Ocultar menú'}
+          aria-label={colapsado ? 'Mostrar menú' : 'Ocultar menú'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: colapsado ? 'rotate(180deg)' : undefined }}>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
       </div>
 
       <nav className={styles.nav}>
@@ -177,26 +220,37 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `${styles.navLink}${isActive ? ` ${styles.active}` : ''}`
             }
+            title={colapsado ? label : undefined}
+            onClick={onNavegar}
           >
             <span className={styles.navIcon}>{icon}</span>
-            <span className={styles.navLabel}>{label}</span>
+            {!colapsado && <span className={styles.navLabel}>{label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {puedeVerReservas && (
-        <button type="button" className={styles.btnNuevo} onClick={() => navigate('/reservas')}>
+        <button
+          type="button"
+          className={styles.btnNuevo}
+          onClick={() => {
+            onNavegar?.();
+            navigate('/reservas');
+          }}
+          title={colapsado ? 'Nueva Reserva' : undefined}
+        >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Nueva Reserva
+          {!colapsado && 'Nueva Reserva'}
         </button>
       )}
 
-      <footer className={styles.footer}>
-        <a href="#" className={styles.footerLink}>Configuración</a>
-        <a href="#" className={styles.footerLink}>Ayuda y Soporte</a>
-      </footer>
+      {!colapsado && (
+        <footer className={styles.footer}>
+          <NavLink to="/configuracion" className={styles.footerLink} onClick={onNavegar}>Configuración</NavLink>
+        </footer>
+      )}
     </aside>
   );
 }

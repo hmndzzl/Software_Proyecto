@@ -14,6 +14,9 @@ node_modules/
 frontend/dist/
 backend/dist/
 coverage/
+frontend/playwright-report/
+frontend/test-results/
+backend/test-results/
 
 # Logs
 *.log

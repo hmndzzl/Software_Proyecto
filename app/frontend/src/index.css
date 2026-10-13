@@ -8,6 +8,18 @@
   padding: 0;
 }
 
+/* Defensa estructural contra overflow: por defecto, un hijo de flex/grid no puede
+   encogerse por debajo del tamaño intrínseco de su contenido (texto largo, IDs,
+   horarios, etc.), lo que lo empuja fuera de su contenedor en vez de envolver o
+   truncar. min-width/min-height: 0 quita ese piso implícito para TODO elemento;
+   no reduce el tamaño de nada con un width/height explícito (botones, badges,
+   bloques de fecha de ancho fijo siguen midiendo lo que se les indicó), solo
+   permite que el contenido se comporte (wrap, ellipsis, scroll) en vez de escapar. */
+*, *::before, *::after {
+  min-width: 0;
+  min-height: 0;
+}
+
 /* ── Base ── */
 html {
   font-size: 17px;
@@ -84,7 +96,7 @@ a {
   border-radius: var(--radius-btn);
   border: none;
   background-color: var(--color-rojo);
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;

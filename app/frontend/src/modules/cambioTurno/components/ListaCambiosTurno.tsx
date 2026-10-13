@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { CardHead } from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
@@ -10,6 +12,7 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import { formatFecha } from '../../../utils/date';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaCambiosTurno.module.css';
 
 type CambioTurnoEstado = 'pendiente' | 'aceptado' | 'rechazado';
@@ -57,18 +60,17 @@ const SORT_VALUE_ENVIADAS: Record<SortKey, (c: CambioTurno) => string> = {
 };
 
 export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number }) {
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
 
   const [cambios, setCambios] = useState<CambioTurno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
 
   const cargarCambios = () => {
     setLoading(true);
     setError('');
-    apiClient.get('/api/cambios-turno')
+    apiClient.get<CambioTurno[]>('/api/cambios-turno')
       .then(res => setCambios(res.data))
       .catch(() => setError('Error al cargar las solicitudes de cambio de turno.'))
       .finally(() => setLoading(false));
@@ -79,13 +81,12 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   }, [refreshKey]);
 
   const responder = async (id: number, aceptar: boolean) => {
-    setMensaje('');
     try {
-      const res = await apiClient.put(`/api/cambios-turno/${id}/responder`, { aceptar });
-      setMensaje(res.data.mensaje);
+      const res = await apiClient.put<{ mensaje: string }>(`/api/cambios-turno/${id}/responder`, { aceptar });
+      toast.success(aceptar ? 'Cambio aceptado' : 'Cambio rechazado', res.data.mensaje);
       cargarCambios();
-    } catch (err: any) {
-      alert(err.response?.data?.mensaje || 'Error al responder la solicitud de cambio de turno');
+    } catch (err: unknown) {
+      toast.error('No se pudo responder la solicitud', getApiErrorMessage(err, 'Error al responder la solicitud de cambio de turno.'));
     }
   };
 
@@ -101,8 +102,6 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   return (
     <div>
       <CardHead title="Cambios de Turno" hint={!loading ? `${cambios.length} solicitudes` : undefined} />
-
-      {mensaje && <p className={styles.mensajeExito}>{mensaje}</p>}
 
       <h3 className={styles.seccionTitulo}>Solicitudes Recibidas</h3>
       {recibidas.length === 0 ? (

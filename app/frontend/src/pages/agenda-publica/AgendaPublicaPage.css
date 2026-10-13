@@ -1,0 +1,137 @@
+/* La agenda utiliza la paleta, tipografía y marco de PublicPortal.css. */
+.agenda-publica .agenda-hero {
+  padding: 76px 0 82px;
+  color: var(--carbon);
+  background: var(--crema);
+  border-bottom: 1px solid var(--line);
+}
+.agenda-publica .agenda-kicker {
+  margin: 0 0 12px;
+  color: var(--tierra-text);
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.agenda-publica .agenda-hero h1 {
+  max-width: 700px;
+  margin: 0;
+  font-size: var(--text-h1);
+  line-height: 1.14;
+}
+.agenda-publica .agenda-hero p:last-child {
+  max-width: 620px;
+  margin: 20px 0 0;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.agenda-publica .agenda-content { min-height: 380px; padding-block: 58px 72px; }
+.agenda-publica .agenda-list { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.agenda-publica .agenda-item { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.agenda-publica .agenda-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 118px;
+  padding: 12px;
+  color: var(--rojo-dk);
+  background: var(--crema-dk);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+}
+.agenda-publica .agenda-date span { font-size: 30px; line-height: 1; }
+.agenda-publica .agenda-date small { margin-top: 7px; font-size: var(--text-label); letter-spacing: .1em; }
+.agenda-publica .agenda-card {
+  padding: 24px 28px;
+  background: var(--blanco);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(60, 40, 20, .05);
+}
+.agenda-publica .agenda-full-date {
+  margin: 0 0 7px;
+  color: var(--tierra-text);
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.agenda-publica .agenda-card h2 {
+  margin: 0;
+  color: var(--carbon);
+  font-size: clamp(21px, 2.5vw, 26px);
+  line-height: 1.3;
+}
+.agenda-publica .agenda-description { max-width: 76ch; margin: 12px 0 0; color: var(--ink); font-size: 16px; line-height: 1.6; }
+.agenda-publica .agenda-details { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.agenda-publica .agenda-details div { display: flex; gap: 7px; align-items: center; }
+.agenda-publica .agenda-details dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--tierra-text);
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.agenda-publica .agenda-details svg { width: 16px; height: 16px; }
+.agenda-publica .agenda-details dd { margin: 0; color: var(--ink); font-size: 16px; }
+
+.agenda-publica .agenda-state {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  background: var(--blanco);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+.agenda-publica .agenda-state p { margin: 14px 0 0; }
+.agenda-publica .agenda-loader { width: 34px; height: 34px; border: 4px solid var(--crema-dk); border-top-color: var(--rojo); border-radius: 50%; animation: agenda-spin .8s linear infinite; }
+@keyframes agenda-spin { to { transform: rotate(360deg); } }
+.agenda-publica .agenda-empty-icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 50%; background: var(--crema); color: var(--tierra-text); }
+.agenda-publica .agenda-empty-icon svg { width: 27px; height: 27px; }
+.agenda-publica .agenda-empty h2 { margin: 16px 0 0; color: var(--carbon); font-size: 22px; }
+.agenda-publica .agenda-empty a { margin-top: 18px; color: var(--rojo); font-weight: 700; }
+.agenda-publica .agenda-error { color: var(--rojo-dk); }
+.agenda-publica .agenda-error p { margin: 0; }
+.agenda-publica .agenda-error button {
+  margin-top: 18px;
+  padding: 10px 16px;
+  border: 1px solid var(--rojo);
+  border-radius: 7px;
+  color: var(--crema);
+  background: var(--rojo);
+  font: 700 var(--text-small) 'Cinzel', Georgia, serif;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.agenda-publica .agenda-error button:hover { background: var(--rojo-dk); }
+
+@media (max-width: 640px) {
+  .agenda-publica .agenda-hero { padding: 54px 0 60px; }
+  .agenda-publica .agenda-hero p:last-child { font-size: 16px; }
+  .agenda-publica .agenda-content { padding-block: 36px 50px; }
+  .agenda-publica .agenda-item { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; }
+  .agenda-publica .agenda-date { min-height: 94px; padding: 8px; border-radius: 9px; }
+  .agenda-publica .agenda-date span { font-size: 27px; }
+  .agenda-publica .agenda-date small { font-size: 13px; }
+  .agenda-publica .agenda-card { padding: 19px 18px; border-radius: 9px; }
+  .agenda-publica .agenda-details { flex-direction: column; gap: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agenda-publica .agenda-loader { animation: none; }
+}

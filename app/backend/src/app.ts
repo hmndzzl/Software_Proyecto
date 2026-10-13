@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import { checkDbConnection } from './config/db';
-import { validateEnv } from './config/env';
+import { validateEnv, getAllowedOrigins } from './config/env';
 import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
 import personaRoutes from './routes/persona.routes';
@@ -16,6 +16,9 @@ import notificacionRoutes from './routes/notificacion.routes';
 import cambioTurnoRoutes from './routes/cambioTurno.routes';
 import ausenciaRoutes from './routes/ausencia.routes';
 import contactoRoutes from './routes/contacto.routes';
+import cuentaRoutes from './routes/cuenta.routes';
+import publicRoutes from './routes/public.routes';
+import landingRoutes from './routes/landing.routes';
 
 dotenv.config();
 validateEnv();
@@ -24,13 +27,7 @@ export const app = express();
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  ...(process.env.CORS_ORIGIN ?? '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-];
+const allowedOrigins = getAllowedOrigins();
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -71,6 +68,9 @@ app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/cambios-turno', cambioTurnoRoutes);
 app.use('/api/ausencias', ausenciaRoutes);
 app.use('/api/contacto', contactoRoutes);
+app.use('/api/cuentas', cuentaRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/landing', landingRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {

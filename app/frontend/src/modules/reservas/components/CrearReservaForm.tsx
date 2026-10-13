@@ -1,30 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
-import { ROLES, usuarioTieneRol } from '../../../utils/roles';
+import { ROLES } from '../../../utils/roles';
+import { getApiErrorMessage } from '../../../utils/apiError';
+import { useAuth } from '../../../context/AuthContext';
+import type { Espacio } from '../../espacios/components/EspacioCard';
 import styles from '../../../styles/Form.module.css';
-
-interface Espacio {
-  id: number;
-  nombre: string;
-  capacidad: number | null;
-}
-
-interface ReservaEnviada {
-  espacio: string;
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
-  titulo: string;
-}
 
 interface CrearReservaFormProps {
   onReservaCreada?: () => void;
   autoFocus?: boolean;
+  espacioInicial?: string;
 }
 
-export default function CrearReservaForm({ onReservaCreada, autoFocus = false }: CrearReservaFormProps) {
+export default function CrearReservaForm({ onReservaCreada, autoFocus = false, espacioInicial }: CrearReservaFormProps) {
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
@@ -32,48 +22,58 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [espacios, setEspacios] = useState<Espacio[]>([]);
-  const [mensaje, setMensaje] = useState('');
-  const [enviada, setEnviada] = useState<ReservaEnviada | null>(null);
+  const [espaciosCargados, setEspaciosCargados] = useState(false);
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const espacioRef = useRef<HTMLSelectElement>(null);
-  const confirmacionRef = useRef<HTMLDivElement>(null);
+  const fechaRef = useRef<HTMLInputElement>(null);
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
-  const puedeAprobar = usuarioTieneRol([ROLES.SACERDOTE]);
+  const { tieneRol } = useAuth();
+  const puedeAprobar = tieneRol([ROLES.SACERDOTE]);
 
   useEffect(() => {
     if (!autoFocus) return;
-    espacioRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    espacioRef.current?.focus();
-  }, [autoFocus]);
-
-  useEffect(() => {
-    // 'start' + scroll-margin-top (Form.module.css) evita que la barra superior fija tape el título.
-    if (enviada) confirmacionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-  }, [enviada]);
+    // Si viene de un QR, hay que esperar a saber si ese espacio existe antes de decidir el foco.
+    if (espacioInicial && !espaciosCargados) return;
+    const espacioResuelto = espacioInicial && espacios.some((esp) => String(esp.id) === espacioInicial);
+    // Con el espacio ya resuelto, el salto útil es a la fecha; si no se pudo resolver, vuelve al selector.
+    const campo = espacioResuelto ? fechaRef.current : espacioRef.current;
+    campo?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    campo?.focus();
+  }, [autoFocus, espacioInicial, espaciosCargados, espacios]);
 
   useEffect(() => {
     const fetchEspacios = async () => {
       try {
-        const response = await apiClient.get('/api/espacios');
+        const response = await apiClient.get<Espacio[]>('/api/espacios');
         setEspacios(response.data);
       } catch {
         // silencioso, el select quedará vacío
+      } finally {
+        setEspaciosCargados(true);
       }
     };
     fetchEspacios();
   }, []);
 
+  // Preselecciona el espacio del QR solo si existe en el catálogo cargado del backend.
+  useEffect(() => {
+    if (!espacioInicial) return;
+    if (espacios.some((esp) => String(esp.id) === espacioInicial)) {
+      setEspacioId(espacioInicial);
+    }
+  }, [espacioInicial, espacios]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEnviada(null);
 
     if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo || !descripcion) {
-      setMensaje('Por favor completa todos los campos.');
+      toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     if (horaInicio >= horaFin) {
-      setMensaje('La hora de inicio debe ser menor que la hora de fin.');
+      toast.error('Horario inválido', 'La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
 
@@ -90,17 +90,16 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
     const fechaSoloFecha = fecha.split('T')[0];
 
     if (fechaSoloFecha < hoyStr) {
-      setMensaje('La fecha de la reserva no puede estar en el pasado.');
+      toast.error('Fecha inválida', 'La fecha de la reserva no puede estar en el pasado.');
       return;
     }
 
     if (fechaSoloFecha === hoyStr && horaInicio < horaActualStr) {
-      setMensaje('La hora de inicio no puede estar en el pasado.');
+      toast.error('Horario inválido', 'La hora de inicio no puede estar en el pasado.');
       return;
     }
 
     setLoading(true);
-    setMensaje('');
 
     try {
       await apiClient.post('/api/reservas', {
@@ -111,13 +110,14 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
         titulo,
         descripcion
       });
-      setEnviada({
-        espacio: espacios.find(esp => esp.id === Number(espacioId))?.nombre ?? 'el espacio seleccionado',
-        fecha,
-        horaInicio,
-        horaFin,
-        titulo,
-      });
+      const nombreEspacio = espacios.find(esp => esp.id === Number(espacioId))?.nombre ?? 'el espacio seleccionado';
+      toast.success(
+        'Solicitud enviada',
+        `Tu reserva de ${nombreEspacio} para «${titulo}» el ${formatFecha(fecha)}, de ${horaInicio} a ${horaFin}, quedó pendiente de aprobación${puedeAprobar ? '' : ' del sacerdote'}. ` +
+          (puedeAprobar
+            ? 'Puedes aprobarla tú mismo en la lista de solicitudes de esta página.'
+            : 'Puedes revisar su estado en Mis Reservas.')
+      );
       setFecha('');
       setHoraInicio('');
       setHoraFin('');
@@ -125,42 +125,37 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
       setTitulo('');
       setDescripcion('');
       if (onReservaCreada) onReservaCreada();
-    } catch (error: any) {
-      setMensaje(error.response?.data?.message || 'Error de red al intentar crear la reserva.');
+    } catch (error: unknown) {
+      toast.error('No se pudo crear la reserva', getApiErrorMessage(error, 'Error de red al intentar crear la reserva.', 'message'));
     } finally {
       setLoading(false);
     }
   };
 
+  // Solo mientras la selección siga siendo la que trajo el QR: si la persona la cambia a mano, se oculta.
+  const nombreEspacioInicial = espacioId === espacioInicial
+    ? espacios.find((esp) => String(esp.id) === espacioId)?.nombre
+    : undefined;
+
+  const espacioInicialNoEncontrado = Boolean(espacioInicial)
+    && espaciosCargados
+    && !espacios.some((esp) => String(esp.id) === espacioInicial);
+
   return (
     <div>
       <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
 
-      {enviada && (
-        <div ref={confirmacionRef} className={styles.confirmBox} role="status" aria-live="polite">
-          <p className={styles.confirmTitle}>✓ Solicitud enviada</p>
-          <p className={styles.confirmText}>
-            Tu reserva de <strong>{enviada.espacio}</strong> para «{enviada.titulo}» el{' '}
-            <strong>{formatFecha(enviada.fecha)}</strong>, de {enviada.horaInicio} a {enviada.horaFin},
-            quedó <strong>pendiente de aprobación</strong>{puedeAprobar ? '' : ' del sacerdote'}.
-          </p>
-          {puedeAprobar ? (
-            <p className={styles.confirmText}>
-              Todavía no está confirmada. Puedes aprobarla tú mismo en la lista de solicitudes de esta página.
-            </p>
-          ) : (
-            <p className={styles.confirmText}>
-              Todavía no está confirmada. Puedes revisar su estado en{' '}
-              <Link to="/mis-reservas" className={styles.confirmLink}>Mis Reservas →</Link>
-            </p>
-          )}
+      {nombreEspacioInicial && (
+        <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
+          <span className={styles.infoBoxLabel}>Espacio seleccionado:</span>
+          {nombreEspacioInicial}
         </div>
       )}
 
-      {mensaje && (
-        <p className={`${styles.message} ${styles.messageError}`} role="alert">
-          {mensaje}
-        </p>
+      {espacioInicialNoEncontrado && (
+        <div className={`${styles.warningBox} ${styles.infoBoxMargin}`}>
+          El espacio del enlace ya no está disponible. Selecciona uno manualmente.
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -185,6 +180,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false }:
         <div className={styles.field}>
           <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
+            ref={fechaRef}
             type="date"
             id="fecha"
             className={styles.input}

@@ -104,6 +104,12 @@
   align-items: start;
 }
 
+@media (max-width: 1024px) {
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Tareas ── */
 .tareasList {
   padding: 4px 0;
@@ -227,4 +233,16 @@
 
 .accesoBtn {
   margin: 0 20px 20px;
+}
+
+@media (max-width: 680px) {
+  .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .accesosGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tareaRow { padding: 12px 18px; }
+}
+
+@media (max-width: 420px) {
+  .statsGrid { grid-template-columns: 1fr; }
+  .accesosGrid { grid-template-columns: 1fr; }
+  .statNumber { font-size: 42px; }
 }

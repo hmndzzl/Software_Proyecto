@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
+import { useToast } from '../../../context/ToastContext';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () => void }) {
   const [titulo, setTitulo] = useState('');
@@ -8,18 +10,18 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!titulo || !descripcion || !fecha || !horaInicio || !horaFin) {
-      setMensaje('Por favor completa todos los campos.');
+      toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     if (horaInicio >= horaFin) {
-      setMensaje('La hora de inicio debe ser menor que la hora de fin.');
+      toast.error('Horario inválido', 'La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
 
@@ -31,27 +33,21 @@ export default function CrearTareaForm({ onTareaCreada }: { onTareaCreada?: () =
         hora_inicio: horaInicio,
         hora_fin: horaFin
       });
-      setMensaje('¡Tarea creada con éxito!');
+      toast.success('Tarea creada', `La tarea "${titulo}" ya está disponible para asignar.`);
       setTitulo('');
       setDescripcion('');
       setFecha('');
       setHoraInicio('');
       setHoraFin('');
       if (onTareaCreada) onTareaCreada();
-    } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al intentar crear la tarea.');
+    } catch (error: unknown) {
+      toast.error('No se pudo crear la tarea', getApiErrorMessage(error, 'Error de red al intentar crear la tarea.'));
     }
   };
 
   return (
     <div>
       <h3 className={styles.sectionTitle}>Crear Nueva Tarea</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('éxito') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>

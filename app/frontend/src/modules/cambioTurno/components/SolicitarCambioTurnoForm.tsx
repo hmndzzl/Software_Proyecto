@@ -1,43 +1,34 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { formatFecha } from '../../../utils/date';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import EmptyState from '../../../components/ui/EmptyState';
+import type { Tarea, Ministro } from '../../../types';
 import styles from '../../../styles/Form.module.css';
 
-interface MiTarea {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-}
-
-interface Ministro {
-  id: number;
-  nombre: string;
-}
+type MiTarea = Tarea;
 
 export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSolicitudEnviada?: () => void }) {
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
 
   const [misTareas, setMisTareas] = useState<MiTarea[]>([]);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [tareaId, setTareaId] = useState('');
   const [destinatarioId, setDestinatarioId] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!usuario) return;
 
-    apiClient.get('/api/tareas', { params: { persona_id: usuario.id } })
+    apiClient.get<Tarea[]>('/api/tareas', { params: { persona_id: usuario.id } })
       .then(res => setMisTareas(res.data))
       .catch(() => {});
 
-    apiClient.get('/api/personas')
-      .then(res => setMinistros(res.data.filter((m: Ministro) => m.id !== usuario.id)))
+    apiClient.get<Ministro[]>('/api/personas')
+      .then(res => setMinistros(res.data.filter((m) => m.id !== usuario.id)))
       .catch(() => {});
   }, []);
 
@@ -45,24 +36,23 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
     e.preventDefault();
 
     if (!tareaId || !destinatarioId) {
-      setMensaje('Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
+      toast.error('Faltan datos', 'Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
       return;
     }
 
     setLoading(true);
-    setMensaje('');
 
     try {
-      const res = await apiClient.post('/api/cambios-turno', {
+      const res = await apiClient.post<{ mensaje?: string }>('/api/cambios-turno', {
         tarea_id: Number(tareaId),
         destinatario_id: Number(destinatarioId),
       });
-      setMensaje(res.data.mensaje || '¡Solicitud de cambio de turno enviada!');
+      toast.success('Solicitud enviada', res.data.mensaje || 'Tu solicitud de cambio de turno fue enviada.');
       setTareaId('');
       setDestinatarioId('');
       if (onSolicitudEnviada) onSolicitudEnviada();
-    } catch (error: any) {
-      setMensaje(error.response?.data?.mensaje || 'Error de red al solicitar el cambio de turno.');
+    } catch (error: unknown) {
+      toast.error('No se pudo enviar la solicitud', getApiErrorMessage(error, 'Error de red al solicitar el cambio de turno.'));
     } finally {
       setLoading(false);
     }
@@ -71,12 +61,6 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
   return (
     <div>
       <h3 className={styles.sectionTitle}>Solicitar Cambio de Turno</h3>
-
-      {mensaje && (
-        <p className={`${styles.message} ${mensaje.includes('enviada') ? styles.messageSuccess : styles.messageError}`}>
-          {mensaje}
-        </p>
-      )}
 
       {misTareas.length === 0 ? (
         <EmptyState message="No tienes tareas asignadas actualmente para solicitar un cambio." />

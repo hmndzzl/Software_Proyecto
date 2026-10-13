@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
-import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { useAuth, type Usuario } from '../../context/AuthContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
+import { getApiErrorMessage, getApiErrorStatus } from '../../utils/apiError';
 import form from '../../styles/Form.module.css';
 import styles from './PerfilPage.module.css';
 
@@ -22,8 +24,12 @@ interface FormState {
   confirmar: string;
 }
 
+interface PerfilActualizadoResponse {
+  persona: Usuario;
+}
+
 export default function PerfilPage() {
-  const { usuario, setAuth } = useAuth();
+  const { usuario, actualizarUsuario } = useAuth();
 
   // Formulario precargado 
   const [formData, setFormData] = useState<FormState>({
@@ -34,8 +40,7 @@ export default function PerfilPage() {
   });
 
   const [saving,  setSaving]  = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error,   setError]   = useState('');
+  const toast = useToast();
 
   // Sincroniza el formulario si el contexto cambia 
   useEffect(() => {
@@ -49,17 +54,13 @@ export default function PerfilPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setSuccess('');
-    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccess('');
-    setError('');
 
     if (formData.password && formData.password !== formData.confirmar) {
-      setError('Las contraseñas no coinciden.');
+      toast.error('Revisa tus datos', 'Las contraseñas no coinciden.');
       return;
     }
 
@@ -69,18 +70,17 @@ export default function PerfilPage() {
     if (formData.password)       body.password = formData.password;
 
     if (Object.keys(body).length === 0) {
-      setError('No hay cambios para guardar.');
+      toast.error('Sin cambios', 'No hay cambios para guardar.');
       return;
     }
 
     setSaving(true);
     try {
-      const res = await apiClient.put(`/api/personas/${usuario!.id}`, body);
+      const res = await apiClient.put<PerfilActualizadoResponse>(`/api/personas/${usuario!.id}`, body);
       const actualizado = res.data.persona;
 
-      // Actualizar contexto y localStorage para reflejar los cambios en toda la app
-      const token = localStorage.getItem('token') ?? '';
-      setAuth(token, {
+      // Actualizar la sesión para reflejar los cambios en toda la app
+      actualizarUsuario({
         id:     actualizado.id,
         nombre: actualizado.nombre,
         correo: actualizado.correo,
@@ -88,13 +88,12 @@ export default function PerfilPage() {
       });
 
       setFormData(prev => ({ ...prev, password: '', confirmar: '' }));
-      setSuccess('Perfil actualizado correctamente.');
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
-        setError('El correo ya está en uso por otra cuenta.');
+      toast.success('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 409) {
+        toast.error('No se pudo guardar el perfil', 'El correo ya está en uso por otra cuenta.');
       } else {
-        const msg = err?.response?.data?.mensaje;
-        setError(msg ?? 'Error al actualizar el perfil. Inténtalo de nuevo.');
+        toast.error('No se pudo guardar el perfil', getApiErrorMessage(err, 'Error al actualizar el perfil. Inténtalo de nuevo.'));
       }
     } finally {
       setSaving(false);
@@ -201,9 +200,6 @@ export default function PerfilPage() {
                 </div>
               </div>
             </div>
-
-            {success && <p className={`${form.message} ${form.messageSuccess}`}>{success}</p>}
-            {error   && <p className={`${form.message} ${form.messageError}`}>{error}</p>}
 
             <div className={form.buttonRow}>
               <Btn type="submit" kind="primary" disabled={saving}>

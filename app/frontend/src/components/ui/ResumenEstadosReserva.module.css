@@ -1,0 +1,35 @@
+.row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap-sm);
+}
+
+.chip {
+  border: 1px solid rgba(0, 0, 0, .04);
+  border-radius: var(--radius-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 24px;
+}
+
+.number {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.pendiente  { background: var(--estado-reserva-pendiente-bg); color: var(--estado-reserva-pendiente-fg); }
+.confirmada { background: var(--estado-reserva-confirmada-bg); color: var(--estado-reserva-confirmada-fg); }
+.rechazada  { background: var(--estado-reserva-rechazada-bg); color: var(--estado-reserva-rechazada-fg); }
+.cancelada  { background: var(--estado-reserva-cancelada-bg); color: var(--estado-reserva-cancelada-fg); }

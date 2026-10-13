@@ -64,8 +64,11 @@ CREATE TABLE `persona` (
   `password` varchar(255) NOT NULL,
   `rol_id` int(11) NOT NULL,
   `disponible` tinyint(1) NOT NULL DEFAULT 1,
+  `clerk_user_id` varchar(64) DEFAULT NULL,
+  `estado_cuenta` enum('pendiente','activa','rechazada') NOT NULL DEFAULT 'activa',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_persona_correo` (`correo`),
+  UNIQUE KEY `uq_persona_clerk_user_id` (`clerk_user_id`),
   KEY `fk_persona_rol_idx` (`rol_id`),
   CONSTRAINT `fk_persona_rol` FOREIGN KEY (`rol_id`) REFERENCES `rol` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
@@ -213,6 +216,7 @@ CREATE TABLE `evento` (
   `encargado_id` int(11) NOT NULL,
   `reserva_id` int(11) NOT NULL,
   `descripcion` text NOT NULL,
+  `publico` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_evento_reserva` (`reserva_id`),
   KEY `fk_evento_encargado_idx` (`encargado_id`),

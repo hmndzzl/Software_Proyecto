@@ -1,6 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, type ReactNode } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/react';
+import { esES } from '@clerk/localizations';
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
+import { ToastProvider } from './context/ToastContext';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import GlobalErrorBanner from './components/ui/GlobalErrorBanner';
 import AppShell from './components/layout/AppShell';
@@ -8,6 +12,7 @@ import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
 
 import LoginPage from './pages/auth/LoginPage';
 import LandingPage from './pages/landing/LandingPage';
+import AgendaPublicaPage from './pages/agenda-publica/AgendaPublicaPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import MinistrosPage from './pages/ministers/MinistrosPage';
 import TareasPage from './pages/tasks/TareasPage';
@@ -23,6 +28,12 @@ import CalendarioPage from './pages/calendario/CalendarioPage';
 import CambiosTurnoPage from './pages/cambios-turno/CambiosTurnoPage';
 import NotFoundPage from './pages/not_found_page/NotFoundPage';
 import AusenciasPage from './pages/ausencias/AusenciasPage';
+import CuentasPage from './pages/cuentas/CuentasPage';
+import ClerkSessionSync from './auth/ClerkSessionSync';
+import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
+import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
+import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
+import ContenidoPublicoPage from './pages/contenido-publico/ContenidoPublicoPage';
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -32,13 +43,31 @@ const ALL_ROLES = [
   ROLES.MINISTRO,
 ];
 
+function SincronizarPreferenciasUI() {
+  useEffect(() => {
+    const sincronizar = () => {
+      document.documentElement.dataset.tema = leerTemaAplicacion();
+    };
+    sincronizar();
+    window.addEventListener(UI_PREFERENCES_EVENT, sincronizar);
+    return () => window.removeEventListener(UI_PREFERENCES_EVENT, sincronizar);
+  }, []);
+
+  return null;
+}
+
 function AppContent() {
   const location = useLocation();
   const isLogin = location.pathname === '/login';
   const isLanding = location.pathname === '/';
+  const isAgendaPublica = location.pathname === '/agenda';
 
   if (isLanding) {
     return <LandingPage />;
+  }
+
+  if (isAgendaPublica) {
+    return <AgendaPublicaPage />;
   }
 
   if (isLogin) {
@@ -110,7 +139,7 @@ function AppContent() {
         <Route
           path="/espacios/:id"
           element={
-            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN]}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <EspacioDetallePage />
             </ProtectedRoute>
           }
@@ -168,10 +197,37 @@ function AppContent() {
         />
 
         <Route
+          path="/cuentas"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+              <CuentasPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/perfil"
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <PerfilPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/configuracion"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <ConfiguracionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/contenido-publico"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+              <ContenidoPublicoPage />
             </ProtectedRoute>
           }
         />
@@ -182,15 +238,40 @@ function AppContent() {
   );
 }
 
+// Clerk solo se monta si hay publishable key; sin ella la app usa el login anterior.
+// Las redirecciones de Clerk usan el router de la app: sin esto recargan la página completa,
+// y con eso se pierde el estado (mensajes de error incluidos) y la pantalla parpadea.
+function MaybeClerkProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  if (!CLERK_ENABLED) return <>{children}</>;
+  return (
+    <ClerkProvider
+      publishableKey={CLERK_PUBLISHABLE_KEY!}
+      localization={esES}
+      afterSignOutUrl="/login"
+      routerPush={(to: string) => navigate(to)}
+      routerReplace={(to: string) => navigate(to, { replace: true })}
+    >
+      {children}
+    </ClerkProvider>
+  );
+}
+
 function App() {
   return (
     <ErrorProvider>
       <ErrorBoundary>
         <BrowserRouter>
-          <AuthProvider>
-            <AppContent />
-            <GlobalErrorBanner />
-          </AuthProvider>
+          <SincronizarPreferenciasUI />
+          <MaybeClerkProvider>
+            <ToastProvider>
+              <AuthProvider>
+                {CLERK_ENABLED && <ClerkSessionSync />}
+                <AppContent />
+                <GlobalErrorBanner />
+              </AuthProvider>
+            </ToastProvider>
+          </MaybeClerkProvider>
         </BrowserRouter>
       </ErrorBoundary>
     </ErrorProvider>

@@ -85,3 +85,44 @@ export interface ReservaDisponible {
   solicitante_id: number;
   nombre_solicitante: string;
 }
+
+export interface Reserva {
+  id: number;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  espacio_id?: number | null;
+  espacio_nombre?: string | null;
+  estado_reserva_id: number;
+  solicitante_id?: number;
+  solicitante_nombre: string | null;
+  evento_id?: number | null;
+  evento_titulo: string | null;
+  evento_descripcion: string | null;
+}
+
+export interface AsignadoInfo {
+  persona_id: number;
+  nombre: string;
+  correo?: string;
+  rol?: string;
+}
+
+export interface Tarea {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  persona_nombre?: string | null;
+  asignados: AsignadoInfo[];
+}
+
+export interface Ministro {
+  id: number;
+  nombre: string;
+  correo: string;
+  rol_id?: number;
+  disponible?: boolean;
+}

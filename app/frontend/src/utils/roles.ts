@@ -14,23 +14,15 @@ export const ROLE_HIERARCHY: Record<number, number[]> = {
   [ROLES.MINISTRO]: [ROLES.MINISTRO],
 };
 
-export function usuarioTieneRol(allowedRoles: number[]) {
-  const usuarioGuardado = localStorage.getItem('usuario');
+/** Función pura: el estado del usuario sale de useAuth(), aquí no se lee la sesión. */
+export function rolTieneAcceso(rolId: unknown, allowedRoles: number[]) {
+  const userRolId = Number(rolId);
 
-  if (!usuarioGuardado) return false;
+  if (!userRolId) return false;
 
-  try {
-    const usuario = JSON.parse(usuarioGuardado);
-    const userRolId = Number(usuario?.rol_id);
+  const effectiveRoles = ROLE_HIERARCHY[userRolId] ?? [userRolId];
 
-    if (!userRolId) return false;
-
-    const effectiveRoles = ROLE_HIERARCHY[userRolId] ?? [userRolId];
-
-    return allowedRoles.some((role) => effectiveRoles.includes(role));
-  } catch {
-    return false;
-  }
+  return allowedRoles.some((role) => effectiveRoles.includes(role));
 }
 
 export const ROLES_RESERVAS: number[] = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];

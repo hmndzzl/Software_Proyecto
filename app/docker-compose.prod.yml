@@ -1,0 +1,71 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+      args:
+        VITE_API_URL: ${VITE_API_URL:?Define VITE_API_URL}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      NODE_ENV: production
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:?Define DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+      DB_NAME: ${DB_NAME:?Define DB_NAME}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Define JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-15d}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Define CORS_ORIGIN}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Define DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME:?Define DB_NAME}
+      MARIADB_USER: ${DB_USER:?Define DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  mariadb_data:

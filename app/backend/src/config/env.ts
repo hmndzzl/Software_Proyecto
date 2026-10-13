@@ -40,3 +40,15 @@ export const JWT_SECRET = resolveSecret('JWT_SECRET');
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 export const JWT_REFRESH_SECRET = resolveSecret('JWT_REFRESH_SECRET');
 export const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '15d';
+
+// Orígenes del frontend permitidos. Se comparten entre CORS y la verificación
+// del claim `azp` de los tokens de Clerk.
+export function getAllowedOrigins(): string[] {
+  return [
+    'http://localhost:5173',
+    ...(process.env.CORS_ORIGIN ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ];
+}

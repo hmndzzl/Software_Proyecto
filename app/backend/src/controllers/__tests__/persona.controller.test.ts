@@ -118,7 +118,7 @@ describe('Persona Controller - Pruebas Unitarias', () => {
       await getEncargadosEvento(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalledWith(
-        'SELECT id, nombre FROM persona ORDER BY nombre ASC'
+        "SELECT id, nombre FROM persona WHERE estado_cuenta = 'activa' ORDER BY nombre ASC"
       );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(mockRows);

@@ -1,10 +1,24 @@
 name: CI
 
 on:
+  push:
+    branches:
+      - main
+      - develop
   pull_request:
     branches:
       - main
       - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: '20'
 
 jobs:
   frontend-quality:
@@ -13,30 +27,86 @@ jobs:
 
     defaults:
       run:
+        shell: bash
         working-directory: ./app/frontend
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: ./app/frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare reports directory
+        run: mkdir -p reports
+
       - name: Build
-        run: npm run build
+        id: build
+        run: npm run build 2>&1 | tee -a reports/ci.log
 
       - name: Lint
-        run: npm run lint
+        id: lint
+        if: ${{ !cancelled() }}
+        run: npm run lint 2>&1 | tee -a reports/ci.log
 
-      - name: Run Tests (Coverage)
-        run: npm run coverage
+      - name: Run Tests (Coverage + JUnit report)
+        id: tests
+        if: ${{ !cancelled() }}
+        run: >
+          npm run coverage --
+          --reporter=default --reporter=junit
+          --outputFile.junit=reports/junit.xml
+          2>&1 | tee -a reports/ci.log
+
+      - name: Write result summary
+        if: ${{ always() }}
+        env:
+          BUILD: ${{ steps.build.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          TESTS: ${{ steps.tests.outcome }}
+        run: |
+          icon() { [ "$1" = "success" ] && echo "✅ OK" || echo "❌ $1"; }
+          {
+            echo "## Frontend: resultado de CI"
+            echo
+            echo "| Paso | Resultado |"
+            echo "|---|---|"
+            echo "| Build | $(icon "$BUILD") |"
+            echo "| Lint | $(icon "$LINT") |"
+            echo "| Pruebas + cobertura | $(icon "$TESTS") |"
+            echo
+            if [ -f reports/junit.xml ]; then
+              root=$(grep -m1 -o '<testsuites[^>]*>' reports/junit.xml)
+              get() { echo "$root" | grep -o "$1=\"[0-9.]*\"" | head -1 | cut -d'"' -f2; }
+              echo "**Pruebas ejecutadas:** $(get tests) · **Fallidas:** $(get failures) · **Errores:** $(get errors)"
+            else
+              echo "⚠️ No se generó reports/junit.xml (las pruebas no llegaron a ejecutarse)."
+            fi
+            echo
+            if [ "$BUILD" = "success" ] && [ "$LINT" = "success" ] && [ "$TESTS" = "success" ]; then
+              echo "### ✅ Ejecución EXITOSA"
+            else
+              echo "### ❌ Ejecución FALLIDA"
+            fi
+            echo
+            echo "Evidencia (JUnit XML + log) en el artefacto \`frontend-test-evidence\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-evidence
+          path: app/frontend/reports/
+          if-no-files-found: warn
+          retention-days: 30
 
   test-backend:
     name: Backend Unit Tests
@@ -44,21 +114,157 @@ jobs:
 
     defaults:
       run:
+        shell: bash
         working-directory: ./app/backend
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
+      # Node 24 (no 20): @testcontainers/mariadb 12 exige Node >= 22.22 para las
+      # pruebas de integración; con Node 20 falla con "markAsUncloneable".
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: ./app/backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Tests (Coverage)
-        run: npm run coverage
+      - name: Prepare reports directory
+        run: mkdir -p reports test-results
+
+      - name: Run Unit Tests (Coverage + JUnit report)
+        id: unit
+        run: >
+          npm run coverage --
+          --reporter=default --reporter=junit
+          --outputFile.junit=reports/junit.xml
+          2>&1 | tee -a reports/ci.log
+
+      # Las pruebas de integración levantan su propio MariaDB con Testcontainers
+      # (Docker ya viene en ubuntu-latest), por eso no hace falta "services:".
+      # Su config genera test-results/integration-junit.xml.
+      - name: Run Integration Tests (MariaDB)
+        id: integration
+        if: ${{ !cancelled() }}
+        run: npm run test:integration 2>&1 | tee -a reports/ci.log
+
+      - name: Write result summary
+        if: ${{ always() }}
+        env:
+          UNIT: ${{ steps.unit.outcome }}
+          INTEGRATION: ${{ steps.integration.outcome }}
+        run: |
+          icon() { [ "$1" = "success" ] && echo "✅ OK" || echo "❌ $1"; }
+          counts() {
+            if [ -f "$1" ]; then
+              root=$(grep -m1 -o '<testsuites[^>]*>' "$1")
+              get() { echo "$root" | grep -o "$1=\"[0-9.]*\"" | head -1 | cut -d'"' -f2; }
+              echo "$(get tests) | $(get failures) | $(get errors)"
+            else
+              echo "sin reporte | - | -"
+            fi
+          }
+          {
+            echo "## Backend: resultado de CI"
+            echo
+            echo "| Suite | Resultado | Pruebas | Fallidas | Errores |"
+            echo "|---|---|---|---|---|"
+            echo "| Unitarias (+ cobertura) | $(icon "$UNIT") | $(counts reports/junit.xml) |"
+            echo "| Integración (MariaDB) | $(icon "$INTEGRATION") | $(counts test-results/integration-junit.xml) |"
+            echo
+            if [ "$UNIT" = "success" ] && [ "$INTEGRATION" = "success" ]; then
+              echo "### ✅ Ejecución EXITOSA"
+            else
+              echo "### ❌ Ejecución FALLIDA"
+            fi
+            echo
+            echo "Evidencia (JUnit XML + log) en el artefacto \`backend-test-evidence\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-evidence
+          path: |
+            app/backend/reports/
+            app/backend/test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  regression-frontend:
+    name: Frontend Regression Tests (Playwright)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./app/frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./app/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare reports directory
+        run: mkdir -p reports test-results
+
+      # playwright.config.ts levanta el servidor de Vite y genera el reporte HTML
+      # (playwright-report/) y el JUnit (test-results/regression-junit.xml).
+      - name: Run Regression Tests
+        id: regression
+        run: npm run test:regression 2>&1 | tee -a reports/ci.log
+
+      - name: Write result summary
+        if: ${{ always() }}
+        env:
+          REGRESSION: ${{ steps.regression.outcome }}
+        run: |
+          {
+            echo "## Frontend regresión (Playwright): resultado de CI"
+            echo
+            junit=test-results/regression-junit.xml
+            if [ -f "$junit" ]; then
+              root=$(grep -m1 -o '<testsuites[^>]*>' "$junit")
+              get() { echo "$root" | grep -o "$1=\"[0-9.]*\"" | head -1 | cut -d'"' -f2; }
+              echo "**Pruebas ejecutadas:** $(get tests) · **Fallidas:** $(get failures) · **Errores:** $(get errors)"
+            else
+              echo "⚠️ No se generó $junit (las pruebas no llegaron a ejecutarse)."
+            fi
+            echo
+            if [ "$REGRESSION" = "success" ]; then
+              echo "### ✅ Ejecución EXITOSA"
+            else
+              echo "### ❌ Ejecución FALLIDA (resultado: $REGRESSION)"
+            fi
+            echo
+            echo "Evidencia (reporte HTML, JUnit XML, trazas y log) en el artefacto \`regression-evidence\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: regression-evidence
+          path: |
+            app/frontend/reports/
+            app/frontend/test-results/
+            app/frontend/playwright-report/
+          if-no-files-found: warn
+          retention-days: 30

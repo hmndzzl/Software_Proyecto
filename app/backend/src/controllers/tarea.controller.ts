@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
-import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
+import { withTransaction } from '../utils/withTransaction';
 
 // Manejo de get, post, put, delete para tareas y asignaciones
 // Retorna todas las tareas con sus ministros asignados con GET /api/tareas
@@ -251,7 +251,6 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  let conn: PoolConnection | null = null;
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
     const [tareas] = await pool.execute<RowDataPacket[]>(
@@ -307,52 +306,47 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     const remitenteId: number = req.user!.id;
     const hoy = new Date().toISOString().split('T')[0];
 
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
-
-    // 1. Insertar asignación (IGNORE si ya existe)
-    const [asignResult] = await conn.execute<ResultSetHeader>(
-      'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
-      [tarea_id, persona_id]
-    );
-
-    // 2. Solo notificar si la asignación fue nueva (affectedRows > 0)
-    if (asignResult.affectedRows > 0) {
-      const mensaje = `Se te asignó la tarea: ${tituloTarea}`;
-
-      const [notifResult] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id)
-         VALUES (?, ?, 'individual', ?)`,
-        [mensaje, hoy, remitenteId]
+    await withTransaction(async (conn) => {
+      // 1. Insertar asignación (IGNORE si ya existe)
+      const [asignResult] = await conn.execute<ResultSetHeader>(
+        'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
+        [tarea_id, persona_id]
       );
 
-      await conn.execute(
-        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
-        [persona_id, notifResult.insertId]
-      );
-    }
+      // 2. Solo notificar si la asignación fue nueva (affectedRows > 0)
+      if (asignResult.affectedRows > 0) {
+        const mensaje = `Se te asignó la tarea: ${tituloTarea}`;
 
-    await conn.commit();
+        const [notifResult] = await conn.execute<ResultSetHeader>(
+          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id)
+           VALUES (?, ?, 'individual', ?)`,
+          [mensaje, hoy, remitenteId]
+        );
 
-    const serviciosEnElMes = serviciosPrevios + (asignResult.affectedRows > 0 ? 1 : 0);
+        await conn.execute(
+          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+          [persona_id, notifResult.insertId]
+        );
+      }
 
-    res.status(HttpStatus.CREATED).json({
-      mensaje: 'Asignación realizada correctamente',
-      tarea_id,
-      persona_id,
-      alerta: {
-        ministro_no_disponible: ministroNoDisponible,
-        tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
-        servicios_en_el_mes: serviciosEnElMes,
-        tope_servicios_mes: TOPE_SERVICIOS_MES,
-      },
+      const serviciosEnElMes = serviciosPrevios + (asignResult.affectedRows > 0 ? 1 : 0);
+
+      res.status(HttpStatus.CREATED).json({
+        mensaje: 'Asignación realizada correctamente',
+        tarea_id,
+        persona_id,
+        alerta: {
+          ministro_no_disponible: ministroNoDisponible,
+          tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
+          servicios_en_el_mes: serviciosEnElMes,
+          tope_servicios_mes: TOPE_SERVICIOS_MES,
+        },
+      });
+      return 'commit';
     });
   } catch (error) {
-    if (conn) await conn.rollback();
     console.error('Error en asignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al realizar la asignación' });
-  } finally {
-    if (conn) conn.release();
   }
 };
 
@@ -371,10 +365,9 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
     return;
   }
 
-  let conn: PoolConnection | null = null;
   try {
     const [tareas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
+      'SELECT id, titulo, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
     if (tareas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
@@ -430,38 +423,56 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
+    await withTransaction(async (conn) => {
+      await conn.execute(
+        'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
+        [tarea_id, persona_actual_id]
+      );
+      await conn.execute(
+        'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
+        [tarea_id, persona_nueva_id]
+      );
 
-    await conn.execute(
-      'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
-      [tarea_id, persona_actual_id]
-    );
-    await conn.execute(
-      'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
-      [tarea_id, persona_nueva_id]
-    );
+      // Se notifica tanto al nuevo responsable como a quien dejó de estar asignado.
+      const tituloTarea: string = tarea.titulo;
+      const remitenteId: number = req.user!.id;
+      const hoy = new Date().toISOString().split('T')[0];
 
-    await conn.commit();
+      const [notifNueva] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+        [`Se te asignó la tarea: ${tituloTarea}`, hoy, remitenteId]
+      );
+      await conn.execute(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [persona_nueva_id, notifNueva.insertId]
+      );
 
-    res.status(HttpStatus.OK).json({
-      mensaje: 'Responsable reasignado correctamente',
-      tarea_id: Number(tarea_id),
-      persona_anterior_id: Number(persona_actual_id),
-      persona_nueva_id: Number(persona_nueva_id),
-      alerta: {
-        ministro_no_disponible: ministroNoDisponible,
-        tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
-        servicios_en_el_mes: serviciosEnElMes,
-        tope_servicios_mes: TOPE_SERVICIOS_MES,
-      },
+      const [notifAnterior] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+        [`Se te reasignó la tarea "${tituloTarea}" a otra persona`, hoy, remitenteId]
+      );
+      await conn.execute(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [persona_actual_id, notifAnterior.insertId]
+      );
+
+      res.status(HttpStatus.OK).json({
+        mensaje: 'Responsable reasignado correctamente',
+        tarea_id: Number(tarea_id),
+        persona_anterior_id: Number(persona_actual_id),
+        persona_nueva_id: Number(persona_nueva_id),
+        alerta: {
+          ministro_no_disponible: ministroNoDisponible,
+          tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
+          servicios_en_el_mes: serviciosEnElMes,
+          tope_servicios_mes: TOPE_SERVICIOS_MES,
+        },
+      });
+      return 'commit';
     });
   } catch (error) {
-    if (conn) await conn.rollback();
     console.error('Error en reasignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al reasignar la tarea' });
-  } finally {
-    if (conn) conn.release();
   }
 };
 
@@ -484,6 +495,22 @@ export const desasignarTarea = async (req: Request, res: Response): Promise<void
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Asignación no encontrada' });
       return;
     }
+
+    const [tareas] = await pool.execute<RowDataPacket[]>(
+      'SELECT titulo FROM tarea WHERE id = ?', [tarea_id]
+    );
+    const tituloTarea: string = tareas[0]?.titulo ?? 'una tarea';
+    const remitenteId: number = req.user!.id;
+    const hoy = new Date().toISOString().split('T')[0];
+
+    const [notifResult] = await pool.execute<ResultSetHeader>(
+      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+      [`Se te quitó la asignación de la tarea: ${tituloTarea}`, hoy, remitenteId]
+    );
+    await pool.execute(
+      'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+      [persona_id, notifResult.insertId]
+    );
 
     res.status(HttpStatus.NO_CONTENT).send();
   } catch (error) {

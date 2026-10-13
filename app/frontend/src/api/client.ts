@@ -1,4 +1,6 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
+import { CLERK_ENABLED, getClerkToken } from '../auth/clerkSession';
+import { clearSession, readToken, saveToken } from '../auth/sessionStore';
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
@@ -7,12 +9,26 @@ const apiClient = axios.create({
   withCredentials: true,
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+function withToken<T extends InternalAxiosRequestConfig>(config: T, token: string | null): T {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}
+
+apiClient.interceptors.request.use((config) => {
+  if (!CLERK_ENABLED) {
+    return withToken(config, readToken());
+  }
+
+  // Con Clerk activo se prefiere su token de sesión (se renueva solo); si no hay
+  // sesión de Clerk se usa el JWT propio, para quienes aún entran con el acceso anterior.
+  return getClerkToken().then((clerkToken) => {
+    if (clerkToken) {
+      (config as InternalAxiosRequestConfig & { _clerk?: boolean })._clerk = true;
+    }
+    return withToken(config, clerkToken ?? readToken());
+  });
 });
 
 let isRefreshing = false;
@@ -28,7 +44,8 @@ apiClient.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
-    if (error.response?.status !== 401 || original._retry) {
+    // Los tokens de Clerk no pasan por /refresh: Clerk los renueva por su cuenta.
+    if (error.response?.status !== 401 || original._retry || original._clerk) {
       return Promise.reject(error);
     }
 
@@ -50,14 +67,13 @@ apiClient.interceptors.response.use(
         {},
         { withCredentials: true }
       );
-      localStorage.setItem('token', data.token);
+      saveToken(data.token);
       drainQueue(null, data.token);
       original.headers.Authorization = `Bearer ${data.token}`;
       return apiClient(original);
     } catch (refreshError) {
       drainQueue(refreshError, null);
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
+      clearSession();
       window.location.href = '/login';
       return Promise.reject(refreshError);
     } finally {

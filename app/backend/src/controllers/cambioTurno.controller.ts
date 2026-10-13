@@ -4,6 +4,7 @@ import pool from '../config/db';
 import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
 import type { CambioTurnoCreateInput, CambioTurnoConInfo } from '../types/cambioTurno.types';
+import { withTransaction } from '../utils/withTransaction';
 
 // HU-23: permite a un ministro asignado a una tarea solicitar que otro ministro tome su lugar.
 // Al aceptarse (responderCambioTurno) el titular de la tarea se actualiza automáticamente,
@@ -24,7 +25,6 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
     return;
   }
 
-  let conn: PoolConnection | null = null;
   try {
     const [tareas] = await pool.execute<RowDataPacket[]>(
       'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?',
@@ -89,42 +89,37 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
     const horaFin = String(tarea.hora_fin).substring(0, 5);
     const mensaje = `${solicitanteNombre} te solicita un cambio de turno para la tarea: ${tarea.titulo} (${tarea.fecha} ${horaInicio}-${horaFin})`;
 
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
+    await withTransaction(async (conn) => {
+      const [notifResult] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+        [mensaje, hoy, solicitanteId]
+      );
+      await conn.execute(
+        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+        [destinatario_id, notifResult.insertId]
+      );
 
-    const [notifResult] = await conn.execute<ResultSetHeader>(
-      `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
-      [mensaje, hoy, solicitanteId]
-    );
-    await conn.execute(
-      'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
-      [destinatario_id, notifResult.insertId]
-    );
+      const [cambioResult] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO cambio_turno (tarea_id, solicitante_id, destinatario_id, estado, notificacion_id, fecha_solicitud)
+         VALUES (?, ?, ?, 'pendiente', ?, ?)`,
+        [tarea_id, solicitanteId, destinatario_id, notifResult.insertId, hoy]
+      );
 
-    const [cambioResult] = await conn.execute<ResultSetHeader>(
-      `INSERT INTO cambio_turno (tarea_id, solicitante_id, destinatario_id, estado, notificacion_id, fecha_solicitud)
-       VALUES (?, ?, ?, 'pendiente', ?, ?)`,
-      [tarea_id, solicitanteId, destinatario_id, notifResult.insertId, hoy]
-    );
-
-    await conn.commit();
-
-    res.status(HttpStatus.CREATED).json({
-      mensaje: 'Solicitud de cambio de turno enviada',
-      cambio_turno: {
-        id: cambioResult.insertId,
-        tarea_id: Number(tarea_id),
-        solicitante_id: solicitanteId,
-        destinatario_id: Number(destinatario_id),
-        estado: 'pendiente',
-      },
+      res.status(HttpStatus.CREATED).json({
+        mensaje: 'Solicitud de cambio de turno enviada',
+        cambio_turno: {
+          id: cambioResult.insertId,
+          tarea_id: Number(tarea_id),
+          solicitante_id: solicitanteId,
+          destinatario_id: Number(destinatario_id),
+          estado: 'pendiente',
+        },
+      });
+      return 'commit';
     });
   } catch (error) {
-    if (conn) await conn.rollback();
     console.error('Error en solicitarCambioTurno:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al solicitar el cambio de turno' });
-  } finally {
-    if (conn) conn.release();
   }
 };
 
@@ -167,7 +162,6 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
     return;
   }
 
-  let conn: PoolConnection | null = null;
   try {
     const [cambios] = await pool.execute<RowDataPacket[]>(
       `SELECT ct.id, ct.tarea_id, ct.solicitante_id, ct.destinatario_id, ct.estado, ct.notificacion_id,
@@ -205,32 +199,31 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
     const hoy = new Date().toISOString().split('T')[0];
 
     if (!aceptar) {
-      conn = await pool.getConnection();
-      await conn.beginTransaction();
+      await withTransaction(async (conn) => {
+        await conn.execute(
+          `UPDATE cambio_turno SET estado = 'rechazado', fecha_respuesta = ? WHERE id = ?`,
+          [hoy, id]
+        );
+        await marcarNotificacionLeida(conn, cambio.notificacion_id, destinatarioId);
+        await notificarSolicitante(
+          conn,
+          cambio.solicitante_id,
+          destinatarioId,
+          hoy,
+          `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue rechazada`
+        );
+        await notificarCoordinadoresCambioTurno(
+          conn,
+          cambio.solicitante_id,
+          cambio.destinatario_id,
+          destinatarioId,
+          hoy,
+          `El cambio de turno para la tarea "${tarea.titulo}" entre ${cambio.solicitante_nombre} y ${cambio.destinatario_nombre} fue rechazado`
+        );
 
-      await conn.execute(
-        `UPDATE cambio_turno SET estado = 'rechazado', fecha_respuesta = ? WHERE id = ?`,
-        [hoy, id]
-      );
-      await marcarNotificacionLeida(conn, cambio.notificacion_id, destinatarioId);
-      await notificarSolicitante(
-        conn,
-        cambio.solicitante_id,
-        destinatarioId,
-        hoy,
-        `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue rechazada`
-      );
-      await notificarCoordinadoresCambioTurno(
-        conn,
-        cambio.solicitante_id,
-        cambio.destinatario_id,
-        destinatarioId,
-        hoy,
-        `El cambio de turno para la tarea "${tarea.titulo}" entre ${cambio.solicitante_nombre} y ${cambio.destinatario_nombre} fue rechazado`
-      );
-
-      await conn.commit();
-      res.status(HttpStatus.OK).json({ mensaje: 'Cambio de turno rechazado', tarea_id: cambio.tarea_id });
+        res.status(HttpStatus.OK).json({ mensaje: 'Cambio de turno rechazado', tarea_id: cambio.tarea_id });
+        return 'commit';
+      });
       return;
     }
 
@@ -262,51 +255,46 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
       return;
     }
 
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
+    await withTransaction(async (conn) => {
+      await conn.execute(
+        'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
+        [cambio.tarea_id, cambio.solicitante_id]
+      );
+      await conn.execute(
+        'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
+        [cambio.tarea_id, destinatarioId]
+      );
+      await conn.execute(
+        `UPDATE cambio_turno SET estado = 'aceptado', fecha_respuesta = ? WHERE id = ?`,
+        [hoy, id]
+      );
+      await marcarNotificacionLeida(conn, cambio.notificacion_id, destinatarioId);
+      await notificarSolicitante(
+        conn,
+        cambio.solicitante_id,
+        destinatarioId,
+        hoy,
+        `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue aceptada`
+      );
+      await notificarCoordinadoresCambioTurno(
+        conn,
+        cambio.solicitante_id,
+        cambio.destinatario_id,
+        destinatarioId,
+        hoy,
+        `El cambio de turno para la tarea "${tarea.titulo}" entre ${cambio.solicitante_nombre} y ${cambio.destinatario_nombre} fue aceptado`
+      );
 
-    await conn.execute(
-      'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
-      [cambio.tarea_id, cambio.solicitante_id]
-    );
-    await conn.execute(
-      'INSERT IGNORE INTO asignacion_tarea (tarea_id, persona_id) VALUES (?, ?)',
-      [cambio.tarea_id, destinatarioId]
-    );
-    await conn.execute(
-      `UPDATE cambio_turno SET estado = 'aceptado', fecha_respuesta = ? WHERE id = ?`,
-      [hoy, id]
-    );
-    await marcarNotificacionLeida(conn, cambio.notificacion_id, destinatarioId);
-    await notificarSolicitante(
-      conn,
-      cambio.solicitante_id,
-      destinatarioId,
-      hoy,
-      `Tu solicitud de cambio de turno para la tarea "${tarea.titulo}" fue aceptada`
-    );
-    await notificarCoordinadoresCambioTurno(
-      conn,
-      cambio.solicitante_id,
-      cambio.destinatario_id,
-      destinatarioId,
-      hoy,
-      `El cambio de turno para la tarea "${tarea.titulo}" entre ${cambio.solicitante_nombre} y ${cambio.destinatario_nombre} fue aceptado`
-    );
-
-    await conn.commit();
-
-    res.status(HttpStatus.OK).json({
-      mensaje: 'Cambio de turno aceptado, titular actualizado automáticamente',
-      tarea_id: cambio.tarea_id,
-      nuevo_titular: destinatarioId,
+      res.status(HttpStatus.OK).json({
+        mensaje: 'Cambio de turno aceptado, titular actualizado automáticamente',
+        tarea_id: cambio.tarea_id,
+        nuevo_titular: destinatarioId,
+      });
+      return 'commit';
     });
   } catch (error) {
-    if (conn) await conn.rollback();
     console.error('Error en responderCambioTurno:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al responder la solicitud de cambio de turno' });
-  } finally {
-    if (conn) conn.release();
   }
 };
 

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
-import type { BadgeKind } from '../../components/ui/Badge';
+import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
+import ResumenEstadosReserva from '../../components/ui/ResumenEstadosReserva';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
@@ -12,31 +13,14 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
-import { ESTADOS_RESERVA } from '../../utils/estadosReserva';
-import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA, usuarioTieneRol } from '../../utils/roles';
+import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../utils/estadosReserva';
+import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
+import { getApiErrorMessage } from '../../utils/apiError';
+import { useAuth } from '../../context/AuthContext';
+import type { Reserva } from '../../types';
 import styles from './MisReservasPage.module.css';
 
-interface MiReserva {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  espacio_nombre: string | null;
-  estado_reserva_id: number;
-  evento_id: number | null;
-  evento_descripcion: string | null;
-  evento_titulo: string | null;
-}
-
-const ESTADO_LABEL: Record<number, string> = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada', 4: 'Cancelada' };
-const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada', 4: 'cancelada' };
-
-const KPI_ITEMS = [
-  { label: 'Pendientes',  estadoId: 1, bg: 'var(--color-warnBg)', color: 'var(--color-warn)'  },
-  { label: 'Confirmadas', estadoId: 2, bg: 'var(--color-okBg)',   color: 'var(--color-ok)'    },
-  { label: 'Rechazadas',  estadoId: 3, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
-  { label: 'Canceladas',  estadoId: 4, bg: 'var(--color-badBg)',  color: 'var(--color-bad)'   },
-];
+type MiReserva = Reserva;
 
 type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
 
@@ -44,12 +28,13 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
-  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+  estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
 };
 
 export default function MisReservasPage() {
   const navigate = useNavigate();
-  const puedeReservar = usuarioTieneRol(ROLES_RESERVAS);
+  const { tieneRol } = useAuth();
+  const puedeReservar = tieneRol(ROLES_RESERVAS);
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -59,7 +44,7 @@ export default function MisReservasPage() {
   const cargarReservas = () => {
     setLoading(true);
     setError('');
-    apiClient.get('/api/reservas/mis-reservas')
+    apiClient.get<MiReserva[]>('/api/reservas/mis-reservas')
       .then(res => setReservas(res.data))
       .catch(() => setError('Error al cargar tus reservas.'))
       .finally(() => setLoading(false));
@@ -69,13 +54,17 @@ export default function MisReservasPage() {
     cargarReservas();
   }, []);
 
+  const toast = useToast();
+
   const cancelarReserva = async (id: number) => {
     if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
     try {
       await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
+      const aviso = avisoCambioEstadoReserva(ESTADOS_RESERVA.CANCELADA);
+      toast.success(aviso.titulo, aviso.mensaje);
       cargarReservas();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cancelar la reserva');
+    } catch (err: unknown) {
+      toast.error('No se pudo cancelar la reserva', getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
     }
   };
 
@@ -94,16 +83,7 @@ export default function MisReservasPage() {
 
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
-        <div className={styles.kpiRow}>
-          {KPI_ITEMS.map(({ label, estadoId, bg, color }) => (
-            <div key={label} className={styles.kpiChip} style={{ background: bg }}>
-              <span className={styles.kpiNum} style={{ color }}>
-                {reservas.filter(r => r.estado_reserva_id === estadoId).length}
-              </span>
-              <span className={styles.kpiLabel} style={{ color }}>{label}</span>
-            </div>
-          ))}
-        </div>
+        <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />
       )}
 
       <Card>
@@ -152,12 +132,10 @@ export default function MisReservasPage() {
                     <td className={styles.mono}>{formatFecha(r.fecha)}</td>
                     <td className={styles.horaCell}>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</td>
                     <td>
-                      <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                        {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                      </Badge>
+                      <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
                     <td>
-                      {(r.estado_reserva_id === 1 || r.estado_reserva_id === 2) && (
+                      {puedeCancelarReserva(r.estado_reserva_id) && (
                         <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
                       )}
                     </td>

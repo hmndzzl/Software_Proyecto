@@ -1,30 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
+import { useToast } from '../../context/ToastContext';
+import { avisoCambioEstadoReserva, ESTADOS_RESERVA } from '../../utils/estadosReserva';
+import { getApiErrorMessage } from '../../utils/apiError';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
+import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
+import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
-import type { BadgeKind } from '../../components/ui/Badge';
+import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
 import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
-import { ROLES, usuarioTieneRol } from '../../utils/roles';
+import { ROLES, ROLES_RESERVAS } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
 import { partesFecha, formatHora as fmtH } from '../../utils/date';
+import type { Reserva } from '../../types';
 import styles from './EspacioDetallePage.module.css';
-
-interface Reserva {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  estado_reserva_id: number;
-  evento_titulo: string | null;
-  evento_descripcion: string | null;
-}
-
-const ESTADO_LABEL: Record<number, string>   = { 1: 'Pendiente', 2: 'Confirmada', 3: 'Rechazada' };
-const ESTADO_KIND: Record<number, BadgeKind> = { 1: 'pendiente', 2: 'confirmada', 3: 'rechazada' };
 
 export default function EspacioDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -33,23 +26,26 @@ export default function EspacioDetallePage() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [qrAbierto, setQrAbierto] = useState(false);
 
-  const esAdminOSacerdote = usuarioTieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
+  const { tieneRol } = useAuth();
+  const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
+  const puedeReservar = tieneRol(ROLES_RESERVAS);
 
   const cargarEspacio = () => {
     setCargando(true);
     setError('');
     Promise.all([
-      apiClient.get(`/api/espacios/${id}`),
-      apiClient.get(`/api/reservas?espacio_id=${id}`),
+      apiClient.get<Espacio>(`/api/espacios/${id}`),
+      apiClient.get<Reserva[]>(`/api/reservas?espacio_id=${id}`),
     ])
       .then(([resEspacio, resReservas]) => {
         setEspacio(resEspacio.data);
         setReservas(resReservas.data);
         setCargando(false);
       })
-      .catch(err => {
-        setError(err.response?.data?.message || 'Espacio no encontrado');
+      .catch((err: unknown) => {
+        setError(getApiErrorMessage(err, 'Espacio no encontrado', 'message'));
         setCargando(false);
       });
   };
@@ -58,13 +54,17 @@ export default function EspacioDetallePage() {
     cargarEspacio();
   }, [id]);
 
+  const toast = useToast();
+
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
-      const res = await apiClient.get(`/api/reservas?espacio_id=${id}`);
+      const aviso = avisoCambioEstadoReserva(nuevoEstado);
+      toast.success(aviso.titulo, aviso.mensaje);
+      const res = await apiClient.get<Reserva[]>(`/api/reservas?espacio_id=${id}`);
       setReservas(res.data);
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cambiar el estado de la reserva');
+    } catch (err: unknown) {
+      toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
     }
   };
 
@@ -114,20 +114,37 @@ export default function EspacioDetallePage() {
               <span className={styles.infoCardValue}>Parroquial</span>
             </div>
           </div>
+
+          {esAdminOSacerdote && (
+            <div className={styles.qrBtnWrap}>
+              <Btn kind="cream" size="sm" onClick={() => setQrAbierto(true)}
+                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>}>
+                Ver código QR
+              </Btn>
+            </div>
+          )}
         </div>
 
         {/* Panel derecho — reservas */}
-        <Card>
+        <Card className={styles.reservasCard}>
           <CardHead
             title="Próximas Reservas"
             hint={`${reservas.length} registradas`}
             right={
-              <Btn kind="gold" size="sm" onClick={() => navigate('/reservas')}
-                icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}>
-                Reservar
-              </Btn>
+              puedeReservar && (
+                <Btn kind="gold" size="sm" onClick={() => navigate(`/reservas?espacio_id=${espacio.id}`)}
+                  icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}>
+                  Reservar
+                </Btn>
+              )
             }
           />
+
+          {!puedeReservar && (
+            <p className={styles.avisoSoloLectura}>
+              No tienes permisos para reservar este salón. Si necesitas coordinarlo, contacta a tu coordinador.
+            </p>
+          )}
 
           {reservas.length === 0 ? (
             <EmptyState message="No hay reservas para este espacio." />
@@ -150,14 +167,13 @@ export default function EspacioDetallePage() {
                     {!r.evento_titulo && !r.evento_descripcion && (
                       <p className={styles.eventTitle}>Reserva #{r.id}</p>
                     )}
+                    <p className={styles.eventSolicitante}>Registrado por: {r.solicitante_nombre ?? 'Desconocido'}</p>
                   </div>
 
                   {/* Badge + acciones */}
                   <div className={styles.reservaAcciones}>
-                    <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                      {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                    </Badge>
-                    {esAdminOSacerdote && r.estado_reserva_id === 1 && (
+                    <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
+                    {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                       <div className={styles.reservaBotones}>
                         <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, 2)}>Aprobar</Btn>
                         <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, 3)}>Rechazar</Btn>
@@ -172,6 +188,14 @@ export default function EspacioDetallePage() {
         </Card>
 
       </div>
+
+      <EspacioCalendarioReservas reservas={reservas} />
+
+      <EspacioQrModal
+        open={qrAbierto}
+        espacio={espacio}
+        onClose={() => setQrAbierto(false)}
+      />
     </div>
   );
 }

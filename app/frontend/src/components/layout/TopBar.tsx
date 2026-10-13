@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { formatFecha } from '../../utils/date';
+import type { Notificacion } from '../../types';
 import styles from './TopBar.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
+import { leerIntervaloNotificaciones, UI_PREFERENCES_EVENT } from '../../auth/sessionStore';
 
 const ROL_LABEL: Record<number, string> = {
   1: 'Sacerdote',
@@ -13,13 +15,6 @@ const ROL_LABEL: Record<number, string> = {
   4: 'Ministro',
   5: 'Administrador',
 };
-
-interface Notificacion {
-  id: number;
-  mensaje: string;
-  fecha: string;
-  leida: boolean;
-}
 
 function getInitials(nombre: string): string {
   return nombre
@@ -30,17 +25,20 @@ function getInitials(nombre: string): string {
     .join('');
 }
 
-export default function TopBar() {
-  const { logout } = useAuth();
+interface TopBarProps {
+  onAbrirMenu?: () => void;
+}
+
+export default function TopBar({ onAbrirMenu }: TopBarProps) {
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
-  const raw = localStorage.getItem('usuario');
-  const usuario = raw ? JSON.parse(raw) : null;
   const initials = usuario?.nombre ? getInitials(usuario.nombre) : '—';
   const rolLabel = usuario?.rol_id ? (ROL_LABEL[usuario.rol_id] ?? 'Usuario') : 'Usuario';
 
   const [notifs, setNotifs] = useState<Notificacion[]>([]);
   const [open, setOpen] = useState(false);
+  const [intervaloNotificaciones, setIntervaloNotificaciones] = useState(leerIntervaloNotificaciones);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifs = async () => {
@@ -54,8 +52,14 @@ export default function TopBar() {
 
   useEffect(() => {
     fetchNotifs();
-    const id = setInterval(fetchNotifs, 60_000);
+    const id = setInterval(fetchNotifs, intervaloNotificaciones * 1000);
     return () => clearInterval(id);
+  }, [intervaloNotificaciones]);
+
+  useEffect(() => {
+    const sincronizarPreferencias = () => setIntervaloNotificaciones(leerIntervaloNotificaciones());
+    window.addEventListener(UI_PREFERENCES_EVENT, sincronizarPreferencias);
+    return () => window.removeEventListener(UI_PREFERENCES_EVENT, sincronizarPreferencias);
   }, []);
 
   useEffect(() => {
@@ -88,6 +92,11 @@ export default function TopBar() {
 
   return (
     <header className={styles.topbar}>
+      {onAbrirMenu && (
+        <button type="button" className={styles.menuBtn} onClick={onAbrirMenu} aria-label="Abrir menú">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+      )}
       <Link to="/dashboard" className={styles.brand}>
         <img src={logoImg} alt="Parroquia San Pedro Nolasco" className={styles.logoImg} />
         <span className={styles.brandName}>Parroquia San Pedro Nolasco</span>
@@ -97,7 +106,7 @@ export default function TopBar() {
 
       <div className={styles.actions}>
         {/* Búsqueda */}
-        <button className={styles.iconBtn} title="Buscar">
+        <button type="button" className={`${styles.iconBtn} ${styles.searchBtn}`} title="Buscar" aria-label="Buscar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
@@ -106,8 +115,10 @@ export default function TopBar() {
         {/* Notificaciones */}
         <div className={styles.bellWrap} ref={wrapRef}>
           <button
+            type="button"
             className={styles.iconBtn}
             title="Notificaciones"
+            aria-label="Notificaciones"
             onClick={() => setOpen((v) => !v)}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -156,11 +167,11 @@ export default function TopBar() {
         </Link>
 
         {/* Cerrar sesión */}
-        <button onClick={logout} className={styles.btnLogout}>
+        <button type="button" onClick={logout} className={styles.btnLogout} aria-label="Cerrar Sesión">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
-          Cerrar Sesión
+          <span className={styles.logoutLabel}>Cerrar Sesión</span>
         </button>
       </div>
     </header>

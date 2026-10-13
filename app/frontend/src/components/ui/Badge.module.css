@@ -18,19 +18,19 @@
   flex-shrink: 0;
 }
 
-.pendiente  { background: var(--color-warnBg); color: var(--color-warn); }
-.confirmada { background: var(--color-okBg);   color: var(--color-ok);   }
-.rechazada  { background: var(--color-badBg);  color: var(--color-bad);  }
-.cancelada  { background: var(--color-badBg);  color: var(--color-bad);  }
+.pendiente  { background: var(--estado-reserva-pendiente-bg); color: var(--estado-reserva-pendiente-fg); }
+.confirmada { background: var(--estado-reserva-confirmada-bg); color: var(--estado-reserva-confirmada-fg); }
+.rechazada  { background: var(--estado-reserva-rechazada-bg);  color: var(--estado-reserva-rechazada-fg);  }
+.cancelada  { background: var(--estado-reserva-cancelada-bg);  color: var(--estado-reserva-cancelada-fg);  }
 .info       { background: var(--color-infoBg); color: var(--color-info); }
 .neutral    { background: var(--color-cremaDk); color: var(--color-tierra); }
 .ok         { background: var(--color-okBg);   color: var(--color-ok);   }
 .bad        { background: var(--color-badBg);  color: var(--color-bad);  }
 
-.pendiente  .dot { background: #d2a319; }
-.confirmada .dot { background: var(--color-ok); }
-.rechazada  .dot { background: var(--color-bad); }
-.cancelada  .dot { background: var(--color-bad); }
+.pendiente  .dot { background: var(--estado-reserva-pendiente-fg); }
+.confirmada .dot { background: var(--estado-reserva-confirmada-fg); }
+.rechazada  .dot { background: var(--estado-reserva-rechazada-fg); }
+.cancelada  .dot { background: var(--estado-reserva-cancelada-fg); }
 .info       .dot { background: var(--color-info); }
 .neutral    .dot { background: var(--color-tierra); }
 .ok         .dot { background: var(--color-ok); }

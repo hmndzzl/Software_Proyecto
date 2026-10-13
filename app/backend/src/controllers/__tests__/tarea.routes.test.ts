@@ -112,7 +112,11 @@ describe('RBAC en mutaciones de tareas (DT-06)', () => {
     });
 
     it.each(ROLES_PERMITIDOS)('permite a rol %s desasignar una tarea (204)', async (rol) => {
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any)
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([[{ titulo: 'Tarea' }]])
+        .mockResolvedValueOnce([{ insertId: 1 }])
+        .mockResolvedValueOnce([{}]);
       const res = await request(app).delete('/api/tareas/asignar').set('Authorization', `Bearer ${token(rol)}`).send(desasignarBody);
       expect(res.status).toBe(204);
     });

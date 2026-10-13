@@ -10,6 +10,11 @@
   flex-shrink: 0;
   height: 100%;
   overflow-y: auto;
+  transition: width var(--transition);
+}
+
+.sidebarColapsado {
+  width: var(--sidebar-w-collapsed);
 }
 
 .main {
@@ -25,4 +30,35 @@
 .content {
   flex: 1;
   padding: var(--main-py) var(--main-px);
+}
+
+.backdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar,
+  .sidebarColapsado {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 400;
+    width: min(86vw, 320px);
+    transform: translateX(-100%);
+    transition: transform var(--transition);
+    box-shadow: 8px 0 28px rgba(26, 26, 26, .2);
+  }
+
+  .sidebarAbierta {
+    transform: translateX(0);
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    border: 0;
+    background: rgba(26, 26, 26, .45);
+    cursor: pointer;
+  }
 }

@@ -118,7 +118,7 @@
   font-weight: 700;
   line-height: 1.07;
   letter-spacing: .03em;
-  color: var(--color-crema);
+  color: var(--color-on-primary);
   margin: 0 0 20px 0;
   max-width: 480px;
 }
@@ -194,125 +194,6 @@
   line-height: 1.5;
 }
 
-/* Campos */
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-bottom: 10px;
-}
-
-.fieldLabel {
-  font-family: var(--font-display);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .18em;
-  color: var(--color-tierra);
-  text-transform: uppercase;
-  display: block;
-  margin-bottom: 7px;
-}
-
-.inputWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.inputIcon {
-  position: absolute;
-  left: 15px;
-  color: var(--color-muted);
-  display: inline-flex;
-  pointer-events: none;
-}
-
-.input {
-  height: 52px;
-  width: 100%;
-  padding: 0 46px;
-  border-radius: var(--radius-input);
-  border: 1px solid var(--color-line);
-  background: var(--color-blanco);
-  font-family: var(--font-body);
-  font-size: 16px;
-  color: var(--color-carbon);
-  outline: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
-}
-
-.input::placeholder { color: var(--color-muted); }
-
-.input:focus {
-  border-color: var(--color-rojo);
-  box-shadow: 0 0 0 3px rgba(157,47,56,.1);
-}
-
-.toggleBtn {
-  position: absolute;
-  right: 14px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-muted);
-  display: inline-flex;
-  padding: 4px;
-  transition: color var(--transition);
-}
-
-.toggleBtn:hover { color: var(--color-ink); }
-
-/* Fila olvidé contraseña */
-.forgotRow {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 4px;
-}
-
-.forgotLink {
-  font-family: var(--font-body);
-  font-size: 14.5px;
-  color: var(--color-rojo);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: opacity var(--transition);
-}
-
-.forgotLink:hover { opacity: .75; }
-
-/* Botón principal */
-.loginBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 58px;
-  margin-top: 28px;
-  border-radius: var(--radius-btn);
-  border: none;
-  background: var(--color-rojo);
-  color: var(--color-crema);
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: .20em;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(157,47,56,.28);
-  transition: background-color var(--transition), box-shadow var(--transition);
-}
-
-.loginBtn:hover:not(:disabled) {
-  background: var(--color-rojoDk);
-  box-shadow: 0 8px 22px rgba(157,47,56,.34);
-}
-
-.loginBtn:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
 /* Pie del formulario */
 .formHint {
   font-family: var(--font-body);
@@ -324,11 +205,35 @@
   line-height: 1.5;
 }
 
-/* Error */
-.error {
+/* Error persistente del intento de entrar con Clerk (cuenta pendiente, rechazada, etc.) */
+.alerta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--color-bad);
+  border-radius: var(--radius-input);
+  background: var(--color-badBg, transparent);
   color: var(--color-bad);
   font-family: var(--font-body);
   font-size: 14.5px;
   font-weight: 600;
-  margin-top: 10px;
+}
+
+.alertaCerrar {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.validando {
+  display: flex;
+  justify-content: center;
+  padding: 36px 0;
 }

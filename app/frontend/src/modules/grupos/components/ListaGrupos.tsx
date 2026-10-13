@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Grupo } from '../../../types';
 import apiClient from '../../../api/client';
-import { ROLES, usuarioTieneRol } from '../../../utils/roles';
+import { ROLES } from '../../../utils/roles';
+import { useAuth } from '../../../context/AuthContext';
 import { CardHead } from '../../../components/ui/Card';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
@@ -32,7 +33,8 @@ export default function ListaGrupos({
 
   const { sortKey, sortDir, toggleSort, sortedData: gruposOrdenados } = useSortableTable(grupos, SORT_VALUE);
 
-  const puedeEditar = usuarioTieneRol([
+  const { tieneRol } = useAuth();
+  const puedeEditar = tieneRol([
     ROLES.SACERDOTE,
     ROLES.COORDINADOR_GRUPOS,
   ]);
@@ -41,7 +43,7 @@ export default function ListaGrupos({
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get('/api/grupos');
+      const response = await apiClient.get<Grupo[]>('/api/grupos');
       setGrupos(response.data);
     } catch {
       setError('Error de red al obtener los grupos.');

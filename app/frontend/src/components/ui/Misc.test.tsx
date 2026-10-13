@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import Spinner from './Spinner';
 import { Field } from './Field';
 import Modal from './Modal';
-import { ROLES, ROLE_HIERARCHY, usuarioTieneRol } from '../../utils/roles';
+import { ROLES, ROLE_HIERARCHY, rolTieneAcceso } from '../../utils/roles';
 import { MemoryRouter } from 'react-router-dom';
 
 describe('Spinner', () => {
@@ -28,11 +28,9 @@ describe('Modal', () => {
 });
 
 describe('roles', () => {
-  it('usuarioTieneRol retorna false si usuarioGuardado parsea a null/invalido', () => {
-    localStorage.setItem('usuario', 'invalido');
-    expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
-    localStorage.setItem('usuario', JSON.stringify({}));
-    expect(usuarioTieneRol([ROLES.ADMIN])).toBe(false);
+  it('rolTieneAcceso retorna false si el rol es inválido o no existe', () => {
+    expect(rolTieneAcceso('invalido', [ROLES.ADMIN])).toBe(false);
+    expect(rolTieneAcceso(undefined, [ROLES.ADMIN])).toBe(false);
   });
 });
 

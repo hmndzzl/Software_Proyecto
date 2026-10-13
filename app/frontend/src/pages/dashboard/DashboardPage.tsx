@@ -1,6 +1,7 @@
 import { useEffect, useState, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../components/ui/ProtectedRoute';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead } from '../../components/ui/Card';
@@ -8,6 +9,8 @@ import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
+import { ESTADOS_RESERVA } from '../../utils/estadosReserva';
+import type { Reserva } from '../../types';
 import styles from './DashboardPage.module.css';
 
 /* ── Role helpers ── */
@@ -53,17 +56,27 @@ function IcoEventos() {
 }
 
 /* ── Stat definitions ── */
+type StatKey = 'grupos' | 'ministros' | 'espacios' | 'reservas';
+type CollectionFilter = (data: readonly unknown[]) => number;
+
 interface StatDef {
-  key: string;
+  key: StatKey;
   kicker: string;
   hint: string;
   variantClass: string;
   Icon: FC;
   apiPath: string;
-  filter?: (data: any[]) => number;
+  filter?: CollectionFilter;
   allowedRoles: number[];
   linkTo?: string;
   linkLabel?: string;
+}
+
+function esReservaPendiente(value: unknown): value is Pick<Reserva, 'estado_reserva_id'> {
+  return typeof value === 'object'
+    && value !== null
+    && 'estado_reserva_id' in value
+    && (value as { estado_reserva_id?: unknown }).estado_reserva_id === ESTADOS_RESERVA.PENDIENTE;
 }
 
 const ALL_STATS: StatDef[] = [
@@ -85,7 +98,7 @@ const ALL_STATS: StatDef[] = [
   {
     key: 'reservas', kicker: 'Reservas Pendientes', hint: 'Requieren atención',
     variantClass: 'statReservas', Icon: IcoReservas, apiPath: '/api/reservas',
-    filter: (data: any[]) => data.filter((r: any) => r.estado_reserva_id === 1).length,
+    filter: (data) => data.filter(esReservaPendiente).length,
     allowedRoles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS],
     linkTo: '/reservas', linkLabel: 'Revisar ahora',
   },
@@ -123,14 +136,14 @@ function buildKicker(): string {
 }
 
 export default function DashboardPage() {
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const { usuario } = useAuth();
   const rolId = Number(usuario?.rol_id);
 
   const visibleStats = ALL_STATS.filter(s => canAccess(rolId, s.allowedRoles));
   const visibleAccesos = ALL_ACCESOS.filter(a => canAccess(rolId, a.allowedRoles));
   const showTareas = canAccess(rolId, [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO]);
 
-  const [statValues, setStatValues] = useState<Record<string, { value: number | string; loading: boolean }>>(
+  const [statValues, setStatValues] = useState<Partial<Record<StatKey, { value: number | string; loading: boolean }>>>(
     () => Object.fromEntries(visibleStats.map(s => [s.key, { value: 0, loading: true }]))
   );
   const [tareasProximas, setTareasProximas] = useState<TareaProxima[]>([]);
@@ -140,9 +153,9 @@ export default function DashboardPage() {
     const hoy = new Date().toISOString().split('T')[0];
 
     visibleStats.forEach(stat => {
-      apiClient.get(stat.apiPath)
+      apiClient.get<unknown[]>(stat.apiPath)
         .then(r => r.data)
-        .then((data: any[]) => {
+        .then((data) => {
           const value = stat.filter ? stat.filter(data) : data.length;
           setStatValues(prev => ({ ...prev, [stat.key]: { value, loading: false } }));
         })
@@ -152,7 +165,7 @@ export default function DashboardPage() {
     });
 
     if (showTareas) {
-      apiClient.get('/api/tareas')
+      apiClient.get<TareaProxima[]>('/api/tareas')
         .then(r => r.data)
         .then((data: TareaProxima[]) => {
           const proximas = data

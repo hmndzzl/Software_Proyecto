@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CrearReservaForm from './CrearReservaForm';
+import { ToastProvider } from '../../../context/ToastContext';
+import { AuthProvider } from '../../../context/AuthContext';
 import apiClient from '../../../api/client';
 
 vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
@@ -14,7 +16,7 @@ beforeEach(() => {
 });
 
 function mostrar(props: Parameters<typeof CrearReservaForm>[0] = {}) {
-  render(<MemoryRouter><CrearReservaForm {...props} /></MemoryRouter>);
+  render(<ToastProvider><MemoryRouter><AuthProvider><CrearReservaForm {...props} /></AuthProvider></MemoryRouter></ToastProvider>);
 }
 
 async function completar() {
@@ -32,34 +34,43 @@ afterEach(() => vi.useRealTimers());
 const enviar = () => fireEvent.click(screen.getByRole('button', { name: 'Solicitar Reserva' }));
 
 describe('CrearReservaForm', () => {
-  it('confirma el envío con espacio, fecha, horario, estado pendiente y enlace a Mis Reservas', async () => {
+  it('avisa con un toast el espacio, fecha, horario y estado pendiente, y limpia el formulario', async () => {
     const onReservaCreada = vi.fn();
     mostrar({ onReservaCreada });
     await completar();
     enviar();
 
-    const confirmacion = await screen.findByRole('status');
-    expect(confirmacion).toHaveTextContent('Solicitud enviada');
-    expect(confirmacion).toHaveTextContent('Salón Parroquial');
-    expect(confirmacion).toHaveTextContent('Ensayo del coro');
-    expect(confirmacion).toHaveTextContent('18:00 a 20:00');
-    expect(confirmacion).toHaveTextContent('pendiente de aprobación');
-    expect(screen.getByRole('link', { name: /Mis Reservas/ })).toHaveAttribute('href', '/mis-reservas');
+    const aviso = await screen.findByRole('status');
+    expect(aviso).toHaveTextContent('Solicitud enviada');
+    expect(aviso).toHaveTextContent('Salón Parroquial');
+    expect(aviso).toHaveTextContent('Ensayo del coro');
+    expect(aviso).toHaveTextContent('18:00 a 20:00');
+    expect(aviso).toHaveTextContent('pendiente de aprobación del sacerdote');
+    expect(aviso).toHaveTextContent('Puedes revisar su estado en Mis Reservas.');
     expect(onReservaCreada).toHaveBeenCalledOnce();
     expect(screen.getByLabelText('Título del Evento:')).toHaveValue('');
   });
 
-  it('al Sacerdote le indica que puede aprobar su propia solicitud, sin enlace a Mis Reservas', async () => {
+  it('no deja un cuadro de confirmación dentro de la página, solo el toast', async () => {
+    mostrar();
+    await completar();
+    enviar();
+
+    await screen.findByRole('status');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: /Mis Reservas/ })).not.toBeInTheDocument();
+  });
+
+  it('al Sacerdote le indica que puede aprobar su propia solicitud', async () => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 1 }));
     mostrar();
     await completar();
     enviar();
 
-    const confirmacion = await screen.findByRole('status');
-    expect(confirmacion).toHaveTextContent('pendiente de aprobación.');
-    expect(confirmacion).not.toHaveTextContent('del sacerdote');
-    expect(confirmacion).toHaveTextContent('Puedes aprobarla tú mismo');
-    expect(screen.queryByRole('link', { name: /Mis Reservas/ })).not.toBeInTheDocument();
+    const aviso = await screen.findByRole('status');
+    expect(aviso).toHaveTextContent('pendiente de aprobación.');
+    expect(aviso).not.toHaveTextContent('del sacerdote');
+    expect(aviso).toHaveTextContent('Puedes aprobarla tú mismo');
   });
 
   it('muestra los errores como alerta y oculta una confirmación previa', async () => {
@@ -91,6 +102,48 @@ describe('CrearReservaForm', () => {
     mostrar();
     await screen.findByRole('option', { name: /Salón Parroquial/ });
     expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
+  });
+
+  it('preselecciona el espacio cuando espacioInicial existe en el catálogo', async () => {
+    mostrar({ espacioInicial: '2' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByLabelText('Espacio:')).toHaveValue('2');
+    expect(screen.getByText('Espacio seleccionado:')).toBeInTheDocument();
+    expect(screen.getAllByText('Salón Parroquial').length).toBeGreaterThan(0);
+  });
+
+  it('no preselecciona si espacioInicial no existe en el catálogo cargado', async () => {
+    mostrar({ espacioInicial: '999' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByLabelText('Espacio:')).toHaveValue('');
+    expect(screen.queryByText('Espacio seleccionado:')).not.toBeInTheDocument();
+  });
+
+  it('oculta el aviso de preselección si la persona cambia el espacio a mano', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: [
+        { id: 2, nombre: 'Salón Parroquial', capacidad: 80 },
+        { id: 3, nombre: 'Capilla', capacidad: 30 },
+      ],
+    });
+    mostrar({ espacioInicial: '2' });
+    await screen.findByText('Espacio seleccionado:');
+
+    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '3' } });
+    expect(screen.queryByText('Espacio seleccionado:')).not.toBeInTheDocument();
+  });
+
+  it('enfoca la fecha en vez del espacio cuando llega preseleccionado por el QR', async () => {
+    mostrar({ autoFocus: true, espacioInicial: '2' });
+    await waitFor(() => expect(screen.getByLabelText('Fecha:')).toHaveFocus());
+    expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
+  });
+
+  it('avisa y enfoca el selector si el espacio del QR ya no existe en el catálogo', async () => {
+    mostrar({ autoFocus: true, espacioInicial: '999' });
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.getByText('El espacio del enlace ya no está disponible. Selecciona uno manualmente.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Espacio:')).toHaveFocus());
   });
 
   it('lista espacios sin capacidad y tolera que falle la carga de espacios', async () => {

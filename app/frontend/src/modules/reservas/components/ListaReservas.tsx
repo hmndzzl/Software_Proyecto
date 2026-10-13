@@ -1,59 +1,32 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
+import { useToast } from '../../../context/ToastContext';
 import { CardHead } from '../.././../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import Badge from '../../../components/ui/Badge';
-import type { BadgeKind } from '../../../components/ui/Badge';
+import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
+import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
-import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
+import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../../utils/estadosReserva';
+import { getApiErrorMessage } from '../../../utils/apiError';
 import { formatFecha, formatHora } from '../../../utils/date';
+import type { Espacio } from '../../espacios/components/EspacioCard';
+import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
-interface Espacio {
-  id: number;
-  nombre: string;
-}
-
-interface Reserva {
-  id: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  espacio_id: number | null;
-  espacio_nombre: string | null;
-  estado_reserva_id: number;
-  solicitante_id: number;
-  evento_titulo: string | null;
-  evento_descripcion: string | null;
-}
-
-const ESTADO_LABEL: Record<number, string> = {
-  1: 'Pendiente',
-  2: 'Confirmada',
-  3: 'Rechazada',
-  4: 'Cancelada',
-};
-
-const ESTADO_KIND: Record<number, BadgeKind> = {
-  1: 'pendiente',
-  2: 'confirmada',
-  3: 'rechazada',
-  4: 'cancelada',
-};
-
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante';
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
-  estado: (r) => ESTADO_LABEL[r.estado_reserva_id] ?? '',
+  estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
+  solicitante: (r) => (r.solicitante_nombre ?? '').toLowerCase(),
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
@@ -72,8 +45,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [editMensaje, setEditMensaje] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
-  const usuarioInfo = localStorage.getItem('usuario');
-  const usuario = usuarioInfo ? JSON.parse(usuarioInfo) : null;
+  const { usuario } = useAuth();
   const esAdminOSacerdote = usuario && (
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );
@@ -84,7 +56,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get('/api/reservas');
+      const response = await apiClient.get<Reserva[]>('/api/reservas');
       setReservas(response.data);
     } catch {
       setError('Error de red al obtener las reservas.');
@@ -95,15 +67,19 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   useEffect(() => {
     fetchReservas();
-    apiClient.get('/api/espacios').then(res => setEspacios(res.data)).catch(() => {});
+    apiClient.get<Espacio[]>('/api/espacios').then(res => setEspacios(res.data)).catch(() => {});
   }, [refreshKey]);
+
+  const toast = useToast();
 
   const cambiarEstado = async (id: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: nuevoEstado });
+      const aviso = avisoCambioEstadoReserva(nuevoEstado);
+      toast.success(aviso.titulo, aviso.mensaje);
       fetchReservas();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cambiar el estado de la reserva');
+    } catch (err: unknown) {
+      toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
     }
   };
 
@@ -132,8 +108,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       await apiClient.put(`/api/reservas/${editando.id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
       cerrarEdicion();
       fetchReservas();
-    } catch (err: any) {
-      setEditMensaje(err.response?.data?.message || 'Error al cancelar la reserva.');
+    } catch (err: unknown) {
+      setEditMensaje(getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
     } finally {
       setEditLoading(false);
     }
@@ -161,8 +137,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       });
       cerrarEdicion();
       fetchReservas();
-    } catch (err: any) {
-      setEditMensaje(err.response?.data?.message || 'Error al guardar los cambios.');
+    } catch (err: unknown) {
+      setEditMensaje(getApiErrorMessage(err, 'Error al guardar los cambios.', 'message'));
     } finally {
       setEditLoading(false);
     }
@@ -177,7 +153,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           <div className={formStyles.modalCard}>
             <h4 className={formStyles.modalTitle}>Editar Reserva #{editando.id}</h4>
 
-            {editando.estado_reserva_id !== 1 && (
+            {editando.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
                 Esta reserva volverá a estado <strong>Pendiente</strong> para re-aprobación.
               </div>
@@ -226,7 +202,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </div>
 
             <div className={formStyles.modalActions}>
-              {usuario && editando.solicitante_id === usuario.id && (editando.estado_reserva_id === 1 || editando.estado_reserva_id === 2) && (
+              {usuario && editando.solicitante_id === usuario.id && puedeCancelarReserva(editando.estado_reserva_id) && (
                 <button
                   type="button"
                   className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
@@ -266,6 +242,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <th>Hora Fin</th>
                 <th>Título del Evento</th>
                 <th>Descripción</th>
+                <SortableTh label="Registrado por" sortKey="solicitante" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
               </tr>
@@ -280,14 +257,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td className={styles.horaCell}>{formatHora(r.hora_fin)}</td>
                   <td>{r.evento_titulo ?? '—'}</td>
                   <td>{r.evento_descripcion ?? '—'}</td>
+                  <td>{r.solicitante_nombre ?? '—'}</td>
                   <td>
-                    <Badge kind={ESTADO_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                      {ESTADO_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                    </Badge>
+                    <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                   </td>
                   <td>
                     <div className={styles.acciones}>
-                      {esAdminOSacerdote && r.estado_reserva_id === 1 && (
+                      {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                         <>
                           <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
                             Aprobar

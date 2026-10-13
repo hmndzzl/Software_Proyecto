@@ -1,0 +1,77 @@
+// Puente entre la sesión de Clerk (que vive en hooks de React) y el código que
+// no es React, como los interceptores de axios. Mientras dura la migración,
+// Clerk es opcional: sin VITE_CLERK_PUBLISHABLE_KEY todo sigue con el JWT propio.
+export const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
+export const CLERK_ENABLED = Boolean(CLERK_PUBLISHABLE_KEY);
+
+// Mensaje de error del último intento de entrar con Clerk (p. ej. "cuenta pendiente de
+// aprobación"). Vive aparte del toast global: la pantalla de login lo muestra hasta que se
+// cierra o se vuelve a intentar, y sobrevive a una recarga de la página.
+const LOGIN_ERROR_KEY = 'loginError';
+const loginErrorListeners = new Set<() => void>();
+
+function leerLoginErrorGuardado(): string | null {
+  try { return sessionStorage.getItem(LOGIN_ERROR_KEY); } catch { return null; }
+}
+
+let loginError: string | null = leerLoginErrorGuardado();
+
+export function getLoginError(): string | null {
+  return loginError;
+}
+
+export function setLoginError(mensaje: string | null) {
+  loginError = mensaje;
+  try {
+    if (mensaje) sessionStorage.setItem(LOGIN_ERROR_KEY, mensaje);
+    else sessionStorage.removeItem(LOGIN_ERROR_KEY);
+  } catch { /* sin sessionStorage el mensaje solo vive en memoria */ }
+  loginErrorListeners.forEach((listener) => listener());
+}
+
+export function subscribeLoginError(listener: () => void) {
+  loginErrorListeners.add(listener);
+  return () => { loginErrorListeners.delete(listener); };
+}
+
+// Si Clerk no termina de cargar, no se bloquean las peticiones para siempre.
+const READY_TIMEOUT_MS = 5_000;
+
+type TokenGetter = () => Promise<string | null>;
+type SignOut = () => Promise<void>;
+
+let tokenGetter: TokenGetter | null = null;
+let signOutFn: SignOut | null = null;
+let markReady!: () => void;
+const ready = new Promise<void>((resolve) => { markReady = resolve; });
+
+export function registerClerkSession(getToken: TokenGetter, signOut: SignOut) {
+  tokenGetter = getToken;
+  signOutFn = signOut;
+  markReady();
+}
+
+export function clearClerkSession() {
+  tokenGetter = null;
+  signOutFn = null;
+  markReady();
+}
+
+/** Token de sesión de Clerk vigente, o null si no hay sesión de Clerk. */
+export async function getClerkToken(): Promise<string | null> {
+  // Sin Clerk nunca se registra una sesión, así que se devuelve null sin esperar.
+  if (CLERK_ENABLED) {
+    await Promise.race([ready, new Promise((resolve) => setTimeout(resolve, READY_TIMEOUT_MS))]);
+  }
+  if (!tokenGetter) return null;
+  try {
+    return await tokenGetter();
+  } catch {
+    return null;
+  }
+}
+
+export async function signOutClerk() {
+  if (!signOutFn) return;
+  try { await signOutFn(); } catch { /* si falla, la sesión local se limpia igual */ }
+}
