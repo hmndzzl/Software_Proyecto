@@ -5,13 +5,13 @@ import { CardHead } from '../.././../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import Badge from '../../../components/ui/Badge';
+import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
-import { ESTADOS_RESERVA, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND, avisoCambioEstadoReserva } from '../../../utils/estadosReserva';
+import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../../utils/estadosReserva';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import { formatFecha, formatHora } from '../../../utils/date';
 import type { Espacio } from '../../espacios/components/EspacioCard';
@@ -25,7 +25,7 @@ const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
-  estado: (r) => ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? '',
+  estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
   solicitante: (r) => (r.solicitante_nombre ?? '').toLowerCase(),
 };
 
@@ -153,7 +153,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           <div className={formStyles.modalCard}>
             <h4 className={formStyles.modalTitle}>Editar Reserva #{editando.id}</h4>
 
-            {editando.estado_reserva_id !== 1 && (
+            {editando.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
                 Esta reserva volverá a estado <strong>Pendiente</strong> para re-aprobación.
               </div>
@@ -202,7 +202,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </div>
 
             <div className={formStyles.modalActions}>
-              {usuario && editando.solicitante_id === usuario.id && (editando.estado_reserva_id === 1 || editando.estado_reserva_id === 2) && (
+              {usuario && editando.solicitante_id === usuario.id && puedeCancelarReserva(editando.estado_reserva_id) && (
                 <button
                   type="button"
                   className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
@@ -259,13 +259,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.evento_descripcion ?? '—'}</td>
                   <td>{r.solicitante_nombre ?? '—'}</td>
                   <td>
-                    <Badge kind={ESTADO_RESERVA_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                      {ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                    </Badge>
+                    <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                   </td>
                   <td>
                     <div className={styles.acciones}>
-                      {esAdminOSacerdote && r.estado_reserva_id === 1 && (
+                      {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                         <>
                           <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
                             Aprobar

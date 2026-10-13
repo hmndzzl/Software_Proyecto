@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
-import { avisoCambioEstadoReserva, ESTADO_RESERVA_LABEL, ESTADO_RESERVA_KIND } from '../../utils/estadosReserva';
+import { avisoCambioEstadoReserva, ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
+import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
 import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
@@ -172,10 +172,8 @@ export default function EspacioDetallePage() {
 
                   {/* Badge + acciones */}
                   <div className={styles.reservaAcciones}>
-                    <Badge kind={ESTADO_RESERVA_KIND[r.estado_reserva_id] ?? 'neutral'}>
-                      {ESTADO_RESERVA_LABEL[r.estado_reserva_id] ?? 'Desconocido'}
-                    </Badge>
-                    {esAdminOSacerdote && r.estado_reserva_id === 1 && (
+                    <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
+                    {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                       <div className={styles.reservaBotones}>
                         <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, 2)}>Aprobar</Btn>
                         <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, 3)}>Rechazar</Btn>
