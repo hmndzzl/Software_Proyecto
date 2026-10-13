@@ -9,6 +9,7 @@ import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHora } from '../../utils/date';
+import { ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import type { Reserva } from '../../types';
 import styles from './DashboardPage.module.css';
 
@@ -75,7 +76,7 @@ function esReservaPendiente(value: unknown): value is Pick<Reserva, 'estado_rese
   return typeof value === 'object'
     && value !== null
     && 'estado_reserva_id' in value
-    && (value as { estado_reserva_id?: unknown }).estado_reserva_id === 1;
+    && (value as { estado_reserva_id?: unknown }).estado_reserva_id === ESTADOS_RESERVA.PENDIENTE;
 }
 
 const ALL_STATS: StatDef[] = [
