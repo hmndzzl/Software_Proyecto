@@ -14,21 +14,25 @@ Las siguientes cuentas deben haberse creado desde la plataforma y estar activas:
 
 Lucía y Francisco usan la contraseña de prueba `password123`. El script no modifica contraseñas ni vínculos con Clerk.
 
-## Fecha de la sesión
+## Fechas del escenario
 
-Por defecto los scripts toman como fecha de prueba el día de ejecución en Guatemala y programan las actividades para el día siguiente. Deben ejecutarse el mismo día de la sesión.
+Todas las pruebas se realizan el mismo día. Los scripts toman como fecha de prueba el día de ejecución en Guatemala, y la limpieza, la reserva del salón y las ausencias se calculan para el día siguiente. Ejecutar `prepare.sql` una sola vez antes del primer participante y `reset.sql` después de cada participante.
 
-Si se preparan con anticipación, sustituir esta línea al inicio de ambos archivos:
+La tarea precargada «Preparación de materiales para catequesis» es independiente de la fecha de la sesión y queda fijada para el **23 de octubre de 2026**, de 12:00 a 13:00:
+
+```sql
+SET @neurolab_fecha_catequesis = DATE('2026-10-23');
+```
+
+Si posteriormente se decide otra fecha, debe cambiarse esa línea tanto en `prepare.sql` como en `reset.sql`. No debe cambiarse `@neurolab_fecha_prueba`, pues las tareas 1 y 2 sí dependen del día real de la sesión.
+
+Para ensayar el recorrido con una fecha de sesión distinta del día de ejecución, se puede reemplazar temporalmente en ambos scripts:
 
 ```sql
 SET @neurolab_fecha_prueba = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00'));
 ```
 
-por la fecha real de la sesión:
-
-```sql
-SET @neurolab_fecha_prueba = DATE('2026-10-20');
-```
+por `DATE('AAAA-MM-DD')`, usando la fecha del ensayo.
 
 ## Aplicación en producción
 
@@ -52,7 +56,7 @@ docker compose -f docker-compose.prod.yml exec -T mariadb \
   < database/scenarios/neurolab/reset.sql
 ```
 
-El resumen final debe mostrar cero asignaciones para Francisco y Raúl, cero tareas de limpieza, cero cambios de turno y cero reservas del recorrido. La fila de catequesis debe mostrar `responsables = 0` y la fecha del día siguiente.
+El resumen final debe mostrar cero asignaciones para Francisco y Raúl, cero tareas de limpieza, cero cambios de turno y cero reservas del recorrido. La fila de catequesis debe mostrar `responsables = 0`, fecha `2026-10-23` y horario de 12:00 a 13:00.
 
 Después del restablecimiento, iniciar sesión como Lucía antes de entregar el equipo al siguiente participante.
 

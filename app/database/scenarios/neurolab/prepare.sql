@@ -1,10 +1,11 @@
 -- Preparación idempotente del escenario de usabilidad NeuroLab UVG.
 --
--- Ejecutar el mismo día de la sesión. Si se prepara con anticipación, sustituir
--- la siguiente expresión por DATE('AAAA-MM-DD') con la fecha real de la prueba.
--- La fecha de todas las actividades será el día siguiente, en Guatemala.
+-- La limpieza, la reserva y las ausencias del recorrido se calculan para el día
+-- siguiente a la sesión, tomando como referencia la fecha actual en Guatemala.
+-- Catequesis conserva una fecha fija independiente de la sesión.
 SET @neurolab_fecha_prueba = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00'));
 SET @neurolab_fecha_actividad = DATE_ADD(@neurolab_fecha_prueba, INTERVAL 1 DAY);
+SET @neurolab_fecha_catequesis = DATE('2026-10-23');
 
 SET NAMES utf8mb4;
 
@@ -219,7 +220,7 @@ INNER JOIN tmp_neurolab_notificaciones tmp ON tmp.id = n.id;
 -- Crear o actualizar la única tarea precargada del recorrido.
 INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion)
 SELECT
-  @neurolab_fecha_actividad,
+  @neurolab_fecha_catequesis,
   '12:00:00',
   '13:00:00',
   'Preparación de materiales para catequesis',
@@ -232,7 +233,7 @@ WHERE NOT EXISTS (
 );
 
 UPDATE tarea
-SET fecha = @neurolab_fecha_actividad,
+SET fecha = @neurolab_fecha_catequesis,
     hora_inicio = '12:00:00',
     hora_fin = '13:00:00'
 WHERE titulo = 'Preparación de materiales para catequesis'
@@ -329,7 +330,8 @@ COMMIT;
 
 -- Resumen verificable de la preparación aplicada.
 SELECT @neurolab_fecha_prueba AS fecha_prueba,
-       @neurolab_fecha_actividad AS fecha_actividades;
+       @neurolab_fecha_actividad AS fecha_actividades_recorrido,
+       @neurolab_fecha_catequesis AS fecha_catequesis;
 
 SELECT p.nombre, p.correo, r.detalle AS rol, p.disponible, p.estado_cuenta
 FROM persona p

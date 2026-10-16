@@ -1,8 +1,9 @@
 -- Restablece exclusivamente el recorrido NeuroLab entre participantes.
--- Ejecutar el mismo día de la sesión. Para otra fecha, sustituir la expresión
--- siguiente por DATE('AAAA-MM-DD') con la fecha real de la prueba.
+-- La limpieza, la reserva y las ausencias del recorrido corresponden al día
+-- siguiente a la sesión. Catequesis conserva una fecha fija independiente.
 SET @neurolab_fecha_prueba = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00'));
 SET @neurolab_fecha_actividad = DATE_ADD(@neurolab_fecha_prueba, INTERVAL 1 DAY);
+SET @neurolab_fecha_catequesis = DATE('2026-10-23');
 
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -105,7 +106,7 @@ WHERE t.titulo = 'Preparación de materiales para catequesis'
   AND t.descripcion = 'Organizar los cuadernos y materiales para catequesis.';
 
 UPDATE tarea
-SET fecha = @neurolab_fecha_actividad,
+SET fecha = @neurolab_fecha_catequesis,
     hora_inicio = '12:00:00',
     hora_fin = '13:00:00'
 WHERE titulo = 'Preparación de materiales para catequesis'
