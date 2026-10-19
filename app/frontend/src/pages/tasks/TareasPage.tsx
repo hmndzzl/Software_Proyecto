@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import ListaAsignaciones from '../../modules/tareas/components/ListaAsignaciones';
-import AsignarTareaForm from '../../modules/tareas/components/AsignarTareaForm';
 import CrearTareaForm from '../../modules/tareas/components/CrearTareaForm';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
-import { ROLES } from '../../utils/roles';
+import { ROLES, rolTieneAcceso } from '../../utils/roles';
 import styles from './TareasPage.module.css';
 
 export default function TareasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { usuario } = useAuth();
-  const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
+  const puedeGestionar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
 
   return (
     <div className={styles.page}>
@@ -22,26 +21,17 @@ export default function TareasPage() {
         subtitle="Crea, asigna y supervisa las tareas del ministerio parroquial."
       />
 
-      {!esMinistro && (
-        <div className={styles.formsGrid}>
-          <Card>
-            <CardHead title="Crear Nueva Tarea" />
-            <CardBody>
-              <CrearTareaForm onTareaCreada={() => setRefreshKey(k => k + 1)} />
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHead title="Asignar Tarea a Ministro" />
-            <CardBody>
-              <AsignarTareaForm refreshKey={refreshKey} onAsignacionExitosa={() => setRefreshKey(k => k + 1)} />
-            </CardBody>
-          </Card>
-        </div>
+      {puedeGestionar && (
+        <Card>
+          <CardHead title="Crear y asignar tarea" />
+          <CardBody>
+            <CrearTareaForm refreshKey={refreshKey} onTareaCreada={() => setRefreshKey(k => k + 1)} />
+          </CardBody>
+        </Card>
       )}
 
       <Card>
-        <ListaAsignaciones refreshKey={refreshKey} />
+        <ListaAsignaciones refreshKey={refreshKey} onCambio={() => setRefreshKey(k => k + 1)} />
       </Card>
     </div>
   );
