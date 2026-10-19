@@ -8,7 +8,7 @@ import EmptyState from '../../../components/ui/EmptyState';
 import SortableTh from '../../../components/ui/SortableTh';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
-import { ROLES } from '../../../utils/roles';
+import { ROLES, rolTieneAcceso } from '../../../utils/roles';
 import { formatFecha, formatHora } from '../../../utils/date';
 import type { Ministro, Tarea } from '../../../types';
 import { getApiErrorMessage } from '../../../utils/apiError';
@@ -48,9 +48,10 @@ const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
   horario: (a) => a.hora_inicio,
 };
 
-export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number }) {
+export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey?: number; onCambio?: () => void }) {
   const { usuario } = useAuth();
   const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
+  const puedeGestionar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
 
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [cargando, setCargando] = useState<boolean>(true);
@@ -59,6 +60,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const [ministros, setMinistros] = useState<MinistroOpcion[]>([]);
   const [editandoKey, setEditandoKey] = useState<string | null>(null);
   const [reasignando, setReasignando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
   const toast = useToast();
 
   const [editandoTarea, setEditandoTarea] = useState<Asignacion | null>(null);
@@ -72,9 +74,9 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
   const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
 
   useEffect(() => {
-    if (esMinistro) return;
+    if (!puedeGestionar) return;
     apiClient.get<Ministro[]>('/api/personas').then(res => setMinistros(res.data)).catch(() => {});
-  }, [esMinistro]);
+  }, [puedeGestionar]);
 
   const cargarAsignaciones = () => {
     setCargando(true);
@@ -83,7 +85,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     apiClient.get<Tarea[]>('/api/tareas', { params })
       .then((res) => {
         const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea) =>
-          tarea.asignados.map((asignado) => ({
+          (tarea.asignados.length ? tarea.asignados : [{ persona_id: 0, nombre: 'Sin ministro asignado' }]).map((asignado) => ({
             tarea_id: tarea.id,
             persona_id: asignado.persona_id,
             titulo_tarea: tarea.titulo,
@@ -107,6 +109,29 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
     cargarAsignaciones();
   }, [refreshKey]);
 
+  const refrescar = () => {
+    if (onCambio) onCambio();
+    else cargarAsignaciones();
+  };
+
+  const eliminar = async (asignacion: Asignacion, soloMinistro: boolean) => {
+    if (eliminando) return;
+    const confirmacion = soloMinistro
+      ? `¿Quitar a ${asignacion.nombre_persona} de la tarea "${asignacion.titulo_tarea}"? La tarea y los demás ministros se conservarán.`
+      : `¿Eliminar la tarea "${asignacion.titulo_tarea}" por completo? Se borrarán todas sus asignaciones y solicitudes de cambio de turno. Esta acción no se puede deshacer.`;
+    if (!window.confirm(confirmacion)) return;
+    setEliminando(true);
+    try {
+      if (soloMinistro) await apiClient.delete('/api/tareas/asignar', { data: { tarea_id: asignacion.tarea_id, persona_id: asignacion.persona_id } });
+      else await apiClient.delete(`/api/tareas/${asignacion.tarea_id}`);
+      toast.success(soloMinistro ? 'Asignación eliminada' : 'Tarea eliminada', soloMinistro ? 'El ministro fue retirado de esta tarea.' : 'La tarea se eliminó por completo.');
+      setEditandoKey(null);
+      refrescar();
+    } catch (error: unknown) {
+      toast.error('No se pudo completar la acción', getApiErrorMessage(error, 'Error al eliminar. Inténtalo nuevamente.'));
+    } finally { setEliminando(false); }
+  };
+
   const reasignar = async (tareaId: number, personaActualId: number, personaNuevaId: number) => {
     setReasignando(true);
     try {
@@ -121,7 +146,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
       if (alerta?.tope_servicios_superado) avisos.push(`tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes})`);
       toast.success('Responsable actualizado', avisos.length > 0 ? `Atención: ${avisos.join(' y ')}.` : 'El cambio se guardó correctamente.');
       setEditandoKey(null);
-      cargarAsignaciones();
+      refrescar();
     } catch (err: unknown) {
       toast.error('No se pudo reasignar la tarea', getApiErrorMessage(err, 'Error al reasignar la tarea.'));
     } finally {
@@ -163,7 +188,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
       });
       toast.success('Tarea actualizada', `Los cambios en "${editTitulo}" se guardaron.`);
       cerrarEdicionTarea();
-      cargarAsignaciones();
+      refrescar();
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la tarea', getApiErrorMessage(err, 'Error al guardar los cambios.'));
     } finally {
@@ -235,7 +260,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                 {!esMinistro && <SortableTh label="Ministro Asignado" sortKey="responsable" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />}
                 <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                {!esMinistro && <th>Acciones</th>}
+                {puedeGestionar && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -246,7 +271,7 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                     <td>{asignacion.titulo_tarea}</td>
                     {!esMinistro && (
                       <td>
-                        {editandoKey === key ? (
+                        {!asignacion.persona_id || !puedeGestionar ? asignacion.nombre_persona : editandoKey === key ? (
                           <select
                             className={styles.reasignarSelect}
                             autoFocus
@@ -273,10 +298,16 @@ export default function ListaAsignaciones({ refreshKey }: { refreshKey?: number 
                     )}
                     <td>{formatFecha(asignacion.fecha)}</td>
                     <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
-                    {!esMinistro && (
-                      <td>
+                    {puedeGestionar && (
+                      <td className={styles.acciones}>
                         <Btn kind="ghost" size="sm" onClick={() => abrirEdicionTarea(asignacion)}>
                           Editar
+                        </Btn>
+                        {asignacion.persona_id !== 0 && <Btn kind="ghost" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, true)}>
+                          Quitar ministro de esta tarea
+                        </Btn>}
+                        <Btn kind="bad" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, false)}>
+                          Eliminar tarea
                         </Btn>
                       </td>
                     )}

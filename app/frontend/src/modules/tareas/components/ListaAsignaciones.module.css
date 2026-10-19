@@ -3,6 +3,13 @@
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 .seccionTitulo { margin-bottom: 14px; }
 
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 200px;
+}
+
 .aviso {
   font-family: var(--font-body);
   color: var(--color-tierra);
