@@ -122,6 +122,43 @@ describe('RBAC en mutaciones de tareas (DT-06)', () => {
     });
   });
 
+  describe('asignación múltiple', () => {
+    it.each(ROLES_BLOQUEADOS)('bloquea la creación y asignación múltiple al rol %s', async rol => {
+      for (const url of ['/api/tareas', '/api/tareas/asignar']) {
+        await request(app).post(url).auth(token(rol), { type: 'bearer' })
+          .send({ ...tareaBody, tarea_id: 1, persona_ids: [9, 10] }).expect(403);
+      }
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+
+    it.each([[], [0], ['9'], null])('rechaza persona_ids inválido: %j', async persona_ids => {
+      for (const url of ['/api/tareas', '/api/tareas/asignar']) {
+        await request(app).post(url).auth(token(ROLES.ADMIN), { type: 'bearer' })
+          .send({ ...tareaBody, tarea_id: 1, persona_ids }).expect(400);
+      }
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+
+    it.each([0, '1', -1])('rechaza tarea_id inválido: %j', async tarea_id => {
+      await request(app).post('/api/tareas/asignar').auth(token(ROLES.ADMIN), { type: 'bearer' })
+        .send({ tarea_id, persona_ids: [9] }).expect(400);
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+
+    it('devuelve 404 si una tarea existente desapareció', async () => {
+      conn.execute.mockResolvedValueOnce([[]]);
+      await request(app).post('/api/tareas/asignar').auth(token(ROLES.ADMIN), { type: 'bearer' })
+        .send({ tarea_id: 1, persona_ids: [9] }).expect(404);
+      expect(conn.rollback).toHaveBeenCalledOnce();
+    });
+
+    it('devuelve 500 si no se puede confirmar la operación', async () => {
+      vi.mocked(pool.getConnection).mockRejectedValueOnce(new Error('Sin conexión'));
+      await request(app).post('/api/tareas/asignar').auth(token(ROLES.ADMIN), { type: 'bearer' })
+        .send({ tarea_id: 1, persona_ids: [9] }).expect(500);
+    });
+  });
+
   describe('GET /api/tareas', () => {
     it('cualquier rol autenticado puede listar tareas (GET no exige rol)', async () => {
       (pool.execute as any).mockResolvedValueOnce([[]]);
