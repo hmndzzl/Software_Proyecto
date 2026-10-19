@@ -1,0 +1,60 @@
+import { expect, test } from '@playwright/test';
+
+test('crea una tarea con varios ministros, quita asignaciones y elimina la tarea en una vista responsive', async ({ page }) => {
+  const ministros = [{ id: 9, nombre: 'Ana Ministra', disponible: true }, { id: 10, nombre: 'Luis Ministro', disponible: true }];
+  type Tarea = { id: number; titulo: string; descripcion: string; fecha: string; hora_inicio: string; hora_fin: string; asignados: { persona_id: number; nombre: string }[] };
+  let tareas: Tarea[] = [];
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'jwt-de-regresion');
+    localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Diego Calderon', correo: 'diego@parroquia.com', rol_id: 5 }));
+  });
+  await page.route('http://api.test/**', async route => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname === '/api/personas') {
+      await route.fulfill({ json: ministros });
+    } else if (url.pathname === '/api/tareas' && method === 'GET') {
+      await route.fulfill({ json: tareas });
+    } else if (url.pathname === '/api/tareas' && method === 'POST') {
+      const { persona_ids, ...datos } = route.request().postDataJSON() as Omit<Tarea, 'id' | 'asignados'> & { persona_ids: number[] };
+      tareas = [{ ...datos, id: 1, asignados: ministros.filter(m => persona_ids.includes(m.id)).map(m => ({ persona_id: m.id, nombre: m.nombre })) }];
+      await route.fulfill({ status: 201, json: { tarea: tareas[0] } });
+    } else if (url.pathname === '/api/tareas/asignar' && method === 'DELETE') {
+      const datos = route.request().postDataJSON() as { persona_id: number };
+      tareas[0].asignados = tareas[0].asignados.filter(a => a.persona_id !== datos.persona_id);
+      await route.fulfill({ status: 204 });
+    } else if (url.pathname === '/api/tareas/1' && method === 'DELETE') {
+      tareas = [];
+      await route.fulfill({ status: 204 });
+    } else await route.fulfill({ json: [] });
+  });
+
+  await page.goto('/tareas');
+  await expect(page.getByLabel('Título:', { exact: true })).toBeVisible();
+  for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth))).toBeLessThanOrEqual(viewport.width + 1);
+  }
+  await page.getByLabel('Título:', { exact: true }).fill('Lectura compartida');
+  await page.getByLabel('Descripción:', { exact: true }).fill('Preparar la celebración');
+  await page.getByLabel('Fecha:', { exact: true }).fill('2099-11-01');
+  await page.getByLabel('Hora de Inicio:', { exact: true }).fill('14:00');
+  await page.getByLabel('Hora de Fin:', { exact: true }).fill('15:00');
+  await page.getByRole('checkbox', { name: 'Ana Ministra' }).check();
+  await page.getByRole('checkbox', { name: 'Luis Ministro' }).check();
+  await page.getByRole('button', { name: 'Crear y asignar tarea', exact: true }).click();
+  await expect(page.getByRole('cell', { name: 'Lectura compartida', exact: true })).toHaveCount(2);
+  for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth))).toBeLessThanOrEqual(viewport.width + 1);
+  }
+  for (let restantes = 2; restantes > 0; restantes--) {
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Quitar ministro de esta tarea', exact: true }).first().click();
+    await expect(page.getByRole('button', { name: 'Quitar ministro de esta tarea', exact: true })).toHaveCount(restantes - 1);
+  }
+  await expect(page.getByRole('cell', { name: 'Sin ministro asignado' })).toBeVisible();
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Eliminar tarea', exact: true }).click();
+  await expect(page.getByRole('cell', { name: 'Lectura compartida', exact: true })).toHaveCount(0);
+});
