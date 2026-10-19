@@ -6,6 +6,7 @@ import { ROLES } from '../config/roles';
 import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 import { withTransaction } from '../utils/withTransaction';
+import { ErrorAsignacion, guardarTareaConMinistros, validarMinistros } from '../services/tareasAsignacion.service';
 
 // Manejo de get, post, put, delete para tareas y asignaciones
 // Retorna todas las tareas con sus ministros asignados con GET /api/tareas
@@ -132,6 +133,12 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
   }
 
   try {
+    if (req.body.persona_ids !== undefined) {
+      const ids = validarMinistros(req.body.persona_ids);
+      const resultado = await guardarTareaConMinistros({ fecha, hora_inicio, hora_fin, titulo, descripcion }, ids, req.user!);
+      res.status(HttpStatus.CREATED).json({ mensaje: 'Tarea creada y asignada exitosamente', ...resultado });
+      return;
+    }
     const [result] = await pool.execute<ResultSetHeader>(
       'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion) VALUES (?, ?, ?, ?, ?)',
       [fecha, hora_inicio, hora_fin, titulo, descripcion]
@@ -150,6 +157,10 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
       },
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en createTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al crear la tarea' });
   }
@@ -245,6 +256,21 @@ export const deleteTarea = async (req: Request, res: Response): Promise<void> =>
 // INSERT IGNORE evita error si la asignación ya existe.
 export const asignarTarea = async (req: Request, res: Response): Promise<void> => {
   const { tarea_id, persona_id } = req.body;
+
+  if (req.body.persona_ids !== undefined) {
+    try {
+      if (!Number.isSafeInteger(tarea_id) || tarea_id <= 0) throw new ErrorAsignacion(400, 'Selecciona una tarea válida');
+      const resultado = await guardarTareaConMinistros(tarea_id, validarMinistros(req.body.persona_ids), req.user!);
+      res.status(HttpStatus.CREATED).json({ mensaje: 'Asignaciones realizadas correctamente', ...resultado });
+    } catch (error) {
+      if (error instanceof ErrorAsignacion) res.status(error.status).json({ mensaje: error.message });
+      else {
+        console.error('Error en asignación múltiple:', error);
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al realizar las asignaciones' });
+      }
+    }
+    return;
+  }
 
   if (!tarea_id || !persona_id) {
     res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'tarea_id y persona_id son requeridos' });
