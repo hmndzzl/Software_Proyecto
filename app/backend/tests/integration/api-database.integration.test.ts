@@ -234,6 +234,48 @@ describe('integración API y MariaDB', () => {
     expect(despues.body).toEqual(anterior.body);
   });
 
+  it('crea y asigna a varios ministros, evita resultados parciales y conserva tareas sin asignados', async () => {
+    const login = await request(app).post('/api/auth/login')
+      .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    const datos = { titulo: 'Tarea múltiple de integración', descripcion: 'Preparar celebración', fecha: '2099-11-20', hora_inicio: '10:00', hora_fin: '11:00', persona_ids: [9, 10, 9] };
+    const creada = await request(app).post('/api/tareas').auth(token, { type: 'bearer' }).send(datos).expect(201);
+    const id = creada.body.tarea.id;
+    const [asignaciones] = await pool.query<RowDataPacket[]>('SELECT persona_id FROM asignacion_tarea WHERE tarea_id = ? ORDER BY persona_id', [id]);
+    expect(asignaciones.map(a => a.persona_id)).toEqual([9, 10]);
+    const [avisos] = await pool.query<RowDataPacket[]>(
+      'SELECT pn.persona_id, pn.leida FROM persona_notificacion pn JOIN notificacion n ON n.id = pn.notificacion_id WHERE n.mensaje = ? ORDER BY pn.persona_id',
+      [`Se te asignó la tarea: ${datos.titulo}`],
+    );
+    expect(avisos).toEqual([{ persona_id: 9, leida: 0 }, { persona_id: 10, leida: 0 }]);
+
+    // Si el segundo ministro tiene conflicto, no se crea ni se asigna nada al primero.
+    await request(app).post('/api/tareas').auth(token, { type: 'bearer' })
+      .send({ ...datos, titulo: 'No debe persistirse', persona_ids: [11, 10] }).expect(409);
+    const [parciales] = await pool.query<RowDataPacket[]>('SELECT id FROM tarea WHERE titulo = ?', ['No debe persistirse']);
+    expect(parciales).toHaveLength(0);
+
+    // Agregar a una tarea existente es idempotente y no vuelve a notificar a los asignados.
+    for (let intento = 0; intento < 2; intento++) {
+      await request(app).post('/api/tareas/asignar').auth(token, { type: 'bearer' })
+        .send({ tarea_id: id, persona_ids: [9, 11] }).expect(201);
+    }
+    const [avisosFinales] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM notificacion WHERE mensaje = ?', [`Se te asignó la tarea: ${datos.titulo}`],
+    );
+    expect(avisosFinales).toHaveLength(3);
+    for (const persona_id of [9, 10, 11]) {
+      await request(app).delete('/api/tareas/asignar').auth(token, { type: 'bearer' }).send({ tarea_id: id, persona_id }).expect(204);
+    }
+    const sinAsignados = await request(app).get(`/api/tareas/${id}`).auth(token, { type: 'bearer' }).expect(200);
+    expect(sinAsignados.body.asignados).toEqual([]);
+    await request(app).post('/api/tareas/asignar').auth(token, { type: 'bearer' }).send({ tarea_id: id, persona_ids: [9, 10] }).expect(201);
+    await request(app).delete(`/api/tareas/${id}`).auth(token, { type: 'bearer' }).expect(204);
+    const [restantes] = await pool.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea WHERE tarea_id = ?', [id]);
+    expect(restantes).toHaveLength(0);
+    await request(app).get(`/api/tareas/${id}`).auth(token, { type: 'bearer' }).expect(404);
+  });
+
   it('persiste un contacto y notifica a cada sacerdote y administrador', async () => {
     const response = await request(app)
       .post('/api/contacto')

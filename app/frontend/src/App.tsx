@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/react';
 import { esES } from '@clerk/localizations';
@@ -9,31 +9,32 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import GlobalErrorBanner from './components/ui/GlobalErrorBanner';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
+import LoadingState from './components/ui/LoadingState';
 
-import LoginPage from './pages/auth/LoginPage';
-import LandingPage from './pages/landing/LandingPage';
-import AgendaPublicaPage from './pages/agenda-publica/AgendaPublicaPage';
-import DashboardPage from './pages/dashboard/DashboardPage';
-import MinistrosPage from './pages/ministers/MinistrosPage';
-import TareasPage from './pages/tasks/TareasPage';
-import ReservasPage from './pages/reservas/ReservasPage';
-import GruposPage from './pages/grupos/gruposPage';
-import EspaciosPage from './pages/espacios/EspaciosPage';
-import EspacioDetallePage from './pages/espacios/EspacioDetallePage';
-import EventosPage from './pages/eventos/EventosPage';
-import MisReservasPage from './pages/mis-reservas/MisReservasPage';
-import NotificacionesPage from './pages/notificaciones/NotificacionesPage';
-import PerfilPage from './pages/perfil/PerfilPage';
-import CalendarioPage from './pages/calendario/CalendarioPage';
-import CambiosTurnoPage from './pages/cambios-turno/CambiosTurnoPage';
-import NotFoundPage from './pages/not_found_page/NotFoundPage';
-import AusenciasPage from './pages/ausencias/AusenciasPage';
-import CuentasPage from './pages/cuentas/CuentasPage';
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
+const AgendaPublicaPage = lazy(() => import('./pages/agenda-publica/AgendaPublicaPage'));
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const MinistrosPage = lazy(() => import('./pages/ministers/MinistrosPage'));
+const TareasPage = lazy(() => import('./pages/tasks/TareasPage'));
+const ReservasPage = lazy(() => import('./pages/reservas/ReservasPage'));
+const GruposPage = lazy(() => import('./pages/grupos/gruposPage'));
+const EspaciosPage = lazy(() => import('./pages/espacios/EspaciosPage'));
+const EspacioDetallePage = lazy(() => import('./pages/espacios/EspacioDetallePage'));
+const EventosPage = lazy(() => import('./pages/eventos/EventosPage'));
+const MisReservasPage = lazy(() => import('./pages/mis-reservas/MisReservasPage'));
+const NotificacionesPage = lazy(() => import('./pages/notificaciones/NotificacionesPage'));
+const PerfilPage = lazy(() => import('./pages/perfil/PerfilPage'));
+const CalendarioPage = lazy(() => import('./pages/calendario/CalendarioPage'));
+const CambiosTurnoPage = lazy(() => import('./pages/cambios-turno/CambiosTurnoPage'));
+const NotFoundPage = lazy(() => import('./pages/not_found_page/NotFoundPage'));
+const AusenciasPage = lazy(() => import('./pages/ausencias/AusenciasPage'));
+const CuentasPage = lazy(() => import('./pages/cuentas/CuentasPage'));
 import ClerkSessionSync from './auth/ClerkSessionSync';
 import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
 import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
-import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
-import ContenidoPublicoPage from './pages/contenido-publico/ContenidoPublicoPage';
+const ConfiguracionPage = lazy(() => import('./pages/configuracion/ConfiguracionPage'));
+const ContenidoPublicoPage = lazy(() => import('./pages/contenido-publico/ContenidoPublicoPage'));
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -57,6 +58,14 @@ function SincronizarPreferenciasUI() {
 }
 
 function AppContent() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <AppRoutes />
+    </Suspense>
+  );
+}
+
+function AppRoutes() {
   const location = useLocation();
   const isLogin = location.pathname === '/login';
   const isLanding = location.pathname === '/';

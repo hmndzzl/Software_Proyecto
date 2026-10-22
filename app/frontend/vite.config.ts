@@ -19,6 +19,16 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          clerk: ['@clerk/react', '@clerk/localizations'],
+        },
+      },
+    },
+  },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     globals: true,
