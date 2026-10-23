@@ -67,6 +67,19 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
   });
 
   describe('crearReserva', () => {
+    it.each(['true', 1, null])('rechaza publico inválido %s antes de escribir', async publico => {
+      req.body = { publico };
+      await crearReserva(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(db.getConnection).not.toHaveBeenCalled();
+    });
+
+    it.each([true, false])('rechaza configurar publico sin permiso (%s)', async publico => {
+      req.body = { publico };
+      await crearReserva(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(403);
+      expect(db.getConnection).not.toHaveBeenCalled();
+    });
     it('debería retornar 400 si faltan campos', async () => {
       req.body = { fecha: '2026-08-12' }; // faltan los demás
 

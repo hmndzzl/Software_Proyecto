@@ -11,7 +11,7 @@ export const crearReserva = async (req: Request, res: Response) => {
   if (publico !== undefined && typeof publico !== 'boolean') {
     return res.status(HttpStatus.BAD_REQUEST).json({ message: 'publico debe ser un booleano' });
   }
-  if (publico !== undefined && ![ROLES.ADMIN, ROLES.SACERDOTE].includes(req.user!.rol_id)) {
+  if (publico !== undefined && req.user!.rol_id !== ROLES.ADMIN && req.user!.rol_id !== ROLES.SACERDOTE) {
     return res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para configurar la agenda pública' });
   }
 

@@ -61,6 +61,59 @@ describe('edición de visibilidad → API → MariaDB → agenda pública', () =
     await container?.stop();
   });
 
+  it('crea desde reservas, publica al aprobar y cambia la visibilidad sin perder la aprobación', async () => {
+    const login = await request(app).post('/api/auth/login')
+      .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const body = { fecha: '2099-12-21', hora_inicio: '09:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Evento desde reservas', descripcion: 'Creación pública aislada', publico: true };
+    await request(app).post('/api/reservas').send(body).expect(401);
+    const coord = await request(app).post('/api/auth/login')
+      .send({ correo: 'coord.min@parroquia.com', password: 'password123' }).expect(200);
+    await request(app).post('/api/reservas').auth(coord.body.token, { type: 'bearer' }).send(body).expect(403);
+    await request(app).post('/api/reservas').auth(login.body.token, { type: 'bearer' }).send({ ...body, publico: 'true' }).expect(400);
+    const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
+    try {
+      const admin = await browser.newContext();
+      await admin.addInitScript(({ token, usuario }) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('usuario', JSON.stringify(usuario));
+      }, login.body);
+      const page = await admin.newPage();
+      await page.goto(`${baseUrl}/reservas`);
+      await page.getByLabel('Espacio:', { exact: true }).selectOption('2');
+      await page.getByLabel('Fecha:', { exact: true }).fill(body.fecha);
+      await page.getByLabel('Hora de Inicio:').fill(body.hora_inicio);
+      await page.getByLabel('Hora de Fin:').fill(body.hora_fin);
+      await page.getByLabel('Título del Evento:').fill(body.titulo);
+      await page.getByLabel('Descripción del Evento:').fill(body.descripcion);
+      await page.getByRole('checkbox', { name: 'Mostrar en la agenda pública' }).check();
+      const creado = page.waitForResponse(r => r.url().endsWith('/api/reservas') && r.request().method() === 'POST');
+      await page.getByRole('button', { name: 'Solicitar Reserva', exact: true }).click();
+      const response = await creado;
+      expect(response.status()).toBe(201);
+      const { reservaId } = await response.json();
+      const listar = () => request(app).get('/api/reservas').auth(login.body.token, { type: 'bearer' });
+      const reserva = (await listar()).body.find((r: { id: number }) => r.id === reservaId);
+      expect(reserva.evento_publico).toBe(1);
+      expect((await request(app).get('/api/public/agenda')).body.map((e: { id: number }) => e.id)).not.toContain(reserva.evento_id);
+      await request(app).put(`/api/reservas/${reservaId}/estado`).auth(login.body.token, { type: 'bearer' }).send({ estado_id: 2 }).expect(200);
+      const visitante = await browser.newPage();
+      await visitante.goto(`${baseUrl}/agenda`);
+      await visitante.getByRole('heading', { name: body.titulo, exact: true }).waitFor();
+      await page.reload();
+      await page.getByRole('row').filter({ hasText: body.titulo }).getByRole('button', { name: 'Editar' }).click();
+      const checkbox = page.locator('fieldset').getByRole('checkbox', { name: 'Mostrar en la agenda pública' });
+      expect(await checkbox.isChecked()).toBe(true);
+      await checkbox.uncheck();
+      await page.screenshot({ path: 'test-results/reserva-agenda-editor.png', fullPage: true });
+      const cambiado = page.waitForResponse(r => r.url().endsWith(`/api/eventos/${reserva.evento_id}/publico`) && r.request().method() === 'PATCH');
+      await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
+      expect((await cambiado).status()).toBe(200);
+      expect((await listar()).body.find((r: { id: number }) => r.id === reservaId).estado_reserva_id).toBe(2);
+      await visitante.reload();
+      await visitante.getByRole('heading', { name: 'Aún no hay actividades publicadas' }).waitFor();
+    } finally { await browser.close(); }
+  }, 60_000);
+
   it('publica y retira desde el formulario; visitante ve el cambio y roles no autorizados reciben rechazo', async () => {
     const [reserva] = await pool.execute<ResultSetHeader>(
       'INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id) VALUES (?, ?, ?, ?, ?, ?)',

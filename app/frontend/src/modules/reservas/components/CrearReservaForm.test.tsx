@@ -34,6 +34,26 @@ afterEach(() => vi.useRealTimers());
 const enviar = () => fireEvent.click(screen.getByRole('button', { name: 'Solicitar Reserva' }));
 
 describe('CrearReservaForm', () => {
+  it('permite al administrador crear con visibilidad pública y restablece la casilla', async () => {
+    localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 5 }));
+    mostrar();
+    await completar();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Mostrar en la agenda pública' }));
+    enviar();
+    await screen.findByRole('status');
+    expect(apiClient.post).toHaveBeenCalledWith('/api/reservas', expect.objectContaining({ publico: true }));
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('no ofrece publicar a un coordinador ni envía el campo restringido', async () => {
+    localStorage.setItem('usuario', JSON.stringify({ id: 7, rol_id: 2 }));
+    mostrar();
+    await completar();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    enviar();
+    await screen.findByRole('status');
+    expect(vi.mocked(apiClient.post).mock.calls[0][1]).not.toHaveProperty('publico');
+  });
   it('avisa con un toast el espacio, fecha, horario y estado pendiente, y limpia el formulario', async () => {
     const onReservaCreada = vi.fn();
     mostrar({ onReservaCreada });
