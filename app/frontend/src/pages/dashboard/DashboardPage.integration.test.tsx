@@ -10,7 +10,7 @@ import DashboardPage from './DashboardPage';
 vi.mock('../../api/client', () => ({ default: { get: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const mostrar = () => render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+const mostrar = () => render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><DashboardPage /></MemoryRouter>);
 const futuras = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, fecha: `2099-11-${String(i + 1).padStart(2, '0')}`, hora_inicio: '08:00:00', descripcion: `Tarea ${i + 1}` }));
 
 describe('integración del dashboard por rol', () => {
