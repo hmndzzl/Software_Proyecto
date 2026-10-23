@@ -19,11 +19,16 @@ import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 import type { Notificacion } from '../../types';
 import styles from './NotificacionesPage.module.css';
+import { Field, InputUI } from '../../components/ui/Field';
+import { enRangoEnvio } from '../../modules/notificaciones/utils/fechaNotificacion';
 
 const ROLES_PUEDEN_ENVIAR = [ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS];
 type Vista = 'recibidas' | 'enviadas' | 'papelera';
 
 export default function NotificacionesPage() {
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+  const rangoInvalido = Boolean(desde && hasta && desde > hasta);
   const {
     notificaciones,
     cargando,
@@ -66,6 +71,12 @@ export default function NotificacionesPage() {
   }, [cargando, resaltarId]);
 
   const hayNoLeidas = notificaciones.some((n) => !n.leida);
+  const filtrar = <T extends { enviado_en?: string | null },>(lista: T[]) =>
+    lista.filter(n => !rangoInvalido && enRangoEnvio(n.enviado_en, desde, hasta));
+  const recibidasFiltradas = filtrar(notificaciones);
+  const enviadasFiltradas = filtrar(enviadas);
+  const papeleraFiltrada = filtrar(papelera);
+  const filtrando = Boolean(desde || hasta);
 
   const handleEnviada = async () => {
     setModalNuevaAbierto(false);
@@ -128,11 +139,28 @@ export default function NotificacionesPage() {
         </Btn>
       </div>
 
+      <Card>
+        <CardBody>
+          <div className={styles.filtros}>
+            <Field label="Desde (fecha y hora)">
+              <InputUI aria-label="Desde (fecha y hora)" type="datetime-local" value={desde} onChange={e => setDesde(e.target.value)} />
+            </Field>
+            <Field label="Hasta (fecha y hora)">
+              <InputUI aria-label="Hasta (fecha y hora)" type="datetime-local" value={hasta} onChange={e => setHasta(e.target.value)} />
+            </Field>
+            <Btn kind="primary" onClick={() => { setDesde(''); setHasta(''); }} disabled={!filtrando}>Limpiar filtros</Btn>
+          </div>
+          <p className={styles.ayudaFiltro}>Horario de Guatemala. Puedes indicar uno o ambos límites. El minuto final está incluido.</p>
+          {filtrando && <p className={styles.ayudaFiltro}>Las notificaciones antiguas sin hora registrada no se incluyen en la búsqueda por rango.</p>}
+          {rangoInvalido && <p role="alert">La fecha y hora inicial no puede ser posterior a la final.</p>}
+        </CardBody>
+      </Card>
+
       {vista === 'recibidas' && (
         <Card>
           <CardHead
             title="MIS NOTIFICACIONES"
-            hint={!cargando && !error ? `${notificaciones.length} notificaciones` : undefined}
+            hint={!cargando && !error ? `${recibidasFiltradas.length} notificaciones` : undefined}
             right={
               hayNoLeidas ? (
                 <Btn kind="gold" size="sm" onClick={marcarTodasLeidas}>
@@ -146,14 +174,14 @@ export default function NotificacionesPage() {
               <LoadingState label="Cargando notificaciones…" />
             ) : error ? (
               <ErrorState message={error} onRetry={refetch} />
-            ) : notificaciones.length === 0 ? (
-              <EmptyState message="No tienes notificaciones." />
+            ) : recibidasFiltradas.length === 0 ? (
+              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "No tienes notificaciones."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha</th>
+                      <th>Fecha y hora de envío</th>
                       <th>Mensaje</th>
                       <th>Remitente</th>
                       <th>Tipo</th>
@@ -162,7 +190,7 @@ export default function NotificacionesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {notificaciones.map((n) => (
+                    {recibidasFiltradas.map((n) => (
                       <NotificacionRow
                         key={n.id}
                         notificacion={n}
@@ -188,28 +216,28 @@ export default function NotificacionesPage() {
         <Card>
           <CardHead
             title="NOTIFICACIONES ENVIADAS"
-            hint={!cargandoEnviadas && !errorEnviadas ? `${enviadas.length} notificaciones` : undefined}
+            hint={!cargandoEnviadas && !errorEnviadas ? `${enviadasFiltradas.length} notificaciones` : undefined}
           />
           <CardBody>
             {cargandoEnviadas ? (
               <LoadingState label="Cargando notificaciones enviadas…" />
             ) : errorEnviadas ? (
               <ErrorState message={errorEnviadas} onRetry={refetchEnviadas} />
-            ) : enviadas.length === 0 ? (
-              <EmptyState message="No has enviado notificaciones." />
+            ) : enviadasFiltradas.length === 0 ? (
+              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "No has enviado notificaciones."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table} style={{ tableLayout: 'fixed', minWidth: 700 }}>
                   <colgroup>
-                    <col style={{ width: '12%' }} />
-                    <col style={{ width: '32%' }} />
                     <col style={{ width: '24%' }} />
+                    <col style={{ width: '24%' }} />
+                    <col style={{ width: '20%' }} />
                     <col style={{ width: '10%' }} />
                     <col style={{ width: '22%' }} />
                   </colgroup>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha</th>
+                      <th>Fecha y hora de envío</th>
                       <th>Mensaje</th>
                       <th>Destinatarios</th>
                       <th>Tipo</th>
@@ -217,7 +245,7 @@ export default function NotificacionesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {enviadas.map((n) => (
+                    {enviadasFiltradas.map((n) => (
                       <EnviadaRow key={n.id} notificacion={n} />
                     ))}
                   </tbody>
@@ -232,7 +260,7 @@ export default function NotificacionesPage() {
         <Card>
           <CardHead
             title="PAPELERA"
-            hint={!cargandoPapelera && !errorPapelera ? `${papelera.length} notificaciones (se purgan a los 15 días)` : undefined}
+            hint={!cargandoPapelera && !errorPapelera ? `${papeleraFiltrada.length} notificaciones (se purgan a los 15 días)` : undefined}
             right={
               papelera.length > 0 ? (
                 <Btn kind="bad" size="sm" onClick={handleVaciarPapelera}>
@@ -246,14 +274,14 @@ export default function NotificacionesPage() {
               <LoadingState label="Cargando papelera…" />
             ) : errorPapelera ? (
               <ErrorState message={errorPapelera} onRetry={refetchPapelera} />
-            ) : papelera.length === 0 ? (
-              <EmptyState message="La papelera está vacía." />
+            ) : papeleraFiltrada.length === 0 ? (
+              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "La papelera está vacía."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha</th>
+                      <th>Fecha y hora de envío</th>
                       <th>Mensaje</th>
                       <th>Remitente</th>
                       <th>Tipo</th>
@@ -261,7 +289,7 @@ export default function NotificacionesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {papelera.map((n) => (
+                    {papeleraFiltrada.map((n) => (
                       <PapeleraRow key={n.id} notificacion={n} onRestaurar={handleRestaurar} />
                     ))}
                   </tbody>

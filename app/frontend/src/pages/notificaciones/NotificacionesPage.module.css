@@ -56,3 +56,8 @@
   color: var(--color-bad);
   text-align: center;
 }
+
+.filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+.filtros > div { flex: 1 1 220px; min-width: 0; }
+
+.ayudaFiltro { color: var(--color-muted); font-family: var(--font-body); font-size: 13px; line-height: 1.5; margin: 10px 0 0; }

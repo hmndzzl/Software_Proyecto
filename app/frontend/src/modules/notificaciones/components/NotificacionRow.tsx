@@ -1,7 +1,7 @@
 import Badge from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
 import type { Notificacion } from '../../../types';
-import { formatFecha } from '../../../utils/date';
+import { fechaNotificacion } from '../utils/fechaNotificacion';
 import styles from './NotificacionRow.module.css';
 
 interface Props {
@@ -42,7 +42,7 @@ export default function NotificacionRow({
 
   return (
     <tr id={`notificacion-${id}`} className={`${styles.row} ${!leida ? styles.rowUnread : ''} ${resaltada ? styles.rowResaltada : ''}`}>
-      <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
+      <td className={styles.tdFecha}>{fechaNotificacion(fecha, notificacion.enviado_en)}</td>
       <td className={styles.tdMensaje}>
         {mensaje}
         {requiereConfirmacion && evento_descripcion && (
