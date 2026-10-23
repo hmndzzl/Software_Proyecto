@@ -11,7 +11,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
   const personaId = req.user!.id;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
+      `SELECT n.id, n.mensaje, n.fecha, DATE_FORMAT(n.enviado_en, '%Y-%m-%dT%H:%i:%sZ') AS enviado_en, n.tipo, n.remitente_id, n.grupo_id,
               n.evento_id, n.requiere_confirmacion,
               pn.leida, pn.asistencia_confirmada, pn.inasistencia_reportada, pn.motivo_excusa,
               r.nombre AS remitente_nombre,
@@ -21,7 +21,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
        LEFT  JOIN persona r               ON r.id = n.remitente_id
        LEFT  JOIN evento ev               ON ev.id = n.evento_id
        WHERE pn.persona_id = ? AND pn.eliminada_en IS NULL
-       ORDER BY n.fecha DESC`,
+       ORDER BY COALESCE(n.enviado_en, TIMESTAMP(n.fecha)) DESC, n.id DESC`,
       [personaId]
     );
 
@@ -37,7 +37,7 @@ export const getNotificacionesEnviadas = async (req: Request, res: Response): Pr
   const remitenteId = req.user!.id;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
+      `SELECT n.id, n.mensaje, n.fecha, DATE_FORMAT(n.enviado_en, '%Y-%m-%dT%H:%i:%sZ') AS enviado_en, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
               COUNT(pn.persona_id) AS total_destinatarios,
               COALESCE(SUM(pn.leida), 0) AS total_leidas,
               COALESCE(SUM(pn.asistencia_confirmada), 0) AS total_confirmaron,
@@ -47,7 +47,7 @@ export const getNotificacionesEnviadas = async (req: Request, res: Response): Pr
        LEFT JOIN persona p               ON p.id = pn.persona_id
        WHERE n.remitente_id = ?
        GROUP BY n.id
-       ORDER BY n.fecha DESC`,
+       ORDER BY COALESCE(n.enviado_en, TIMESTAMP(n.fecha)) DESC, n.id DESC`,
       [remitenteId]
     );
 
@@ -166,7 +166,7 @@ export const getPapelera = async (req: Request, res: Response): Promise<void> =>
     );
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
+      `SELECT n.id, n.mensaje, n.fecha, DATE_FORMAT(n.enviado_en, '%Y-%m-%dT%H:%i:%sZ') AS enviado_en, n.tipo, n.remitente_id, n.grupo_id,
               n.evento_id, n.requiere_confirmacion,
               pn.leida, pn.eliminada_en,
               r.nombre AS remitente_nombre,

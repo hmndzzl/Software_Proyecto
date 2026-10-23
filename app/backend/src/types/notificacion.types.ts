@@ -4,6 +4,7 @@ export interface Notificacion {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   remitente_id: number | null;
   grupo_id: number | null;
