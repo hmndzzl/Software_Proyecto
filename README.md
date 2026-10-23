@@ -190,7 +190,7 @@ Sobre bases existentes, ejecutar una vez `app/database/migrations/20261005_perso
 | `/dashboard` | Resumen y accesos rápidos por rol. |
 | `/ministros` | Directorio y disponibilidad de ministros. |
 | `/tareas` | Tareas, asignaciones y reasignación del responsable. |
-| `/reportes` | Descarga PDF/CSV de reservas (Sacerdote/Admin) y tareas (también CoordMin). |
+| `/reportes` | Descarga Excel/PDF/CSV de reservas (Sacerdote/Admin) y tareas (también CoordMin). |
 | `/calendario` | Calendario semanal de servicios. |
 | `/cambios-turno` | Solicitudes y respuestas de cambios de turno. |
 | `/reservas`, `/mis-reservas` | Gestión e historial de reservas. |
@@ -265,10 +265,10 @@ Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer 
 
 | Método | Ruta | Roles | Parámetros |
 |---|---|---|---|
-| GET | `/reservas` | Sacerdote/Admin | `desde`, `hasta` (YYYY-MM-DD, hasta 366 días); `formato=csv\|pdf` |
-| GET | `/tareas` | Sacerdote/Admin/CoordMin | `desde`, `hasta` (YYYY-MM-DD, hasta 31 días); `formato=csv\|pdf` |
+| GET | `/reservas` | Sacerdote/Admin | `desde`, `hasta` (YYYY-MM-DD, hasta 366 días); `formato=xlsx\|pdf\|csv` |
+| GET | `/tareas` | Sacerdote/Admin/CoordMin | `desde`, `hasta` (YYYY-MM-DD, hasta 31 días); `formato=xlsx\|pdf\|csv` |
 
-Ambos extremos requieren sesión y verifican el rol y el estado actual de la cuenta en la BD en cada solicitud. Se limitan a 60 solicitudes por minuto y cuenta. Los periodos son inclusivos y el máximo es de 1000 filas por archivo; si se excede, responden 413 para que se reduzca el periodo. Los archivos son adjuntos sin caché. El CSV mitiga la ejecución de fórmulas en hojas de cálculo. El reporte de reservas incluye todas las reservas del periodo y su estado; el de tareas incluye una fila por asignación y las tareas sin asignar.
+Ambos extremos requieren sesión y verifican el rol y el estado actual de la cuenta en la BD en cada solicitud. Se limitan a 60 solicitudes por minuto y cuenta. Los periodos son inclusivos y el máximo es de 1000 filas por archivo; si se excede, responden 413 para que se reduzca el periodo. Los archivos son adjuntos sin caché. Excel (.xlsx) es la opción principal, seguida de PDF y CSV. En Excel, los textos se guardan como cadenas, no fórmulas; el CSV mitiga la ejecución de fórmulas en hojas de cálculo. El reporte de reservas incluye todas las reservas del periodo y su estado; el de tareas incluye una fila por asignación y las tareas sin asignar.
 
 ### Otros módulos
 
