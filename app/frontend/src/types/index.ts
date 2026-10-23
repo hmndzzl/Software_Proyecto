@@ -12,6 +12,7 @@ export interface Persona {
 
 export interface Evento {
   id: number;
+  publico?: 0 | 1 | boolean;
   descripcion: string;
   encargado_id: number;
   reserva_id: number;

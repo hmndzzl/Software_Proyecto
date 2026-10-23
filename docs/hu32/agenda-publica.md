@@ -1,7 +1,7 @@
 # HU-32 — API de agenda pública (Sprint 9, M1)
 
 El backend existente ofrece `GET /api/public/agenda` sin autenticación para la landing.
-No hace falta otro servicio. La implementación del frontend queda fuera de esta tarea.
+No hace falta otro servicio. El sitio consulta esta API desde `/agenda`.
 
 ## Preparación de la base de datos
 
@@ -93,6 +93,53 @@ como valor 0/1, conservando la autenticación que ya tenían.
 No es necesario exponer `/api/eventos` ni usar el login anterior para consumir la landing.
 La decisión funcional de cuáles actividades son abiertas al público corresponde a Javier
 y al equipo parroquial; el campo permite registrar esa decisión explícitamente.
+
+## Control administrativo (Sprint 10)
+
+1. Iniciar sesión como Admin o Sacerdote y abrir **Gestión de Eventos** (`/eventos`).
+2. Elegir **Editar** en el evento y marcar **Mostrar en la agenda pública**.
+3. Pulsar **Guardar Cambios**. La casilla refleja el valor guardado al volver a editar.
+4. Abrir `/agenda` sin sesión o recargarla si ya estaba abierta: el evento aparece
+   si su reserva está confirmada y todavía no ha terminado, según la hora de Guatemala.
+5. Desmarcar la casilla y guardar para retirarlo. Recargar la agenda para comprobarlo.
+
+En desarrollo con Vite en su puerto predeterminado, las páginas son
+`http://localhost:5173/eventos` y `http://localhost:5173/agenda`.
+No se requiere una migración nueva: se utiliza `evento.publico`, ya existente.
+Si una base antigua aún no tiene esa columna, aplicar la migración indicada arriba,
+conservando los datos y sin borrar volúmenes.
+
+El formulario utiliza `PATCH http://localhost:3001/api/eventos/:id/publico`,
+con `Authorization: Bearer <token>`, `Content-Type: application/json` y el cuerpo
+`{ "publico": true }` o `{ "publico": false }`. El contrato y los códigos de respuesta
+descritos arriba no cambian; no se añadieron campos ni permisos a la API.
+Cambiar solamente la casilla no modifica la descripción ni el encargado.
+
+Si también se editan datos generales, se guardan mediante el PUT existente antes
+del PATCH de visibilidad. Son dos operaciones independientes: si falla la segunda,
+el formulario informa qué datos ya se guardaron y permite reintentar sin volver a
+enviar el PUT confirmado. No muestra éxito ni cierra el formulario mientras quede
+un error de publicación. Los controles se deshabilitan durante el guardado.
+
+### Prueba de navegador con API y base reales
+
+La prueba `app/backend/tests/browser/evento-agenda-ui.test.ts` levanta una MariaDB
+temporal con los datos de prueba, la API en un puerto libre y Vite en el puerto 4175.
+Publica y retira desde el formulario, comprueba `/agenda` en otro contexto sin sesión,
+verifica la persistencia al recargar y comprueba rechazos 401/403. No modifica la base
+local habitual ni utiliza mocks de la API. Cierra sus servicios al terminar.
+
+Preparación: Docker activo, dependencias instaladas con `npm ci` en backend y frontend,
+y Chromium instalado con `npx playwright install chromium` desde frontend.
+Desde backend ejecutar `npm run test:agenda-ui`. Para usar Edge instalado en Windows,
+establecer `$env:PLAYWRIGHT_CHANNEL = 'msedge'` antes de ejecutar el comando.
+Esta prueba tiene un comando separado para que la suite de integración de API
+existente no requiera instalar frontend ni un navegador.
+El informe JUnit y las capturas quedan en `app/backend/test-results/` (no versionados).
+
+Verificación del cambio: 15 pruebas de frontend, 29 pruebas de rutas de agenda y
+publicación, 8 pruebas de integración de API con MariaDB y la prueba completa de
+navegador. Compilaciones de frontend/backend y lint de frontend correctos.
 
 ## Verificación automatizada
 

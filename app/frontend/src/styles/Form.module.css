@@ -16,6 +16,28 @@
   gap: 16px;
 }
 
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-family: var(--font-body);
+  color: var(--color-carbon);
+  cursor: pointer;
+}
+
+.checkboxLabel input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--color-rojo);
+}
+
+.checkboxLabel input:focus-visible {
+  outline: 2px solid var(--color-rojo);
+  outline-offset: 3px;
+}
+
 .fieldRow > .field {
   flex: 1;
 }
