@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { RowDataPacket } from 'mysql2';
 import PDFDocument from 'pdfkit';
+import writeExcelFile, { type SheetData } from 'write-excel-file/node';
 import pool from '../config/db';
 
 type TipoReporte = 'reservas' | 'tareas';
@@ -75,6 +76,22 @@ function celdaCsv(valor: unknown): string {
   return `"${seguro.replace(/"/g, '""')}"`;
 }
 
+async function generarExcel(tipo: TipoReporte, filas: (ReservaRow | TareaRow)[]): Promise<Buffer> {
+  const encabezado = COLUMNAS[tipo].map((valor) => ({ value: valor, type: String, fontWeight: 'bold' as const, backgroundColor: '#EDE7D9' }));
+  const datos: SheetData = [encabezado, ...filas.map((fila) => valores(fila, tipo).map((valor, indice) => {
+    if (indice === 0) return { value: Number(valor), type: Number };
+    if (indice === 1) return { value: new Date(`${valor}T00:00:00.000Z`), type: Date, format: 'dd/mm/yyyy' };
+    // Nunca usar type: 'Formula': incluso los textos que empiezan con '=' son datos literales.
+    return { value: String(valor ?? '').replace(/[\u0000-\u001f\u007f]/g, ' '), type: String, wrap: true };
+  }))];
+  const anchos = tipo === 'reservas' ? [10, 15, 13, 13, 24, 32, 18, 28] : [10, 15, 13, 13, 36, 28];
+  return writeExcelFile(datos, {
+    sheet: tipo === 'reservas' ? 'Reservas' : 'Tareas',
+    columns: anchos.map((width) => ({ width })),
+    stickyRowsCount: 1,
+  }).toBuffer();
+}
+
 function enviarPdf(res: Response, tipo: TipoReporte, desde: string, hasta: string, filas: (ReservaRow | TareaRow)[]): void {
   const pdf = new PDFDocument({ size: 'A4', margin: 42, info: { Title: `Reporte de ${tipo}` } });
   pdf.on('error', (error) => {
@@ -104,9 +121,9 @@ export function exportarReporte(tipo: TipoReporte) {
     const inicio = fechaValida(desde);
     const fin = fechaValida(hasta);
     const limiteDias = tipo === 'reservas' ? 366 : 31;
-    if (!inicio || !fin || (formato !== 'csv' && formato !== 'pdf') ||
+    if (!inicio || !fin || (formato !== 'xlsx' && formato !== 'csv' && formato !== 'pdf') ||
         fin < inicio || (fin.getTime() - inicio.getTime()) / DIA_MS + 1 > limiteDias) {
-      res.status(400).json({ mensaje: `Indica fechas válidas (máximo ${limiteDias} días) y formato csv o pdf` });
+      res.status(400).json({ mensaje: `Indica fechas válidas (máximo ${limiteDias} días) y formato xlsx, pdf o csv` });
       return;
     }
 
@@ -118,12 +135,17 @@ export function exportarReporte(tipo: TipoReporte) {
         return;
       }
       const nombre = `reporte-${tipo}-${desde}-${hasta}.${formato}`;
+      const excel = formato === 'xlsx' ? await generarExcel(tipo, filas) : null;
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`);
-      res.setHeader('Content-Type', formato === 'csv' ? 'text/csv; charset=utf-8' : 'application/pdf');
+      res.setHeader('Content-Type', formato === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : formato === 'csv' ? 'text/csv; charset=utf-8' : 'application/pdf');
       if (formato === 'csv') {
         const lineas = [COLUMNAS[tipo], ...filas.map((fila) => valores(fila, tipo))];
         res.send(`\uFEFF${lineas.map((linea) => linea.map(celdaCsv).join(',')).join('\r\n')}\r\n`);
+      } else if (excel) {
+        res.send(excel);
       } else {
         enviarPdf(res, tipo, desde as string, hasta as string, filas);
       }
