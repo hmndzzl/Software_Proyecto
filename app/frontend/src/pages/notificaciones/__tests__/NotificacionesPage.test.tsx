@@ -75,6 +75,39 @@ function mostrar(initialEntry = '/notificaciones') {
   );
 }
 
+describe('Filtro por fecha y hora', () => {
+  it('filtra recibidas por minuto, explica históricos y limpia el rango', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [
+      { ...notificaciones[0], enviado_en: '2026-10-23T17:30:59Z' }, notificaciones[1],
+    ] });
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.change(screen.getByLabelText('Desde (fecha y hora)'), { target: { value: '2026-10-23T11:30' } });
+    fireEvent.change(screen.getByLabelText('Hasta (fecha y hora)'), { target: { value: '2026-10-23T11:30' } });
+    expect(screen.getByText('Primera notificación')).toBeInTheDocument();
+    expect(screen.queryByText('Segunda notificación')).not.toBeInTheDocument();
+    expect(screen.getByText(/antiguas sin hora/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Desde (fecha y hora)'), { target: { value: '2026-10-23T11:31' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('inicial');
+    expect(screen.getByText('No hay notificaciones en el rango seleccionado.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(screen.getByText('Segunda notificación')).toBeInTheDocument();
+  });
+
+  it('mantiene el rango al pasar a enviadas y papelera', async () => {
+    usuarioSacerdote();
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.change(screen.getByLabelText('Hasta (fecha y hora)'), { target: { value: '2026-10-23T11:30' } });
+    for (const tab of ['Enviadas', 'Papelera']) {
+      fireEvent.click(screen.getByRole('button', { name: tab, exact: true }));
+      expect(await screen.findByText('No hay notificaciones en el rango seleccionado.')).toBeInTheDocument();
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(await screen.findByText('Notificación eliminada')).toBeInTheDocument();
+  });
+});
+
 describe('Resaltado de notificación desde el menú de la campana', () => {
   it('desplaza hasta la notificación indicada por ?resaltar= al cargar y quita parametro', async () => {
     mostrar('/notificaciones?resaltar=2');

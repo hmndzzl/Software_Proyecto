@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { formatFecha } from '../../utils/date';
+import { fechaNotificacion } from '../../modules/notificaciones/utils/fechaNotificacion';
 import type { Notificacion } from '../../types';
 import styles from './TopBar.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
@@ -142,7 +142,7 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
                     onClick={() => handleNotifClick(n)}
                   >
                     <span className={styles.dropdownMsg}>{n.mensaje}</span>
-                    <span className={styles.dropdownFecha}>{formatFecha(n.fecha)}</span>
+                    <span className={styles.dropdownFecha}>{fechaNotificacion(n.fecha, n.enviado_en)}</span>
                   </button>
                 ))
               )}

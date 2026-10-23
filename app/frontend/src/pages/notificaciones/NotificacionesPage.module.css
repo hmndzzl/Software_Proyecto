@@ -29,7 +29,7 @@
   padding: 10px 16px;
   text-align: left;
   border-bottom: 2px solid var(--color-line);
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .empty {
