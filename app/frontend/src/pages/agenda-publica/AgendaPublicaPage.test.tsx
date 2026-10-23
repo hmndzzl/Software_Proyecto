@@ -18,7 +18,7 @@ const evento = {
 };
 
 function mostrar() {
-  return render(<MemoryRouter><AgendaPublicaPage /></MemoryRouter>);
+  return render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AgendaPublicaPage /></MemoryRouter>);
 }
 
 describe('AgendaPublicaPage', () => {
