@@ -20,7 +20,7 @@ function Espia() {
 
 function mostrar(allowedRoles: number[]) {
   render(
-    <MemoryRouter initialEntries={['/privada']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/privada']}>
       <AuthProvider>
         <Espia />
         <Routes>
