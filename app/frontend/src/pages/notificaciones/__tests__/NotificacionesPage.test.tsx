@@ -100,7 +100,7 @@ describe('Filtro por fecha y hora', () => {
     await screen.findByText('Primera notificación');
     fireEvent.change(screen.getByLabelText('Hasta (fecha y hora)'), { target: { value: '2026-10-23T11:30' } });
     for (const tab of ['Enviadas', 'Papelera']) {
-      fireEvent.click(screen.getByRole('button', { name: tab, exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: tab }));
       expect(await screen.findByText('No hay notificaciones en el rango seleccionado.')).toBeInTheDocument();
     }
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
