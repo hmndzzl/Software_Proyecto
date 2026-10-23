@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Evento, Persona } from '../../../types';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
@@ -19,12 +19,14 @@ export default function EditarEventoForm({
   const [personas, setPersonas]       = useState<Persona[]>([]);
   const [publico, setPublico] = useState(Boolean(evento.publico));
   const [guardando, setGuardando] = useState(false);
+  const datosPersistidos = useRef({ descripcion: evento.descripcion, encargado_id: evento.encargado_id });
   const toast = useToast();
 
   useEffect(() => {
     setDescripcion(evento.descripcion);
     setEncargadoId(String(evento.encargado_id));
     setPublico(Boolean(evento.publico));
+    datosPersistidos.current = { descripcion: evento.descripcion, encargado_id: evento.encargado_id };
   }, [evento]);
 
   useEffect(() => {
@@ -45,12 +47,13 @@ export default function EditarEventoForm({
     let datosGuardados = false;
     setGuardando(true);
     try {
-      if (descripcion !== evento.descripcion || Number(encargadoId) !== evento.encargado_id) {
+      if (descripcion !== datosPersistidos.current.descripcion || Number(encargadoId) !== datosPersistidos.current.encargado_id) {
         await apiClient.put(`/api/eventos/${evento.id}`, {
           descripcion,
           encargado_id: Number(encargadoId),
         });
         datosGuardados = true;
+        datosPersistidos.current = { descripcion, encargado_id: Number(encargadoId) };
       }
       if (publico !== Boolean(evento.publico)) {
         await apiClient.patch(`/api/eventos/${evento.id}/publico`, { publico });
