@@ -18,7 +18,7 @@ function Destino() {
 }
 
 function mostrar(ui: React.ReactNode) {
-  return render(<MemoryRouter initialEntries={['/dashboard']}><Routes>
+  return render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/dashboard']}><Routes>
     <Route path="*" element={<>{ui}<Destino /></>} />
   </Routes></MemoryRouter>);
 }

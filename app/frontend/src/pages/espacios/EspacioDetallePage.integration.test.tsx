@@ -23,7 +23,7 @@ const reservas = [
 function Destino() { const loc = useLocation(); return <p>Destino {loc.pathname}{loc.search}</p>; }
 function mostrar() {
   return render(
-    <ToastProvider><MemoryRouter initialEntries={['/espacios/5']}><Routes>
+    <ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/espacios/5']}><Routes>
       <Route path="/espacios/:id" element={<EspacioDetallePage />} />
       <Route path="*" element={<Destino />} />
     </Routes></MemoryRouter></ToastProvider>

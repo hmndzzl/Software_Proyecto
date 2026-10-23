@@ -17,7 +17,7 @@ function Destino() {
 function mostrar(rolId: number) {
   localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: rolId }));
   render(
-    <ToastProvider><MemoryRouter initialEntries={['/mis-reservas']}><AuthProvider>
+    <ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/mis-reservas']}><AuthProvider>
       <Routes>
         <Route path="/mis-reservas" element={<MisReservasPage />} />
         <Route path="/reservas" element={<Destino />} />

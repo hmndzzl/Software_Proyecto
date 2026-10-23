@@ -22,7 +22,7 @@ function Espia() {
 }
 
 function mostrar() {
-  render(<BrowserRouter><AuthProvider><Espia /></AuthProvider></BrowserRouter>);
+  render(<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><Espia /></AuthProvider></BrowserRouter>);
 }
 
 describe('AuthContext — actualización de sesión', () => {

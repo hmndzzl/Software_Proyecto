@@ -116,8 +116,9 @@ describe('integración de eventos, reservas y permisos', () => {
     expect(actualizado).toHaveBeenCalledOnce();
   });
 
-  it('carga la visibilidad del nuevo evento al cambiar la selección', () => {
+  it('carga la visibilidad del nuevo evento al cambiar la selección', async () => {
     const { rerender } = conToast(<EditarEventoForm evento={{ ...evento, publico: 1 }} />);
+    await screen.findByRole('option', { name: 'Padre Luis' });
     expect(screen.getByRole('checkbox')).toBeChecked();
     rerender(<ToastProvider><EditarEventoForm evento={{ ...evento, id: 8, publico: 0 }} /></ToastProvider>);
     expect(screen.getByRole('checkbox')).not.toBeChecked();
