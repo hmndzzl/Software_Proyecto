@@ -1,0 +1,23 @@
+{
+  "info": {
+    "name": "Sprint 10 - Coordinadores y ministros",
+    "description": "Configurar token de Sacerdote/Admin e IDs antes de probar. PUT y DELETE modifican solo la relación indicada; no requieren cuerpo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "token", "value": "" },
+    { "key": "coordinadorId", "value": "7" },
+    { "key": "ministroId", "value": "9" }
+  ],
+  "item": [
+    { "name": "Listar coordinadores", "request": { "method": "GET", "url": "{{baseUrl}}/api/coordinadores-ministros" } },
+    { "name": "Consultar ministros activos", "request": { "method": "GET", "url": "{{baseUrl}}/api/personas" } },
+    { "name": "Consultar ministros asignados", "request": { "method": "GET", "url": "{{baseUrl}}/api/coordinadores-ministros/{{coordinadorId}}/ministros" } },
+    { "name": "Asignar ministro (200)", "request": { "method": "PUT", "url": "{{baseUrl}}/api/coordinadores-ministros/{{coordinadorId}}/ministros/{{ministroId}}" } },
+    { "name": "Quitar relación (200)", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/coordinadores-ministros/{{coordinadorId}}/ministros/{{ministroId}}" } },
+    { "name": "Sin sesión (401)", "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/api/coordinadores-ministros" } },
+    { "name": "Identificador inválido (400)", "request": { "method": "PUT", "url": "{{baseUrl}}/api/coordinadores-ministros/{{coordinadorId}}/ministros/0" } }
+  ]
+}

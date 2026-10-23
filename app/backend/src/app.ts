@@ -20,6 +20,7 @@ import cuentaRoutes from './routes/cuenta.routes';
 import publicRoutes from './routes/public.routes';
 import landingRoutes from './routes/landing.routes';
 import reporteRoutes from './routes/reporte.routes';
+import coordinadorMinistroRoutes from './routes/coordinadorMinistro.routes';
 
 dotenv.config();
 validateEnv();
@@ -73,6 +74,7 @@ app.use('/api/cuentas', cuentaRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/landing', landingRoutes);
 app.use('/api/reportes', reporteRoutes);
+app.use('/api/coordinadores-ministros', coordinadorMinistroRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {

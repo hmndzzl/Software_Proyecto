@@ -16,6 +16,7 @@ const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
 const AgendaPublicaPage = lazy(() => import('./pages/agenda-publica/AgendaPublicaPage'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const MinistrosPage = lazy(() => import('./pages/ministers/MinistrosPage'));
+const CoordinadoresMinistrosPage = lazy(() => import('./pages/coordinadores/CoordinadoresMinistrosPage'));
 const TareasPage = lazy(() => import('./pages/tasks/TareasPage'));
 const ReservasPage = lazy(() => import('./pages/reservas/ReservasPage'));
 const GruposPage = lazy(() => import('./pages/grupos/gruposPage'));
@@ -118,6 +119,12 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/ministros/coordinadores" element={
+          <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+            <CoordinadoresMinistrosPage />
+          </ProtectedRoute>
+        } />
 
         <Route
           path="/reportes"

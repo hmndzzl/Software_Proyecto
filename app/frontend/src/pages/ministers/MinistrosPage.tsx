@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
@@ -38,6 +39,7 @@ const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
 };
 
 export default function MinistrosPage() {
+  const navigate = useNavigate();
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -81,6 +83,11 @@ export default function MinistrosPage() {
         kicker="Directorio"
         title="Ministros y Personas"
         subtitle="Directorio de ministros y voluntarios de la parroquia."
+        actions={tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]) ? (
+          <Btn type="button" kind="primary" onClick={() => navigate('/ministros/coordinadores')}>
+            Gestionar coordinadores
+          </Btn>
+        ) : undefined}
       />
 
       <Card>

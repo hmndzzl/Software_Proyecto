@@ -7,11 +7,12 @@ import { ToastProvider } from '../../context/ToastContext';
 import { authValue } from '../../test/authValue';
 import { ROLES } from '../../utils/roles';
 import MinistrosPage from './MinistrosPage';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../api/client', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const wrapper = ({ children }: { children: React.ReactNode }) => <ToastProvider>{children}</ToastProvider>;
+const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter><ToastProvider>{children}</ToastProvider></MemoryRouter>;
 const ministros = [
   { id: 1, nombre: '  Ana María López ', correo: 'ana@test.com', rol_id: 1, disponible: true },
   { id: 2, nombre: 'Bruno', correo: 'bruno@test.com', rol_id: 99, disponible: false },
@@ -72,5 +73,17 @@ describe('integración del directorio de ministros', () => {
     render(<MinistrosPage />, { wrapper });
     await screen.findByText('Bruno');
     expect(screen.queryByRole('button', { name: /Marcar/ })).not.toBeInTheDocument();
+  });
+
+  it.each([ROLES.ADMIN, ROLES.SACERDOTE])('ofrece gestión de coordinadores al rol %s', async rol_id => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Usuario', correo: 'u@test.com', rol_id }));
+    render(<MinistrosPage />, { wrapper });
+    expect(await screen.findByRole('button', { name: 'Gestionar coordinadores' })).toBeEnabled();
+  });
+
+  it('no ofrece gestión de coordinadores a quien solo coordina ministros', async () => {
+    render(<MinistrosPage />, { wrapper });
+    await screen.findByText('Bruno');
+    expect(screen.queryByRole('button', { name: 'Gestionar coordinadores' })).not.toBeInTheDocument();
   });
 });
