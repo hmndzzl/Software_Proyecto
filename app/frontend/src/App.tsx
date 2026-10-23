@@ -201,7 +201,7 @@ function AppRoutes() {
         <Route
           path="/mis-reservas"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN]}>
               <MisReservasPage />
             </ProtectedRoute>
           }
