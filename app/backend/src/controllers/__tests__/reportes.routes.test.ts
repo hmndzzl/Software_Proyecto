@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import { strFromU8, unzipSync } from 'fflate';
 import pool from '../../config/db';
 import { app } from '../../app';
 import { JWT_SECRET } from '../../config/env';
@@ -69,7 +70,7 @@ describe('exportación protegida de reportes', () => {
     'desde=2026-02-30&hasta=2026-03-01&formato=csv',
     'desde=2026-10-31&hasta=2026-10-01&formato=csv',
     'desde=2026-10-01&hasta=2027-11-01&formato=csv',
-    'desde=2026-10-01&hasta=2026-10-31&formato=xlsx',
+    'desde=2026-10-01&hasta=2026-10-31&formato=ods',
     'desde=2026-10-01&hasta=2026-10-31&formato=csv&formato=pdf',
   ])('rechaza parámetros inválidos: %s', async (query) => {
     cuentaActiva(ROLES.ADMIN);
@@ -129,6 +130,67 @@ describe('exportación protegida de reportes', () => {
       .expect(200);
     expect(respuesta.headers['content-type']).toMatch(/application\/pdf/);
     expect(respuesta.body.subarray(0, 4).toString()).toBe('%PDF');
+  });
+
+  it.each([
+    ['reservas', rutaReservas, ROLES.ADMIN],
+    ['tareas', rutaTareas, ROLES.COORDINADOR_MINISTROS],
+  ] as const)('genera un Excel descargable de %s', async (tipo, ruta, rol) => {
+    cuentaActiva(rol);
+    vi.mocked(pool.execute).mockResolvedValueOnce([[]] as never);
+    const respuesta = await request(app)
+      .get(ruta.replace('formato=csv', 'formato=xlsx'))
+      .set('Authorization', token(rol))
+      .buffer(true)
+      .parse((res, done) => {
+        const partes: Buffer[] = [];
+        res.on('data', (parte) => partes.push(parte));
+        res.on('end', () => done(null, Buffer.concat(partes)));
+      })
+      .expect(200);
+    expect(respuesta.headers['content-type']).toMatch(/application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
+    expect(respuesta.headers['content-disposition']).toContain(`reporte-${tipo}-`);
+    expect(respuesta.headers['content-disposition']).toContain('.xlsx');
+    expect(respuesta.headers['cache-control']).toContain('no-store');
+    expect(respuesta.body.subarray(0, 2).toString()).toBe('PK');
+  });
+
+  it('exporta Excel con columnas permitidas y conserva texto peligroso sin fórmulas', async () => {
+    cuentaActiva(ROLES.ADMIN);
+    vi.mocked(pool.execute).mockResolvedValueOnce([[{
+      id: 8, fecha: '2026-10-07', hora_inicio: '08:00:00', hora_fin: '09:00:00',
+      espacio: 'Salón 1', evento: '=HYPERLINK("https://malicioso.test")',
+      estado: 'Confirmada', solicitante: 'Ana', password: 'nunca-exportar',
+    }]] as never);
+    const respuesta = await request(app)
+      .get(rutaReservas.replace('formato=csv', 'formato=xlsx'))
+      .set('Authorization', token(ROLES.ADMIN))
+      .buffer(true)
+      .parse((res, done) => {
+        const partes: Buffer[] = [];
+        res.on('data', (parte) => partes.push(parte));
+        res.on('end', () => done(null, Buffer.concat(partes)));
+      })
+      .expect(200);
+    const archivos = unzipSync(new Uint8Array(respuesta.body));
+    const hoja = strFromU8(archivos['xl/worksheets/sheet1.xml']);
+    const contenido = Object.values(archivos).map((archivo) => strFromU8(archivo)).join('\n');
+    expect(contenido).toContain('HYPERLINK');
+    expect(contenido).toContain('Salón');
+    expect(contenido).not.toContain('nunca-exportar');
+    expect(hoja).toMatch(/<c r="F2"[^>]* t="s"><v>\d+<\/v><\/c>/);
+    expect(strFromU8(archivos['xl/sharedStrings.xml'])).toContain('=HYPERLINK');
+    expect(hoja).not.toMatch(/<f(?:\s|>)/);
+    expect(hoja).toContain('ySplit="1"');
+  });
+
+  it('bloquea Excel al ministro antes de consultar datos del reporte', async () => {
+    cuentaActiva(ROLES.MINISTRO);
+    await request(app)
+      .get(rutaTareas.replace('formato=csv', 'formato=xlsx'))
+      .set('Authorization', token(ROLES.MINISTRO))
+      .expect(403);
+    expect(pool.execute).toHaveBeenCalledTimes(1);
   });
 
   it('limita las solicitudes repetidas por cuenta', async () => {
