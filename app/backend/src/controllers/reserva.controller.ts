@@ -7,6 +7,13 @@ import { withTransaction } from '../utils/withTransaction';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
+  const { publico } = req.body;
+  if (publico !== undefined && typeof publico !== 'boolean') {
+    return res.status(HttpStatus.BAD_REQUEST).json({ message: 'publico debe ser un booleano' });
+  }
+  if (publico !== undefined && ![ROLES.ADMIN, ROLES.SACERDOTE].includes(req.user!.rol_id)) {
+    return res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para configurar la agenda pública' });
+  }
 
   if (!fecha || !hora_inicio || !hora_fin || !espacio_id || !titulo || !descripcion) {
     return res.status(HttpStatus.BAD_REQUEST).json({
@@ -73,8 +80,8 @@ export const crearReserva = async (req: Request, res: Response) => {
       const reservaId = resResult.insertId;
 
       await conn.query(
-        `INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id) VALUES (?, ?, ?, ?)`,
-        [titulo, descripcion, solicitante_id, reservaId]
+        `INSERT INTO evento (titulo, descripcion, encargado_id, reserva_id, publico) VALUES (?, ?, ?, ?, ?)`,
+        [titulo, descripcion, solicitante_id, reservaId, publico === true ? 1 : 0]
       );
 
       // Avisa a quienes aprueban reservas (Sacerdote/Admin) que hay una solicitud nueva esperando,
@@ -250,6 +257,7 @@ export const obtenerReservas = async (req: Request, res: Response) => {
              r.espacio_id, r.solicitante_id,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
+             ev.id AS evento_id, ev.publico AS evento_publico,
              ev.descripcion AS evento_descripcion,
              p.nombre AS solicitante_nombre
       FROM reserva r

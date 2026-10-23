@@ -21,6 +21,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const [espacioId, setEspacioId] = useState('');
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [publico, setPublico] = useState(false);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [espaciosCargados, setEspaciosCargados] = useState(false);
   const toast = useToast();
@@ -30,6 +31,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
   const { tieneRol } = useAuth();
   const puedeAprobar = tieneRol([ROLES.SACERDOTE]);
+  const puedePublicar = tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
 
   useEffect(() => {
     if (!autoFocus) return;
@@ -66,6 +68,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo || !descripcion) {
       toast.error('Faltan datos', 'Por favor completa todos los campos.');
@@ -108,7 +111,8 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         hora_fin: horaFin,
         espacio_id: Number(espacioId),
         titulo,
-        descripcion
+        descripcion,
+        ...(puedePublicar ? { publico } : {}),
       });
       const nombreEspacio = espacios.find(esp => esp.id === Number(espacioId))?.nombre ?? 'el espacio seleccionado';
       toast.success(
@@ -124,6 +128,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       setEspacioId('');
       setTitulo('');
       setDescripcion('');
+      setPublico(false);
       if (onReservaCreada) onReservaCreada();
     } catch (error: unknown) {
       toast.error('No se pudo crear la reserva', getApiErrorMessage(error, 'Error de red al intentar crear la reserva.', 'message'));
@@ -236,6 +241,16 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
             placeholder="Ej. Celebración en honor a la Virgen, con coro y procesión"
           />
         </div>
+
+        {puedePublicar && (
+          <div className={styles.field}>
+            <label className={styles.checkboxLabel}>
+              <input type="checkbox" checked={publico} onChange={e => setPublico(e.target.checked)} disabled={loading} />
+              Mostrar en la agenda pública
+            </label>
+            <p className={styles.fieldNote}>Aparecerá cuando la reserva esté aprobada y mientras el evento no haya terminado.</p>
+          </div>
+        )}
 
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Enviando...' : 'Solicitar Reserva'}

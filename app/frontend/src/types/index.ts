@@ -98,6 +98,7 @@ export interface Reserva {
   solicitante_id?: number;
   solicitante_nombre: string | null;
   evento_id?: number | null;
+  evento_publico?: 0 | 1 | boolean;
   evento_titulo: string | null;
   evento_descripcion: string | null;
 }
