@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 function mostrar(props: Parameters<typeof CrearReservaForm>[0] = {}) {
-  render(<ToastProvider><MemoryRouter><AuthProvider><CrearReservaForm {...props} /></AuthProvider></MemoryRouter></ToastProvider>);
+  render(<ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><CrearReservaForm {...props} /></AuthProvider></MemoryRouter></ToastProvider>);
 }
 
 async function completar() {
