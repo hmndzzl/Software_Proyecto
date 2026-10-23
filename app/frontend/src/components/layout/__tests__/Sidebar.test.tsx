@@ -63,6 +63,16 @@ describe('Sidebar Component', () => {
     expect(screen.queryByText('Contenido público')).not.toBeInTheDocument();
   });
 
+  it.each([ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS])('muestra reportes al rol %s', (rol) => {
+    renderWithRouterAndAuth(rol);
+    expect(screen.getByRole('link', { name: 'Reportes' })).toHaveAttribute('href', '/reportes');
+  });
+
+  it.each([ROLES.MINISTRO, ROLES.COORDINADOR_GRUPOS])('oculta reportes al rol %s', (rol) => {
+    renderWithRouterAndAuth(rol);
+    expect(screen.queryByRole('link', { name: 'Reportes' })).not.toBeInTheDocument();
+  });
+
   it('NO renderiza botón "Nueva Reserva" si el usuario es ministro', () => {
     renderWithRouterAndAuth(ROLES.MINISTRO);
     expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();

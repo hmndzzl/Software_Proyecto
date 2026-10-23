@@ -60,6 +60,16 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
     ),
   },
   {
+    to: '/reportes',
+    label: 'Reportes',
+    roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 3h10l4 4v14H5z"/><path d="M15 3v5h4M8 12h8M8 16h8"/>
+      </svg>
+    ),
+  },
+  {
     to: '/cambios-turno',
     label: 'Cambio de Turno',
     roles: [ROLES.MINISTRO, ROLES.ADMIN],
