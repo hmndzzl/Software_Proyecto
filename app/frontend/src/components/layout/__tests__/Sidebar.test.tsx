@@ -76,7 +76,15 @@ describe('Sidebar Component', () => {
   it('NO renderiza botón "Nueva Reserva" si el usuario es ministro', () => {
     renderWithRouterAndAuth(ROLES.MINISTRO);
     expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Mis Reservas' })).not.toBeInTheDocument();
   });
+
+  it.each([ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN])(
+    'mantiene Mis Reservas para el rol autorizado %s', (rol) => {
+      renderWithRouterAndAuth(rol);
+      expect(screen.getByRole('link', { name: 'Mis Reservas' })).toHaveAttribute('href', '/mis-reservas');
+    }
+  );
 
   it('llama a onAlternar al hacer click en el botón de colapsar', () => {
     const onAlternar = vi.fn();
