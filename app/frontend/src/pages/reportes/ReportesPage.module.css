@@ -1,0 +1,9 @@
+.page { display: grid; gap: 24px; }
+.rangos, .acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.rangos { margin-bottom: 18px; }
+.campos { display: flex; flex-wrap: wrap; gap: 16px; }
+.campos label { display: grid; gap: 7px; color: var(--color-carbon); font: 600 13px var(--font-body); }
+.fecha { box-sizing: border-box; min-width: 175px; padding: 10px 12px; border: 1px solid var(--color-line); border-radius: var(--radius-input); background: var(--color-blanco); color: var(--color-carbon); font: 14px var(--font-body); }
+.fecha:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 2px; }
+.ayuda { margin: 14px 0 18px; color: var(--color-muted); font: 13px var(--font-body); }
+.error { margin: 0 0 14px; color: var(--color-bad); font: 600 13px var(--font-body); }
