@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
@@ -26,6 +26,7 @@ const sortValues = {
 };
 
 export default function CoordinadoresMinistrosPage() {
+  const navigate = useNavigate();
   const toast = useToast();
   const [coordinadores, setCoordinadores] = useState<Coordinador[]>([]);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
@@ -108,7 +109,7 @@ export default function CoordinadoresMinistrosPage() {
     <div className={styles.page}>
       <PageHeader kicker="Organización pastoral" title="Coordinadores de ministros"
         subtitle="Asigna los ministros que acompaña cada coordinador."
-        actions={<Link className={styles.link} to="/ministros">Volver a ministros</Link>} />
+        actions={<Btn type="button" kind="primary" onClick={() => navigate('/ministros')}>Volver a ministros</Btn>} />
       {cargando && <LoadingState label="Cargando coordinadores y ministros..." />}
       {error && <ErrorState message={error} onRetry={() => setRevision(n => n + 1)} />}
       {!cargando && !error && <>

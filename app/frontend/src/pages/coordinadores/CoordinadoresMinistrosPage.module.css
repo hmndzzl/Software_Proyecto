@@ -1,7 +1,4 @@
 .page { display: grid; gap: 24px; }
-.link { color: var(--color-rojo); font-family: var(--font-body); font-weight: 600; }
-.link:hover { color: var(--color-rojoDk); }
-.link:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 4px; }
 .assignment { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 24px; }
 .assignment > div { flex: 1; min-width: 0; }
 .help { color: var(--color-muted); font-family: var(--font-body); font-size: 14px; line-height: 1.6; }
