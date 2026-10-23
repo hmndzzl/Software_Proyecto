@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
@@ -14,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
 import type { Ministro } from '../../types';
 import styles from './MinistrosPage.module.css';
+import formStyles from '../../styles/Form.module.css';
 
 const ROL_LABEL: Record<number, string> = {
   1: 'Sacerdote',
@@ -81,6 +83,9 @@ export default function MinistrosPage() {
         kicker="Directorio"
         title="Ministros y Personas"
         subtitle="Directorio de ministros y voluntarios de la parroquia."
+        actions={tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]) ? (
+          <Link to="/ministros/coordinadores" className={formStyles.confirmLink}>Gestionar coordinadores</Link>
+        ) : undefined}
       />
 
       <Card>
