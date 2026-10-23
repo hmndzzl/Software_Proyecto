@@ -28,6 +28,16 @@ describe('ReportesPage', () => {
     expect(screen.getByText('Tareas y asignaciones')).toBeInTheDocument();
   });
 
+  it('ofrece Excel primero, PDF segundo y CSV tercero', () => {
+    rolActual = ROLES.COORDINADOR_MINISTROS;
+    render(<ReportesPage />);
+    const botones = screen.getAllByRole('button').slice(-3);
+    expect(botones.map((boton) => boton.textContent)).toEqual(['Descargar Excel', 'Descargar PDF', 'Descargar CSV']);
+    expect(botones[0].className).toMatch(/primary/);
+    expect(botones[1].className).toMatch(/cream/);
+    expect(botones[2].className).toMatch(/ghost/);
+  });
+
   it('no descarga si el rango de tareas excede un mes', () => {
     rolActual = ROLES.COORDINADOR_MINISTROS;
     render(<ReportesPage />);
@@ -56,6 +66,21 @@ describe('ReportesPage', () => {
     })));
     expect(crearUrl).toHaveBeenCalledOnce();
     expect(click).toHaveBeenCalledOnce();
+    click.mockRestore();
+  });
+
+  it('solicita Excel como descarga autenticada', async () => {
+    rolActual = ROLES.COORDINADOR_MINISTROS;
+    vi.mocked(apiClient.get).mockResolvedValue({ data: new Blob(['x']) });
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:excel') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    render(<ReportesPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar Excel' }));
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/api/reportes/tareas', expect.objectContaining({
+      responseType: 'blob',
+      params: expect.objectContaining({ formato: 'xlsx' }),
+    })));
     click.mockRestore();
   });
 });
