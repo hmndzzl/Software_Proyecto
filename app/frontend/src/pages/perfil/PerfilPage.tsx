@@ -159,7 +159,7 @@ export default function PerfilPage() {
                 className={form.input}
                 value={formData.correo}
                 onChange={handleChange}
-                placeholder="tu@correo.cl"
+                placeholder="tucorreo@ejemplo.com"
                 autoComplete="email"
               />
             </div>
