@@ -115,4 +115,10 @@ describe('integración del enrutador con los módulos principales', () => {
     await abrir('/ministros/coordinadores');
     await waitFor(() => expect(window.location.pathname).toBe('/dashboard'));
   });
+
+  it('impide al ministro abrir Mis Reservas mediante la URL', async () => {
+    localStorage.setItem('usuario', JSON.stringify({ ...admin, rol_id: 4 }));
+    await abrir('/mis-reservas');
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'));
+  });
 });
