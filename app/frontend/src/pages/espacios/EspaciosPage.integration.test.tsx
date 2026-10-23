@@ -9,7 +9,7 @@ vi.mock('../../api/client', () => ({ default: { get: vi.fn() } }));
 
 function Destino() { return <p>Destino {useLocation().pathname}</p>; }
 function mostrar() {
-  return render(<MemoryRouter initialEntries={['/espacios']}><Routes><Route path="/espacios" element={<EspaciosPage />} /><Route path="*" element={<Destino />} /></Routes></MemoryRouter>);
+  return render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/espacios']}><Routes><Route path="/espacios" element={<EspaciosPage />} /><Route path="*" element={<Destino />} /></Routes></MemoryRouter>);
 }
 
 const espacios = [
