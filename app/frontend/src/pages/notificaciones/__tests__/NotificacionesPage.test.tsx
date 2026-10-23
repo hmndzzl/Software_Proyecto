@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NotificacionesPage from '../NotificacionesPage';
 import { AuthProvider } from '../../../context/AuthContext';
@@ -44,6 +44,7 @@ function mockGetPorUrl() {
   vi.mocked(apiClient.get).mockImplementation((url: string) => {
     if (url === '/api/notificaciones/papelera') return Promise.resolve({ data: papelera });
     if (url === '/api/notificaciones/enviadas') return Promise.resolve({ data: enviadas });
+    if (url === '/api/notificaciones/destinatarios') return Promise.resolve({ data: [{ id: 1, nombre: 'Ministro Test', rol_id: 4, rol_nombre: 'Ministros' }] });
     return Promise.resolve({ data: notificaciones });
   });
 }
@@ -66,7 +67,7 @@ beforeEach(() => {
 
 function mostrar(initialEntry = '/notificaciones') {
   render(
-    <ToastProvider><MemoryRouter initialEntries={[initialEntry]}><AuthProvider>
+    <ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}><AuthProvider>
       <Routes>
         <Route path="/notificaciones" element={<NotificacionesPage />} />
       </Routes>
@@ -83,7 +84,7 @@ describe('Resaltado de notificación desde el menú de la campana', () => {
     await waitFor(() => expect(document.getElementById('notificacion-2')?.scrollIntoView).toHaveBeenCalled());
 
     // Esperar el timeout real de 2.5s para cubrir las lineas de setSearchParams
-    await new Promise(r => setTimeout(r, 2600));
+    await act(async () => { await new Promise(r => setTimeout(r, 2600)); });
   });
 
   it('no desplaza nada si no hay parámetro resaltar', async () => {

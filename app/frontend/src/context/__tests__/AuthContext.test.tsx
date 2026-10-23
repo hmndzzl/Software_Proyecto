@@ -41,7 +41,7 @@ describe('AuthContext', () => {
 
   it('debería inicializar sin usuario', () => {
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <TestComponent />
         </AuthProvider>
@@ -52,7 +52,7 @@ describe('AuthContext', () => {
 
   it('debería setear el usuario, guardar en localStorage y actualizar el estado', () => {
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <TestComponent />
         </AuthProvider>
@@ -67,7 +67,7 @@ describe('AuthContext', () => {
   it('debería hacer logout, limpiar localStorage y navegar al login', async () => {
     localStorage.setItem('usuario', JSON.stringify({ nombre: 'Juan' }));
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <TestComponent />
         </AuthProvider>
@@ -89,7 +89,7 @@ describe('AuthContext', () => {
   it('debería hacer logout igual si la API falla', async () => {
     vi.mocked(logoutApi).mockRejectedValueOnce(new Error('Network error'));
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <TestComponent />
         </AuthProvider>
@@ -106,7 +106,7 @@ describe('AuthContext', () => {
   it('debería cargar usuario desde localStorage inicial si es válido JSON', () => {
     localStorage.setItem('usuario', JSON.stringify({ nombre: 'Pedro' }));
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <TestComponent />
         </AuthProvider>
@@ -118,7 +118,7 @@ describe('AuthContext', () => {
   it('NO debería cargar usuario desde localStorage inicial si no es JSON válido', () => {
     localStorage.setItem('usuario', 'no es json');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <TestComponent />
         </AuthProvider>

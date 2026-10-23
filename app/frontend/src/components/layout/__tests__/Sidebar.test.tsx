@@ -26,7 +26,7 @@ describe('Sidebar Component', () => {
       localStorage.setItem('usuario', JSON.stringify({ rol_id: rolId }));
     }
     return render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Sidebar colapsado={colapsado} onAlternar={onAlternar} />
         </AuthProvider>

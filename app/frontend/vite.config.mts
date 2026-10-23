@@ -3,7 +3,7 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: process.env.VITEST ? [] : [react()],
   server: {
     host: '0.0.0.0',
     port: 5173,

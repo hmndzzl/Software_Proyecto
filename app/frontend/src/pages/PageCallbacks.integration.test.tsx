@@ -24,7 +24,7 @@ vi.mock('../modules/grupos/components/ListaGrupos', () => ({ default: ({ refresh
 vi.mock('../modules/grupos/components/CrearGrupoForm', () => ({ default: ({ onGrupoCreado }: any) => <button onClick={onGrupoCreado}>crear-grupo</button> }));
 vi.mock('../modules/grupos/components/EditarGrupoForm', () => ({ default: ({ onGrupoActualizado, onCancelar }: any) => <><button onClick={onGrupoActualizado}>guardar-grupo</button><button onClick={onCancelar}>cancelar-grupo</button></> }));
 
-const mostrar = (ui: React.ReactNode, ruta = '/') => render(<MemoryRouter initialEntries={[ruta]}>{ui}</MemoryRouter>);
+const mostrar = (ui: React.ReactNode, ruta = '/') => render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[ruta]}>{ui}</MemoryRouter>);
 
 describe('callbacks de coordinación entre páginas y módulos', () => {
   beforeEach(() => {

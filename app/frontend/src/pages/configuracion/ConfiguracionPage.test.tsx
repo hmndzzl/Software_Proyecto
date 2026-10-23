@@ -6,7 +6,7 @@ import ConfiguracionPage from './ConfiguracionPage';
 
 function mostrar() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ToastProvider>
         <ConfiguracionPage />
       </ToastProvider>

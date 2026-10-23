@@ -8,7 +8,7 @@ const STORAGE_KEY = 'sidebar_colapsado';
 
 function mostrar() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <AppShell>
           <p>Contenido</p>

@@ -44,7 +44,7 @@ describe('EnviarNotificacionForm', () => {
 
   function renderForm() {
     render(
-      <ToastProvider><MemoryRouter>
+      <ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <EnviarNotificacionForm onEnviada={onEnviada} onCancelar={onCancelar} />
         </AuthProvider>
@@ -141,6 +141,7 @@ describe('EnviarNotificacionForm', () => {
 
   it('llama onCancelar al hacer clic en Cancelar', async () => {
     renderForm();
+    await screen.findByLabelText('Sacerdote Test');
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(onCancelar).toHaveBeenCalled();
   });
@@ -228,7 +229,7 @@ describe('EnviarNotificacionForm', () => {
   });
   it('muestra no hay eventos disponibles y permite deseleccionar requiere confirmacion', async () => {
     vi.mocked(apiClient.get).mockImplementation(async (url) => {
-      if (url === '/api/notificaciones/destinatarios') return { data: [{ id: 1, nombre: 'A', rol_id: 1 }] };
+      if (url === '/api/notificaciones/destinatarios') return { data: [{ id: 1, nombre: 'A', rol_id: 1, rol_nombre: 'Sacerdotes' }] };
       return { data: [] }; // No eventos
     });
     renderForm();

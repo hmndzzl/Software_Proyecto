@@ -18,7 +18,7 @@ vi.mock('../../../modules/ausencias/components/NotificarAusenciaForm', () => ({
 describe('AusenciasPage', () => {
   const renderConRouter = () => {
     return render(
-      <MemoryRouter initialEntries={['/ausencias']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/ausencias']}>
         <Routes>
           <Route path="/ausencias" element={<AusenciasPage />} />
           <Route path="/dashboard" element={<div>Dashboard Mock</div>} />

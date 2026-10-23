@@ -99,7 +99,9 @@ describe('integración del enrutador con los módulos principales', () => {
   it('cambia el tema sin recargar la aplicación', async () => {
     await abrir('/configuracion');
     fireEvent.click(await screen.findByRole('radio', { name: 'Oscuro' }));
-    expect(document.documentElement).toHaveAttribute('data-tema', 'oscuro');
+    await waitFor(() =>
+    expect(document.documentElement).toHaveAttribute('data-tema', 'oscuro')
+);
   });
 
   it.each([1, 5])('abre la gestión de coordinadores para el rol %s', async rol_id => {
