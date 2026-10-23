@@ -93,7 +93,7 @@ describe('gestión de coordinadores con navegador, API y MariaDB reales', () => 
       }, admin);
       const page = await contexto.newPage();
       await page.goto(`${baseUrl}/ministros`);
-      await page.getByRole('link', { name: 'Gestionar coordinadores' }).click();
+      await page.getByRole('button', { name: 'Gestionar coordinadores' }).click();
       await page.getByRole('combobox', { name: 'Coordinador de ministros' }).selectOption('13');
       await page.getByRole('combobox', { name: 'Ministro para asignar' }).selectOption('9');
       const guardado = page.waitForResponse(r => r.url().endsWith(pathRelacion) && r.request().method() === 'PUT');
@@ -140,7 +140,7 @@ describe('gestión de coordinadores con navegador, API y MariaDB reales', () => 
       const coordPage = await restringido.newPage();
       await coordPage.goto(`${baseUrl}/ministros`);
       await coordPage.getByRole('heading', { name: 'Ministros y Personas' }).waitFor();
-      await browserExpect(coordPage.getByRole('link', { name: 'Gestionar coordinadores' })).toHaveCount(0);
+      await browserExpect(coordPage.getByRole('button', { name: 'Gestionar coordinadores' })).toHaveCount(0);
       await coordPage.goto(`${baseUrl}/ministros/coordinadores`);
       await browserExpect(coordPage).toHaveURL(/\/dashboard$/);
     } finally { await browser.close(); }

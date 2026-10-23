@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
@@ -15,7 +15,6 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
 import type { Ministro } from '../../types';
 import styles from './MinistrosPage.module.css';
-import formStyles from '../../styles/Form.module.css';
 
 const ROL_LABEL: Record<number, string> = {
   1: 'Sacerdote',
@@ -40,6 +39,7 @@ const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
 };
 
 export default function MinistrosPage() {
+  const navigate = useNavigate();
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -84,7 +84,9 @@ export default function MinistrosPage() {
         title="Ministros y Personas"
         subtitle="Directorio de ministros y voluntarios de la parroquia."
         actions={tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]) ? (
-          <Link to="/ministros/coordinadores" className={formStyles.confirmLink}>Gestionar coordinadores</Link>
+          <Btn type="button" kind="primary" onClick={() => navigate('/ministros/coordinadores')}>
+            Gestionar coordinadores
+          </Btn>
         ) : undefined}
       />
 

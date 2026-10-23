@@ -78,12 +78,12 @@ describe('integración del directorio de ministros', () => {
   it.each([ROLES.ADMIN, ROLES.SACERDOTE])('ofrece gestión de coordinadores al rol %s', async rol_id => {
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Usuario', correo: 'u@test.com', rol_id }));
     render(<MinistrosPage />, { wrapper });
-    expect(await screen.findByRole('link', { name: 'Gestionar coordinadores' })).toHaveAttribute('href', '/ministros/coordinadores');
+    expect(await screen.findByRole('button', { name: 'Gestionar coordinadores' })).toBeEnabled();
   });
 
   it('no ofrece gestión de coordinadores a quien solo coordina ministros', async () => {
     render(<MinistrosPage />, { wrapper });
     await screen.findByText('Bruno');
-    expect(screen.queryByRole('link', { name: 'Gestionar coordinadores' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gestionar coordinadores' })).not.toBeInTheDocument();
   });
 });
