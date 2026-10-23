@@ -35,6 +35,7 @@ import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
 import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
 const ConfiguracionPage = lazy(() => import('./pages/configuracion/ConfiguracionPage'));
 const ContenidoPublicoPage = lazy(() => import('./pages/contenido-publico/ContenidoPublicoPage'));
+const ReportesPage = lazy(() => import('./pages/reportes/ReportesPage'));
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -114,6 +115,15 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO, ROLES.ADMIN]}>
               <TareasPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reportes"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.ADMIN]}>
+              <ReportesPage />
             </ProtectedRoute>
           }
         />
