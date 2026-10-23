@@ -7,14 +7,15 @@ import { ToastProvider } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { authValue } from '../../../test/authValue';
 import { ROLES } from '../../../utils/roles';
+import type { Reserva } from '../../../types';
 
-vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
+vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn(), patch: vi.fn() } }));
 vi.mock('../../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const base = { fecha: '2099-10-20T00:00:00.000Z', hora_inicio: '14:00:00', hora_fin: '15:00:00', espacio_id: 2, espacio_nombre: 'Salón', solicitante_id: 1, evento_titulo: 'Reunión', evento_descripcion: 'Planificación' };
 const reservas = [1, 2, 3, 4, 99].map((estado, i) => ({ ...base, id: i + 1, estado_reserva_id: estado, solicitante_id: i === 1 ? 8 : 1, solicitante_nombre: i === 4 ? null : 'Ana Gómez', espacio_nombre: i === 4 ? null : 'Salón', evento_titulo: i === 4 ? null : 'Reunión', evento_descripcion: i === 4 ? null : 'Planificación' }));
 
-function preparar(datos = reservas) {
+function preparar(datos: Reserva[] = reservas) {
   vi.mocked(apiClient.get).mockImplementation(async (url) => ({ data: url === '/api/espacios' ? [{ id: 2, nombre: 'Salón' }] : datos }));
   vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
   vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: ROLES.ADMIN }));
@@ -24,6 +25,31 @@ function mostrar() { return render(<ToastProvider><ListaReservas /></ToastProvid
 
 describe('integración de reservas, estados y edición', () => {
   beforeEach(() => { vi.clearAllMocks(); preparar(); });
+
+  it('publica sin reiniciar la aprobación ni actualizar los datos de la reserva', async () => {
+    preparar([{ ...reservas[1], evento_id: 25, evento_publico: 0 }]);
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Mostrar en la agenda pública' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledWith('/api/eventos/25/publico', { publico: true }));
+    expect(apiClient.put).not.toHaveBeenCalled();
+  });
+
+  it('conserva el formulario al fallar la visibilidad y reintenta sin repetir la edición', async () => {
+    preparar([{ ...reservas[1], evento_id: 25, evento_publico: 1 }]);
+    vi.mocked(apiClient.patch).mockRejectedValueOnce(new Error('red')).mockResolvedValueOnce({});
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    fireEvent.change(screen.getByDisplayValue('Reunión'), { target: { value: 'Nueva reunión' } });
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Mostrar en la agenda pública' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await screen.findByText(/Los datos se guardaron/);
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledTimes(2));
+    expect(apiClient.put).toHaveBeenCalledTimes(1);
+    expect(apiClient.patch).toHaveBeenLastCalledWith('/api/eventos/25/publico', { publico: false });
+  });
 
   it('lista todos los estados, valores faltantes y permite ordenar', async () => {
     mostrar();

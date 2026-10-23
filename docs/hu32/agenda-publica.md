@@ -141,6 +141,36 @@ Verificación del cambio: 15 pruebas de frontend, 29 pruebas de rutas de agenda 
 publicación, 8 pruebas de integración de API con MariaDB y la prueba completa de
 navegador. Compilaciones de frontend/backend y lint de frontend correctos.
 
+## Creación y edición desde Reservas (ampliación Sprint 10)
+
+En `http://localhost:5173/reservas`, Admin y Sacerdote pueden marcar **Mostrar en la
+agenda pública** al solicitar una reserva. La reserva y el evento se guardan juntos;
+la actividad solo aparece tras aprobar la reserva y mientras no haya terminado.
+La casilla también está en **Editar** de la lista de reservas y refleja el valor guardado.
+Cambiar únicamente esa casilla utiliza el PATCH anterior y conserva la aprobación.
+Editar fecha, horario, espacio, título o descripción sigue dejando la reserva pendiente.
+Si se modifican ambos y falla el PATCH, se informa del guardado parcial y se permite
+reintentar sin repetir la actualización de datos confirmada.
+
+`POST http://localhost:3001/api/reservas` acepta ahora el campo opcional `publico`,
+estrictamente booleano y reservado a Admin/Sacerdote (incluido `false`). Se requiere
+Bearer token y `Content-Type: application/json`. Ejemplo:
+
+```json
+{"fecha":"2099-12-21","hora_inicio":"09:00","hora_fin":"11:00","espacio_id":2,"titulo":"Encuentro parroquial","descripcion":"Actividad abierta","publico":true}
+```
+
+Devuelve 201 con `message` y `reservaId`. Omitir `publico` mantiene el evento privado
+y el comportamiento de los demás roles. Tipo inválido: 400; sin sesión: 401; rol sin
+permiso intentando enviar el campo: 403. Los rechazos no crean reserva ni evento.
+`GET /api/reservas` incluye `evento_id` y `evento_publico` para inicializar la edición.
+No se requieren migraciones. La colección `docs/sprint10/agenda-reservas.postman.json`
+contiene creación, aprobación, consulta y cambio de visibilidad.
+
+La prueba de navegador también crea desde esta pantalla, verifica que la reserva
+pendiente no se publique, la aprueba, comprueba la agenda pública y retira la
+visibilidad desde Editar sin perder el estado confirmado.
+
 ## Verificación automatizada
 
 Desde `app/backend`: `npm test`, `npm run build` y `npm run test:integration`.

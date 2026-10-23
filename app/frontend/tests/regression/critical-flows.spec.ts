@@ -171,5 +171,6 @@ test('una solicitud de reserva válida envía todos los datos y confirma el resu
     espacio_id: 2,
     titulo: 'Reunión parroquial',
     descripcion: 'Planificación mensual',
+    publico: false,
   });
 });

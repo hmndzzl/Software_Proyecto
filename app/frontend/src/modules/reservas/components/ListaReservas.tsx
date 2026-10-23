@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { CardHead } from '../.././../components/ui/Card';
@@ -44,6 +44,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [editDescripcion, setEditDescripcion] = useState('');
   const [editMensaje, setEditMensaje] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+  const [editPublico, setEditPublico] = useState(false);
+  const datosPersistidos = useRef('');
 
   const { usuario } = useAuth();
   const esAdminOSacerdote = usuario && (
@@ -91,6 +93,12 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setEditEspacioId(r.espacio_id ? String(r.espacio_id) : '');
     setEditTitulo(r.evento_titulo ?? '');
     setEditDescripcion(r.evento_descripcion ?? '');
+    setEditPublico(Boolean(r.evento_publico));
+    datosPersistidos.current = JSON.stringify({
+      fecha: r.fecha.split('T')[0], hora_inicio: r.hora_inicio.substring(0, 5),
+      hora_fin: r.hora_fin.substring(0, 5), espacio_id: Number(r.espacio_id),
+      titulo: r.evento_titulo ?? '', descripcion: r.evento_descripcion ?? '',
+    });
     setEditMensaje('');
   };
 
@@ -116,6 +124,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   };
 
   const guardarEdicion = async () => {
+    if (!editando || editLoading) return;
     if (!editFecha || !editHoraInicio || !editHoraFin || !editEspacioId || !editTitulo || !editDescripcion) {
       setEditMensaje('Por favor completa todos los campos.');
       return;
@@ -126,19 +135,30 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     }
     setEditLoading(true);
     setEditMensaje('');
+    let datosGuardados = false;
     try {
-      await apiClient.put(`/api/reservas/${editando!.id}`, {
+      const datos = {
         fecha: editFecha,
         hora_inicio: editHoraInicio,
         hora_fin: editHoraFin,
         espacio_id: Number(editEspacioId),
         titulo: editTitulo,
         descripcion: editDescripcion,
-      });
+      };
+      if (JSON.stringify(datos) !== datosPersistidos.current) {
+        await apiClient.put(`/api/reservas/${editando.id}`, datos);
+        datosPersistidos.current = JSON.stringify(datos);
+        datosGuardados = true;
+      }
+      if (esAdminOSacerdote && editando.evento_id && editPublico !== Boolean(editando.evento_publico)) {
+        await apiClient.patch(`/api/eventos/${editando.evento_id}/publico`, { publico: editPublico });
+      }
       cerrarEdicion();
       fetchReservas();
     } catch (err: unknown) {
-      setEditMensaje(getApiErrorMessage(err, 'Error al guardar los cambios.', 'message'));
+      setEditMensaje(datosGuardados
+        ? 'Los datos se guardaron y la reserva quedó pendiente, pero la visibilidad no pudo confirmarse. Reintenta guardar.'
+        : getApiErrorMessage(err, 'Error al guardar los cambios.', 'message'));
     } finally {
       setEditLoading(false);
     }
@@ -155,7 +175,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
             {editando.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
-                Esta reserva volverá a estado <strong>Pendiente</strong> para re-aprobación.
+                Si modificas los datos de la reserva, volverá a estado <strong>Pendiente</strong> para re-aprobación. Cambiar solo la visibilidad pública conserva su estado.
               </div>
             )}
 
@@ -163,7 +183,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
               <p className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>
             )}
 
-            <div className={formStyles.form}>
+            <fieldset className={formStyles.form} disabled={editLoading} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
               <div className={formStyles.field}>
                 <label className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
                 <select className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
@@ -199,7 +219,16 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <label className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
                 <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
               </div>
-            </div>
+              {esAdminOSacerdote && editando.evento_id && (
+                <div className={formStyles.field}>
+                  <label className={formStyles.checkboxLabel}>
+                    <input type="checkbox" checked={editPublico} onChange={e => setEditPublico(e.target.checked)} />
+                    Mostrar en la agenda pública
+                  </label>
+                  <p className={formStyles.fieldNote}>Aparecerá si la reserva está aprobada y el evento no ha terminado. Al desmarcar y guardar, dejará de mostrarse.</p>
+                </div>
+              )}
+            </fieldset>
 
             <div className={formStyles.modalActions}>
               {usuario && editando.solicitante_id === usuario.id && puedeCancelarReserva(editando.estado_reserva_id) && (
