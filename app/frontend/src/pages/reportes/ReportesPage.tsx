@@ -8,7 +8,7 @@ import apiClient from '../../api/client';
 import styles from './ReportesPage.module.css';
 
 type Tipo = 'reservas' | 'tareas';
-type Formato = 'csv' | 'pdf';
+type Formato = 'xlsx' | 'pdf' | 'csv';
 
 function fechaLocal(fecha: Date): string {
   const anio = fecha.getFullYear();
@@ -94,10 +94,13 @@ function FormularioReporte({ tipo }: { tipo: Tipo }) {
         {rangoInvalido && <p className={styles.error} role="alert">Selecciona un periodo válido de hasta {maxDias} días.</p>}
         {error && <p className={styles.error} role="alert">{error}</p>}
         <div className={styles.acciones}>
-          <Btn onClick={() => void descargar('pdf')} disabled={rangoInvalido || descargando !== null}>
+          <Btn onClick={() => void descargar('xlsx')} disabled={rangoInvalido || descargando !== null}>
+            {descargando === 'xlsx' ? 'Preparando Excel…' : 'Descargar Excel'}
+          </Btn>
+          <Btn kind="cream" onClick={() => void descargar('pdf')} disabled={rangoInvalido || descargando !== null}>
             {descargando === 'pdf' ? 'Preparando PDF…' : 'Descargar PDF'}
           </Btn>
-          <Btn kind="cream" onClick={() => void descargar('csv')} disabled={rangoInvalido || descargando !== null}>
+          <Btn kind="ghost" onClick={() => void descargar('csv')} disabled={rangoInvalido || descargando !== null}>
             {descargando === 'csv' ? 'Preparando CSV…' : 'Descargar CSV'}
           </Btn>
         </div>
