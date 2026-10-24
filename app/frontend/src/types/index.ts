@@ -29,6 +29,7 @@ export interface Notificacion {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   remitente_id: number | null;
   remitente_nombre: string | null;
@@ -45,6 +46,7 @@ export interface NotificacionPapelera {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   remitente_id: number | null;
   remitente_nombre: string | null;
@@ -60,6 +62,7 @@ export interface NotificacionEnviada {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   grupo_id: number | null;
   evento_id: number | null;

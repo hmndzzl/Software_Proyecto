@@ -128,6 +128,7 @@ CREATE TABLE `notificacion` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `mensaje` text NOT NULL,
   `fecha` date NOT NULL,
+  `enviado_en` datetime NULL DEFAULT (UTC_TIMESTAMP()),
   `tipo` ENUM('global','grupo','individual') NOT NULL DEFAULT 'global',
   `remitente_id` int(11) NULL,
   `grupo_id` int(11) NULL,

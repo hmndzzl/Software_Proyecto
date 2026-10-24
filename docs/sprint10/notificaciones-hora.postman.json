@@ -1,0 +1,70 @@
+{
+  "info": {
+    "name": "Sprint 10 - Hora de notificaciones",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "destinatarioId",
+      "value": "9"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Recibidas",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/notificaciones"
+      }
+    },
+    {
+      "name": "/enviadas",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/notificaciones/enviadas"
+      }
+    },
+    {
+      "name": "/papelera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/notificaciones/papelera"
+      }
+    },
+    {
+      "name": "Enviar notificación de prueba",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/notificaciones",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"mensaje\":\"Prueba de hora de envío\",\"tipo\":\"individual\",\"destinatarios\":[{{destinatarioId}}]}"
+        }
+      }
+    }
+  ]
+}

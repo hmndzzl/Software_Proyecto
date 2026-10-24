@@ -94,6 +94,9 @@ INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`) VAL
 INSERT INTO `notificacion` (`mensaje`, `fecha`, `tipo`, `remitente_id`, `grupo_id`, `evento_id`, `requiere_confirmacion`) VALUES
   ('Confirma tu asistencia a la Misa dominical de prueba del 23 de agosto.', '2026-08-18', 'individual', 6, NULL, 1, 1);
 
+-- Los ejemplos históricos no tienen hora de envío conocida.
+UPDATE notificacion SET enviado_en = NULL WHERE id IN (1, 2, 3, 4);
+
 INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VALUES
   -- Notificación 1 global — leida=1 para los 13 usuarios
   (1, 1, 1), (2, 1, 1), (3, 1, 1), (4, 1, 1), (5, 1, 1),
