@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import router from '../../routes/reserva.routes';
 import { JWT_SECRET } from '../../config/env';
 import { ROLES } from '../../config/roles';
-import { crearReserva, editarReserva, obtenerMisReservas } from '../reserva.controller';
+import { crearReserva, editarReserva, obtenerMisReservas, obtenerReservas, obtenerReservaPorId, cambiarEstadoReserva } from '../reserva.controller';
 
 vi.mock('../reserva.controller', () => ({
   crearReserva: vi.fn((_req, res) => res.sendStatus(204)),
@@ -22,14 +22,20 @@ const token = (rol_id: number) => `Bearer ${jwt.sign({ id: 7, rol_id }, JWT_SECR
 beforeEach(() => vi.clearAllMocks());
 
 describe('acceso a reservas según rol', () => {
-  it('impide al ministro crear, editar y consultar Mis Reservas incluso por API', async () => {
+  it('impide al ministro crear, editar y consultar reservas incluso por API', async () => {
     const authorization = token(ROLES.MINISTRO);
     await request(app).post('/api/reservas').set('Authorization', authorization).expect(403);
     await request(app).put('/api/reservas/7').set('Authorization', authorization).expect(403);
     await request(app).get('/api/reservas/mis-reservas').set('Authorization', authorization).expect(403);
+    await request(app).get('/api/reservas').set('Authorization', authorization).expect(403);
+    await request(app).get('/api/reservas/7').set('Authorization', authorization).expect(403);
+    await request(app).put('/api/reservas/7/estado').set('Authorization', authorization).expect(403);
     expect(crearReserva).not.toHaveBeenCalled();
     expect(editarReserva).not.toHaveBeenCalled();
     expect(obtenerMisReservas).not.toHaveBeenCalled();
+    expect(obtenerReservas).not.toHaveBeenCalled();
+    expect(obtenerReservaPorId).not.toHaveBeenCalled();
+    expect(cambiarEstadoReserva).not.toHaveBeenCalled();
   });
 
   it.each([ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN])(
@@ -38,6 +44,9 @@ describe('acceso a reservas según rol', () => {
       await request(app).post('/api/reservas').set('Authorization', authorization).expect(204);
       await request(app).put('/api/reservas/7').set('Authorization', authorization).expect(204);
       await request(app).get('/api/reservas/mis-reservas').set('Authorization', authorization).expect(204);
+      await request(app).get('/api/reservas').set('Authorization', authorization).expect(204);
+      await request(app).get('/api/reservas/7').set('Authorization', authorization).expect(204);
+      await request(app).put('/api/reservas/7/estado').set('Authorization', authorization).expect(204);
     }
   );
 });
