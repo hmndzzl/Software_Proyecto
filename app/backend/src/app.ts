@@ -1,3 +1,4 @@
+import { iniciarRecordatorios } from './services/recordatorios.scheduler';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -85,9 +86,12 @@ app.get('/health', (_req, res) => {
 export function startServer() {
   checkDbConnection();
 
-  return app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Backend corriendo en puerto ${PORT}`);
+    const detenerRecordatorios = iniciarRecordatorios();
+    server.once('close', detenerRecordatorios);
   });
+  return server;
 }
 
 if (require.main === module) {
