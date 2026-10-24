@@ -14,7 +14,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
   const { usuario } = useAuth();
 
   const [misTareas, setMisTareas] = useState<MiTarea[]>([]);
-  const [ministros, setMinistros] = useState<Ministro[]>([]);
+  const [ministros, setMinistros] = useState<Pick<Ministro, 'id' | 'nombre'>[]>([]);
   const [tareaId, setTareaId] = useState('');
   const [destinatarioId, setDestinatarioId] = useState('');
   const toast = useToast();
@@ -27,7 +27,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
       .then(res => setMisTareas(res.data))
       .catch(() => {});
 
-    apiClient.get<Ministro[]>('/api/personas')
+    apiClient.get<Pick<Ministro, 'id' | 'nombre'>[]>('/api/cambios-turno/destinatarios')
       .then(res => setMinistros(res.data.filter((m) => m.id !== usuario.id)))
       .catch(() => {});
   }, []);
