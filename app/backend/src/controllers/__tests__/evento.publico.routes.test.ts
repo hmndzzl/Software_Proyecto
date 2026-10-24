@@ -21,6 +21,18 @@ beforeEach(() => {
 });
 
 describe('visibilidad de eventos', () => {
+  it('limita la consulta de reservas disponibles para eventos al sacerdote y admin', async () => {
+    const ruta = '/api/eventos/reservas-disponibles';
+    await request(app).get(ruta).expect(401);
+    for (const rol of [ROLES.MINISTRO, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS]) {
+      await request(app).get(ruta).auth(token(rol), { type: 'bearer' }).expect(403);
+    }
+    expect(pool.execute).not.toHaveBeenCalled();
+    for (const rol of [ROLES.SACERDOTE, ROLES.ADMIN]) {
+      await request(app).get(ruta).auth(token(rol), { type: 'bearer' }).expect(200);
+    }
+  });
+
   it('requiere autenticación para publicar', async () => {
     await request(app).patch(endpoint).send({ publico: true }).expect(401);
     expect(pool.execute).not.toHaveBeenCalled();
