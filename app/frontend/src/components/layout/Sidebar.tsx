@@ -3,6 +3,8 @@ import styles from './Sidebar.module.css';
 import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 
+const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
+
 const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles?: number[]; icon: React.ReactNode }[] = [
   {
     to: '/dashboard',
@@ -95,7 +97,7 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
   {
     to: '/reservas',
     label: 'Reservas',
-    roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN],
+    roles: ROLES_RESERVAS,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
@@ -152,7 +154,7 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
   {
     to: '/mis-reservas',
     label: 'Mis Reservas',
-    roles: null,
+    roles: ROLES_RESERVAS,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="5"/><path d="M3 21v-1a9 9 0 0 1 18 0v1"/>
@@ -182,8 +184,6 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
     ),
   },
 ];
-
-const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
 
 interface SidebarProps {
   colapsado: boolean;

@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import GlobalErrorBanner from './components/ui/GlobalErrorBanner';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
+import { ROLES_RESERVAS } from './utils/roles';
 import LoadingState from './components/ui/LoadingState';
 
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
@@ -138,7 +139,7 @@ function AppRoutes() {
         <Route
           path="/reservas"
           element={
-            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN]}>
+            <ProtectedRoute allowedRoles={ROLES_RESERVAS}>
               <ReservasPage />
             </ProtectedRoute>
           }
@@ -165,7 +166,7 @@ function AppRoutes() {
         <Route
           path="/espacios/:id"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={ROLES_RESERVAS}>
               <EspacioDetallePage />
             </ProtectedRoute>
           }
@@ -201,7 +202,7 @@ function AppRoutes() {
         <Route
           path="/mis-reservas"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={ROLES_RESERVAS}>
               <MisReservasPage />
             </ProtectedRoute>
           }

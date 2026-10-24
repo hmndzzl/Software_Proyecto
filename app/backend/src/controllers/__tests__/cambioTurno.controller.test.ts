@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/httpStatus';
 import pool from '../../config/db';
+import { ROLES } from '../../config/roles';
 import {
   solicitarCambioTurno,
   getCambiosTurno,
+  getDestinatariosCambioTurno,
   responderCambioTurno,
 } from '../cambioTurno.controller';
 
@@ -55,6 +57,14 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
 
   const tareaBase = { id: 5, titulo: 'Lectura', descripcion: 'Lectura misa 10am', fecha: '2026-09-20', hora_inicio: '10:00:00', hora_fin: '11:00:00' };
 
+  it('entrega al ministro solo nombre e ID de posibles destinatarios', async () => {
+    (pool.execute as any).mockResolvedValueOnce([[{ id: 2, nombre: 'Ana' }]]);
+    await getDestinatariosCambioTurno(req as Request, res as Response);
+    expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('SELECT id, nombre'), [ROLES.MINISTRO, 1]);
+    expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    expect(jsonMock).toHaveBeenCalledWith([{ id: 2, nombre: 'Ana' }]);
+  });
+
   describe('solicitarCambioTurno', () => {
     it('debería retornar 400 si faltan tarea_id o destinatario_id', async () => {
       req.body = { tarea_id: 5 };
@@ -102,6 +112,11 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
       await solicitarCambioTurno(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+      expect(pool.execute).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining("rol_id = ? AND estado_cuenta = 'activa'"),
+        [2, ROLES.MINISTRO]
+      );
     });
 
     it('debería retornar 409 si ya existe una solicitud pendiente para ese destinatario en esa tarea', async () => {

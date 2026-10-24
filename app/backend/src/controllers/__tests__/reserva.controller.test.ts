@@ -29,7 +29,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
   beforeEach(() => {
     req = {
-      user: { id: 1, rol_id: ROLES.MINISTRO } as any,
+      user: { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any,
       body: {},
       params: {},
       query: {},
@@ -138,7 +138,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     });
 
     it('notifica a Sacerdote y Admin (excepto al solicitante) de la nueva solicitud pendiente', async () => {
-      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
 
       mockConnection.query.mockResolvedValueOnce([[]]); // No conflictos
@@ -272,7 +272,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     it('debería permitir edición al propio solicitante', async () => {
       req.params = { id: '1' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
-      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any; // Solicitante real
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any; // Solicitante real
 
       mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
       mockConnection.query.mockResolvedValueOnce([{}]);

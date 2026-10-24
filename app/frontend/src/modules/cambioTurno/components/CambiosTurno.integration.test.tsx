@@ -40,6 +40,8 @@ describe('integración de cambios de turno', () => {
     render(<SolicitarCambioTurnoForm onSolicitudEnviada={enviada} />, { wrapper });
 
     await screen.findByRole('option', { name: /Lectura/ });
+    expect(apiClient.get).toHaveBeenCalledWith('/api/cambios-turno/destinatarios');
+    expect(apiClient.get).not.toHaveBeenCalledWith('/api/personas');
     expect(screen.queryByRole('option', { name: 'María' })).not.toBeInTheDocument();
     await userEvent.selectOptions(screen.getByLabelText('Mi Tarea:'), '8');
     await userEvent.selectOptions(screen.getByLabelText('Cambiar con:'), '7');
