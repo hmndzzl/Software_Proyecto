@@ -36,9 +36,10 @@ describe('integración del dashboard por rol', () => {
     expect(screen.getByText('5 próximas')).toBeInTheDocument();
     expect(screen.getByText('Revisar ahora →')).toHaveAttribute('href', '/reservas');
     expect(screen.getByText('Gestionar Espacios')).toBeInTheDocument();
-    for (const ruta of ['/api/grupos', '/api/personas', '/api/espacios', '/api/reservas', '/api/tareas']) {
+    for (const ruta of ['/api/grupos', '/api/personas', '/api/espacios', '/api/reservas']) {
       expect(apiClient.get).toHaveBeenCalledWith(ruta);
     }
+    expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: undefined });
   });
 
   it('aísla fallos de indicadores y tareas sin bloquear el panel', async () => {
@@ -59,6 +60,7 @@ describe('integración del dashboard por rol', () => {
     expect(screen.getByRole('link', { name: /Eventos/ })).toBeInTheDocument();
     expect(screen.queryByText('Gestionar Espacios')).not.toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledTimes(1);
+    expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: { persona_id: 4 } });
   });
 
   it('presenta un dashboard mínimo para un usuario ausente o rol desconocido', async () => {
