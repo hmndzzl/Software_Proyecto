@@ -148,7 +148,7 @@ INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado
 
 INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `publico`) VALUES
   ('Asamblea de catequistas',        8,  2, 'Planificación del trimestre de catequesis.',                         0),
-  ('Procesión y vigilia',            7,  3, 'Convivencia de ministros de la liturgia en el patio central.',       1),
+  ('Procesión y vigilia',            7,  3, 'Convivencia de ministros de la liturgia en el patio central.',       0),
   ('Taller de formación bíblica',    13, 4, 'Solicitud de formación para los ministros del sector sur.',          0),
   ('Ensayo de coro',                 9,  5, 'Ensayo cancelado por el propio solicitante.',                       0);
 
