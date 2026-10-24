@@ -12,7 +12,10 @@ import { withTransaction } from '../utils/withTransaction';
 export const getTareas = async (req: Request, res: Response): Promise<void> => {
   try {
     const { fecha_inicio, fecha_fin, persona_id } = req.query;
-    const tieneParametros = !!(fecha_inicio || fecha_fin || persona_id);
+    // Coordinador de Ministros solo ve tareas con al menos un ministro propio
+    // asignado (coordinador_ministro) — mismo alcance que getMinistros/getDestinatarios.
+    const esCoordinadorMinistros = req.user?.rol_id === ROLES.COORDINADOR_MINISTROS;
+    const tieneParametros = !!(fecha_inicio || fecha_fin || persona_id) || esCoordinadorMinistros;
 
     let tareas: RowDataPacket[];
 
@@ -44,6 +47,16 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
       if (persona_id) {
         conditions.push('at.persona_id = ?');
         values.push(Number(persona_id));
+      }
+      if (esCoordinadorMinistros) {
+        conditions.push(
+          `EXISTS (
+            SELECT 1 FROM asignacion_tarea at2
+            JOIN coordinador_ministro cm ON cm.ministro_id = at2.persona_id
+            WHERE at2.tarea_id = t.id AND cm.coordinador_id = ?
+          )`
+        );
+        values.push(req.user!.id);
       }
 
       query += ' WHERE ' + conditions.join(' AND ');
