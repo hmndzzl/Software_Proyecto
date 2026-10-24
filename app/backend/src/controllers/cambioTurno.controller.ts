@@ -5,10 +5,25 @@ import type { PoolConnection } from 'mysql2/promise';
 import { HttpStatus } from '../utils/httpStatus';
 import type { CambioTurnoCreateInput, CambioTurnoConInfo } from '../types/cambioTurno.types';
 import { withTransaction } from '../utils/withTransaction';
+import { ROLES } from '../config/roles';
 
 // HU-23: permite a un ministro asignado a una tarea solicitar que otro ministro tome su lugar.
 // Al aceptarse (responderCambioTurno) el titular de la tarea se actualiza automáticamente,
 // sin intervención del coordinador de ministros.
+
+// Lista mínima para elegir destinatario, sin exponer el directorio de personas.
+export const getDestinatariosCambioTurno = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      "SELECT id, nombre FROM persona WHERE rol_id = ? AND estado_cuenta = 'activa' AND id <> ? ORDER BY nombre ASC",
+      [ROLES.MINISTRO, req.user!.id]
+    );
+    res.status(HttpStatus.OK).json(rows);
+  } catch (error) {
+    console.error('Error en getDestinatariosCambioTurno:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener destinatarios' });
+  }
+};
 
 // POST /api/cambios-turno
 export const solicitarCambioTurno = async (req: Request, res: Response): Promise<void> => {
@@ -51,8 +66,8 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
     const solicitanteNombre = asignaciones[0].nombre;
 
     const [destinatarios] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE id = ?',
-      [destinatario_id]
+      "SELECT id FROM persona WHERE id = ? AND rol_id = ? AND estado_cuenta = 'activa'",
+      [destinatario_id, ROLES.MINISTRO]
     );
     if (destinatarios.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Ministro destinatario no encontrado' });
