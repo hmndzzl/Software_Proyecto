@@ -34,6 +34,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     if (!tareaId || !destinatarioId) {
       toast.error('Faltan datos', 'Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
@@ -66,10 +67,12 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
         <EmptyState message="No tienes tareas asignadas actualmente para solicitar un cambio." />
       ) : (
         <form onSubmit={handleSubmit} className={styles.form}>
+          <p className={styles.fieldNote}>Primero elige tu tarea y después el ministro que recibirá la solicitud. El cambio no se completa hasta que lo acepte.</p>
           <div className={styles.field}>
             <label htmlFor="mi_tarea" className={`${styles.label} ${styles.required}`}>Mi Tarea:</label>
             <select
               id="mi_tarea"
+              disabled={loading}
               className={styles.input}
               value={tareaId}
               onChange={(e) => setTareaId(e.target.value)}
@@ -87,6 +90,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
             <label htmlFor="destinatario" className={`${styles.label} ${styles.required}`}>Cambiar con:</label>
             <select
               id="destinatario"
+              disabled={loading}
               className={styles.input}
               value={destinatarioId}
               onChange={(e) => setDestinatarioId(e.target.value)}

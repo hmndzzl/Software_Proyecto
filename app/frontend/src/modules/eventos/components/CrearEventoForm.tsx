@@ -44,9 +44,11 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
       <h3 className={styles.sectionTitle}>Crear Nuevo Evento</h3>
 
       <form onSubmit={handleSubmit} className={styles.form}>
+        <p className={styles.fieldNote}>Completa la descripción y elige una reserva confirmada que aún no tenga evento. El encargado será el solicitante de esa reserva.</p>
         <div className={styles.field}>
-          <label className={styles.label}>Descripción:</label>
+          <label htmlFor="evento-descripcion" className={styles.label}>Descripción:</label>
           <input
+            id="evento-descripcion"
             type="text"
             className={styles.input}
             value={descripcion}
@@ -56,8 +58,9 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Reserva (confirmada, sin evento):</label>
+          <label htmlFor="evento-reserva" className={styles.label}>Reserva (confirmada, sin evento):</label>
           <select
+            id="evento-reserva"
             className={styles.input}
             value={reservaId}
             onChange={e => setReservaId(e.target.value)}

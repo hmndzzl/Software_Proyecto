@@ -31,11 +31,12 @@ function getInitials(nombre: string): string {
 }
 
 
-type SortKey = 'nombre' | 'correo' | 'rol' | 'disponibilidad';
+type SortKey = 'nombre' | 'correo' | 'telefono' | 'rol' | 'disponibilidad';
 
 const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
   nombre: (m) => m.nombre.toLowerCase(),
   correo: (m) => m.correo.toLowerCase(),
+  telefono: m => m.telefono ?? '',
   rol: (m) => ROL_LABEL[m.rol_id ?? 4] ?? '',
   disponibilidad: (m) => (m.disponible ? 1 : 0),
 };
@@ -49,7 +50,7 @@ export default function MinistrosPage() {
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
 
   const filtros = useTableFilters(ministros, {
-    search: m => [m.nombre, m.correo, ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'],
+    search: m => [m.nombre, m.correo, m.telefono, ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'],
     selects: [
       { key: 'disponibilidad', label: 'Disponibilidad', value: m => m.disponible ? 'Disponible' : 'No disponible' },
       { key: 'rol', label: 'Rol', value: m => ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro' },
@@ -120,6 +121,7 @@ export default function MinistrosPage() {
                 <tr>
                   <SortableTh label="Nombre" sortKey="nombre" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Correo" sortKey="correo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Teléfono" sortKey="telefono" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Rol" sortKey="rol" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Disponibilidad" sortKey="disponibilidad" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 </tr>
@@ -134,6 +136,7 @@ export default function MinistrosPage() {
                       </div>
                     </td>
                     <td className={styles.correo}>{m.correo}</td>
+                    <td>{m.telefono ? <a href={`tel:${m.telefono}`}>{m.telefono}</a> : 'Sin teléfono'}</td>
                     <td>
                       <span className={styles.rolBadge}>
                         {ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'}

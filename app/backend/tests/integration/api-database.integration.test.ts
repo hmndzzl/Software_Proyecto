@@ -18,6 +18,8 @@ describe('integración API y MariaDB', () => {
       .start();
 
     process.env.NODE_ENV = 'test';
+    // Estas pruebas usan la BD desechable y nunca crean usuarios en Clerk real.
+    process.env.CLERK_SECRET_KEY = '';
     process.env.DB_HOST = container.getHost();
     process.env.DB_PORT = String(container.getPort());
     process.env.DB_USER = container.getUsername();
@@ -274,6 +276,91 @@ describe('integración API y MariaDB', () => {
     const [restantes] = await pool.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea WHERE tarea_id = ?', [id]);
     expect(restantes).toHaveLength(0);
     await request(app).get(`/api/tareas/${id}`).auth(token, { type: 'bearer' }).expect(404);
+  });
+
+  it('guarda el teléfono de una cuenta, lo edita y lo muestra en el directorio sin duplicar personas', async () => {
+    const login = await request(app).post('/api/auth/login').send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    const cuenta = { nombre: 'Ministro Teléfono', correo: 'telefono@example.com', password: 'Clave-Segura-123', rol_id: 4, telefono: '55559876' };
+    await request(app).post('/api/auth/register').auth(token, { type: 'bearer' }).send(cuenta).expect(201);
+    const [personas] = await pool.query<RowDataPacket[]>('SELECT id FROM persona WHERE correo = ?', [cuenta.correo]);
+    const id = personas[0].id;
+    // Crear una cuenta sigue el flujo de aprobación existente.
+    await pool.query("UPDATE persona SET estado_cuenta = 'activa' WHERE id = ?", [id]);
+    const perfil = () => request(app).get(`/api/personas/${id}`).auth(token, { type: 'bearer' }).expect(200);
+    expect((await perfil()).body.telefono).toBe('+50255559876');
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ telefono: '+502 5555-9877' }).expect(200);
+    const directorio = await request(app).get('/api/personas').auth(token, { type: 'bearer' }).expect(200);
+    expect(directorio.body.filter((p: { id: number }) => p.id === id)).toEqual([expect.objectContaining({ telefono: '+50255559877' })]);
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ nombre: 'Nombre actualizado' }).expect(200);
+    expect((await perfil()).body.telefono).toBe('+50255559877');
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ telefono: '' }).expect(200);
+    expect((await perfil()).body.telefono).toBeNull();
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ telefono: 'abc' }).expect(400);
+  });
+
+  it('un teléfono duplicado revierte la creación completa y no altera el perfil', async () => {
+    const login = await request(app).post('/api/auth/login').send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    await request(app).put('/api/personas/1').auth(token, { type: 'bearer' }).send({ telefono: '55559878' }).expect(200);
+    await request(app).post('/api/auth/register').auth(token, { type: 'bearer' }).send({
+      nombre: 'No debe persistirse', correo: 'telefono-duplicado@example.com', password: 'Clave-Segura-123', rol_id: 4, telefono: '+50255559878',
+    }).expect(409);
+    const [personas] = await pool.query<RowDataPacket[]>('SELECT id FROM persona WHERE correo = ?', ['telefono-duplicado@example.com']);
+    expect(personas).toHaveLength(0);
+    await request(app).put('/api/personas/9').auth(token, { type: 'bearer' }).send({ nombre: 'No guardar', telefono: '55559878' }).expect(409);
+    const [ministro] = await pool.query<RowDataPacket[]>('SELECT nombre FROM persona WHERE id = 9');
+    expect(ministro[0].nombre).not.toBe('No guardar');
+  });
+
+  it('valida y persiste el aforo al crear, editar y aprobar, sin escrituras parciales', async () => {
+    const login = await request(app).post('/api/auth/login').send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    const [espacios] = await pool.query<RowDataPacket[]>('SELECT capacidad FROM espacio WHERE id = 2');
+    const capacidad = Number(espacios[0].capacidad);
+    const datos = { fecha: '2099-11-28', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Prueba aforo', descripcion: 'Con aforo', cantidad_personas: capacidad };
+    for (const cantidad_personas of [0, -1, 1.5, '10', null, capacidad + 1]) {
+      await request(app).post('/api/reservas').auth(token, { type: 'bearer' }).send({ ...datos, cantidad_personas }).expect(400);
+    }
+    const [rechazadas] = await pool.query<RowDataPacket[]>('SELECT id FROM evento WHERE titulo = ?', [datos.titulo]);
+    expect(rechazadas).toHaveLength(0);
+    const creada = await request(app).post('/api/reservas').auth(token, { type: 'bearer' }).send(datos).expect(201);
+    const id = creada.body.reservaId;
+    const consultar = async () => {
+      const [rows] = await pool.query<RowDataPacket[]>('SELECT cantidad_personas, estado_reserva_id FROM reserva WHERE id = ?', [id]);
+      return rows[0];
+    };
+    expect((await consultar()).cantidad_personas).toBe(capacidad);
+    await request(app).put(`/api/reservas/${id}`).auth(token, { type: 'bearer' }).send({ ...datos, cantidad_personas: capacidad + 1 }).expect(400);
+    expect((await consultar()).cantidad_personas).toBe(capacidad);
+    const { cantidad_personas: _cantidad, ...sinCantidad } = datos;
+    await request(app).put(`/api/reservas/${id}`).auth(token, { type: 'bearer' }).send(sinCantidad).expect(200);
+    expect((await consultar()).cantidad_personas).toBe(capacidad);
+    await pool.query('UPDATE espacio SET capacidad = ? WHERE id = 2', [capacidad - 1]);
+    try {
+      await request(app).put(`/api/reservas/${id}/estado`).auth(token, { type: 'bearer' }).send({ estado_id: 2 }).expect(400);
+      expect((await consultar()).estado_reserva_id).toBe(1);
+    } finally { await pool.query('UPDATE espacio SET capacidad = ? WHERE id = 2', [capacidad]); }
+    await request(app).put(`/api/reservas/${id}/estado`).auth(token, { type: 'bearer' }).send({ estado_id: 2 }).expect(200);
+    const lista = await request(app).get('/api/reservas/mis-reservas').auth(token, { type: 'bearer' }).expect(200);
+    expect(lista.body).toEqual(expect.arrayContaining([expect.objectContaining({ id, cantidad_personas: capacidad })]));
+  });
+
+  it('la migración de aforo conserva reservas históricas y puede repetirse', async () => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.query('CREATE TEMPORARY TABLE reserva_migracion (id INT PRIMARY KEY)');
+      await connection.query('INSERT INTO reserva_migracion (id) VALUES (1)');
+      const migration = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261024_reserva_cantidad_personas.sql'), 'utf8')
+        .replace('ALTER TABLE reserva', 'ALTER TABLE reserva_migracion');
+      await connection.query(migration);
+      await connection.query(migration);
+      const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM reserva_migracion');
+      expect(rows).toEqual([{ id: 1, cantidad_personas: null }]);
+    } finally {
+      await connection.query('DROP TEMPORARY TABLE IF EXISTS reserva_migracion');
+      connection.release();
+    }
   });
 
   it('persiste un contacto y notifica a cada sacerdote y administrador', async () => {
