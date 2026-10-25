@@ -65,7 +65,6 @@ export default function CompromisosDia({ items, onSeleccionar }: { items: Compro
       </button>
     ))}
 
-    {!!tareas.length && <p className={styles.groupLabel}>Tareas sin evento asociado</p>}
     {tareas.map(item => (
       <button
         key={`tarea-${item.dato.id}`}
@@ -79,6 +78,11 @@ export default function CompromisosDia({ items, onSeleccionar }: { items: Compro
           <span>{horario(item.dato)}</span>
         </div>
         <p className={styles.taskDesc}>{item.dato.titulo}</p>
+        {/* La mayoría de las tareas (lector, comunión, coro...) nunca tuvieron una
+            reserva de salón detrás — no es un dato faltante, es el caso normal. Si
+            sí quedó vinculada a un evento que no se cargó en esta consulta, se avisa
+            aquí mismo, en la tarjeta que corresponde, no con un rótulo para todo el grupo. */}
+        {item.dato.evento_id && <span className={styles.vinculadaTag}>Vinculada a un evento</span>}
         <div className={styles.assigneeRow}>
           {item.dato.asignados.length ? (
             <>
