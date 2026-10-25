@@ -137,4 +137,37 @@ describe('integración de cambios de turno', () => {
     expect(await screen.findByText('No has recibido solicitudes de cambio de turno.')).toBeInTheDocument();
     expect(screen.getByText('No has solicitado ningún cambio de turno.')).toBeInTheDocument();
   });
+
+  it('excluye tareas con fecha pasada en el formulario de solicitud', async () => {
+    const tareaPasada = { id: 99, titulo: 'Pasada', descripcion: '', fecha: '2020-01-01', hora_inicio: '08:00:00', hora_fin: '09:00:00' };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: String(url) === '/api/tareas' ? [tarea, tareaPasada] : [{ id: 7, nombre: 'Ana' }],
+    }));
+    render(<SolicitarCambioTurnoForm />, { wrapper });
+    await screen.findByRole('option', { name: /Lectura/ });
+    expect(screen.queryByRole('option', { name: /Pasada/ })).not.toBeInTheDocument();
+  });
+
+  it('muestra estado vacio si todas las tareas del usuario ya pasaron', async () => {
+    const tareaPasada = { id: 99, titulo: 'Pasada', descripcion: '', fecha: '2020-01-01', hora_inicio: '08:00:00', hora_fin: '09:00:00' };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: String(url) === '/api/tareas' ? [tareaPasada] : [{ id: 7, nombre: 'Ana' }],
+    }));
+    render(<SolicitarCambioTurnoForm />, { wrapper });
+    expect(await screen.findByText(/No tienes tareas asignadas/)).toBeInTheDocument();
+  });
+
+  it('muestra badge Vencida y no permite Aceptar en solicitudes recibidas con fecha pasada', async () => {
+    const cambioVencido = {
+      id: 1, tarea_id: 8, solicitante_id: 7, destinatario_id: 4, estado: 'pendiente' as const,
+      solicitante_nombre: 'Ana', destinatario_nombre: 'María', tarea_titulo: 'Lectura',
+      tarea_descripcion: '', tarea_fecha: '2020-01-01', tarea_hora_inicio: '08:00:00', tarea_hora_fin: '09:00:00',
+    };
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [cambioVencido] });
+    render(<ListaCambiosTurno />, { wrapper });
+    await screen.findByText('Ana');
+    expect(screen.getByText('Vencida')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Aceptar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
+  });
 });

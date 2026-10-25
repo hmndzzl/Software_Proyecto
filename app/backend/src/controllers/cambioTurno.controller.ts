@@ -6,6 +6,15 @@ import { HttpStatus } from '../utils/httpStatus';
 import type { CambioTurnoCreateInput, CambioTurnoConInfo } from '../types/cambioTurno.types';
 import { withTransaction } from '../utils/withTransaction';
 import { ROLES } from '../config/roles';
+import { obtenerFechaHoraGuatemala } from '../utils/horaGuatemala';
+
+function tareaEsPasada(fecha: string | Date, horaInicio: string, hoy: string, horaActual: string): boolean {
+  const fechaStr = typeof fecha === 'string' ? fecha.slice(0, 10) : new Date(fecha).toISOString().slice(0, 10);
+  const horaInicioStr = String(horaInicio).substring(0, 5);
+  if (fechaStr < hoy) return true;
+  if (fechaStr === hoy && horaInicioStr <= horaActual) return true;
+  return false;
+}
 
 // HU-23: permite a un ministro asignado a una tarea solicitar que otro ministro tome su lugar.
 // Al aceptarse (responderCambioTurno) el titular de la tarea se actualiza automáticamente,
@@ -50,6 +59,12 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
       return;
     }
     const tarea = tareas[0];
+
+    const { hoy, horaActual } = await obtenerFechaHoraGuatemala(pool);
+    if (tareaEsPasada(tarea.fecha, tarea.hora_inicio, hoy, horaActual)) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'No se puede solicitar un cambio de turno para una tarea cuya fecha ya pasó' });
+      return;
+    }
 
     // El solicitante debe ser el titular actual de la tarea; de paso obtenemos su nombre para el mensaje.
     const [asignaciones] = await pool.execute<RowDataPacket[]>(
@@ -99,7 +114,6 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
       return;
     }
 
-    const hoy = new Date().toISOString().split('T')[0];
     const horaInicio = String(tarea.hora_inicio).substring(0, 5);
     const horaFin = String(tarea.hora_fin).substring(0, 5);
     const mensaje = `${solicitanteNombre} te solicita un cambio de turno para la tarea: ${tarea.titulo} (${tarea.fecha} ${horaInicio}-${horaFin})`;
@@ -211,7 +225,7 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
       return;
     }
     const tarea = tareas[0];
-    const hoy = new Date().toISOString().split('T')[0];
+    const { hoy, horaActual } = await obtenerFechaHoraGuatemala(pool);
 
     if (!aceptar) {
       await withTransaction(async (conn) => {
@@ -239,6 +253,11 @@ export const responderCambioTurno = async (req: Request, res: Response): Promise
         res.status(HttpStatus.OK).json({ mensaje: 'Cambio de turno rechazado', tarea_id: cambio.tarea_id });
         return 'commit';
       });
+      return;
+    }
+
+    if (tareaEsPasada(tarea.fecha, tarea.hora_inicio, hoy, horaActual)) {
+      res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'No se puede aceptar un cambio de turno para una tarea cuya fecha ya pasó' });
       return;
     }
 
