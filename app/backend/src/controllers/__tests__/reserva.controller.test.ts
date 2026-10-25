@@ -351,25 +351,26 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
   describe('obtenerReservas', () => {
     it('debería retornar 200 y reservas con filtro opcional', async () => {
       req.query = { espacio_id: '1' };
-      const mockRows = [{ id: 1 }];
+      const mockRows = [{ id: 1, en_uso: 0 }];
       (db.query as any).mockResolvedValue([mockRows]);
 
       await obtenerReservas(req as Request, res as Response);
 
-      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE r.espacio_id = ?'), [1]);
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE r.espacio_id = ?'), [2, 1]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith(mockRows);
+      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, en_uso: false }]);
     });
 
     it('debería retornar 200 sin filtro opcional', async () => {
       req.query = {};
-      const mockRows = [{ id: 1 }];
+      const mockRows = [{ id: 1, en_uso: 1 }];
       (db.query as any).mockResolvedValue([mockRows]);
 
       await obtenerReservas(req as Request, res as Response);
 
-      expect(db.query).toHaveBeenCalledWith(expect.not.stringContaining('WHERE r.espacio_id = ?'), []);
+      expect(db.query).toHaveBeenCalledWith(expect.not.stringContaining('WHERE r.espacio_id = ?'), [2]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, en_uso: true }]);
     });
 
     it('debería retornar 500 en caso de error', async () => {
