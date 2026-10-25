@@ -12,7 +12,8 @@
     "coverage": "vitest run --coverage",
     "test:k6": "../../tests/k6/run-tests.sh",
     "test:k6:all": "../../tests/k6/run-tests.sh all",
-    "clerk:migrar": "ts-node --transpile-only src/scripts/migrarUsuariosClerk.ts"
+    "clerk:migrar": "ts-node --transpile-only src/scripts/migrarUsuariosClerk.ts",
+    "test:calendario-ui": "vitest run --config vitest.browser.config.ts calendario-ui"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",
