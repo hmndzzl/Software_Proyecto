@@ -6,6 +6,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { CardHead } from '../../../components/ui/Card';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
@@ -31,7 +33,11 @@ export default function ListaGrupos({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const { sortKey, sortDir, toggleSort, sortedData: gruposOrdenados } = useSortableTable(grupos, SORT_VALUE);
+  const filtros = useTableFilters(grupos, {
+    search: g => [g.id, g.nombre, g.nombre_coordinador],
+    selects: [{ key: 'coordinador', label: 'Coordinador', value: g => g.nombre_coordinador ?? 'Sin coordinador' }],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: gruposOrdenados } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const { tieneRol } = useAuth();
   const puedeEditar = tieneRol([
@@ -59,6 +65,7 @@ export default function ListaGrupos({
   return (
     <div>
       <CardHead title="Lista de Grupos" hint={!loading && grupos.length > 0 ? `${grupos.length} grupos` : undefined} />
+      {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de grupos" />}
 
       {loading && <LoadingState label="Cargando grupos..." />}
       {error && <ErrorState message={error} onRetry={fetchGrupos} />}
