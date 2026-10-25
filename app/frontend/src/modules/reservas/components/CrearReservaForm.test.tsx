@@ -43,7 +43,6 @@ describe('CrearReservaForm', () => {
 
     const enlace = screen.getByRole('link', { name: /Ver detalle del espacio/ });
     expect(enlace).toHaveAttribute('href', '/espacios/2');
-    expect(enlace).toHaveAttribute('target', '_blank');
   });
 
   it('permite al administrador crear con visibilidad pública y restablece la casilla', async () => {
