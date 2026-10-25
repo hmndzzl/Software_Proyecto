@@ -189,7 +189,8 @@ describe('calendario mensual', () => {
     await userEvent.click(dia);
     const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
     expect(within(detalle).getByText('Visitar enfermos')).toBeInTheDocument();
-    expect(within(detalle).getByText('Evento · Pendiente de aprobación')).toBeInTheDocument();
+    expect(within(detalle).getByText('Reunión')).toBeInTheDocument();
+    expect(within(detalle).getByText('Pendiente')).toBeInTheDocument();
     await userEvent.click(within(detalle).getByRole('button', { name: /Ver detalle del evento Reunión/ }));
     expect(screen.getByRole('dialog')).toHaveTextContent('Sin tareas registradas para tu consulta.');
     expect(screen.getByRole('dialog')).toHaveTextContent('Lugar no indicado');
