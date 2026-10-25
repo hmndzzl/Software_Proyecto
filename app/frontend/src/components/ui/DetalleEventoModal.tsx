@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import Modal from './Modal';
-import { formatFecha, formatHora } from '../../utils/date';
+import { formatFecha, formatHorario } from '../../utils/date';
 import styles from './DetalleEventoModal.module.css';
 
 interface DetalleEventoModalProps {
@@ -34,7 +34,7 @@ export default function DetalleEventoModal({
 
         <div className={styles.row}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-          <span>{formatHora(horaInicio)} – {formatHora(horaFin)}</span>
+          <span>{formatHorario(horaInicio, horaFin)}</span>
         </div>
 
         {extra}

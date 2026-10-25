@@ -17,7 +17,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { ROLES, ROLES_RESERVAS } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
-import { partesFecha, formatHora as fmtH } from '../../utils/date';
+import { partesFecha, formatHora as fmtH, formatHorario } from '../../utils/date';
 import type { Reserva } from '../../types';
 import styles from './EspacioDetallePage.module.css';
 
@@ -151,7 +151,7 @@ export default function EspacioDetallePage() {
                       {r.solicitante_id === usuario?.id
                         ? 'Se detectó una reserva a tu nombre'
                         : <>Se detectó una reserva a nombre de <strong>{r.solicitante_nombre}</strong></>}
-                      {' '}hoy, de {fmtH(r.hora_inicio)} a {fmtH(r.hora_fin)}.
+                      {' '}hoy, {formatHorario(r.hora_inicio, r.hora_fin)}.
                       {!r.checkin_en && ' ¿Deseas confirmar el check-in para usar este espacio?'}
                     </p>
                     {r.checkin_en ? (
@@ -226,7 +226,7 @@ export default function EspacioDetallePage() {
                   <div className={styles.dateBlock}>
                     <span className={styles.dateMes}>{partesFecha(r.fecha).mesAbrev}</span>
                     <span className={styles.dateDay}>{partesFecha(r.fecha).dia}</span>
-                    <span className={styles.dateHora}>{fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}</span>
+                    <span className={styles.dateHora}>{formatHorario(r.hora_inicio, r.hora_fin)}</span>
                   </div>
 
                   {/* Info evento */}

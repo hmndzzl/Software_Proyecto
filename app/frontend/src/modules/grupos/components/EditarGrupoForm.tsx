@@ -61,7 +61,7 @@ export default function EditarGrupoForm({
 
   return (
     <div className={styles.editSection}>
-      <h3 className={styles.sectionTitle}>Editar Grupo</h3>
+
 
       <form onSubmit={handleUpdate} className={styles.form}>
         <p className={styles.fieldNote}>Revisa el nombre y el coordinador antes de guardar. Eliminar el grupo es una acción independiente.</p>

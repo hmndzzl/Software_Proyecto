@@ -13,7 +13,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import { formatFecha, esTareaFutura } from '../../../utils/date';
+import { formatFecha, formatHorario, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaCambiosTurno.module.css';
 
@@ -139,7 +139,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
                 <tr key={c.id}>
                   <td>{c.tarea_titulo}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
-                  <td className={styles.horaCell}>{c.tarea_hora_inicio.substring(0, 5)}-{c.tarea_hora_fin.substring(0, 5)}</td>
+                  <td className={styles.horaCell}>{formatHorario(c.tarea_hora_inicio, c.tarea_hora_fin)}</td>
                   <td>{c.solicitante_nombre}</td>
                   <td><Badge kind={ESTADO_BADGE[c.estado]}>{ESTADO_LABEL[c.estado]}</Badge></td>
                   <td>
@@ -182,7 +182,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
                 <tr key={c.id}>
                   <td>{c.tarea_titulo}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
-                  <td className={styles.horaCell}>{c.tarea_hora_inicio.substring(0, 5)}-{c.tarea_hora_fin.substring(0, 5)}</td>
+                  <td className={styles.horaCell}>{formatHorario(c.tarea_hora_inicio, c.tarea_hora_fin)}</td>
                   <td>{c.destinatario_nombre}</td>
                   <td><Badge kind={ESTADO_BADGE[c.estado]}>{ESTADO_LABEL[c.estado]}</Badge></td>
                 </tr>

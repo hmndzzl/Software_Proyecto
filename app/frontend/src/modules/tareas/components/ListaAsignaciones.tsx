@@ -11,7 +11,7 @@ import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES, rolTieneAcceso } from '../../../utils/roles';
-import { formatFecha, formatHora } from '../../../utils/date';
+import { formatFecha, formatHorario } from '../../../utils/date';
 import type { Ministro, Tarea } from '../../../types';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaAsignaciones.module.css';
@@ -317,7 +317,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
                       </td>
                     )}
                     <td>{formatFecha(asignacion.fecha)}</td>
-                    <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
+                    <td>{formatHorario(asignacion.hora_inicio, asignacion.hora_fin)}</td>
                     {puedeGestionar && (
                       <td className={styles.acciones}>
                         <Btn kind="ghost" size="sm" onClick={() => abrirEdicionTarea(asignacion)}>

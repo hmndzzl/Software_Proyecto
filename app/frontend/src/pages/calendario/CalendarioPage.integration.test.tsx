@@ -137,7 +137,7 @@ describe('calendario unificado semanal', () => {
     await userEvent.click(tarjeta);
     const modal = screen.getByRole('dialog', { name: 'Misa del lunes' });
     expect(within(modal).getByText('Ministros asignados: Ana, Luis')).toBeInTheDocument();
-    expect(within(modal).getByText(/Horario de servicio: 9:30 a. m./)).toBeInTheDocument();
+    expect(within(modal).getByText(/Horario de servicio: 09:30 –/)).toBeInTheDocument();
     expect(within(modal).getByText('Padre Pedro')).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

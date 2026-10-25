@@ -41,7 +41,7 @@ test('consulta semana y mes, filtra por ministro y conserva legibilidad en móvi
   }
   await page.evaluate(() => document.documentElement.setAttribute('data-tema', 'claro'));
   await abrir.click();
-  await expect(page.getByRole('dialog', { name: 'Misa del lunes' })).toContainText('Horario de servicio: 9:30 a. m. – 10:00 a. m.');
+  await expect(page.getByRole('dialog', { name: 'Misa del lunes' })).toContainText('Horario de servicio: 09:30 – 10:00');
   await page.keyboard.press('Escape');
   await expect(abrir).toBeFocused();
   await page.getByRole('button', { name: 'Mes', exact: true }).click();

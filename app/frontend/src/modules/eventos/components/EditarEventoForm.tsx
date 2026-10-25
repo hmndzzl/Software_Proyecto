@@ -86,7 +86,7 @@ export default function EditarEventoForm({
 
   return (
     <div className={styles.editSection}>
-      <h3 className={styles.sectionTitle}>Editar Evento</h3>
+
 
       <form onSubmit={handleUpdate} className={styles.form} aria-busy={guardando}>
         <div className={styles.field}>

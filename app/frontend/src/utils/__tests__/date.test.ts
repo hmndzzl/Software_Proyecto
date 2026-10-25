@@ -1,6 +1,12 @@
-import { formatFecha, formatHora, partesFecha, esTareaFutura } from '../date';
+import { formatFecha, formatHora, formatHorario, partesFecha, esTareaFutura } from '../date';
 
 describe('date utils', () => {
+  it('unifica los rangos sin segundos y contempla datos incompletos', () => {
+    expect(formatHorario('09:05:00', '14:30:00')).toBe('09:05 – 14:30');
+    expect(formatHorario('00:00', '23:59')).toBe('00:00 – 23:59');
+    expect(formatHorario()).toBe('Horario no indicado');
+    expect(formatHorario('09:00', '')).toBe('Horario no indicado');
+  });
   describe('formatFecha', () => {
     it('formatea fechas YYYY-MM-DD', () => {
       expect(formatFecha('2026-09-13')).toBe('13 de septiembre de 2026');

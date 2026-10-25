@@ -66,6 +66,11 @@
   gap: 4px;
 }
 
+.brand:focus-visible {
+  outline: 2px solid var(--color-oro);
+  outline-offset: 2px;
+}
+
 .iconBtn {
   display: flex;
   align-items: center;
@@ -301,7 +306,7 @@
 @media (max-width: 900px) {
   .topbar { padding: 0 18px; gap: 10px; }
   .menuBtn { display: flex; }
-  .brandName, .userInfo, .divider, .searchBtn { display: none; }
+  .brandName, .userInfo, .divider { display: none; }
   .brand { gap: 0; }
   .logoImg { width: 42px; height: 42px; }
   .actions { gap: 2px; }

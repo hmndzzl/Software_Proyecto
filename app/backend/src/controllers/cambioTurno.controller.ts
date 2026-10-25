@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { formatHorario } from '../utils/formatoHorario';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
 import type { PoolConnection } from 'mysql2/promise';
@@ -114,9 +115,7 @@ export const solicitarCambioTurno = async (req: Request, res: Response): Promise
       return;
     }
 
-    const horaInicio = String(tarea.hora_inicio).substring(0, 5);
-    const horaFin = String(tarea.hora_fin).substring(0, 5);
-    const mensaje = `${solicitanteNombre} te solicita un cambio de turno para la tarea: ${tarea.titulo} (${tarea.fecha} ${horaInicio}-${horaFin})`;
+    const mensaje = `${solicitanteNombre} te solicita un cambio de turno para la tarea: ${tarea.titulo} (${tarea.fecha} ${formatHorario(String(tarea.hora_inicio), String(tarea.hora_fin))})`;
 
     await withTransaction(async (conn) => {
       const [notifResult] = await conn.execute<ResultSetHeader>(

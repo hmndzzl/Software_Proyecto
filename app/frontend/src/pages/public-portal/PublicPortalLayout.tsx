@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/logo-parroquia.jpeg';
 import './PublicPortal.css';
 
@@ -41,6 +42,9 @@ const HORARIOS_OFICINA_POR_DEFECTO = [
 
 export default function PublicPortalLayout({ page, activeSection, onSectionClick, nombreParroquia, textoPie, horariosOficina, children }: PublicPortalLayoutProps) {
   const [open, setOpen] = useState(false);
+  const { usuario } = useAuth();
+  const accesoRuta = usuario ? '/dashboard' : '/login';
+  const accesoTexto = usuario ? 'Ir al panel' : 'Iniciar sesión';
   const isLanding = page === 'landing';
   const horarios = horariosOficina ?? HORARIOS_OFICINA_POR_DEFECTO;
   const nombreVisible = (nombreParroquia || 'Parroquia San Pedro Nolasco').replace(/^Parroquia\s+/i, '').toUpperCase();
@@ -69,9 +73,9 @@ export default function PublicPortalLayout({ page, activeSection, onSectionClick
                 {link.label}
               </a>
             ))}
-            <Link to="/login" className="btn-login"><LoginIcon />INICIAR SESIÓN</Link>
+            <Link to={accesoRuta} className="btn-login" onClick={() => setOpen(false)}><LoginIcon />{accesoTexto}</Link>
           </nav>
-          <Link to="/login" className="btn-login nav-login"><LoginIcon />INICIAR SESIÓN</Link>
+          <Link to={accesoRuta} className="btn-login nav-login"><LoginIcon />{accesoTexto}</Link>
           <button type="button" className="burger" aria-label="Menú" aria-controls="navegacion-principal"
             aria-expanded={open} onClick={() => setOpen(value => !value)}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
@@ -102,7 +106,7 @@ export default function PublicPortalLayout({ page, activeSection, onSectionClick
               <h2>NAVEGACIÓN</h2>
               {PUBLIC_NAV_LINKS.map((link, index) => <a key={link.id} href={sectionHref(link.id)} onClick={() => selectSection(index)}>{link.label}</a>)}
               <Link to="/agenda">Agenda parroquial</Link>
-              <Link to="/login">Iniciar Sesión</Link>
+              <Link to={accesoRuta}>{accesoTexto}</Link>
             </nav>
             {horarios.length > 0 && <div>
               <h2>OFICINA PARROQUIAL</h2>

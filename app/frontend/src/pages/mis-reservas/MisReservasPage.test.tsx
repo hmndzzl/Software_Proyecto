@@ -69,7 +69,7 @@ describe('MisReservasPage — historial', () => {
     expect(screen.getByText('Sin título')).toBeInTheDocument();
     expect(screen.getByText('Sin evento')).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Desconocido' })).toBeInTheDocument();
-    expect(screen.getByText('18:00–20:00')).toBeInTheDocument();
+    expect(screen.getByText('18:00 – 20:00')).toBeInTheDocument();
     // Ciclo completo sobre "#": desc -> asc -> sin ordenar
     fireEvent.click(screen.getByText('#'));
     fireEvent.click(screen.getByText('#'));

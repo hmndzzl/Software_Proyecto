@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ReservaDisponible } from '../../../types';
 import apiClient from '../../../api/client';
-import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
+import { formatFecha as fmt, formatHorario } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
@@ -68,7 +68,7 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
             <option value="">-- Elige una reserva --</option>
             {reservas.map(r => (
               <option key={r.id} value={r.id}>
-                {fmt(r.fecha)} · {fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)} · {r.nombre_espacio ?? 'Sin espacio'}
+                {fmt(r.fecha)} · {formatHorario(r.hora_inicio, r.hora_fin)} · {r.nombre_espacio ?? 'Sin espacio'}
               </option>
             ))}
           </select>

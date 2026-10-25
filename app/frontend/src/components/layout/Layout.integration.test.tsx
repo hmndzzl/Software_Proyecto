@@ -24,6 +24,15 @@ function mostrar(ui: React.ReactNode) {
 }
 
 describe('layout integrado con sesión y notificaciones', () => {
+  it('abre el sitio público desde el logo sin mostrar enlaces adicionales ni búsqueda sin acción', async () => {
+    mostrar(<TopBar />);
+    expect(screen.queryByRole('button', { name: 'Buscar' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Sitio público')).not.toBeInTheDocument();
+    const enlace = screen.getByRole('link', { name: /Ir al sitio público/ });
+    expect(enlace).toHaveAttribute('href', '/');
+    await userEvent.click(enlace);
+    expect(screen.getByText('Destino: /')).toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Ana María López', correo: 'ana@test.com', rol_id: 5 }));

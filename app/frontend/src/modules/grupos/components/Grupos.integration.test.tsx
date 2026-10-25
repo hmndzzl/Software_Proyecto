@@ -35,7 +35,7 @@ describe('integración de grupos y permisos', () => {
       await userEvent.click(header);
     }
     await userEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0]);
-    expect(screen.getAllByText('Editar Grupo')).toHaveLength(2);
+    expect(screen.getAllByRole('heading', { name: 'Editar Grupo' })).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(screen.queryByText('Editar Grupo')).not.toBeInTheDocument();
   });

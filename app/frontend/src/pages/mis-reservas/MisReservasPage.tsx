@@ -14,7 +14,7 @@ import { useSortableTable } from '../../hooks/useSortableTable';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
-import { formatFecha, formatHora } from '../../utils/date';
+import { formatFecha, formatHorario } from '../../utils/date';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../utils/estadosReserva';
 import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -145,7 +145,7 @@ export default function MisReservasPage() {
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
                     <td className={styles.mono}>{formatFecha(r.fecha)}</td>
-                    <td className={styles.horaCell}>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</td>
+                    <td className={styles.horaCell}>{formatHorario(r.hora_inicio, r.hora_fin)}</td>
                     <td>
                       <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
