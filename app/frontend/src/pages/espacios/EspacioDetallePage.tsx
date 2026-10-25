@@ -30,7 +30,7 @@ export default function EspacioDetallePage() {
   const [qrAbierto, setQrAbierto] = useState(false);
   const [checkinLoading, setCheckinLoading] = useState<number | null>(null);
 
-  const { tieneRol } = useAuth();
+  const { tieneRol, usuario } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
   const puedeReservar = tieneRol(ROLES_RESERVAS);
 
@@ -128,7 +128,11 @@ export default function EspacioDetallePage() {
                 espacio.reservas_checkin_disponible.map((r) => (
                   <div key={r.id} className={styles.checkinItem}>
                     <p className={styles.checkinInfo}>
-                      Reserva de <strong>{r.solicitante_nombre}</strong>, hoy {fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}
+                      {r.solicitante_id === usuario?.id
+                        ? 'Se detectó una reserva a tu nombre'
+                        : <>Se detectó una reserva a nombre de <strong>{r.solicitante_nombre}</strong></>}
+                      {' '}hoy, de {fmtH(r.hora_inicio)} a {fmtH(r.hora_fin)}.
+                      {!r.checkin_en && ' ¿Deseas confirmar el check-in para usar este espacio?'}
                     </p>
                     {r.checkin_en ? (
                       <span className={styles.checkinHecho}>
@@ -136,7 +140,7 @@ export default function EspacioDetallePage() {
                       </span>
                     ) : (
                       <Btn kind="ok" size="sm" onClick={() => confirmarCheckin(r.id)} disabled={checkinLoading === r.id}>
-                        {checkinLoading === r.id ? 'Confirmando...' : 'Confirmar check-in'}
+                        {checkinLoading === r.id ? 'Confirmando...' : 'Sí, confirmar check-in'}
                       </Btn>
                     )}
                   </div>
