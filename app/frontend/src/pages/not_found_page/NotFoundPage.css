@@ -12,15 +12,16 @@
   padding: 2.5rem;
   text-align: center;
   border-radius: 16px;
-  background-color: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  background-color: var(--color-blanco);
+  box-shadow: var(--shadow-card);
+  border-top: 4px solid var(--color-oro);
 }
 
 .not-found-label {
   margin-bottom: 0.75rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--color-rojo);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -28,27 +29,20 @@
 .not-found-title {
   margin-bottom: 1rem;
   font-size: 2rem;
-  color: #111827;
+  color: var(--color-carbon);
 }
 
 .not-found-text {
   margin-bottom: 1.75rem;
-  color: #6b7280;
+  color: var(--color-muted);
   line-height: 1.6;
 }
 
 .not-found-button {
-  display: inline-block;
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  background-color: #2563eb;
-  color: #ffffff;
   text-decoration: none;
-  font-weight: 600;
-  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.not-found-button:hover {
-  background-color: #1d4ed8;
-  transform: translateY(-1px);
+.not-found-button:focus-visible {
+  outline: 2px solid var(--color-oro);
+  outline-offset: 3px;
 }
