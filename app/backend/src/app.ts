@@ -8,6 +8,7 @@ import { checkDbConnection } from './config/db';
 import { validateEnv, getAllowedOrigins } from './config/env';
 import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
+import calendarioRoutes from './routes/calendario.routes';
 import personaRoutes from './routes/persona.routes';
 import reservaRoutes from './routes/reserva.routes';
 import espacioRoutes from './routes/espacio.routes';
@@ -62,6 +63,7 @@ app.use(cookieParser());
 // Rutas 
 app.use('/api/auth', authRoutes);
 app.use('/api/tareas', tareaRoutes);
+app.use('/api/calendario', calendarioRoutes);
 app.use('/api/personas', personaRoutes);
 app.use('/api/reservas', reservaRoutes);
 app.use('/api/espacios', espacioRoutes);
