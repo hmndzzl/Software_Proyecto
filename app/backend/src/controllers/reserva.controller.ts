@@ -5,7 +5,7 @@ import { ROLES } from '../config/roles';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
 import { withTransaction } from '../utils/withTransaction';
 import { CHECKIN_ANTICIPACION_MIN } from '../config/constants';
-import { AHORA_GUATEMALA_SQL } from '../utils/horaGuatemala';
+import { AHORA_GUATEMALA_SQL, obtenerFechaHoraGuatemala } from '../utils/horaGuatemala';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
@@ -29,15 +29,7 @@ export const crearReserva = async (req: Request, res: Response) => {
     });
   }
 
-  const ahora = new Date();
-  const y = ahora.getFullYear();
-  const m = String(ahora.getMonth() + 1).padStart(2, '0');
-  const d = String(ahora.getDate()).padStart(2, '0');
-  const hoyStr = `${y}-${m}-${d}`;
-
-  const hh = String(ahora.getHours()).padStart(2, '0');
-  const mm = String(ahora.getMinutes()).padStart(2, '0');
-  const horaActualStr = `${hh}:${mm}`;
+  const { hoy: hoyStr, horaActual: horaActualStr } = await obtenerFechaHoraGuatemala(db);
 
   const fechaSoloFecha = fecha.split('T')[0];
 
@@ -137,15 +129,7 @@ export const editarReserva = async (req: Request, res: Response) => {
     });
   }
 
-  const ahora = new Date();
-  const y = ahora.getFullYear();
-  const m = String(ahora.getMonth() + 1).padStart(2, '0');
-  const d = String(ahora.getDate()).padStart(2, '0');
-  const hoyStr = `${y}-${m}-${d}`;
-
-  const hh = String(ahora.getHours()).padStart(2, '0');
-  const mm = String(ahora.getMinutes()).padStart(2, '0');
-  const horaActualStr = `${hh}:${mm}`;
+  const { hoy: hoyStr, horaActual: horaActualStr } = await obtenerFechaHoraGuatemala(db);
 
   const fechaSoloFecha = fecha.split('T')[0];
 
