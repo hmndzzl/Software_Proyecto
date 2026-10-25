@@ -34,6 +34,17 @@ afterEach(() => vi.useRealTimers());
 const enviar = () => fireEvent.click(screen.getByRole('button', { name: 'Solicitar Reserva' }));
 
 describe('CrearReservaForm', () => {
+  it('no muestra el enlace de ver detalle sin espacio seleccionado, y lo muestra al seleccionar uno', async () => {
+    mostrar();
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.queryByRole('link', { name: /Ver detalle del espacio/ })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+
+    const enlace = screen.getByRole('link', { name: /Ver detalle del espacio/ });
+    expect(enlace).toHaveAttribute('href', '/espacios/2');
+  });
+
   it('permite al administrador crear con visibilidad pública y restablece la casilla', async () => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 5 }));
     mostrar();
