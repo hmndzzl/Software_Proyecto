@@ -12,7 +12,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
+import { formatFecha as fmt, formatHorario } from '../../../utils/date';
 import styles from './ListaEventos.module.css';
 
 type SortKey = 'id' | 'descripcion' | 'encargado' | 'fecha' | 'espacio' | 'horario';
@@ -96,7 +96,7 @@ export default function ListaEventos({
                   <td>{ev.descripcion}</td>
                   <td>{ev.nombre_encargado}</td>
                   <td>{fmt(ev.fecha)}</td>
-                  <td>{fmtH(ev.hora_inicio)}–{fmtH(ev.hora_fin)}</td>
+                  <td>{formatHorario(ev.hora_inicio, ev.hora_fin)}</td>
                   <td>{ev.nombre_espacio ?? '—'}</td>
                   {puedeEditar && (
                     <td>
