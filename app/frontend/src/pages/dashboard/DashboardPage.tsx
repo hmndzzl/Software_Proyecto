@@ -165,7 +165,8 @@ export default function DashboardPage() {
     });
 
     if (showTareas) {
-      apiClient.get<TareaProxima[]>('/api/tareas')
+      const params = rolId === ROLES.MINISTRO ? { persona_id: usuario?.id } : undefined;
+      apiClient.get<TareaProxima[]>('/api/tareas', { params })
         .then(r => r.data)
         .then((data: TareaProxima[]) => {
           const proximas = data

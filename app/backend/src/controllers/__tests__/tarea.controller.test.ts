@@ -155,6 +155,44 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
+
+    it('restringe a tareas de sus propios ministros cuando el actor es Coordinador de Ministros, incluso sin filtros', async () => {
+      req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
+      req.query = {};
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query, values] = (pool.execute as any).mock.calls[0];
+      expect(query).toContain('EXISTS');
+      expect(query).toContain('JOIN coordinador_ministro cm ON cm.ministro_id = at2.persona_id');
+      expect(query).toContain('cm.coordinador_id = ?');
+      expect(values).toEqual([7]);
+    });
+
+    it('combina el alcance de Coordinador de Ministros con otros filtros', async () => {
+      req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
+      req.query = { fecha_inicio: '2026-08-01' };
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query, values] = (pool.execute as any).mock.calls[0];
+      expect(query).toContain('t.fecha >= ?');
+      expect(query).toContain('EXISTS');
+      expect(values).toEqual(['2026-08-01', 7]);
+    });
+
+    it('no aplica el alcance de coordinador a otros roles', async () => {
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
+      req.query = {};
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query] = (pool.execute as any).mock.calls[0];
+      expect(query).not.toContain('EXISTS');
+    });
   });
 
   describe('getTareaById', () => {
