@@ -97,7 +97,7 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
       )}
-      <Link to="/dashboard" className={styles.brand}>
+      <Link to="/" className={styles.brand} aria-label="Parroquia San Pedro Nolasco — Ir al sitio público" title="Ir al sitio público">
         <img src={logoImg} alt="Parroquia San Pedro Nolasco" className={styles.logoImg} />
         <span className={styles.brandName}>Parroquia San Pedro Nolasco</span>
       </Link>
@@ -105,13 +105,6 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
       <div className={styles.spacer} />
 
       <div className={styles.actions}>
-        <Link to="/" className={styles.publicLink}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a18 18 0 0 0 0 18 18 18 0 0 0 0-18" />
-          </svg>
-          <span>Sitio público</span>
-        </Link>
-
         {/* Notificaciones */}
         <div className={styles.bellWrap} ref={wrapRef}>
           <button

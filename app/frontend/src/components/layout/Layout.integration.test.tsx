@@ -24,10 +24,11 @@ function mostrar(ui: React.ReactNode) {
 }
 
 describe('layout integrado con sesión y notificaciones', () => {
-  it('ofrece un enlace visible al sitio público y elimina la búsqueda sin acción', async () => {
+  it('abre el sitio público desde el logo sin mostrar enlaces adicionales ni búsqueda sin acción', async () => {
     mostrar(<TopBar />);
     expect(screen.queryByRole('button', { name: 'Buscar' })).not.toBeInTheDocument();
-    const enlace = screen.getByRole('link', { name: 'Sitio público' });
+    expect(screen.queryByText('Sitio público')).not.toBeInTheDocument();
+    const enlace = screen.getByRole('link', { name: /Ir al sitio público/ });
     expect(enlace).toHaveAttribute('href', '/');
     await userEvent.click(enlace);
     expect(screen.getByText('Destino: /')).toBeInTheDocument();

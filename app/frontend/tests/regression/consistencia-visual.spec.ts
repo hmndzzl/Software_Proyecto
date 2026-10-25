@@ -31,20 +31,21 @@ test('los formularios conservan un único título de tarjeta', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Editar Evento', exact: true })).toHaveCount(1);
 });
 
-test('la barra permite volver al portal sin perder sesión y cabe desde 320px', async ({ page }) => {
+test('el logo abre el portal sin perder sesión y la barra cabe desde 320px', async ({ page }) => {
   await preparar(page);
   await page.goto('/perfil');
   await expect(page.getByRole('button', { name: 'Buscar', exact: true })).toHaveCount(0);
   for (const width of [320, 375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    const enlace = page.getByRole('link', { name: 'Sitio público', exact: true });
+    const enlace = page.getByRole('link', { name: /Ir al sitio público/ });
     await expect(enlace).toBeVisible();
     const limites = await enlace.boundingBox();
     expect(limites!.x).toBeGreaterThanOrEqual(0);
     expect(limites!.x + limites!.width).toBeLessThanOrEqual(width);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
-  await page.getByRole('link', { name: 'Sitio público', exact: true }).click();
+  await expect(page.getByText('Sitio público', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: /Ir al sitio público/ }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('link', { name: /iniciar sesión/i })).toHaveCount(0);
   await page.locator('.nav-login').click();
