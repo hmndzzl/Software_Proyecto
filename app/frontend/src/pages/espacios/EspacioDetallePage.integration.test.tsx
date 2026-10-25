@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -178,14 +178,29 @@ describe('integración del detalle de un espacio', () => {
         { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: '2026-08-11 13:50:00' },
       ],
     };
-    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioEnUso : reservas }));
+    const reservasConEnUso = [
+      { id: 10, fecha: '2099-10-20', hora_inicio: '14:00:00', hora_fin: '16:00:00', estado_reserva_id: 2, evento_titulo: 'Ensayo de coro', evento_descripcion: null, solicitante_nombre: 'Admin', checkin_en: '2026-08-11 13:50:00', en_uso: true },
+    ];
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioEnUso : reservasConEnUso }));
     mostrar();
-    await screen.findByText('Catequesis');
+    await screen.findByText('Ensayo de coro');
 
     expect(screen.getByText('En uso ahora')).toBeInTheDocument();
     expect(screen.getByText(/Check-in hecho a las 13:50/)).toBeInTheDocument();
     expect(screen.queryByText(/¿Deseas confirmar el check-in/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sí, confirmar check-in' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /En uso ahora/ }));
+    expect(await screen.findByRole('heading', { name: 'Ensayo de coro' })).toBeInTheDocument();
+    expect(screen.getByText('En uso por: Admin')).toBeInTheDocument();
+  });
+
+  it('muestra "Libre" cuando ningún horario está en uso en este momento', async () => {
+    const vista = mostrar();
+    await screen.findByText('Catequesis');
+    const estadoWrap = vista.container.querySelector('[class*="estadoActualWrap"]') as HTMLElement;
+    expect(within(estadoWrap).getByText('Libre')).toBeInTheDocument();
+    expect(within(estadoWrap).queryByText('En uso ahora')).not.toBeInTheDocument();
   });
 
   it('muestra el aviso de "sin reserva en este horario" cuando no hay nada para check-in', async () => {
