@@ -4,6 +4,8 @@ import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
 import { withTransaction } from '../utils/withTransaction';
+import { CHECKIN_ANTICIPACION_MIN } from '../config/constants';
+import { AHORA_GUATEMALA_SQL } from '../utils/horaGuatemala';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
@@ -426,6 +428,93 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     console.error('Error al cambiar estado de la reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al actualizar el estado de la reserva'
+    });
+  }
+};
+
+// HU-15: check-in real de espacio vía QR. Permite confirmar presencia desde
+// CHECKIN_ANTICIPACION_MIN minutos antes de hora_inicio hasta hora_fin — el estado
+// "en uso" real (sin tolerancia) se calcula dinámicamente en espacio.controller.ts
+// a partir de checkin_en, así que no hace falta liberar nada manualmente.
+export const checkinReserva = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // checkin_en se formatea con DATE_FORMAT (mismo patrón que notificacion.enviado_en)
+    // para que mysql2 no la reinterprete como Date con la zona horaria del servidor.
+    const [rows]: any = await db.query(
+      `SELECT id, solicitante_id, estado_reserva_id, espacio_id,
+              DATE_FORMAT(checkin_en, '%Y-%m-%d %H:%i:%s') AS checkin_en
+       FROM reserva WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
+    }
+
+    const reserva = rows[0];
+
+    const esSolicitante = reserva.solicitante_id === req.user!.id;
+    const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
+
+    if (!esSolicitante && !esPrivilegiado) {
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: 'No tienes permiso para hacer check-in de esta reserva'
+      });
+    }
+
+    if (reserva.estado_reserva_id !== ESTADOS_RESERVA.CONFIRMADA) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Solo se puede hacer check-in de una reserva confirmada'
+      });
+    }
+
+    if (reserva.espacio_id === null) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Esta reserva no tiene un salón asignado'
+      });
+    }
+
+    if (reserva.checkin_en) {
+      return res.status(HttpStatus.OK).json({
+        message: 'Ya se había hecho check-in de esta reserva',
+        checkin_en: reserva.checkin_en
+      });
+    }
+
+    const anticipacion = `00:${String(CHECKIN_ANTICIPACION_MIN).padStart(2, '0')}:00`;
+    const [ventana]: any = await db.query(
+      `SELECT
+         (fecha = DATE(${AHORA_GUATEMALA_SQL})
+          AND hora_fin > TIME(${AHORA_GUATEMALA_SQL})
+          AND SUBTIME(hora_inicio, ?) <= TIME(${AHORA_GUATEMALA_SQL})
+         ) AS dentro_de_ventana
+       FROM reserva WHERE id = ?`,
+      [anticipacion, id]
+    );
+
+    if (!ventana[0].dentro_de_ventana) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: `El check-in solo está disponible desde ${CHECKIN_ANTICIPACION_MIN} minutos antes de que inicie la reserva hasta que termine`
+      });
+    }
+
+    await db.query(`UPDATE reserva SET checkin_en = ${AHORA_GUATEMALA_SQL} WHERE id = ?`, [id]);
+
+    const [actualizada]: any = await db.query(
+      `SELECT DATE_FORMAT(checkin_en, '%Y-%m-%d %H:%i:%s') AS checkin_en FROM reserva WHERE id = ?`,
+      [id]
+    );
+
+    return res.status(HttpStatus.OK).json({
+      message: 'Check-in registrado correctamente',
+      checkin_en: actualizada[0].checkin_en
+    });
+  } catch (error) {
+    console.error('Error al hacer checkin de la reserva:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      message: 'Error interno al hacer check-in de la reserva'
     });
   }
 };
