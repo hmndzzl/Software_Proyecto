@@ -2,26 +2,25 @@
   --calendario-acento: var(--color-rojo);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--gap-card);
   width: 100%;
   min-width: 0;
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--color-ink);
 }
 
 :global(html[data-tema='oscuro']) .page {
   --calendario-acento: var(--color-tierra);
 }
 
+/* ── Controles (filtros + navegación de período) ── */
 .controls {
   background: var(--color-blanco);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
-  padding: 20px;
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .filters {
@@ -39,18 +38,29 @@
 }
 
 .field label {
+  font-family: var(--font-display);
+  font-size: 11.5px;
   font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
 }
 
 .field select {
   width: 100%;
   min-height: 44px;
-  padding: 10px;
-  border: 1px solid var(--color-tierra);
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-btn);
   color: var(--color-ink);
   background: var(--color-blanco);
   font: inherit;
+}
+
+.field select:focus-visible {
+  border-color: var(--color-rojo);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(157, 47, 56, .12);
 }
 
 .navigation {
@@ -59,6 +69,15 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-lineSoft);
+}
+
+.navigation > strong {
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-ink);
 }
 
 .buttons {
@@ -75,160 +94,297 @@
 
 .buttons button, .field button {
   min-height: 44px;
-  border: 1px solid var(--color-tierra);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--color-line);
   background: var(--color-crema);
   border-radius: var(--radius-btn);
-  padding: 8px 14px;
+  padding: 8px 16px;
+  transition: var(--transition);
+}
+
+.buttons button:hover, .field button:hover {
+  background: var(--color-cremaDk);
+  color: var(--color-rojo);
 }
 
 .buttons .todayButton {
-  background: var(--color-rojoDk);
+  background: var(--color-rojo);
   color: var(--color-on-primary);
   border-color: var(--color-rojoDk);
+  box-shadow: var(--shadow-btn-primary);
+}
+
+.buttons .todayButton:hover {
+  background: var(--color-rojoDk);
+  color: var(--color-on-primary);
+}
+
+.buttons button[aria-pressed='true'] {
+  background: var(--color-rojo);
+  border-color: var(--color-rojoDk);
+  color: var(--color-on-primary);
+  font-weight: 700;
 }
 
 .page button:focus-visible, .page select:focus-visible {
   outline: 3px solid var(--color-rojo);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 .summary {
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--calendario-acento);
   margin: 0;
 }
 
 .note {
   margin: 0;
-  color: var(--color-tierra);
+  color: var(--color-muted);
+  font-size: 13.5px;
 }
 
+@media (max-width: 650px) {
+  .controls { padding: 16px; }
+  .buttons { width: 100%; }
+  .buttons button { flex: 1 1 100px; justify-content: center; }
+}
+
+/* ── Vista semanal ── */
 .weekGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.weekGrid .day {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  width: 100%;
 }
 
-.weekGrid .dayContent {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  align-items: start;
-}
-
-.weekGrid .groupLabel {
-  grid-column: 1 / -1;
+@media (max-width: 1024px) {
+  .weekGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .day {
   background: var(--color-blanco);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .today {
-  border: 2px solid var(--color-rojo);
+  border: 1.5px solid var(--color-oro);
+  box-shadow: 0 4px 20px rgba(242, 175, 41, .15);
+}
+
+.today::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--color-oro);
 }
 
 .dayTitle {
   font-size: 16px;
   margin: 0;
-  padding: 16px;
+  padding: 14px;
   background: var(--color-crema);
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  border-bottom: 1px solid var(--color-lineSoft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.today .dayTitle {
+  background: var(--color-oroSoft);
 }
 
 .todayLabel {
   display: block;
-  color: var(--calendario-acento);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-warn);
 }
 
 .dayContent {
-  padding: 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  flex-grow: 1;
+  background: rgba(243, 241, 233, .15);
 }
 
+@media (max-width: 650px) {
+  .dayContent { padding: 16px; }
+}
+
+/* ── Tarjeta de compromiso (evento o tarea), compartida por semana/mes ── */
 .card {
   width: 100%;
-  border: 1px solid var(--color-line);
-  border-left-width: 5px;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-lineSoft);
+  border-left-width: 4px;
   border-radius: 8px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--color-blanco);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .02);
+  transition: transform var(--transition), box-shadow var(--transition);
   text-align: left;
+  font: inherit;
+  cursor: pointer;
   overflow-wrap: anywhere;
 }
 
 .card:hover {
-  background: var(--color-crema);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(60, 40, 20, .08);
+  border-color: var(--color-line);
 }
 
-.evento {
-  border-left-color: var(--color-rojo);
+.evento { border-left-color: var(--color-rojo); }
+.tarea { border-left-color: var(--color-tierra); }
+
+.timeRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-rojo);
+  font-weight: 600;
 }
 
-.tarea {
-  border-left-color: var(--color-tierra);
+.timeRow svg {
+  flex-shrink: 0;
 }
 
-.kind {
-  font-weight: 700;
+.timeRow .estadoBadge {
+  margin-left: auto;
+}
+
+.taskDesc {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-ink);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.placeRow, .assigneeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.placeRow svg, .assigneeRow svg {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.assignName {
+  font-family: var(--font-body);
+  font-size: 12.5px;
   color: var(--color-tierra);
+  font-weight: 600;
 }
 
+.unassignedBadge {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--color-muted);
+  background: var(--color-cremaDk);
+  padding: 3px 8px;
+  border-radius: var(--radius-badge);
+  text-transform: uppercase;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+/* Tareas de un evento: resumen compacto, sin anidar otra tarjeta completa */
 .team {
   list-style: none;
   padding: 8px 0 0;
   margin: 0;
-  border-top: 1px solid var(--color-line);
+  border-top: 1px solid var(--color-lineSoft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .team li {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
-.team li:last-child {
-  margin-bottom: 0;
+.team li strong {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.team li .teamHorario {
+  font-family: var(--font-mono);
+  color: var(--color-rojo);
+  font-size: 11.5px;
+}
+
+.team li .teamNombres {
+  color: var(--color-tierra);
+  font-weight: 600;
+  flex-basis: 100%;
 }
 
 .groupLabel {
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
   margin: 8px 0 0;
-}
-
-.page .detailLink {
-  min-height: 44px;
-  padding: 8px;
-  border: 1px solid var(--color-line);
-  background: var(--color-crema);
-  border-radius: var(--radius-btn);
-  color: var(--calendario-acento);
-  text-decoration: underline;
 }
 
 .empty {
   margin: 0;
-  padding: 12px 0;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-style: italic;
 }
 
+/* ── Modal de detalle (DetalleCompromiso) ── */
 .detail {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -239,62 +395,41 @@
 
 .serviceList {
   margin: 0;
-  padding-left: 24px;
+  padding-left: 22px;
 }
 
 .serviceList li {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .serviceList span {
   display: block;
 }
 
-@media (max-width: 650px) {
-  .weekGrid .day {
-    grid-template-columns: 1fr;
-  }
-  .dayContent {
-    padding: 16px;
-  }
-}
-
-@media (max-width: 650px) {
-  .controls {
-    padding: 14px;
-  }
-  .buttons {
-    width: 100%;
-  }
-  .buttons button {
-    flex: 1 1 100px;
-  }
-}
-
-.buttons button[aria-pressed='true'] {
-  background: var(--color-rojoDk);
-  border-color: var(--color-rojoDk);
-  color: var(--color-on-primary);
-  font-weight: 700;
-}
-
+/* ── Vista mensual ── */
 .monthTable {
   width: 100%;
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 4px;
+  border-spacing: 8px;
 }
 
 .monthTable caption {
   text-align: left;
-  padding: 8px 0 16px;
-  font-size: 16px;
+  padding: 0 0 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-muted);
 }
 
 .monthTable th {
-  padding: 8px 2px;
-  font-size: 16px;
-  overflow-wrap: anywhere;
+  padding: 4px 2px 10px;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
 }
 
 .monthTable td {
@@ -304,55 +439,71 @@
 
 .monthDay {
   width: 100%;
-  min-height: 180px;
+  min-height: 112px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
+  gap: 6px;
   padding: 10px;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   background: var(--color-blanco);
   text-align: left;
   overflow-wrap: anywhere;
+  transition: var(--transition);
 }
 
 .monthDay > strong {
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--color-ink);
 }
 
 .monthDay:hover {
   background: var(--color-crema);
+  box-shadow: 0 2px 8px rgba(60, 40, 20, .06);
 }
 
 .monthDay[aria-pressed='true'] {
-  border: 2px solid var(--color-rojo);
+  border: 1.5px solid var(--color-rojo);
   background: var(--color-crema);
 }
 
 .monthPreview {
   display: block;
-  border-top: 1px solid var(--color-line);
-  padding-top: 8px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--color-tierra);
+  border-top: 1px solid var(--color-lineSoft);
+  padding-top: 6px;
+  line-height: 1.35;
 }
 
 .outsideMonth {
   display: block;
   padding: 12px;
-  color: var(--color-tierra);
+  color: var(--color-line);
+  font-family: var(--font-display);
+  font-size: 14px;
 }
 
 .monthDetails {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  background: var(--color-crema);
-  padding: 20px;
+  gap: 14px;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
   border-radius: var(--radius-card);
 }
 
 .monthDetails h2 {
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--color-ink);
   margin: 0;
 }
 
@@ -370,7 +521,13 @@
     gap: 16px;
   }
   .monthAgenda > h2 {
-    font-size: 20px;
+    font-family: var(--font-display);
+    font-size: 15px;
     margin: 0;
   }
+}
+
+/* ── Legacy (compatibilidad temporal, ver migración del calendario) ── */
+.detailLink {
+  color: var(--calendario-acento);
 }
