@@ -20,6 +20,7 @@ import Modal from '../../components/ui/Modal';
 import { useToast } from '../../context/ToastContext';
 import { SelectUI } from '../../components/ui/Field';
 import NuevaCuentaModal from './NuevaCuentaModal';
+import DetalleConDecisiones from '../../components/ui/DetalleConDecisiones';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -56,6 +57,7 @@ export default function CuentasPage() {
   const [rolPorCuenta, setRolPorCuenta] = useState<Record<number, number>>({});
   const [porRechazar, setPorRechazar] = useState<Cuenta | null>(null);
   const [creando, setCreando] = useState(false);
+  const [detalle, setDetalle] = useState<Cuenta | null>(null);
   const rolVisible = (cuenta: Cuenta) => rolLabel(estado === 'activa' ? cuenta.rol_id : rolPorCuenta[cuenta.id] ?? ROLES.MINISTRO);
   const filtros = useTableFilters(cuentas, {
     search: c => [c.nombre, c.correo, rolVisible(c)],
@@ -208,6 +210,7 @@ export default function CuentasPage() {
                     </td>}
                     <td>
                       <div className={styles.acciones}>
+                        <Btn kind="ghost" size="sm" onClick={() => setDetalle(c)}>Ver detalle</Btn>
                         {estado !== 'activa' && (
                           <Btn kind="ok" size="sm" disabled={actuandoId === c.id} onClick={() => aprobar(c)}>
                             Aprobar
@@ -228,6 +231,11 @@ export default function CuentasPage() {
         )}
       </Card>
 
+      {detalle && <DetalleConDecisiones titulo={`Detalle de cuenta: ${detalle.nombre}`} endpoint={`/api/cuentas/${detalle.id}/decisiones`}
+        onClose={() => setDetalle(null)} campos={[
+          { etiqueta: 'Nombre', valor: detalle.nombre }, { etiqueta: 'Correo', valor: detalle.correo },
+          { etiqueta: 'Rol actual', valor: rolLabel(detalle.rol_id) }, { etiqueta: 'Estado actual', valor: detalle.estado_cuenta },
+        ]} />}
       <NuevaCuentaModal
         open={creando}
         roles={rolesDisponibles}

@@ -1,0 +1,14 @@
+.campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0 0 24px; }
+.campos div { min-width: 0; }
+.campos dt { font-weight: 700; color: var(--color-ink); }
+.campos dd { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--color-carbon); white-space: pre-wrap; }
+.titulo { font-family: var(--font-display); color: var(--color-rojo); font-size: 17px; }
+.ayuda { color: var(--color-muted); line-height: 1.6; }
+.historial { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 12px; }
+.historial li { display: grid; gap: 6px; padding: 14px; border: 1px solid var(--color-line); border-left: 3px solid var(--decision-color); border-radius: var(--radius-btn); color: var(--color-carbon); background: var(--decision-fondo); }
+.historial li[data-resultado='aprobada'] { --decision-color: var(--color-ok); --decision-fondo: var(--color-okBg); }
+.historial li[data-resultado='pendiente'] { --decision-color: var(--color-warn); --decision-fondo: var(--color-warnBg); }
+.historial li[data-resultado='rechazada'], .historial li[data-resultado='cancelada'] { --decision-color: var(--color-bad); --decision-fondo: var(--color-badBg); }
+.historial strong { color: var(--decision-color); }
+.historial time { font-size: 14px; color: var(--color-muted); }
+@media (max-width: 480px) { .campos { grid-template-columns: 1fr; } }

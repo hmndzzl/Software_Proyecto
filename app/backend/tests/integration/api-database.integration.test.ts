@@ -379,6 +379,80 @@ describe('integración API y MariaDB', () => {
     }
   });
 
+  it('conserva autores, fechas y decisiones sucesivas de cuentas y reservas', async () => {
+    // Aquí se prueba auditoría, no login: JWT locales evitan consumir el límite por IP.
+    const { default: jwt } = await import('jsonwebtoken');
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const segundo = jwt.sign({ id: 2, rol_id: 5 }, JWT_SECRET);
+    // No se inventan decisiones de las cuentas preexistentes.
+    expect((await request(app).get('/api/cuentas/3/decisiones').auth(token, { type: 'bearer' }).expect(200)).body).toEqual([]);
+    await request(app).patch('/api/cuentas/3/rechazar').auth(token, { type: 'bearer' }).expect(200);
+    await request(app).patch('/api/cuentas/3/aprobar').auth(segundo, { type: 'bearer' }).send({ rol_id: 5, actor_id: 999, fecha: '1900-01-01' }).expect(200);
+    // La segunda aprobación no crea una decisión adicional.
+    await request(app).patch('/api/cuentas/3/aprobar').auth(segundo, { type: 'bearer' }).send({ rol_id: 5 }).expect(409);
+    const cuentas = await request(app).get('/api/cuentas/3/decisiones').auth(token, { type: 'bearer' }).expect(200);
+    expect(cuentas.body).toEqual([
+      expect.objectContaining({ resultado: 'aprobada', actor_id: 2, actor_nombre: 'Pedro Caso' }),
+      expect.objectContaining({ resultado: 'rechazada', actor_id: 1, actor_nombre: 'Diego Calderon' }),
+    ]);
+    for (const decision of cuentas.body) expect(Math.abs(Date.parse(decision.fecha) - Date.now())).toBeLessThan(10_000);
+    const datos = { fecha: '2099-12-17', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Historial reserva', descripcion: 'Prueba de decisiones', cantidad_personas: 5 };
+    const creada = await request(app).post('/api/reservas').auth(token, { type: 'bearer' }).send(datos).expect(201);
+    const id = creada.body.reservaId;
+    await request(app).put(`/api/reservas/${id}/estado`).auth(segundo, { type: 'bearer' }).send({ estado_id: 2, actor_id: 999 }).expect(200);
+    await request(app).put(`/api/reservas/${id}`).auth(token, { type: 'bearer' }).send({ ...datos, descripcion: 'Modificada' }).expect(200);
+    await request(app).put(`/api/reservas/${id}/estado`).auth(segundo, { type: 'bearer' }).send({ estado_id: 3 }).expect(200);
+    const historial = await request(app).get(`/api/reservas/${id}/decisiones`).auth(token, { type: 'bearer' }).expect(200);
+    expect(historial.body).toEqual([
+      expect.objectContaining({ resultado: 'rechazada', actor_id: 2 }),
+      expect.objectContaining({ resultado: 'pendiente', actor_id: 1 }),
+      expect.objectContaining({ resultado: 'aprobada', actor_id: 2 }),
+    ]);
+    // El nombre registrado no cambia al editar posteriormente el perfil del autor.
+    await pool.query("UPDATE persona SET nombre = 'Nombre cambiado' WHERE id = 2");
+    try {
+      const preservado = await request(app).get(`/api/reservas/${id}/decisiones`).auth(token, { type: 'bearer' }).expect(200);
+      expect(preservado.body[0].actor_nombre).toBe('Pedro Caso');
+      const migration = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261025_historial_decisiones.sql'), 'utf8');
+      const connection = await mysql.createConnection({
+        host: container.getHost(), port: container.getPort(), user: container.getUsername(),
+        password: container.getUserPassword(), database: container.getDatabase(), multipleStatements: true,
+      });
+      try { await connection.query(migration); await connection.query(migration); } finally { await connection.end(); }
+      const despues = await request(app).get(`/api/reservas/${id}/decisiones`).auth(token, { type: 'bearer' }).expect(200);
+      expect(despues.body).toEqual(preservado.body);
+    } finally { await pool.query("UPDATE persona SET nombre = 'Pedro Caso' WHERE id = 2"); }
+  });
+
+  it('revierte el estado y la notificación si falla el registro del historial', async () => {
+    const { default: jwt } = await import('jsonwebtoken');
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const [avisosAntes] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
+    await pool.query("CREATE TRIGGER fallo_historial_cuenta BEFORE INSERT ON cuenta_decision FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fallo de historial de prueba'");
+    try {
+      await request(app).patch('/api/cuentas/4/rechazar').auth(token, { type: 'bearer' }).expect(500);
+      const [persona] = await pool.query<RowDataPacket[]>('SELECT estado_cuenta FROM persona WHERE id = 4');
+      expect(persona[0].estado_cuenta).toBe('activa');
+      const [avisosDespues] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
+      expect(avisosDespues).toEqual(avisosAntes);
+    } finally { await pool.query('DROP TRIGGER fallo_historial_cuenta'); }
+    const creada = await request(app).post('/api/reservas').auth(token, { type: 'bearer' })
+      .send({ fecha: '2099-12-18', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Rollback', descripcion: 'Prueba', cantidad_personas: 5 }).expect(201);
+    await pool.query("CREATE TRIGGER fallo_historial_reserva BEFORE INSERT ON reserva_decision FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fallo de historial de prueba'");
+    try {
+      await request(app).put(`/api/reservas/${creada.body.reservaId}/estado`).auth(token, { type: 'bearer' }).send({ estado_id: 2 }).expect(500);
+      const [reserva] = await pool.query<RowDataPacket[]>('SELECT estado_reserva_id FROM reserva WHERE id = ?', [creada.body.reservaId]);
+      expect(reserva[0].estado_reserva_id).toBe(1);
+    } finally { await pool.query('DROP TRIGGER fallo_historial_reserva'); }
+    await request(app).get('/api/cuentas/1/decisiones').expect(401);
+    await request(app).get('/api/reservas/1/decisiones').expect(401);
+    const tokenMinistro = jwt.sign({ id: 9, rol_id: 4 }, JWT_SECRET);
+    await request(app).get('/api/cuentas/1/decisiones').auth(tokenMinistro, { type: 'bearer' }).expect(403);
+    await request(app).get('/api/reservas/1/decisiones').auth(tokenMinistro, { type: 'bearer' }).expect(403);
+  });
+
   it('persiste un contacto y notifica a cada sacerdote y administrador', async () => {
     const response = await request(app)
       .post('/api/contacto')

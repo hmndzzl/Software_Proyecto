@@ -7,7 +7,7 @@ import cuentaRoutes from '../../routes/cuenta.routes';
 import { ROLES } from '../../config/roles';
 import { JWT_SECRET } from '../../config/env';
 
-vi.mock('../../config/db', () => ({ default: { execute: vi.fn() } }));
+vi.mock('../../config/db', () => ({ default: { execute: vi.fn(), getConnection: vi.fn(), query: vi.fn() } }));
 
 const app = express();
 app.use(express.json());
@@ -21,6 +21,10 @@ const auth = (rol: number) => ({ Authorization: `Bearer ${token(rol)}` });
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(pool.execute).mockResolvedValue([{ affectedRows: 1 }] as never);
+  vi.mocked(pool.getConnection).mockResolvedValue({
+    execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
+  } as never);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 

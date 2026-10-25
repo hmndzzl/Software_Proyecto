@@ -10,6 +10,7 @@ import {
 } from '../controllers/reserva.controller';
 import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
 import { ROLES } from '../config/roles';
+import { decisionesReserva } from '../controllers/decisiones.controller';
 
 const router = Router();
 const puedeGestionarReservas = requireRole(ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS);
@@ -18,6 +19,7 @@ router.post('/', authMiddleware, puedeGestionarReservas, crearReserva);
 router.get('/', authMiddleware, puedeGestionarReservas, obtenerReservas);
 router.get('/mis-reservas', authMiddleware, puedeGestionarReservas, obtenerMisReservas);
 router.get('/:id', authMiddleware, puedeGestionarReservas, obtenerReservaPorId);
+router.get('/:id/decisiones', authMiddleware, puedeGestionarReservas, decisionesReserva);
 
 router.put('/:id', authMiddleware, puedeGestionarReservas, editarReserva);
 // Endpoint para modificar el estado de la reserva: Admin/Sacerdote pueden aprobar/rechazar

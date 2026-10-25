@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { registrarDecision, type ResultadoDecision } from '../services/decisiones.service';
 import { formatHorario } from '../utils/formatoHorario';
 import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
@@ -213,6 +214,9 @@ export const editarReserva = async (req: Request, res: Response) => {
         }
       }
 
+      if (rows[0].estado_reserva_id !== undefined && rows[0].estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE) {
+        await registrarDecision(conn, 'reserva', Number(id), 'pendiente', req.user!.id);
+      }
       guardada = true;
       return 'commit';
     });
@@ -231,7 +235,7 @@ export const obtenerMisReservas = async (req: Request, res: Response) => {
     const solicitante_id = req.user!.id;
 
     const [reservas]: any = await db.query(
-      `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, r.cantidad_personas,
+      `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, r.cantidad_personas, p.nombre AS solicitante_nombre,
               esp.nombre AS espacio_nombre,
               ev.id      AS evento_id,
               ev.titulo  AS evento_titulo,
@@ -239,6 +243,7 @@ export const obtenerMisReservas = async (req: Request, res: Response) => {
        FROM reserva r
        LEFT JOIN espacio esp ON esp.id = r.espacio_id
        LEFT JOIN evento  ev  ON ev.reserva_id = r.id
+       LEFT JOIN persona p ON p.id = r.solicitante_id
        WHERE r.solicitante_id = ?
        ORDER BY r.fecha DESC, r.hora_inicio DESC`,
       [solicitante_id]
@@ -344,94 +349,113 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       });
     }
 
-    const [rows]: any = await db.query(
-      'SELECT * FROM reserva WHERE id = ?',
-      [id]
-    );
-
-    if (!rows || rows.length === 0) {
-      return res.status(HttpStatus.NOT_FOUND).json({
-        message: 'Reserva no encontrada'
-      });
-    }
-
-    const reserva = rows[0];
-
-    const esSolicitante = reserva.solicitante_id === req.user!.id;
-    const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
-
-    // Rechazar es una acción de un tercero sobre la reserva de otra persona. Si el propio
-    // solicitante la envía (incluso siendo Admin/Sacerdote), en realidad es una cancelación:
-    // debe usar CANCELADA. Esta validación aplica sin importar el privilegio del usuario.
-    if (esSolicitante && estadoReservaId === ESTADOS_RESERVA.RECHAZADA) {
-      return res.status(HttpStatus.FORBIDDEN).json({
-        message: 'No puedes rechazar tu propia reserva, solo cancelarla'
-      });
-    }
-
-    if (!esPrivilegiado) {
-      if (!esSolicitante) {
-        return res.status(HttpStatus.FORBIDDEN).json({
-          message: 'No tienes permiso para modificar el estado de esta reserva'
-        });
-      }
-      if (estadoReservaId !== ESTADOS_RESERVA.CANCELADA) {
-        return res.status(HttpStatus.FORBIDDEN).json({
-          message: 'Solo puedes cancelar tu propia reserva'
-        });
-      }
-      if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA].includes(reserva.estado_reserva_id)) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Solo puedes cancelar reservas en estado Pendiente o Confirmada'
-        });
-      }
-    }
-
-    if (estadoReservaId === ESTADOS_RESERVA.CONFIRMADA) {
-      await validarCapacidad(db, Number(reserva.espacio_id), reserva.cantidad_personas ?? null);
-      const [conflictos]: any = await db.query(
-        `SELECT * FROM reserva
-         WHERE espacio_id = ?
-           AND fecha = ?
-           AND estado_reserva_id = ?
-           AND id <> ?
-           AND (hora_inicio < ? AND hora_fin > ?)`,
-        [reserva.espacio_id, reserva.fecha, ESTADOS_RESERVA.CONFIRMADA, id, reserva.hora_fin, reserva.hora_inicio]
+    let aplicada = false;
+    await withTransaction(async conn => {
+      const [rows]: any = await conn.query(
+        'SELECT * FROM reserva WHERE id = ? FOR UPDATE',
+        [id]
       );
 
-      if (conflictos.length > 0) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'No se puede aprobar la reserva porque el salón ya está ocupado en ese horario'
+      if (!rows || rows.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Reserva no encontrada'
         });
+        return 'rollback';
       }
-    }
 
-    await db.query(
-      'UPDATE reserva SET estado_reserva_id = ? WHERE id = ?',
-      [estadoReservaId, id]
-    );
+      const reserva = rows[0];
 
-    // Si quien cambió el estado no es el propio solicitante, se le notifica el resultado.
-    if (reserva.solicitante_id != null && reserva.solicitante_id !== req.user!.id) {
-      const verbos: Record<number, string> = {
-        [ESTADOS_RESERVA.PENDIENTE]: 'vuelve a estar pendiente de aprobación',
-        [ESTADOS_RESERVA.CONFIRMADA]: 'fue aprobada',
-        [ESTADOS_RESERVA.RECHAZADA]: 'fue rechazada',
-        [ESTADOS_RESERVA.CANCELADA]: 'fue cancelada',
-      };
-      const mensajeNotificacion = `Tu reserva del ${reserva.fecha} (${formatHorario(reserva.hora_inicio, reserva.hora_fin)}) ${verbos[estadoReservaId]}.`;
-      const fechaHoy = new Date().toISOString().split('T')[0];
+      const esSolicitante = reserva.solicitante_id === req.user!.id;
+      const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
 
-      const [notifResult]: any = await db.query(
-        `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
-        [mensajeNotificacion, fechaHoy, req.user!.id]
+      // Rechazar es una acción de un tercero sobre la reserva de otra persona. Si el propio
+      // solicitante la envía (incluso siendo Admin/Sacerdote), en realidad es una cancelación:
+      // debe usar CANCELADA. Esta validación aplica sin importar el privilegio del usuario.
+      if (esSolicitante && estadoReservaId === ESTADOS_RESERVA.RECHAZADA) {
+        res.status(HttpStatus.FORBIDDEN).json({
+          message: 'No puedes rechazar tu propia reserva, solo cancelarla'
+        });
+        return 'rollback';
+      }
+
+      if (!esPrivilegiado) {
+        if (!esSolicitante) {
+          res.status(HttpStatus.FORBIDDEN).json({
+            message: 'No tienes permiso para modificar el estado de esta reserva'
+          });
+          return 'rollback';
+        }
+        if (estadoReservaId !== ESTADOS_RESERVA.CANCELADA) {
+          res.status(HttpStatus.FORBIDDEN).json({
+            message: 'Solo puedes cancelar tu propia reserva'
+          });
+          return 'rollback';
+        }
+        if (![ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA].includes(reserva.estado_reserva_id)) {
+          res.status(HttpStatus.BAD_REQUEST).json({
+            message: 'Solo puedes cancelar reservas en estado Pendiente o Confirmada'
+          });
+          return 'rollback';
+        }
+      }
+
+      if (estadoReservaId === ESTADOS_RESERVA.CONFIRMADA) {
+        await validarCapacidad(conn, Number(reserva.espacio_id), reserva.cantidad_personas ?? null);
+        const [conflictos]: any = await conn.query(
+          `SELECT * FROM reserva
+           WHERE espacio_id = ?
+             AND fecha = ?
+             AND estado_reserva_id = ?
+             AND id <> ?
+             AND (hora_inicio < ? AND hora_fin > ?)`,
+          [reserva.espacio_id, reserva.fecha, ESTADOS_RESERVA.CONFIRMADA, id, reserva.hora_fin, reserva.hora_inicio]
+        );
+
+        if (conflictos.length > 0) {
+          res.status(HttpStatus.BAD_REQUEST).json({
+            message: 'No se puede aprobar la reserva porque el salón ya está ocupado en ese horario'
+          });
+          return 'rollback';
+        }
+      }
+
+      await conn.query(
+        'UPDATE reserva SET estado_reserva_id = ? WHERE id = ?',
+        [estadoReservaId, id]
       );
-      await db.query(
-        'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
-        [reserva.solicitante_id, notifResult.insertId]
-      );
-    }
 
+      // Si quien cambió el estado no es el propio solicitante, se le notifica el resultado.
+      if (reserva.solicitante_id != null && reserva.solicitante_id !== req.user!.id) {
+        const verbos: Record<number, string> = {
+          [ESTADOS_RESERVA.PENDIENTE]: 'vuelve a estar pendiente de aprobación',
+          [ESTADOS_RESERVA.CONFIRMADA]: 'fue aprobada',
+          [ESTADOS_RESERVA.RECHAZADA]: 'fue rechazada',
+          [ESTADOS_RESERVA.CANCELADA]: 'fue cancelada',
+        };
+        const mensajeNotificacion = `Tu reserva del ${reserva.fecha} (${formatHorario(reserva.hora_inicio, reserva.hora_fin)}) ${verbos[estadoReservaId]}.`;
+        const fechaHoy = new Date().toISOString().split('T')[0];
+
+        const [notifResult]: any = await conn.query(
+          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
+          [mensajeNotificacion, fechaHoy, req.user!.id]
+        );
+        await conn.query(
+          'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+          [reserva.solicitante_id, notifResult.insertId]
+        );
+      }
+
+      if (reserva.estado_reserva_id !== estadoReservaId) {
+        const resultados: Record<number, ResultadoDecision> = {
+          [ESTADOS_RESERVA.PENDIENTE]: 'pendiente', [ESTADOS_RESERVA.CONFIRMADA]: 'aprobada',
+          [ESTADOS_RESERVA.RECHAZADA]: 'rechazada', [ESTADOS_RESERVA.CANCELADA]: 'cancelada',
+        };
+        await registrarDecision(conn, 'reserva', Number(id), resultados[estadoReservaId], req.user!.id);
+      }
+      aplicada = true;
+      return 'commit';
+    });
+    if (!aplicada) return;
     const mensajes: Record<number, string> = {
       [ESTADOS_RESERVA.PENDIENTE]: 'Reserva marcada como pendiente nuevamente',
       [ESTADOS_RESERVA.CONFIRMADA]: 'Reserva aprobada correctamente',

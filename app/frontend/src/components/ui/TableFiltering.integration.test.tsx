@@ -67,6 +67,24 @@ function revisarColumnas(table: HTMLElement) {
 
 describe('filtros reales en las tablas principales', () => {
   it.each([
+    ['reservas', <ListaReservas />], ['mis reservas', <MisReservasPage />], ['cuentas', <CuentasPage />],
+  ])('abre y cierra el historial desde %s sin modificar los datos', async (_nombre, component) => {
+    const anterior = vi.mocked(apiClient.get).getMockImplementation()!;
+    vi.mocked(apiClient.get).mockImplementation(async (url, config) => {
+      if (url.endsWith('/decisiones')) return { data: [{ id: 1, resultado: 'aprobada', actor_id: 1, actor_nombre: 'Padre Luis', fecha: '2026-10-25T14:00:00Z' }] };
+      return anterior(url, config);
+    });
+    mostrar(component);
+    const table = await screen.findByRole('table');
+    await userEvent.click(within(table).getAllByRole('button', { name: 'Ver detalle' })[0]);
+    const dialog = screen.getByRole('dialog');
+    expect(await within(dialog).findByText('Por Padre Luis')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(apiClient.put).not.toHaveBeenCalled();
+    expect(apiClient.patch).not.toHaveBeenCalled();
+  });
+  it.each([
     ['reservas', <ListaReservas />], ['mis reservas', <MisReservasPage />], ['eventos', <ListaEventos />],
     ['grupos', <ListaGrupos />], ['tareas', <ListaAsignaciones />], ['ministros', <MinistrosPage />],
   ])('busca, limpia y ordena todas las columnas de %s', async (_nombre, component) => {

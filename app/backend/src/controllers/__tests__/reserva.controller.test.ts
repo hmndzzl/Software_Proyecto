@@ -48,6 +48,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
     mockConnection = {
       beginTransaction: vi.fn(),
+      execute: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
       query: vi.fn(),
       commit: vi.fn(),
       rollback: vi.fn(),
@@ -425,6 +426,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
   });
 
   describe('cambiarEstadoReserva', () => {
+    beforeEach(() => { mockConnection.query = db.query; });
     it('debería retornar 400 si falta estado_id', async () => {
       req.params = { id: '1' };
       req.body = {};
