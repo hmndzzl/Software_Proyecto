@@ -256,7 +256,7 @@ describe('CuentasPage', () => {
       await abrirActivas([luis]);
 
       expect(await screen.findByText('Luis Pérez')).toBeInTheDocument();
-      expect(screen.getByText('Coord. de Ministros')).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Coord. de Ministros' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
     });

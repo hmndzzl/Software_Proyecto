@@ -99,9 +99,9 @@ describe('integración de cambios de turno', () => {
     await screen.findByText('Ana');
     expect(screen.getByText('Zoe')).toBeInTheDocument();
     expect(screen.getByText('Luis')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
-    expect(screen.getAllByText('Aceptado')).toHaveLength(2);
-    expect(screen.getByText('Rechazado')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Pendiente' })).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: 'Aceptado' })).toHaveLength(2);
+    expect(screen.getByRole('cell', { name: 'Rechazado' })).toBeInTheDocument();
 
     for (const label of ['Tarea', 'Fecha', 'Horario', 'Solicitante', 'Destinatario', 'Estado']) {
       for (const header of screen.getAllByRole('columnheader', { name: label })) {

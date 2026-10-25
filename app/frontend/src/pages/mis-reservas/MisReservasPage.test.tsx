@@ -68,15 +68,15 @@ describe('MisReservasPage — historial', () => {
     expect(screen.getByText('2 solicitudes')).toBeInTheDocument();
     expect(screen.getByText('Sin título')).toBeInTheDocument();
     expect(screen.getByText('Sin evento')).toBeInTheDocument();
-    expect(screen.getByText('Desconocido')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Desconocido' })).toBeInTheDocument();
     expect(screen.getByText('18:00–20:00')).toBeInTheDocument();
     // Ciclo completo sobre "#": desc -> asc -> sin ordenar
     fireEvent.click(screen.getByText('#'));
     fireEvent.click(screen.getByText('#'));
     fireEvent.click(screen.getByText('#'));
-    fireEvent.click(screen.getByText('Fecha'));
-    fireEvent.click(screen.getByText('Espacio'));
-    fireEvent.click(screen.getByText('Estado'));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Fecha' }));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Espacio' }));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Estado' }));
     expect(screen.getAllByRole('button', { name: 'Cancelar' })).toHaveLength(1);
   });
 
