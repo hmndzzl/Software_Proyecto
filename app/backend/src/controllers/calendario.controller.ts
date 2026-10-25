@@ -77,6 +77,9 @@ export async function getCalendario(req: Request, res: Response): Promise<void> 
          JOIN persona p ON p.id = e.encargado_id LEFT JOIN espacio esp ON esp.id = r.espacio_id
          WHERE r.fecha BETWEEN ? AND ? ORDER BY r.fecha, r.hora_inicio, e.id`, [inicio, fin],
       );
+      // Cancelar retira el compromiso completo de la agenda, sin borrar su historial.
+      const cancelados = new Set(eventos.filter(e => e.estado_reserva_id === ESTADOS_RESERVA.CANCELADA).map(e => e.id));
+      tareas = tareas.filter(t => !cancelados.has(t.evento_id));
       // El equipo autorizado se conserva completo en el detalle del evento,
       // aunque el filtro de coordinación seleccione a una sola persona.
       const filtradas = persona === undefined ? tareas : tareas.filter(t => t.asignados.some((a: { persona_id: number }) => a.persona_id === Number(persona)));
@@ -85,6 +88,7 @@ export async function getCalendario(req: Request, res: Response): Promise<void> 
       respuesta = {
         tareas: filtradas,
         eventos: eventos.filter(e => {
+          if (e.estado_reserva_id === ESTADOS_RESERVA.CANCELADA) return false;
           if (vista === 'parroquial') return e.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA;
           if (personaConsulta !== null) return e.encargado_id === personaConsulta || idsVinculados.has(e.id);
           return [ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA].includes(e.estado_reserva_id) || idsVinculados.has(e.id);

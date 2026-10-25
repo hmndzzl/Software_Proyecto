@@ -50,6 +50,24 @@ describe('calendario unificado', () => {
     expect(body.eventos.map((e: { id: number }) => e.id)).toEqual([8]);
   });
 
+  it.each([
+    { vista: 'coordinacion' }, { vista: 'coordinacion', persona_id: '4' },
+    { vista: 'personal' }, { vista: 'parroquial' },
+  ])('oculta el evento cancelado y sus tareas incluso si la persona es encargada: %j', async query => {
+    const original = conn.execute.getMockImplementation()!;
+    conn.execute.mockImplementation(async (sql: string) => {
+      if (sql.startsWith('SELECT t.*')) return [[...tareas, { id: 3, titulo: 'Preparar evento cancelado', evento_id: 10 }]];
+      if (sql.startsWith('SELECT a.tarea_id')) return [[{ tarea_id: 1, persona_id: 4, nombre: 'Ana' }, { tarea_id: 3, persona_id: 4, nombre: 'Ana' }]];
+      if (sql.startsWith('SELECT e.id')) return [eventos.map(e => ({ ...e, encargado_id: 4 }))];
+      return original(sql);
+    });
+    const { res, body } = await consultar(query);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(body.eventos.map((e: { id: number }) => e.id)).not.toContain(10);
+    expect(body.tareas.map((t: { id: number }) => t.id)).not.toContain(3);
+    if (query.vista !== 'parroquial') expect(body.tareas.map((t: { id: number }) => t.id)).toContain(1);
+  });
+
   it('limita las consultas y asignados del coordinador a sus ministros', async () => {
     await consultar({}, 2);
     expect(conn.execute.mock.calls[0][0]).toContain('cm.coordinador_id = ?');

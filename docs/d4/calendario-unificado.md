@@ -13,8 +13,8 @@ estrechas. **Hoy** vuelve al período actual sin quitar el filtro elegido.
 - En el mes se presentan hasta dos resúmenes por día; seleccionar el día muestra
   todos sus compromisos debajo. Un evento y sus tareas se agrupan en un solo
   compromiso para evitar duplicarlos en las casillas.
-- Los estados se explican con texto: **Confirmado**, **Pendiente de aprobación**,
-  **Rechazado** o **Cancelado**. El color es complementario.
+- Los estados se explican con texto: **Confirmado**, **Pendiente de aprobación**
+  o **Rechazado** cuando hay compromisos vinculados. El color es complementario.
 - **Sin compromisos registrados** describe los datos consultados; no garantiza
   disponibilidad. Las reglas de asignación continúan aplicándose al guardar.
 
@@ -34,8 +34,11 @@ propios ministros; un usuario en vista personal recibe sus propias asignaciones.
 
 La vista parroquial interna muestra eventos confirmados, sin tareas. Esto no cambia
 la agenda pública: el indicador `publico` sigue controlando qué se publica sin sesión.
-Los eventos rechazados o cancelados se conservan como contexto cuando tienen
-compromisos autorizados vinculados o la persona consultada figura como encargada.
+Los eventos cancelados y sus tareas vinculadas quedan fuera de todas las vistas
+del calendario, incluso si se consulta a su encargado. Sus registros y asignaciones
+se conservan en la gestión de tareas. Los eventos rechazados se conservan como
+contexto cuando tienen compromisos autorizados vinculados o la persona consultada
+figura como encargada.
 
 ## Vincular una tarea
 
@@ -58,6 +61,7 @@ Reglas:
 - Cambiar de día una reserva con tareas vinculadas devuelve 409: primero deben
   desvincularse, después reprogramarse y vincularse en la nueva fecha.
 - Rechazar/cancelar un evento conserva las tareas para que coordinación las revise.
+  Al cancelar, el evento y sus tareas dejan de aparecer en el calendario.
 - Borrar un evento deja sus tareas sin evento asociado; no borra sus asignaciones.
 - Las tareas existentes permanecen independientes hasta vincularlas explícitamente.
 
@@ -156,7 +160,7 @@ La lectura con ayudas técnicas por personas usuarias y la facilidad de uso con
 adultos mayores requieren además una validación humana; las pruebas automáticas
 no sustituyen esa observación.
 
-Validación local de esta entrega: 722 pruebas unitarias backend, 577 frontend,
+Validación local de esta entrega: 726 pruebas unitarias backend, 577 frontend,
 19 pruebas de integración MariaDB, 6 pruebas de navegador con servicios reales y
 10 regresiones Playwright correctas. Builds y lint correctos. Cobertura backend
-superior al 96 % en las cuatro métricas; frontend superior al 95 %.
+de al menos el 96 % en las cuatro métricas; frontend superior al 95 %.

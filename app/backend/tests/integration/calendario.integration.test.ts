@@ -80,13 +80,24 @@ describe('D4 con MariaDB real', () => {
     expect(rows).toHaveLength(1);
   });
 
-  it('distingue pendientes y conserva compromisos vinculados al cancelar', async () => {
+  it('distingue pendientes y oculta eventos cancelados con sus tareas sin borrar registros', async () => {
     await crear().expect(201);
     await entorno.pool.query('UPDATE reserva SET estado_reserva_id = 1 WHERE id = ?', [reservaId]);
     expect((await calendario().expect(200)).body.eventos[0].estado_reserva_id).toBe(1);
     expect((await calendario(ministro, { vista: 'parroquial' }).expect(200)).body.eventos).toEqual([]);
     await entorno.pool.query('UPDATE reserva SET estado_reserva_id = 4 WHERE id = ?', [reservaId]);
-    expect((await calendario(ministro, { vista: 'personal' }).expect(200)).body.eventos[0].estado_reserva_id).toBe(4);
+    for (const [token, query] of [
+      [admin, {}], [sacerdote, {}], [coord, {}], [coord, { persona_id: '9' }],
+      [ministro, { vista: 'personal' }], [admin, { vista: 'personal' }],
+      [ministro, { vista: 'parroquial' }],
+    ] as const) {
+      const response = await calendario(token, query).expect(200);
+      expect(response.body).toEqual({ eventos: [], tareas: [] });
+    }
+    const [persistidas] = await entorno.pool.query<RowDataPacket[]>('SELECT id, evento_id FROM tarea WHERE evento_id = ?', [eventoId]);
+    expect(persistidas).toHaveLength(1);
+    const [asignados] = await entorno.pool.query<RowDataPacket[]>('SELECT persona_id FROM asignacion_tarea WHERE tarea_id = ?', [persistidas[0].id]);
+    expect(asignados).toHaveLength(2);
     await crear({ titulo: 'D4 nueva cancelada', hora_inicio: '08:00', hora_fin: '09:00' }).expect(400);
   });
 
