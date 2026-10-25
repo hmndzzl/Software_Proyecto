@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
-import { formatFecha, esTareaFutura } from '../../../utils/date';
+import { formatFecha, formatHorario, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import EmptyState from '../../../components/ui/EmptyState';
 import type { Tarea, Ministro } from '../../../types';
@@ -67,7 +67,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
 
   return (
     <div>
-      <h3 className={styles.sectionTitle}>Solicitar Cambio de Turno</h3>
+
 
       {misTareas.length === 0 ? (
         <EmptyState message="No tienes tareas asignadas actualmente para solicitar un cambio." />
@@ -86,7 +86,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
               <option value="">-- Elige una de tus tareas --</option>
               {misTareas.map((tarea) => (
                 <option key={tarea.id} value={tarea.id}>
-                  {tarea.titulo} · {formatFecha(tarea.fecha)} · {tarea.hora_inicio.substring(0, 5)}-{tarea.hora_fin.substring(0, 5)}
+                  {tarea.titulo} · {formatFecha(tarea.fecha)} · {formatHorario(tarea.hora_inicio, tarea.hora_fin)}
                 </option>
               ))}
             </select>
