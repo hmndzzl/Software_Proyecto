@@ -147,7 +147,7 @@ describe('integración del detalle de un espacio', () => {
     await screen.findByText('Catequesis');
 
     expect(screen.getByText(/Se detectó una reserva a tu nombre/)).toBeInTheDocument();
-    expect(screen.getByText(/de 14:00 a 16:00/)).toBeInTheDocument();
+    expect(screen.getByText(/14:00 – 16:00/)).toBeInTheDocument();
     expect(screen.getByText(/¿Deseas confirmar el check-in/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Sí, confirmar check-in' }));

@@ -88,7 +88,7 @@ describe('EspacioCalendarioReservas', () => {
     await user.click(screen.getByText('Catequesis de confirmación'));
 
     expect(screen.getByRole('heading', { name: 'Catequesis de confirmación' })).toBeInTheDocument();
-    expect(screen.getByText('08:00 – 09:30')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText('08:00 – 09:30')).toBeInTheDocument();
     expect(screen.getByText('Clase para jóvenes del grupo de confirmación.')).toBeInTheDocument();
     expect(screen.getByText('Registrado por Carlos Ramirez')).toBeInTheDocument();
 
