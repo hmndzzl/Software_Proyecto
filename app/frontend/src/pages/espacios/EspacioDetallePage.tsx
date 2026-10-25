@@ -11,6 +11,7 @@ import { Card, CardHead } from '../../components/ui/Card';
 import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
 import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
@@ -29,6 +30,7 @@ export default function EspacioDetallePage() {
   const [error, setError] = useState('');
   const [qrAbierto, setQrAbierto] = useState(false);
   const [checkinLoading, setCheckinLoading] = useState<number | null>(null);
+  const [detalleEnUsoAbierto, setDetalleEnUsoAbierto] = useState(false);
 
   const { tieneRol, usuario } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
@@ -57,6 +59,11 @@ export default function EspacioDetallePage() {
   }, [id]);
 
   const toast = useToast();
+
+  // Misma fuente que el calendario: a lo sumo una reserva confirmada cubre el
+  // instante actual (las confirmadas nunca se solapan), así que esto identifica
+  // de forma única quién está usando el salón ahora mismo, si alguien lo está.
+  const reservaEnUso = reservas.find(r => r.en_uso);
 
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
@@ -120,10 +127,23 @@ export default function EspacioDetallePage() {
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
 
+          <div className={styles.estadoActualWrap}>
+            {reservaEnUso ? (
+              <button
+                type="button"
+                className={styles.estadoActualBtn}
+                onClick={() => setDetalleEnUsoAbierto(true)}
+                title="Ver quién lo está usando"
+              >
+                <Badge kind="bad">En uso ahora</Badge>
+              </button>
+            ) : (
+              <Badge kind="ok">Libre</Badge>
+            )}
+          </div>
+
           {puedeReservar && (
             <div className={styles.checkinWrap}>
-              {espacio.en_uso && <Badge kind="bad">En uso ahora</Badge>}
-
               {espacio.reservas_checkin_disponible && espacio.reservas_checkin_disponible.length > 0 ? (
                 espacio.reservas_checkin_disponible.map((r) => (
                   <div key={r.id} className={styles.checkinItem}>
@@ -245,6 +265,26 @@ export default function EspacioDetallePage() {
         espacio={espacio}
         onClose={() => setQrAbierto(false)}
       />
+
+      {detalleEnUsoAbierto && reservaEnUso && (
+        <DetalleEventoModal
+          open
+          onClose={() => setDetalleEnUsoAbierto(false)}
+          titulo={reservaEnUso.evento_titulo || `Reserva #${reservaEnUso.id}`}
+          fecha={reservaEnUso.fecha}
+          horaInicio={reservaEnUso.hora_inicio}
+          horaFin={reservaEnUso.hora_fin}
+          descripcion={reservaEnUso.evento_descripcion}
+          extra={
+            <div className={styles.solicitanteEnUsoRow}>
+              <p>En uso por: {reservaEnUso.solicitante_nombre ?? 'Desconocido'}</p>
+              {reservaEnUso.checkin_en && (
+                <p>Check-in hecho a las {fmtH(reservaEnUso.checkin_en.split(' ')[1] ?? '')}</p>
+              )}
+            </div>
+          }
+        />
+      )}
     </div>
   );
 }

@@ -100,6 +100,32 @@
   margin-bottom: 20px;
 }
 
+/* HU-15: estado actual del salón — siempre visible, Libre (verde) / En uso (rojo) */
+.estadoActualWrap {
+  margin-bottom: 14px;
+}
+
+.estadoActualBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.solicitanteEnUsoRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-ink);
+}
+
+.solicitanteEnUsoRow p {
+  margin: 0;
+}
+
 /* HU-15: check-in real de la reserva vigente al escanear el QR */
 .checkinWrap {
   display: flex;
