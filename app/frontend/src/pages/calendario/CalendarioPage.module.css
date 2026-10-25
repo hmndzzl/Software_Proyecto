@@ -437,6 +437,11 @@
   margin: 0;
 }
 
+.detailActions {
+  display: flex;
+  gap: 10px;
+}
+
 .serviceList {
   margin: 0;
   padding-left: 22px;

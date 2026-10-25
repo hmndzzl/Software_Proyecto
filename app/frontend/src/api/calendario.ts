@@ -4,6 +4,7 @@ import type { Tarea } from '../types';
 export type VistaCalendario = 'personal' | 'coordinacion' | 'parroquial';
 export interface EventoCalendario {
   id: number;
+  reserva_id: number;
   titulo: string;
   descripcion: string;
   fecha: string;

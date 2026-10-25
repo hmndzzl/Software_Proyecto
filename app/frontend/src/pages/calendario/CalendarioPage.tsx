@@ -131,6 +131,7 @@ function CalendarioContenido() {
       })}
     </div>}
     {!loading && !error && periodo === 'mes' && <CalendarioMes key={`${claveDia(fecha)}-${vista}-${personaId}`} fecha={fecha} dias={dias} porDia={porDia} onSeleccionar={seleccionar} />}
-    {!loading && !error && item && <DetalleCompromiso item={item} onClose={() => setSeleccion(null)} />}
+    {!loading && !error && item && <DetalleCompromiso item={item} onClose={() => setSeleccion(null)}
+      onActualizado={() => { setSeleccion(null); reintentar(); }} />}
   </div>;
 }
