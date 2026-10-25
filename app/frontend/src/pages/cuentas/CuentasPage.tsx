@@ -93,6 +93,10 @@ export default function CuentasPage() {
   };
 
   const pestana = PESTANAS.find((p) => p.estado === estado)!;
+  // Por defecto se propone el rol que la cuenta ya trae (el asignado al crearla), si quien aprueba puede otorgarlo.
+  const rolElegido = (cuenta: Cuenta) =>
+    rolPorCuenta[cuenta.id] ?? (rolesDisponibles.some((r) => r.id === cuenta.rol_id) ? cuenta.rol_id : ROLES.MINISTRO);
+
   // El selector de rol solo tiene sentido al aprobar; en Activas se muestra el rol actual.
   const asignaRol = estado !== 'activa';
 
@@ -103,7 +107,7 @@ export default function CuentasPage() {
   const quitarDeLista = (id: number) => setCuentas((prev) => prev.filter((c) => c.id !== id));
 
   const aprobar = async (cuenta: Cuenta) => {
-    const rolId = rolPorCuenta[cuenta.id] ?? ROLES.MINISTRO;
+    const rolId = rolElegido(cuenta);
     const rol = ROL_OPCIONES.find((r) => r.id === rolId)?.label;
     setActuandoId(cuenta.id);
     try {
@@ -199,7 +203,7 @@ export default function CuentasPage() {
                     {asignaRol && <td>
                       <SelectUI
                         aria-label={`Rol para ${c.nombre}`}
-                        value={rolPorCuenta[c.id] ?? ROLES.MINISTRO}
+                        value={rolElegido(c)}
                         disabled={actuandoId === c.id}
                         onChange={(e) => setRolPorCuenta((prev) => ({ ...prev, [c.id]: Number(e.target.value) }))}
                       >
@@ -243,10 +247,10 @@ export default function CuentasPage() {
         onCreada={(nombre, rolId, advertencia) => {
           filtros.controls.clear();
           if (advertencia) toast.warning('Cuenta creada con una advertencia', `${nombre} quedó registrado como ${rolLabel(rolId)}. ${advertencia}`);
-          else toast.success('Cuenta creada', `${nombre} ya puede iniciar sesión como ${rolLabel(rolId)} con su correo y la contraseña inicial.`);
-          // Las cuentas nuevas quedan activas: se muestra esa pestaña para que se vea la recién creada.
-          if (estado === 'activa') cargar();
-          else setEstado('activa');
+          else toast.success('Cuenta creada', `${nombre} quedó pendiente de aprobación. Al aprobarla como ${rolLabel(rolId)} se le avisará por correo.`);
+          // Las cuentas nuevas quedan pendientes: se muestra esa pestaña para que se vea la recién creada.
+          if (estado === 'pendiente') cargar();
+          else setEstado('pendiente');
         }}
       />
 
@@ -254,8 +258,8 @@ export default function CuentasPage() {
         <p className={styles.confirmTexto}>
           ¿Rechazar la cuenta de <strong>{porRechazar?.nombre}</strong> ({porRechazar?.correo})?{' '}
           {porRechazar?.estado_cuenta === 'activa'
-            ? 'Dejará de poder iniciar sesión (por ejemplo, si ya no pertenece a la parroquia).'
-            : 'No podrá entrar al sistema.'}{' '}
+            ? 'Dejará de poder iniciar sesión y se le avisará por correo.'
+            : 'No podrá entrar al sistema y se le avisará por correo.'}{' '}
           Podrás aprobarla de nuevo más adelante desde la pestaña Rechazadas.
         </p>
         <div className={styles.confirmAcciones}>
