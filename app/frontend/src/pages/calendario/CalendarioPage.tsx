@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
 import type { VistaCalendario } from '../../api/calendario';
 import type { Ministro } from '../../types';
+import { listarCuentasApi } from '../../api/cuentas';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES, rolTieneAcceso } from '../../utils/roles';
 import PageHeader from '../../components/ui/PageHeader';
@@ -23,6 +24,8 @@ export default function CalendarioPage() {
 function CalendarioContenido() {
   const { usuario } = useAuth();
   const puedeCoordinar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
+  const esPrivilegiado = rolTieneAcceso(usuario?.rol_id, [ROLES.SACERDOTE]);
+  const [cuentasPendientes, setCuentasPendientes] = useState<number | null>(null);
   const [fecha, setFecha] = useState(() => new Date());
   const [periodo, setPeriodo] = useState<'semana' | 'mes'>('semana');
   const [vista, setVista] = useState<VistaCalendario>(() => puedeCoordinar ? 'coordinacion' : 'personal');
@@ -53,6 +56,15 @@ function CalendarioContenido() {
     return () => { vigente = false; };
   }, [puedeCoordinar, usuario?.id, intentoMinistros]);
 
+  // Aviso ligero, no mete las cuentas al grid del calendario (no tienen una fecha
+  // propia que las haga pertenecer a un día). Solo para quien puede aprobarlas.
+  useEffect(() => {
+    if (!esPrivilegiado) return;
+    let vigente = true;
+    listarCuentasApi('pendiente').then(cuentas => { if (vigente) setCuentasPendientes(cuentas.length); }).catch(() => {});
+    return () => { vigente = false; };
+  }, [esPrivilegiado, usuario?.id]);
+
   const seleccionar = (compromiso: Compromiso) => setSeleccion({ tipo: compromiso.tipo, id: compromiso.dato.id });
   const navegar = (cantidad: number) => {
     const siguiente = periodo === 'mes' ? desplazarMes(fecha, cantidad) : new Date(fecha);
@@ -66,6 +78,11 @@ function CalendarioContenido() {
 
   return <div className={styles.page}>
     <PageHeader title="Calendario" subtitle="Consulta tus compromisos y conoce quién sirve en cada misa o evento." />
+    {esPrivilegiado && !!cuentasPendientes && (
+      <a href="/cuentas" className={styles.cuentasAviso}>
+        Tienes {cuentasPendientes} cuenta{cuentasPendientes === 1 ? '' : 's'} pendiente{cuentasPendientes === 1 ? '' : 's'} de aprobar — Ver cuentas
+      </a>
+    )}
     <div className={styles.controls}>
       <div className={styles.filters}>
         <div className={styles.field}>
