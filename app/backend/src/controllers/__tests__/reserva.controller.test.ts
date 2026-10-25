@@ -627,7 +627,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
       expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO notificacion'),
-        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00–11:00) fue aprobada.', expect.any(String), 99])
+        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00 – 11:00) fue aprobada.', expect.any(String), 99])
       );
       expect(db.query).toHaveBeenCalledWith(
         'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
@@ -649,7 +649,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
       expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO notificacion'),
-        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00–11:00) fue rechazada.', expect.any(String), 99])
+        expect.arrayContaining(['Tu reserva del 2026-08-12 (10:00 – 11:00) fue rechazada.', expect.any(String), 99])
       );
     });
 

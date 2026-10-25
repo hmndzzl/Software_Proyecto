@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { formatHorario } from '../utils/formatoHorario';
 import db from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
@@ -91,7 +92,7 @@ export const crearReserva = async (req: Request, res: Response) => {
       );
 
       if (aprobadores.length > 0) {
-        const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${hora_inicio}–${hora_fin}) pendiente de tu aprobación.`;
+        const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${formatHorario(hora_inicio, hora_fin)}) pendiente de tu aprobación.`;
         const [notifResult]: any = await conn.query(
           `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
           [mensajeNotificacion, solicitante_id]
@@ -199,7 +200,7 @@ export const editarReserva = async (req: Request, res: Response) => {
       );
 
       if (aprobadores.length > 0) {
-        const mensajeNotificacion = `La reserva del ${fecha} (${hora_inicio}–${hora_fin}) fue editada y está pendiente de tu aprobación.`;
+        const mensajeNotificacion = `La reserva del ${fecha} (${formatHorario(hora_inicio, hora_fin)}) fue editada y está pendiente de tu aprobación.`;
         const [notifResult]: any = await conn.query(
           `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
           [mensajeNotificacion, req.user!.id]
@@ -418,7 +419,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
         [ESTADOS_RESERVA.RECHAZADA]: 'fue rechazada',
         [ESTADOS_RESERVA.CANCELADA]: 'fue cancelada',
       };
-      const mensajeNotificacion = `Tu reserva del ${reserva.fecha} (${reserva.hora_inicio}–${reserva.hora_fin}) ${verbos[estadoReservaId]}.`;
+      const mensajeNotificacion = `Tu reserva del ${reserva.fecha} (${formatHorario(reserva.hora_inicio, reserva.hora_fin)}) ${verbos[estadoReservaId]}.`;
       const fechaHoy = new Date().toISOString().split('T')[0];
 
       const [notifResult]: any = await db.query(
