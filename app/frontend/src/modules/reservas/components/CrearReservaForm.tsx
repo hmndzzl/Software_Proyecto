@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
-import { formatFecha } from '../../../utils/date';
+import { formatFecha, formatHorario } from '../../../utils/date';
 import { ROLES } from '../../../utils/roles';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import { useAuth } from '../../../context/AuthContext';
@@ -124,7 +124,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       const nombreEspacio = espacios.find(esp => esp.id === Number(espacioId))?.nombre ?? 'el espacio seleccionado';
       toast.success(
         'Solicitud enviada',
-        `Tu reserva de ${nombreEspacio} para «${titulo}» el ${formatFecha(fecha)}, de ${horaInicio} a ${horaFin}, quedó pendiente de aprobación${puedeAprobar ? '' : ' del sacerdote'}. ` +
+        `Tu reserva de ${nombreEspacio} para «${titulo}» el ${formatFecha(fecha)}, ${formatHorario(horaInicio, horaFin)}, quedó pendiente de aprobación${puedeAprobar ? '' : ' del sacerdote'}. ` +
           (puedeAprobar
             ? 'Puedes aprobarla tú mismo en la lista de solicitudes de esta página.'
             : 'Puedes revisar su estado en Mis Reservas.')
@@ -156,7 +156,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
 
   return (
     <div>
-      <h3 className={styles.sectionTitle}>Solicitar Reserva</h3>
+
 
       {nombreEspacioInicial && (
         <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>

@@ -90,7 +90,7 @@ describe('CrearReservaForm', () => {
     expect(aviso).toHaveTextContent('Solicitud enviada');
     expect(aviso).toHaveTextContent('Salón Parroquial');
     expect(aviso).toHaveTextContent('Ensayo del coro');
-    expect(aviso).toHaveTextContent('18:00 a 20:00');
+    expect(aviso).toHaveTextContent('18:00 – 20:00');
     expect(aviso).toHaveTextContent('pendiente de aprobación del sacerdote');
     expect(aviso).toHaveTextContent('Puedes revisar su estado en Mis Reservas.');
     expect(onReservaCreada).toHaveBeenCalledOnce();
