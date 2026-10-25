@@ -197,6 +197,7 @@ CREATE TABLE `reserva` (
   `espacio_id` int(11) DEFAULT NULL,
   `estado_reserva_id` int(11) NOT NULL,
   `solicitante_id` int(11) NOT NULL,
+  `checkin_en` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_reserva_espacio_idx` (`espacio_id`),
   KEY `fk_reserva_estado_idx` (`estado_reserva_id`),
