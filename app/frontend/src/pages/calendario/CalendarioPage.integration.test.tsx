@@ -4,21 +4,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { authValue } from '../../test/authValue';
+import { ToastProvider } from '../../context/ToastContext';
 import CalendarioPage from './CalendarioPage';
 
-vi.mock('../../api/client', () => ({ default: { get: vi.fn() } }));
+vi.mock('../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const tarea = { id: 1, fecha: '2026-10-05', hora_inicio: '09:30:00', hora_fin: '10:00:00', titulo: 'Preparar altar', descripcion: 'Preparación de la celebración', evento_id: 8, asignados: [{ persona_id: 9, nombre: 'Ana' }, { persona_id: 10, nombre: 'Luis' }] };
 const independiente = { ...tarea, id: 2, titulo: 'Visitar enfermos', evento_id: null, asignados: [] };
-const evento = { id: 8, titulo: 'Misa del lunes', descripcion: 'Celebración parroquial', encargado_id: 1, nombre_encargado: 'Padre Pedro', fecha: '2026-10-05', hora_inicio: '10:00:00', hora_fin: '11:00:00', nombre_espacio: 'Templo', estado_reserva_id: 2, tareas: [tarea] };
+const evento = { id: 8, reserva_id: 80, titulo: 'Misa del lunes', descripcion: 'Celebración parroquial', encargado_id: 1, nombre_encargado: 'Padre Pedro', fecha: '2026-10-05', hora_inicio: '10:00:00', hora_fin: '11:00:00', nombre_espacio: 'Templo', estado_reserva_id: 2, tareas: [tarea] };
 const datos = { eventos: [evento], tareas: [tarea, independiente] };
 const vacio = { eventos: [], tareas: [] };
 const consultas = () => vi.mocked(apiClient.get).mock.calls.filter(([url]) => url === '/api/calendario');
 
 function mostrar(rol = 5) {
   vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Usuario', correo: 'u@test.com', rol_id: rol }));
-  return render(<CalendarioPage />);
+  return render(<ToastProvider><CalendarioPage /></ToastProvider>);
 }
 
 beforeEach(() => {
@@ -26,6 +27,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date(2026, 9, 7, 12));
   vi.clearAllMocks();
   vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? [{ id: 9, nombre: 'Ana' }] : datos }));
+  vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
 });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -39,6 +41,66 @@ describe('calendario unificado semanal', () => {
     expect(screen.getByText('Visitar enfermos')).toBeInTheDocument();
     expect(screen.getByText('Sin asignar')).toBeInTheDocument();
     expect(screen.getAllByText('Sin compromisos registrados')).toHaveLength(6);
+  });
+
+  it('aprueba una reserva pendiente ajena desde el detalle y refresca el calendario', async () => {
+    const pendienteAjena = { ...evento, id: 20, reserva_id: 200, titulo: 'Asamblea de catequistas', estado_reserva_id: 1, encargado_id: 2 };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : { eventos: [pendienteAjena], tareas: [] },
+    }));
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: /Ver detalle del evento Asamblea de catequistas/ }));
+    const modal = screen.getByRole('dialog', { name: 'Asamblea de catequistas' });
+    expect(within(modal).getByRole('button', { name: 'Aprobar' })).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
+    expect(within(modal).queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
+
+    await userEvent.click(within(modal).getByRole('button', { name: 'Aprobar' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/200/estado', { estado_id: 2 }));
+    expect(await screen.findByText('Reserva aprobada')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(consultas()).toHaveLength(2));
+  });
+
+  it('cancela (no rechaza) una reserva pendiente propia desde el detalle', async () => {
+    const pendientePropia = { ...evento, id: 21, reserva_id: 201, titulo: 'Retiro de ministros', estado_reserva_id: 1, encargado_id: 1 };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : { eventos: [pendientePropia], tareas: [] },
+    }));
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: /Ver detalle del evento Retiro de ministros/ }));
+    const modal = screen.getByRole('dialog', { name: 'Retiro de ministros' });
+    expect(within(modal).getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+    expect(within(modal).queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/201/estado', { estado_id: 4 }));
+  });
+
+  it('no muestra acciones de aprobación a un Ministro sobre una reserva pendiente', async () => {
+    const pendienteAjena = { ...evento, id: 20, reserva_id: 200, titulo: 'Asamblea de catequistas', estado_reserva_id: 1, encargado_id: 2 };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : { eventos: [pendienteAjena], tareas: [] },
+    }));
+    mostrar(4);
+    await userEvent.click(await screen.findByRole('button', { name: /Ver detalle del evento Asamblea de catequistas/ }));
+    const modal = screen.getByRole('dialog', { name: 'Asamblea de catequistas' });
+    expect(within(modal).queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument();
+    expect(within(modal).queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+  });
+
+  it('muestra el error del servidor si la aprobación falla, sin cerrar el detalle', async () => {
+    const pendienteAjena = { ...evento, id: 20, reserva_id: 200, titulo: 'Asamblea de catequistas', estado_reserva_id: 1, encargado_id: 2 };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : { eventos: [pendienteAjena], tareas: [] },
+    }));
+    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { message: 'Conflicto de horario' } } });
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: /Ver detalle del evento Asamblea de catequistas/ }));
+    const modal = screen.getByRole('dialog', { name: 'Asamblea de catequistas' });
+    await userEvent.click(within(modal).getByRole('button', { name: 'Aprobar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Conflicto de horario');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('navega entre semanas, vuelve a hoy y conserva el ministro seleccionado', async () => {
