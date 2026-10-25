@@ -147,6 +147,15 @@ describe('calendario unificado semanal', () => {
     await userEvent.click(screen.getByLabelText('Cerrar'));
   });
 
+  it('permite abrir el detalle de una tarea asociada desde el modal del evento', async () => {
+    mostrar();
+    const tarjeta = await screen.findByRole('button', { name: /Ver detalle del evento/ });
+    await userEvent.click(tarjeta);
+    const modal = screen.getByRole('dialog', { name: 'Misa del lunes' });
+    await userEvent.click(within(modal).getByRole('button', { name: /Ver detalle de la tarea Preparar altar/ }));
+    expect(screen.getByRole('dialog', { name: 'Preparar altar' })).toBeInTheDocument();
+  });
+
   it('muestra un error y permite reintentar sin indicar un calendario vacío', async () => {
     vi.mocked(apiClient.get).mockImplementation(async url => {
       if (url === '/api/calendario') throw new Error('sin red');
