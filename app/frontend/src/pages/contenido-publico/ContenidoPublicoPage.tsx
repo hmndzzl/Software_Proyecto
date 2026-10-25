@@ -190,7 +190,7 @@ export default function ContenidoPublicoPage() {
       <form className={styles.form} onSubmit={guardar} aria-busy={guardando}>
         <fieldset className={styles.fieldset} disabled={guardando}>
           <Card>
-            <CardHead title="Presentación principal" hint="Hero de la landing" />
+            <CardHead title="Presentación principal" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <CampoTexto id="lema" etiqueta="Lema" valor={borrador.lema} requerido maxLength={255}
@@ -204,7 +204,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Quiénes somos" hint="Historia, misión y servicio" />
+            <CardHead title="Quiénes somos" />
             <CardBody className={styles.cardBody}>
               <CampoTexto id="quienes-titulo" etiqueta="Título" valor={borrador.quienes_somos.titulo} requerido maxLength={255}
                 alCambiar={(titulo) => actualizar((contenido) => ({ ...contenido, quienes_somos: { ...contenido.quienes_somos, titulo } }))} />
@@ -222,7 +222,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Cifras de la comunidad" hint="Son datos editoriales; no modifican grupos ni espacios del sistema" />
+            <CardHead title="Cifras de la comunidad" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <div className={styles.field}>
@@ -240,7 +240,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Nuestros valores" hint="Las tarjetas se muestran en el orden indicado" />
+            <CardHead title="Nuestros valores" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <CampoTexto id="valores-titulo" etiqueta="Título de la sección" valor={borrador.valores_encabezado.titulo} requerido maxLength={255}
@@ -281,7 +281,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Horarios" hint="Cada lista se reemplaza completa al guardarla" />
+            <CardHead title="Horarios" />
             <CardBody className={styles.cardBody}>
               <div className={styles.scheduleColumns}>
                 <section aria-labelledby="horarios-misa-titulo">
@@ -330,7 +330,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Contacto" hint="Dirección, correo y teléfono pueden dejarse vacíos para ocultarlos" />
+            <CardHead title="Contacto" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <CampoTexto id="contacto-titulo" etiqueta="Título" valor={borrador.contacto.titulo} requerido maxLength={255}

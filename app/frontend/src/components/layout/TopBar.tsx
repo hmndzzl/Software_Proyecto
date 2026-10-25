@@ -123,7 +123,7 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
           )}
 
           {open && (
-            <div className={styles.dropdown}>
+            <div className={styles.dropdown} role="region" aria-label="Previsualización de notificaciones">
               <div className={styles.dropdownHead}>Notificaciones</div>
               {preview.length === 0 ? (
                 <p className={styles.dropdownEmpty}>Sin notificaciones</p>

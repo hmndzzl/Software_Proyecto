@@ -77,10 +77,7 @@ export default function EspaciosPage() {
       />
 
       <Card>
-        <CardHead
-          title="Disponibilidad"
-          hint="Filtra por fecha y horario para ver espacios libres u ocupados."
-        />
+        <CardHead title="Disponibilidad" />
         <CardBody>
           <div className={styles.filters}>
             <Field label="Fecha">

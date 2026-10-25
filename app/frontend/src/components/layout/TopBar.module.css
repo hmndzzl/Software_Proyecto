@@ -140,6 +140,7 @@
 }
 
 .dropdownItem {
+  overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -313,7 +314,17 @@
   .userLink { padding: 2px; }
   .btnLogout { width: 38px; padding: 0; justify-content: center; margin-left: 0; }
   .logoutLabel { display: none; }
-  .dropdown { width: min(320px, calc(100vw - 32px)); }
+  .dropdown {
+    position: fixed;
+    top: calc(var(--topbar-h) + 8px);
+    right: 16px;
+    width: min(320px, calc(100vw - 32px));
+    max-height: calc(100vh - var(--topbar-h) - 32px);
+    max-height: calc(100dvh - var(--topbar-h) - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .dropdownMsg { display: block; -webkit-line-clamp: unset; overflow-wrap: anywhere; }
 }
 
 @media (max-width: 420px) {
