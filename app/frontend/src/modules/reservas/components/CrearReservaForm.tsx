@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { formatFecha } from '../../../utils/date';
@@ -181,14 +182,9 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
             ))}
           </select>
           {espacioId && (
-            <a
-              href={`/espacios/${espacioId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.espacioDetalleLink}
-            >
+            <Link to={`/espacios/${espacioId}`} className={styles.espacioDetalleLink}>
               Ver detalle del espacio
-            </a>
+            </Link>
           )}
         </div>
 
