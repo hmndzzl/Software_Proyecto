@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Calendario, EventoCalendario } from '../../api/calendario';
 import type { Tarea } from '../../types';
-import { compromisosPorDia, diasSemana, estadoEvento, horaLegible } from './calendario.utils';
+import { compromisosPorDia, diasSemana, diasMes, desplazarMes, estadoEvento, horaLegible } from './calendario.utils';
 
 describe('presentación de compromisos', () => {
   it('formatea medianoche, mediodía y tarde sin ambigüedad', () => {
@@ -27,5 +27,23 @@ describe('presentación de compromisos', () => {
     const datos: Calendario = { eventos: [evento, evento], tareas: [tarea, tarea, { ...tarea, id: 2, hora_inicio: '09:00' }, { ...tarea, id: 3, fecha: '' }] };
     expect(compromisosPorDia(datos).get('2026-10-24')?.map(i => `${i.tipo}-${i.dato.id}`)).toEqual(['evento-1', 'tarea-2', 'tarea-1']);
     expect(compromisosPorDia({ eventos: [], tareas: [] }).size).toBe(0);
+  });
+});
+
+describe('períodos mensuales', () => {
+  it('incluye febrero bisiesto y semanas completas de lunes a domingo', () => {
+    const dias = diasMes(new Date(2028, 1, 29));
+    expect(dias[0].getDay()).toBe(1);
+    expect(dias[dias.length - 1].getDay()).toBe(0);
+    expect(dias.some(d => d.getMonth() === 1 && d.getDate() === 29)).toBe(true);
+    expect(dias).toHaveLength(35);
+    expect(diasMes(new Date(2026, 7, 1))).toHaveLength(42);
+  });
+
+  it('evita saltarse febrero al navegar desde el 31 de enero y cruza el año', () => {
+    expect(desplazarMes(new Date(2026, 0, 31), 1)).toEqual(new Date(2026, 1, 28));
+    expect(desplazarMes(new Date(2028, 0, 31), 1)).toEqual(new Date(2028, 1, 29));
+    expect(desplazarMes(new Date(2026, 11, 31), 1)).toEqual(new Date(2027, 0, 31));
+    expect(desplazarMes(new Date(2026, 0, 1), -1)).toEqual(new Date(2025, 11, 1));
   });
 });

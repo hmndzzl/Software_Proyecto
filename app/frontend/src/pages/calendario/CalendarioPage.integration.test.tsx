@@ -136,3 +136,58 @@ describe('calendario unificado semanal', () => {
     await screen.findByText('No hay ministros activos en tu directorio.');
   });
 });
+
+describe('calendario mensual', () => {
+  it('consulta semanas completas y permite seleccionar un día sin duplicar sus tareas vinculadas', async () => {
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    await waitFor(() => expect(consultas().slice(-1)[0]?.[1]).toEqual({ params: { fecha_inicio: '2026-09-28', fecha_fin: '2026-11-01', vista: 'coordinacion' } }));
+    const tabla = await screen.findByRole('table');
+    const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*2 compromisos/ });
+    await userEvent.click(dia);
+    expect(dia).toHaveAttribute('aria-pressed', 'true');
+    const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
+    expect(within(detalle).getAllByText('Preparar altar')).toHaveLength(1);
+    await userEvent.click(within(detalle).getByRole('button', { name: /Ver detalle del evento/ }));
+    expect(screen.getByRole('dialog', { name: 'Misa del lunes' })).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Cerrar'));
+    await userEvent.click(screen.getByRole('button', { name: 'Mes siguiente' }));
+    await waitFor(() => expect(consultas().slice(-1)[0]?.[1]).toEqual({ params: { fecha_inicio: '2026-10-26', fecha_fin: '2026-12-06', vista: 'coordinacion' } }));
+    await userEvent.click(screen.getByRole('button', { name: 'Mes anterior' }));
+    await screen.findByRole('table');
+    await userEvent.click(screen.getByRole('button', { name: 'Semana' }));
+    await screen.findByText('Misa del lunes');
+  });
+
+  it('limita los resúmenes y mantiene todos los compromisos en el detalle diario', async () => {
+    const muchos = { eventos: [evento, { ...evento, id: 9, titulo: 'Reunión', tareas: [], nombre_espacio: null, estado_reserva_id: 1 }], tareas: [tarea, independiente] };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? [] : muchos }));
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    const tabla = await screen.findByRole('table');
+    const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*3 compromisos/ });
+    expect(within(dia).getByText('Ver los 3 compromisos')).toBeInTheDocument();
+    expect(within(dia).queryByText('Visitar enfermos')).not.toBeInTheDocument();
+    await userEvent.click(dia);
+    const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
+    expect(within(detalle).getByText('Visitar enfermos')).toBeInTheDocument();
+    expect(within(detalle).getByText('Evento · Pendiente de aprobación')).toBeInTheDocument();
+    await userEvent.click(within(detalle).getByRole('button', { name: /Ver detalle del evento Reunión/ }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Sin tareas registradas para tu consulta.');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Lugar no indicado');
+  });
+
+  it('muestra el mes vacío y vuelve al mes actual mediante Hoy', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? [] : vacio }));
+    mostrar(4);
+    await screen.findAllByText('Sin compromisos registrados');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    await screen.findByText('Sin compromisos registrados en este mes');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes siguiente' }));
+    await screen.findByRole('table');
+    await userEvent.click(screen.getByRole('button', { name: 'Hoy' }));
+    await waitFor(() => expect(consultas().slice(-1)[0]?.[1]).toEqual({ params: { fecha_inicio: '2026-09-28', fecha_fin: '2026-11-01', vista: 'personal' } }));
+  });
+});

@@ -36,3 +36,22 @@
 .serviceList span { display: block; }
 @media (max-width: 1200px) { .weekGrid { grid-template-columns: 1fr; } .dayTitle { padding: 16px; } .dayContent { padding: 16px; } }
 @media (max-width: 650px) { .controls { padding: 14px; } .buttons { width: 100%; } .buttons button { flex: 1 1 100px; } }
+.buttons button[aria-pressed='true'] { background: var(--color-rojo); border-color: var(--color-rojo); color: var(--color-blanco); font-weight: 700; }
+.monthTable { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px; }
+.monthTable caption { text-align: left; padding: 8px 0 16px; font-size: 16px; }
+.monthTable th { padding: 8px 2px; font-size: 16px; overflow-wrap: anywhere; }
+.monthTable td { vertical-align: top; padding: 0; }
+.monthDay { width: 100%; min-height: 180px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-blanco); text-align: left; overflow-wrap: anywhere; }
+.monthDay > strong { font-size: 20px; }
+.monthDay:hover { background: var(--color-crema); }
+.monthDay[aria-pressed='true'] { border: 2px solid var(--color-rojo); background: var(--color-crema); }
+.monthPreview { display: block; border-top: 1px solid var(--color-line); padding-top: 8px; }
+.outsideMonth { display: block; padding: 12px; color: var(--color-tierra); }
+.monthDetails { display: flex; flex-direction: column; gap: 16px; background: var(--color-crema); padding: 20px; border-radius: var(--radius-card); }
+.monthDetails h2 { font-size: 20px; margin: 0; }
+.monthAgenda { display: none; }
+@media (max-width: 1200px) {
+  .monthTable, .monthDetails { display: none; }
+  .monthAgenda { display: flex; flex-direction: column; gap: 16px; }
+  .monthAgenda > h2 { font-size: 20px; margin: 0; }
+}

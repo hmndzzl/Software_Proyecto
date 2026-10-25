@@ -21,6 +21,22 @@ export function diasSemana(fecha: Date) {
   });
 }
 
+/** Semanas completas del mes: entre 28 y 42 días, sin conversiones a UTC. */
+export function diasMes(fecha: Date) {
+  const primero = getMonday(new Date(fecha.getFullYear(), fecha.getMonth(), 1));
+  const ultimo = diasSemana(new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0))[6];
+  const dias: Date[] = [];
+  for (const dia = new Date(primero); dia <= ultimo; dia.setDate(dia.getDate() + 1)) dias.push(new Date(dia));
+  return dias;
+}
+
+export function desplazarMes(fecha: Date, cantidad: number) {
+  const primero = new Date(fecha.getFullYear(), fecha.getMonth() + cantidad, 1);
+  const ultimo = new Date(primero.getFullYear(), primero.getMonth() + 1, 0).getDate();
+  primero.setDate(Math.min(fecha.getDate(), ultimo));
+  return primero;
+}
+
 export function compromisosPorDia(datos: Calendario): Map<string, Compromiso[]> {
   const resultado = new Map<string, Compromiso[]>();
   const eventos = new Set(datos.eventos.map(e => e.id));

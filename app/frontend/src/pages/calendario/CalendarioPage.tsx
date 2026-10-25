@@ -9,7 +9,8 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import CompromisosDia from './CompromisosDia';
 import DetalleCompromiso from './DetalleCompromiso';
-import { claveDia, compromisosPorDia, diasSemana, fechaCompleta, type Compromiso } from './calendario.utils';
+import CalendarioMes from './CalendarioMes';
+import { claveDia, compromisosPorDia, diasSemana, diasMes, desplazarMes, fechaCompleta, type Compromiso } from './calendario.utils';
 import { useCalendario } from './useCalendario';
 import styles from './CalendarioPage.module.css';
 
@@ -17,6 +18,7 @@ export default function CalendarioPage() {
   const { usuario } = useAuth();
   const puedeCoordinar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
   const [fecha, setFecha] = useState(() => new Date());
+  const [periodo, setPeriodo] = useState<'semana' | 'mes'>('semana');
   const [vista, setVista] = useState<VistaCalendario>(() => puedeCoordinar ? 'coordinacion' : 'personal');
   const [personaId, setPersonaId] = useState('');
   const [ministros, setMinistros] = useState<Ministro[]>([]);
@@ -24,9 +26,9 @@ export default function CalendarioPage() {
   const [cargandoMinistros, setCargandoMinistros] = useState(puedeCoordinar);
   const [intentoMinistros, setIntentoMinistros] = useState(0);
   const [seleccion, setSeleccion] = useState<{ tipo: Compromiso['tipo']; id: number } | null>(null);
-  const dias = diasSemana(fecha);
+  const dias = periodo === 'semana' ? diasSemana(fecha) : diasMes(fecha);
   const inicio = claveDia(dias[0]);
-  const fin = claveDia(dias[6]);
+  const fin = claveDia(dias[dias.length - 1]);
   const { datos, loading, error, reintentar } = useCalendario(inicio, fin, vista, personaId);
   const porDia = compromisosPorDia(datos);
   const hoy = claveDia(new Date());
@@ -47,8 +49,8 @@ export default function CalendarioPage() {
 
   const seleccionar = (compromiso: Compromiso) => setSeleccion({ tipo: compromiso.tipo, id: compromiso.dato.id });
   const navegar = (cantidad: number) => {
-    const siguiente = new Date(fecha);
-    siguiente.setDate(fecha.getDate() + cantidad * 7);
+    const siguiente = periodo === 'mes' ? desplazarMes(fecha, cantidad) : new Date(fecha);
+    if (periodo === 'semana') siguiente.setDate(fecha.getDate() + cantidad * 7);
     setSeleccion(null);
     setFecha(siguiente);
   };
@@ -80,11 +82,15 @@ export default function CalendarioPage() {
         </div>}
       </div>
       <div className={styles.navigation}>
-        <strong>Semana del {fechaCompleta(inicio)} al {fechaCompleta(fin)}</strong>
+        <div className={styles.buttons} role="group" aria-label="Período del calendario">
+          <button type="button" aria-pressed={periodo === 'semana'} onClick={() => { setPeriodo('semana'); setSeleccion(null); }}>Semana</button>
+          <button type="button" aria-pressed={periodo === 'mes'} onClick={() => { setPeriodo('mes'); setSeleccion(null); }}>Mes</button>
+        </div>
+        <strong>{periodo === 'semana' ? `Semana del ${fechaCompleta(inicio)} al ${fechaCompleta(fin)}` : fecha.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' })}</strong>
         <div className={styles.buttons}>
-          <button type="button" onClick={() => navegar(-1)}>Semana anterior</button>
+          <button type="button" onClick={() => navegar(-1)}>{periodo === 'semana' ? 'Semana anterior' : 'Mes anterior'}</button>
           <button type="button" className={styles.todayButton} onClick={() => { setFecha(new Date()); setSeleccion(null); }}>Hoy</button>
-          <button type="button" onClick={() => navegar(1)}>Semana siguiente</button>
+          <button type="button" onClick={() => navegar(1)}>{periodo === 'semana' ? 'Semana siguiente' : 'Mes siguiente'}</button>
         </div>
       </div>
     </div>
@@ -92,7 +98,7 @@ export default function CalendarioPage() {
     <p className={styles.note}>Cada evento reúne sus tareas y ministros. Selecciona un compromiso para ver el detalle.</p>
     {loading && <LoadingState label="Cargando calendario…" />}
     {error && <ErrorState message={error} onRetry={reintentar} />}
-    {!loading && !error && <div className={styles.weekGrid}>
+    {!loading && !error && periodo === 'semana' && <div className={styles.weekGrid}>
       {dias.map(dia => {
         const clave = claveDia(dia);
         return <section key={clave} className={`${styles.day} ${clave === hoy ? styles.today : ''}`} aria-label={fechaCompleta(clave)}>
@@ -101,6 +107,7 @@ export default function CalendarioPage() {
         </section>;
       })}
     </div>}
+    {!loading && !error && periodo === 'mes' && <CalendarioMes key={`${claveDia(fecha)}-${vista}-${personaId}`} fecha={fecha} dias={dias} porDia={porDia} onSeleccionar={seleccionar} />}
     {!loading && !error && item && <DetalleCompromiso item={item} onClose={() => setSeleccion(null)} />}
   </div>;
 }
