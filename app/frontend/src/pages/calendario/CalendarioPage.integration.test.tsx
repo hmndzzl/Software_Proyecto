@@ -266,9 +266,10 @@ describe('calendario mensual', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
     await waitFor(() => expect(consultas().slice(-1)[0]?.[1]).toEqual({ params: { fecha_inicio: '2026-09-28', fecha_fin: '2026-11-01', vista: 'coordinacion' } }));
     const tabla = await screen.findByRole('table');
-    const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*2 compromisos/ });
-    await userEvent.click(dia);
-    expect(dia).toHaveAttribute('aria-pressed', 'true');
+    const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*2 compromisos/ });
+    const botonDia = within(celda).getByRole('button', { name: /Ver todos los compromisos/ });
+    await userEvent.click(botonDia);
+    expect(botonDia).toHaveAttribute('aria-pressed', 'true');
     const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
     expect(within(detalle).getAllByText('Preparar altar')).toHaveLength(1);
     await userEvent.click(within(detalle).getByRole('button', { name: /Ver detalle del evento/ }));
@@ -287,9 +288,31 @@ describe('calendario mensual', () => {
     await screen.findByText('Misa del lunes');
     await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
     const tabla = await screen.findByRole('table');
-    const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*2 compromisos/ });
-    expect(within(dia).getByText('Confirmada')).toBeInTheDocument();
-    expect(within(dia).getByText('Sin asignar')).toBeInTheDocument();
+    const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*2 compromisos/ });
+    expect(within(celda).getByText('Confirmada')).toBeInTheDocument();
+    expect(within(celda).getByText('Sin asignar')).toBeInTheDocument();
+  });
+
+  it('selecciona el día para el panel de abajo al hacer clic en cualquier parte de la celda', async () => {
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    const tabla = await screen.findByRole('table');
+    const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*2 compromisos/ });
+    await userEvent.click(celda);
+    expect(within(celda).getByRole('button', { name: /Ver todos los compromisos/ })).toHaveAttribute('aria-pressed', 'true');
+    const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
+    expect(within(detalle).getAllByText('Preparar altar')).toHaveLength(1);
+  });
+
+  it('abre el detalle de un compromiso del mes con un solo clic, sin pasar primero por el panel de abajo', async () => {
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    const tabla = await screen.findByRole('table');
+    const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*2 compromisos/ });
+    await userEvent.click(within(celda).getByRole('button', { name: /Ver detalle del evento Misa del lunes/ }));
+    expect(screen.getByRole('dialog', { name: 'Misa del lunes' })).toBeInTheDocument();
   });
 
   it('limita los resúmenes y mantiene todos los compromisos en el detalle diario', async () => {
@@ -299,12 +322,12 @@ describe('calendario mensual', () => {
     await screen.findByText('Misa del lunes');
     await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
     const tabla = await screen.findByRole('table');
-    const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*3 compromisos/ });
-    expect(within(dia).getByText('Ver los 3 compromisos')).toBeInTheDocument();
-    expect(within(dia).getByText('Reunión')).toBeInTheDocument();
-    expect(dia).toHaveTextContent('08:00');
-    expect(dia).not.toHaveTextContent('Misa del lunes');
-    await userEvent.click(dia);
+    const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*3 compromisos/ });
+    expect(within(celda).getByText('Ver los 3 compromisos')).toBeInTheDocument();
+    expect(within(celda).getByText('Reunión')).toBeInTheDocument();
+    expect(celda).toHaveTextContent('08:00');
+    expect(celda).not.toHaveTextContent('Misa del lunes');
+    await userEvent.click(within(celda).getByRole('button', { name: /Ver todos los compromisos/ }));
     const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
     expect(within(detalle).getByText('Visitar enfermos')).toBeInTheDocument();
     expect(within(detalle).getByText('Reunión')).toBeInTheDocument();

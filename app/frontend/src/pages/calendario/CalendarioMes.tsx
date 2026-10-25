@@ -33,27 +33,35 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
   const conCompromisos = delMes.filter(d => (porDia.get(claveDia(d))?.length ?? 0) > 0);
   return <>
     <table className={styles.monthTable}>
-      <caption>Calendario de {mes}. Selecciona un día para ver todos sus compromisos.</caption>
+      <caption>Calendario de {mes}. Toca un compromiso para ver su detalle, o el número del día para ver todos los de esa fecha.</caption>
       <thead><tr>{DIAS_SEMANA.map(d => <th key={d} scope="col">{d}</th>)}</tr></thead>
       <tbody>{Array.from({ length: dias.length / 7 }, (_, semana) => <tr key={semana}>
         {dias.slice(semana * 7, semana * 7 + 7).map(dia => {
           const clave = claveDia(dia);
           const items = porDia.get(clave) ?? [];
           const esHoy = clave === hoy;
-          return <td key={clave}>
-            {dia.getMonth() !== fecha.getMonth() ? <span className={styles.outsideMonth}>{dia.getDate()}</span>
-              : <button type="button" className={`${styles.monthDay}${esHoy ? ` ${styles.monthDayToday}` : ''}`} aria-pressed={clave === diaSeleccionado}
-                aria-label={`${fechaCompleta(clave)}${esHoy ? ', hoy' : ''}, ${items.length} compromisos`}
-                onClick={() => setDiaSeleccionado(clave)}>
-                <span className={styles.monthDayNum}>
-                  {dia.getDate()}
-                  {esHoy && <span className={styles.todayLabel}>Hoy</span>}
-                </span>
+          const descripcionDia = `${fechaCompleta(clave)}${esHoy ? ', hoy' : ''}, ${items.length} compromiso${items.length === 1 ? '' : 's'}`;
+          const delMesActual = dia.getMonth() === fecha.getMonth();
+          return <td key={clave} aria-label={delMesActual ? descripcionDia : undefined}
+            className={delMesActual ? styles.monthCell : undefined}
+            onClick={delMesActual ? () => setDiaSeleccionado(clave) : undefined}>
+            {!delMesActual ? <span className={styles.outsideMonth}>{dia.getDate()}</span>
+              : <div className={`${styles.monthDay}${esHoy ? ` ${styles.monthDayToday}` : ''}`}>
+                <button type="button" className={styles.monthDayNumBtn} aria-pressed={clave === diaSeleccionado}
+                  aria-label={`Ver todos los compromisos: ${descripcionDia}`}
+                  onClick={() => setDiaSeleccionado(clave)}>
+                  <span className={styles.monthDayNum}>
+                    {dia.getDate()}
+                    {esHoy && <span className={styles.todayLabel}>Hoy</span>}
+                  </span>
+                </button>
                 {items.length > 0 && <div className={styles.monthPreviewList}>
                   {items.slice(0, 2).map(item => {
                     const subtitulo = subtituloCompromiso(item);
-                    return <span key={`${item.tipo}-${item.dato.id}`}
-                      className={`${styles.monthPreview} ${item.tipo === 'evento' ? styles.monthPreviewEvento : styles.monthPreviewTarea}`}>
+                    return <button key={`${item.tipo}-${item.dato.id}`} type="button"
+                      className={`${styles.monthPreview} ${item.tipo === 'evento' ? styles.monthPreviewEvento : styles.monthPreviewTarea}`}
+                      aria-label={`Ver detalle ${item.tipo === 'evento' ? 'del evento' : 'de la tarea'} ${item.dato.titulo}`}
+                      onClick={() => onSeleccionar(item)}>
                       <span className={styles.monthPreviewMain}>
                         <span className={styles.monthPreviewHora}>{item.dato.hora_inicio.slice(0, 5)}</span>
                         <span className={styles.monthPreviewTitulo}>{item.dato.titulo}</span>
@@ -61,11 +69,15 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
                       <span className={styles.monthPreviewSub} style={subtitulo.color ? { color: subtitulo.color } : undefined}>
                         {subtitulo.texto}
                       </span>
-                    </span>;
+                    </button>;
                   })}
-                  {items.length > 2 && <span className={styles.detailLink}>Ver los {items.length} compromisos</span>}
+                  {items.length > 2 && (
+                    <button type="button" className={styles.detailLink} onClick={() => setDiaSeleccionado(clave)}>
+                      Ver los {items.length} compromisos
+                    </button>
+                  )}
                 </div>}
-              </button>}
+              </div>}
           </td>;
         })}
       </tr>)}</tbody>
