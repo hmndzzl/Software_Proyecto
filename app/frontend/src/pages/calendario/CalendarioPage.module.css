@@ -160,6 +160,12 @@
   font-weight: 700;
 }
 
+/* El rojo de acento del tema oscuro no alcanza contraste sobre texto crema. */
+:global(html[data-tema='oscuro']) .buttons .todayButton,
+:global(html[data-tema='oscuro']) .buttons button[aria-pressed='true'] {
+  background: var(--color-rojoDk);
+}
+
 .page button:focus-visible, .page select:focus-visible {
   outline: 3px solid var(--color-rojo);
   outline-offset: 2px;
@@ -295,7 +301,7 @@
 .tarea { border-left-color: var(--color-tierra); }
 
 /* Horario + estado nunca comparten línea: evita que el badge (ancho fijo,
-   sin salto de línea) se encime con el horario verbose ("10:00 a. m. – ...")
+   sin salto de línea) se encime con el rango horario ("10:00 – 11:00")
    en columnas angostas de 1/7 del ancho de la semana. */
 .cardHeader {
   display: flex;

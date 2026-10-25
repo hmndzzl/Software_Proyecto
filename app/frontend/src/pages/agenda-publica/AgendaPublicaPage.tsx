@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
-import { formatFecha, formatHora, partesFecha } from '../../utils/date';
+import { formatFecha, formatHorario, partesFecha } from '../../utils/date';
 import PublicPortalLayout from '../public-portal/PublicPortalLayout';
 import './AgendaPublicaPage.css';
 
@@ -116,7 +116,7 @@ export default function AgendaPublicaPage() {
                       <dl className="agenda-details">
                         <div>
                           <dt><IconoReloj />Horario</dt>
-                          <dd>{formatHora(evento.hora_inicio)} – {formatHora(evento.hora_fin)}</dd>
+                          <dd>{formatHorario(evento.hora_inicio, evento.hora_fin)}</dd>
                         </div>
                         {evento.nombre_espacio && (
                           <div>
