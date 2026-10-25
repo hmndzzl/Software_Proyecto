@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Btn from '../../components/ui/Btn';
+import SortableTh from '../../components/ui/SortableTh';
+import { useSortableTable } from '../../hooks/useSortableTable';
+import { normalizarBusqueda } from '../../hooks/useTableFilters';
 import Modal from '../../components/ui/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
@@ -19,15 +22,25 @@ import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 import type { Notificacion } from '../../types';
 import styles from './NotificacionesPage.module.css';
-import { Field, InputUI } from '../../components/ui/Field';
+import { Field, InputUI, SelectUI } from '../../components/ui/Field';
 import { enRangoEnvio } from '../../modules/notificaciones/utils/fechaNotificacion';
 
 const ROLES_PUEDEN_ENVIAR = [ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS];
 type Vista = 'recibidas' | 'enviadas' | 'papelera';
 
+const SORT_COMUN = {
+  fecha: (n: { fecha: string; enviado_en?: string | null }) => Date.parse(n.enviado_en ?? n.fecha) || 0,
+  mensaje: (n: { mensaje: string }) => n.mensaje.toLowerCase(),
+  remitente: (n: { remitente_nombre: string | null }) => (n.remitente_nombre ?? 'Sistema').toLowerCase(),
+  tipo: (n: { tipo: string }) => n.tipo,
+};
+
 export default function NotificacionesPage() {
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [lectura, setLectura] = useState('');
   const rangoInvalido = Boolean(desde && hasta && desde > hasta);
   const {
     notificaciones,
@@ -71,12 +84,29 @@ export default function NotificacionesPage() {
   }, [cargando, resaltarId]);
 
   const hayNoLeidas = notificaciones.some((n) => !n.leida);
-  const filtrar = <T extends { enviado_en?: string | null },>(lista: T[]) =>
-    lista.filter(n => !rangoInvalido && enRangoEnvio(n.enviado_en, desde, hasta));
-  const recibidasFiltradas = filtrar(notificaciones);
+  const filtrar = <T extends { enviado_en?: string | null; mensaje: string; tipo: string; remitente_nombre?: string | null; destinatarios_nombres?: string | null },>(lista: T[]) =>
+    lista.filter(n => {
+      const remitente = 'remitente_nombre' in n ? n.remitente_nombre ?? 'Sistema' : '';
+      const texto = normalizarBusqueda([n.mensaje, remitente, n.destinatarios_nombres].join(' '));
+      return !rangoInvalido && enRangoEnvio(n.enviado_en, desde, hasta)
+        && (!tipo || n.tipo === tipo)
+        && normalizarBusqueda(busqueda).split(/\s+/).every(termino => texto.includes(termino));
+    });
+  const recibidasFiltradas = filtrar(notificaciones).filter(n => !lectura || (n.leida ? 'leida' : 'no-leida') === lectura);
   const enviadasFiltradas = filtrar(enviadas);
   const papeleraFiltrada = filtrar(papelera);
-  const filtrando = Boolean(desde || hasta);
+  const filtrando = Boolean(desde || hasta || busqueda || tipo || (vista === 'recibidas' && lectura));
+  const sinResultados = busqueda || tipo || (vista === 'recibidas' && lectura)
+    ? 'No hay notificaciones que coincidan con los filtros.' : 'No hay notificaciones en el rango seleccionado.';
+  const recibidasSort = useSortableTable(recibidasFiltradas, { ...SORT_COMUN, estado: (n: Notificacion) => n.leida ? 'Leída' : 'No leída' });
+  const enviadasSort = useSortableTable(enviadasFiltradas, {
+    fecha: SORT_COMUN.fecha, mensaje: SORT_COMUN.mensaje, tipo: SORT_COMUN.tipo,
+    destinatarios: (n: (typeof enviadas)[number]) => (n.destinatarios_nombres ?? '').toLowerCase(),
+    lecturas: (n: (typeof enviadas)[number]) => Number(n.total_leidas),
+  });
+  const papeleraSort = useSortableTable(papeleraFiltrada, SORT_COMUN);
+  const totalVista = vista === 'recibidas' ? notificaciones.length : vista === 'enviadas' ? enviadas.length : papelera.length;
+  const totalFiltrado = vista === 'recibidas' ? recibidasFiltradas.length : vista === 'enviadas' ? enviadasFiltradas.length : papeleraFiltrada.length;
 
   const handleEnviada = async () => {
     setModalNuevaAbierto(false);
@@ -142,16 +172,30 @@ export default function NotificacionesPage() {
       <Card>
         <CardBody>
           <div className={styles.filtros}>
+            <Field label="Buscar">
+              <InputUI aria-label="Buscar" type="search" placeholder="Mensaje, remitente o destinatario…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+            </Field>
+            <Field label="Tipo">
+              <SelectUI aria-label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
+                <option value="">Todos</option><option value="global">Global</option><option value="grupo">Grupo</option><option value="individual">Individual</option>
+              </SelectUI>
+            </Field>
+            {vista === 'recibidas' && <Field label="Estado de lectura">
+              <SelectUI aria-label="Estado de lectura" value={lectura} onChange={e => setLectura(e.target.value)}>
+                <option value="">Todos</option><option value="leida">Leídas</option><option value="no-leida">No leídas</option>
+              </SelectUI>
+            </Field>}
             <Field label="Desde (fecha y hora)">
               <InputUI aria-label="Desde (fecha y hora)" type="datetime-local" value={desde} onChange={e => setDesde(e.target.value)} />
             </Field>
             <Field label="Hasta (fecha y hora)">
               <InputUI aria-label="Hasta (fecha y hora)" type="datetime-local" value={hasta} onChange={e => setHasta(e.target.value)} />
             </Field>
-            <Btn kind="primary" onClick={() => { setDesde(''); setHasta(''); }} disabled={!filtrando}>Limpiar filtros</Btn>
+            <Btn kind="primary" onClick={() => { setDesde(''); setHasta(''); setBusqueda(''); setTipo(''); setLectura(''); }} disabled={!filtrando}>Limpiar filtros</Btn>
           </div>
           <p className={styles.ayudaFiltro}>Horario de Guatemala. Puedes indicar uno o ambos límites. El minuto final está incluido.</p>
-          {filtrando && <p className={styles.ayudaFiltro}>Las notificaciones antiguas sin hora registrada no se incluyen en la búsqueda por rango.</p>}
+          {(desde || hasta) && <p className={styles.ayudaFiltro}>Las notificaciones antiguas sin hora registrada no se incluyen en la búsqueda por rango.</p>}
+          <p className={styles.ayudaFiltro} aria-live="polite">Mostrando {totalFiltrado} de {totalVista} registros.</p>
           {rangoInvalido && <p role="alert">La fecha y hora inicial no puede ser posterior a la final.</p>}
         </CardBody>
       </Card>
@@ -175,22 +219,22 @@ export default function NotificacionesPage() {
             ) : error ? (
               <ErrorState message={error} onRetry={refetch} />
             ) : recibidasFiltradas.length === 0 ? (
-              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "No tienes notificaciones."} />
+              <EmptyState message={filtrando ? sinResultados : "No tienes notificaciones."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha y hora de envío</th>
-                      <th>Mensaje</th>
-                      <th>Remitente</th>
-                      <th>Tipo</th>
-                      <th>Estado</th>
+                      <SortableTh label="Fecha y hora de envío" sortKey="fecha" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Mensaje" sortKey="mensaje" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Remitente" sortKey="remitente" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Tipo" sortKey="tipo" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Estado" sortKey="estado" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recibidasFiltradas.map((n) => (
+                    {recibidasSort.sortedData.map((n) => (
                       <NotificacionRow
                         key={n.id}
                         notificacion={n}
@@ -224,7 +268,7 @@ export default function NotificacionesPage() {
             ) : errorEnviadas ? (
               <ErrorState message={errorEnviadas} onRetry={refetchEnviadas} />
             ) : enviadasFiltradas.length === 0 ? (
-              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "No has enviado notificaciones."} />
+              <EmptyState message={filtrando ? sinResultados : "No has enviado notificaciones."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table} style={{ tableLayout: 'fixed', minWidth: 700 }}>
@@ -237,15 +281,15 @@ export default function NotificacionesPage() {
                   </colgroup>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha y hora de envío</th>
-                      <th>Mensaje</th>
-                      <th>Destinatarios</th>
-                      <th>Tipo</th>
-                      <th>Lecturas</th>
+                      <SortableTh label="Fecha y hora de envío" sortKey="fecha" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Mensaje" sortKey="mensaje" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Destinatarios" sortKey="destinatarios" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Tipo" sortKey="tipo" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Lecturas" sortKey="lecturas" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
                     </tr>
                   </thead>
                   <tbody>
-                    {enviadasFiltradas.map((n) => (
+                    {enviadasSort.sortedData.map((n) => (
                       <EnviadaRow key={n.id} notificacion={n} />
                     ))}
                   </tbody>
@@ -275,21 +319,21 @@ export default function NotificacionesPage() {
             ) : errorPapelera ? (
               <ErrorState message={errorPapelera} onRetry={refetchPapelera} />
             ) : papeleraFiltrada.length === 0 ? (
-              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "La papelera está vacía."} />
+              <EmptyState message={filtrando ? sinResultados : "La papelera está vacía."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha y hora de envío</th>
-                      <th>Mensaje</th>
-                      <th>Remitente</th>
-                      <th>Tipo</th>
+                      <SortableTh label="Fecha y hora de envío" sortKey="fecha" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
+                      <SortableTh label="Mensaje" sortKey="mensaje" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
+                      <SortableTh label="Remitente" sortKey="remitente" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
+                      <SortableTh label="Tipo" sortKey="tipo" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {papeleraFiltrada.map((n) => (
+                    {papeleraSort.sortedData.map((n) => (
                       <PapeleraRow key={n.id} notificacion={n} onRestaurar={handleRestaurar} />
                     ))}
                   </tbody>
