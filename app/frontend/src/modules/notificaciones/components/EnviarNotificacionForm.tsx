@@ -6,7 +6,7 @@ import { ROLES } from '../../../utils/roles';
 import type { DestinatarioInfo, Evento, NotificacionTipo } from '../../../types';
 import Btn from '../../../components/ui/Btn';
 import { Field, SelectUI, TextareaUI } from '../../../components/ui/Field';
-import { formatFecha } from '../../../utils/date';
+import { formatFecha, formatHorario } from '../../../utils/date';
 import styles from './EnviarNotificacionForm.module.css';
 
 interface Props {
@@ -154,7 +154,7 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
             <option value="">-- Elige el evento --</option>
             {eventos.map((ev) => (
               <option key={ev.id} value={ev.id}>
-                {ev.descripcion} · {formatFecha(ev.fecha)} · {ev.hora_inicio?.substring(0, 5)}–{ev.hora_fin?.substring(0, 5)}
+                {ev.descripcion} · {formatFecha(ev.fecha)} · {formatHorario(ev.hora_inicio, ev.hora_fin)}
               </option>
             ))}
           </SelectUI>
