@@ -49,6 +49,9 @@ CREATE TABLE `tarea` (
   `hora_fin` time NOT NULL,
   `titulo` varchar(255) NOT NULL,
   `descripcion` text NOT NULL,
+  `evento_id` int(11) DEFAULT NULL,
+  KEY `idx_tarea_evento` (`evento_id`),
+  CONSTRAINT `fk_tarea_evento` FOREIGN KEY (`evento_id`) REFERENCES `evento` (`id`) ON DELETE SET NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
