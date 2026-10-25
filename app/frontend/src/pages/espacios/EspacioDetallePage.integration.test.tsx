@@ -146,11 +146,28 @@ describe('integración del detalle de un espacio', () => {
     mostrar();
     await screen.findByText('Catequesis');
 
-    expect(screen.getByText(/Reserva de/)).toBeInTheDocument();
-    expect(screen.getByText('Admin', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(/Se detectó una reserva a tu nombre/)).toBeInTheDocument();
+    expect(screen.getByText(/de 14:00 a 16:00/)).toBeInTheDocument();
+    expect(screen.getByText(/¿Deseas confirmar el check-in/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Confirmar check-in' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sí, confirmar check-in' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/10/checkin', {}));
+  });
+
+  it('identifica por nombre una reserva ajena cuando el actor es privilegiado', async () => {
+    const espacioConCheckinAjeno = {
+      ...espacio,
+      en_uso: false,
+      reservas_checkin_disponible: [
+        { id: 11, hora_inicio: '17:00:00', hora_fin: '18:00:00', solicitante_id: 2, solicitante_nombre: 'María Gómez', checkin_en: null },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioConCheckinAjeno : reservas }));
+    mostrar();
+    await screen.findByText('Catequesis');
+
+    expect(screen.getByText(/Se detectó una reserva a nombre de/)).toBeInTheDocument();
+    expect(screen.getByText('María Gómez')).toBeInTheDocument();
   });
 
   it('muestra "en uso ahora" y el check-in ya hecho cuando checkin_en viene con valor', async () => {
@@ -167,7 +184,8 @@ describe('integración del detalle de un espacio', () => {
 
     expect(screen.getByText('En uso ahora')).toBeInTheDocument();
     expect(screen.getByText(/Check-in hecho a las 13:50/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Confirmar check-in' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/¿Deseas confirmar el check-in/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sí, confirmar check-in' })).not.toBeInTheDocument();
   });
 
   it('muestra el aviso de "sin reserva en este horario" cuando no hay nada para check-in', async () => {
