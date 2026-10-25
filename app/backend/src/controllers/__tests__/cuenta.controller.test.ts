@@ -6,7 +6,7 @@ import { ROLES } from '../../config/roles';
 import { listarCuentas, aprobarCuenta, rechazarCuenta } from '../cuenta.controller';
 
 vi.mock('../../config/db', () => ({
-  default: { execute: vi.fn() },
+  default: { execute: vi.fn(), getConnection: vi.fn() },
 }));
 
 describe('Cuenta Controller - aprobación de cuentas', () => {
@@ -17,6 +17,10 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(pool.execute).mockResolvedValue([{ affectedRows: 1 }] as never);
+    vi.mocked(pool.getConnection).mockResolvedValue({
+      execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
+    } as never);
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
     res = { status: statusMock, json: jsonMock };
