@@ -35,7 +35,10 @@ function CalendarioContenido() {
   const [errorMinistros, setErrorMinistros] = useState(false);
   const [cargandoMinistros, setCargandoMinistros] = useState(puedeCoordinar);
   const [intentoMinistros, setIntentoMinistros] = useState(0);
-  const [seleccion, setSeleccion] = useState<{ tipo: Compromiso['tipo']; id: number } | null>(null);
+  // Pila de navegación: cada tarjeta abierta desde otra (p. ej. una tarea dentro de
+  // un evento) se apila, para poder volver a la anterior sin cerrar el modal.
+  const [historial, setHistorial] = useState<{ tipo: Compromiso['tipo']; id: number }[]>([]);
+  const seleccion = historial[historial.length - 1] ?? null;
   const dias = periodo === 'semana' ? diasSemana(fecha) : diasMes(fecha);
   const inicio = claveDia(dias[0]);
   const fin = claveDia(dias[dias.length - 1]);
@@ -66,11 +69,12 @@ function CalendarioContenido() {
     return () => { vigente = false; };
   }, [esPrivilegiado, usuario?.id]);
 
-  const seleccionar = (compromiso: Compromiso) => setSeleccion({ tipo: compromiso.tipo, id: compromiso.dato.id });
+  const seleccionar = (compromiso: Compromiso) => setHistorial(h => [...h, { tipo: compromiso.tipo, id: compromiso.dato.id }]);
+  const volver = () => setHistorial(h => h.slice(0, -1));
   const navegar = (cantidad: number) => {
     const siguiente = periodo === 'mes' ? desplazarMes(fecha, cantidad) : new Date(fecha);
     if (periodo === 'semana') siguiente.setDate(fecha.getDate() + cantidad * 7);
-    setSeleccion(null);
+    setHistorial([]);
     setFecha(siguiente);
   };
   const persona = ministros.find(m => String(m.id) === personaId);
@@ -88,7 +92,7 @@ function CalendarioContenido() {
       <div className={styles.filters}>
         <div className={styles.field}>
           <label htmlFor="calendario-vista">Qué deseas consultar</label>
-          <select id="calendario-vista" value={vista} onChange={e => { setVista(e.target.value as VistaCalendario); setPersonaId(''); setSeleccion(null); }}>
+          <select id="calendario-vista" value={vista} onChange={e => { setVista(e.target.value as VistaCalendario); setPersonaId(''); setHistorial([]); }}>
             {puedeCoordinar && <option value="coordinacion">Calendario de coordinación</option>}
             <option value="personal">Mis compromisos</option>
             <option value="parroquial">Eventos de la parroquia</option>
@@ -96,7 +100,7 @@ function CalendarioContenido() {
         </div>
         {puedeCoordinar && vista === 'coordinacion' && <div className={styles.field}>
           <label htmlFor="calendario-ministro">Ver horario de un ministro</label>
-          <select id="calendario-ministro" value={personaId} disabled={cargandoMinistros || errorMinistros} onChange={e => { setPersonaId(e.target.value); setSeleccion(null); }}>
+          <select id="calendario-ministro" value={personaId} disabled={cargandoMinistros || errorMinistros} onChange={e => { setPersonaId(e.target.value); setHistorial([]); }}>
             <option value="">{usuario?.rol_id === ROLES.COORDINADOR_MINISTROS ? 'Todos mis ministros' : 'Todos los ministros'}</option>
             {ministros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
           </select>
@@ -107,13 +111,13 @@ function CalendarioContenido() {
       </div>
       <div className={styles.navigation}>
         <div className={styles.buttons} role="group" aria-label="Período del calendario">
-          <button type="button" aria-pressed={periodo === 'semana'} onClick={() => { setPeriodo('semana'); setSeleccion(null); }}>Semana</button>
-          <button type="button" aria-pressed={periodo === 'mes'} onClick={() => { setPeriodo('mes'); setSeleccion(null); }}>Mes</button>
+          <button type="button" aria-pressed={periodo === 'semana'} onClick={() => { setPeriodo('semana'); setHistorial([]); }}>Semana</button>
+          <button type="button" aria-pressed={periodo === 'mes'} onClick={() => { setPeriodo('mes'); setHistorial([]); }}>Mes</button>
         </div>
         <strong>{periodo === 'semana' ? formatRangeText(dias[0], dias[dias.length - 1]) : fecha.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' })}</strong>
         <div className={styles.buttons}>
           <button type="button" onClick={() => navegar(-1)}>{periodo === 'semana' ? 'Semana anterior' : 'Mes anterior'}</button>
-          <button type="button" className={styles.todayButton} onClick={() => { setFecha(new Date()); setSeleccion(null); }}>Hoy</button>
+          <button type="button" className={styles.todayButton} onClick={() => { setFecha(new Date()); setHistorial([]); }}>Hoy</button>
           <button type="button" onClick={() => navegar(1)}>{periodo === 'semana' ? 'Semana siguiente' : 'Mes siguiente'}</button>
         </div>
       </div>
@@ -132,7 +136,8 @@ function CalendarioContenido() {
       })}
     </div>}
     {!loading && !error && periodo === 'mes' && <CalendarioMes key={`${claveDia(fecha)}-${vista}-${personaId}`} fecha={fecha} dias={dias} porDia={porDia} onSeleccionar={seleccionar} />}
-    {!loading && !error && item && <DetalleCompromiso item={item} onClose={() => setSeleccion(null)}
-      onActualizado={() => { setSeleccion(null); reintentar(); }} onSeleccionar={seleccionar} />}
+    {!loading && !error && item && <DetalleCompromiso item={item} onClose={() => setHistorial([])}
+      onActualizado={() => { setHistorial([]); reintentar(); }} onSeleccionar={seleccionar}
+      onVolver={historial.length > 1 ? volver : undefined} />}
   </div>;
 }

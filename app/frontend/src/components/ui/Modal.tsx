@@ -7,9 +7,12 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   width?: number;
+  /** Cuando se provee, muestra un ícono de "volver" a la izquierda del título
+   * — para modales que navegan a una tarjeta dentro de otra (ver DetalleCompromiso). */
+  onBack?: () => void;
 }
 
-export default function Modal({ open, title, onClose, children, width = 520 }: ModalProps) {
+export default function Modal({ open, title, onClose, children, width = 520, onBack }: ModalProps) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
@@ -59,6 +62,11 @@ export default function Modal({ open, title, onClose, children, width = 520 }: M
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
+          {onBack && <button type="button" className={styles.backBtn} onClick={onBack} aria-label="Volver a la tarjeta anterior">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>}
           <h2 id={titleId} className={styles.title}>{title}</h2>
           <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

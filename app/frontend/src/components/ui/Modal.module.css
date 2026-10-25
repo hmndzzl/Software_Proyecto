@@ -24,13 +24,15 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--color-line);
   flex-shrink: 0;
 }
 
 .title {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 700;
@@ -38,7 +40,7 @@
   margin: 0;
 }
 
-.closeBtn {
+.backBtn, .closeBtn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -53,12 +55,12 @@
   flex-shrink: 0;
 }
 
-.closeBtn:hover {
+.backBtn:hover, .closeBtn:hover {
   background: var(--color-cremaDk);
   color: var(--color-carbon);
 }
 
-.closeBtn:focus-visible {
+.backBtn:focus-visible, .closeBtn:focus-visible {
   outline: 3px solid var(--color-rojo);
   outline-offset: 2px;
 }

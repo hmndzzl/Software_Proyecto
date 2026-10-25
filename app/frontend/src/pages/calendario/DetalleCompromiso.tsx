@@ -18,9 +18,12 @@ interface DetalleCompromisoProps {
   onActualizado?: () => void;
   /** Permite abrir, desde este mismo modal, el detalle de una tarea asociada al evento. */
   onSeleccionar?: (item: Compromiso) => void;
+  /** Cuando se llegó a esta tarjeta desde otra (p. ej. una tarea dentro de un evento),
+   * vuelve a mostrar esa tarjeta anterior en vez de cerrar el modal. */
+  onVolver?: () => void;
 }
 
-export default function DetalleCompromiso({ item, onClose, onActualizado, onSeleccionar }: DetalleCompromisoProps) {
+export default function DetalleCompromiso({ item, onClose, onActualizado, onSeleccionar, onVolver }: DetalleCompromisoProps) {
   const { usuario } = useAuth();
   const toast = useToast();
   const [actualizando, setActualizando] = useState(false);
@@ -41,7 +44,7 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
     }
   };
 
-  return <Modal open title={item.dato.titulo} onClose={onClose} width={720}>
+  return <Modal open title={item.dato.titulo} onClose={onClose} onBack={onVolver} width={720}>
     <div className={styles.detail}>
       <div className={styles.detailSection}>
         <p>{fechaCompleta(item.dato.fecha)}</p>

@@ -143,17 +143,27 @@ describe('calendario unificado semanal', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(tarjeta).toHaveFocus();
     await userEvent.click(screen.getByRole('button', { name: /Ver detalle de la tarea/ }));
-    expect(screen.getByRole('dialog', { name: 'Visitar enfermos' })).toHaveTextContent('Sin asignar');
+    const detalleTarea = screen.getByRole('dialog', { name: 'Visitar enfermos' });
+    expect(detalleTarea).toHaveTextContent('Sin asignar');
+    // Tarjeta abierta directamente (no desde otra tarjeta): sin ícono de volver.
+    expect(within(detalleTarea).queryByLabelText('Volver a la tarjeta anterior')).not.toBeInTheDocument();
     await userEvent.click(screen.getByLabelText('Cerrar'));
   });
 
-  it('permite abrir el detalle de una tarea asociada desde el modal del evento', async () => {
+  it('permite abrir el detalle de una tarea asociada desde el modal del evento y volver con el ícono de retroceso', async () => {
     mostrar();
     const tarjeta = await screen.findByRole('button', { name: /Ver detalle del evento/ });
     await userEvent.click(tarjeta);
-    const modal = screen.getByRole('dialog', { name: 'Misa del lunes' });
-    await userEvent.click(within(modal).getByRole('button', { name: /Ver detalle de la tarea Preparar altar/ }));
-    expect(screen.getByRole('dialog', { name: 'Preparar altar' })).toBeInTheDocument();
+    const modalEvento = screen.getByRole('dialog', { name: 'Misa del lunes' });
+    expect(within(modalEvento).queryByLabelText('Volver a la tarjeta anterior')).not.toBeInTheDocument();
+
+    await userEvent.click(within(modalEvento).getByRole('button', { name: /Ver detalle de la tarea Preparar altar/ }));
+    const modalTarea = screen.getByRole('dialog', { name: 'Preparar altar' });
+    expect(modalTarea).toBeInTheDocument();
+
+    await userEvent.click(within(modalTarea).getByLabelText('Volver a la tarjeta anterior'));
+    const deVuelta = screen.getByRole('dialog', { name: 'Misa del lunes' });
+    expect(within(deVuelta).queryByLabelText('Volver a la tarjeta anterior')).not.toBeInTheDocument();
   });
 
   it('muestra un error y permite reintentar sin indicar un calendario vacío', async () => {
