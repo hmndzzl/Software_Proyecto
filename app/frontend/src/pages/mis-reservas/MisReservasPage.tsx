@@ -24,10 +24,11 @@ import styles from './MisReservasPage.module.css';
 
 type MiReserva = Reserva;
 
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'titulo' | 'evento' | 'horario';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'titulo' | 'evento' | 'horario' | 'aforo';
 
 const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
   id: (r) => r.id,
+  aforo: r => r.cantidad_personas ?? -1,
   titulo: r => r.evento_titulo ?? 'Sin título',
   evento: r => r.evento_descripcion ?? 'Sin evento',
   horario: r => `${r.hora_inicio} ${r.hora_fin}`,
@@ -132,6 +133,7 @@ export default function MisReservasPage() {
                   <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -147,6 +149,7 @@ export default function MisReservasPage() {
                     <td>
                       <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
+                    <td>{r.cantidad_personas ?? 'No registrado'}</td>
                     <td>
                       {puedeCancelarReserva(r.estado_reserva_id) && (
                         <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>

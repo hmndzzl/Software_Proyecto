@@ -20,11 +20,13 @@ import type { Espacio } from '../../espacios/components/EspacioCard';
 import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
+import AforoField, { errorAforo } from '../../../components/ui/AforoField';
 
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion' | 'aforo';
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
+  aforo: r => r.cantidad_personas ?? -1,
   inicio: r => r.hora_inicio,
   fin: r => r.hora_fin,
   titulo: r => r.evento_titulo ?? '',
@@ -48,6 +50,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [editEspacioId, setEditEspacioId] = useState('');
   const [editTitulo, setEditTitulo] = useState('');
   const [editDescripcion, setEditDescripcion] = useState('');
+  const [editCantidad, setEditCantidad] = useState('');
   const [editMensaje, setEditMensaje] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [editPublico, setEditPublico] = useState(false);
@@ -107,11 +110,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setEditEspacioId(r.espacio_id ? String(r.espacio_id) : '');
     setEditTitulo(r.evento_titulo ?? '');
     setEditDescripcion(r.evento_descripcion ?? '');
+    setEditCantidad(r.cantidad_personas == null ? '' : String(r.cantidad_personas));
     setEditPublico(Boolean(r.evento_publico));
     datosPersistidos.current = JSON.stringify({
       fecha: r.fecha.split('T')[0], hora_inicio: r.hora_inicio.substring(0, 5),
       hora_fin: r.hora_fin.substring(0, 5), espacio_id: Number(r.espacio_id),
       titulo: r.evento_titulo ?? '', descripcion: r.evento_descripcion ?? '',
+      ...(r.cantidad_personas != null ? { cantidad_personas: r.cantidad_personas } : {}),
     });
     setEditMensaje('');
   };
@@ -147,6 +152,10 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       setEditMensaje('La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
+    if (editCantidad || editando.cantidad_personas != null) {
+      const errorCantidad = errorAforo(editCantidad, espacios.find(e => String(e.id) === editEspacioId)?.capacidad);
+      if (errorCantidad) { setEditMensaje(errorCantidad); return; }
+    }
     setEditLoading(true);
     setEditMensaje('');
     let datosGuardados = false;
@@ -158,6 +167,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         espacio_id: Number(editEspacioId),
         titulo: editTitulo,
         descripcion: editDescripcion,
+        ...(editCantidad ? { cantidad_personas: Number(editCantidad) } : {}),
       };
       if (JSON.stringify(datos) !== datosPersistidos.current) {
         await apiClient.put(`/api/reservas/${editando.id}`, datos);
@@ -200,8 +210,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
             <fieldset className={formStyles.form} disabled={editLoading} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
-                <select className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
+                <label htmlFor="editar-reserva-espacio" className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
+                <select id="editar-reserva-espacio" className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
                   <option value="">-- Selecciona un espacio --</option>
                   {espacios.map(esp => (
                     <option key={esp.id} value={esp.id}>{esp.nombre}</option>
@@ -209,30 +219,30 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 </select>
               </div>
 
+              <AforoField value={editCantidad} onChange={setEditCantidad} capacidad={espacios.find(e => String(e.id) === editEspacioId)?.capacidad} required={editando.cantidad_personas != null} />
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
-                <input type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
+                <label htmlFor="editar-reserva-fecha" className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
+                <input id="editar-reserva-fecha" type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
               </div>
-
               <div className={formStyles.fieldRow}>
                 <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
-                  <input type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
+                  <label htmlFor="editar-reserva-inicio" className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
+                  <input id="editar-reserva-inicio" type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
                 </div>
                 <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
-                  <input type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
+                  <label htmlFor="editar-reserva-fin" className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
+                  <input id="editar-reserva-fin" type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
                 </div>
               </div>
 
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Título del Evento:</label>
-                <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
+                <label htmlFor="editar-reserva-titulo" className={`${formStyles.label} ${formStyles.required}`}>Título del Evento:</label>
+                <input id="editar-reserva-titulo" type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
               </div>
 
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
-                <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
+                <label htmlFor="editar-reserva-descripcion" className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
+                <input id="editar-reserva-descripcion" type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
               </div>
               {esAdminOSacerdote && editando.evento_id && (
                 <div className={formStyles.field}>
@@ -288,6 +298,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <SortableTh label="Descripción" sortKey="descripcion" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Registrado por" sortKey="solicitante" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -305,6 +316,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>
                     <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                   </td>
+                  <td>{r.cantidad_personas ?? 'No registrado'}</td>
                   <td>
                     <div className={styles.acciones}>
                       {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (

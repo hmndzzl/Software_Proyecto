@@ -26,6 +26,39 @@ function mostrar() { return render(<ToastProvider><ListaReservas /></ToastProvid
 describe('integración de reservas, estados y edición', () => {
   beforeEach(() => { vi.clearAllMocks(); preparar(); });
 
+  it('muestra y ordena el aforo, valida al editarlo y guarda la cantidad numérica', async () => {
+    preparar([{ ...reservas[0], cantidad_personas: 20 }, { ...reservas[1], cantidad_personas: 10 }]);
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/espacios' ? [{ id: 2, nombre: 'Salón', capacidad: 30 }] : [{ ...reservas[0], cantidad_personas: 20 }, { ...reservas[1], cantidad_personas: 10 }] }));
+    mostrar();
+    await screen.findByRole('cell', { name: '20' });
+    fireEvent.click(screen.getByRole('columnheader', { name: /Personas esperadas/ }));
+    fireEvent.click(screen.getByRole('columnheader', { name: /Personas esperadas/ }));
+    const filas = within(screen.getByRole('table')).getAllByRole('row');
+    expect(within(filas[1]).getByRole('cell', { name: '10' })).toBeInTheDocument();
+    await userEvent.click(within(filas[2]).getByRole('button', { name: 'Editar' }));
+    const campo = screen.getByLabelText('Cantidad de personas esperadas');
+    fireEvent.change(campo, { target: { value: '31' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(screen.getAllByText(/supera la capacidad/).length).toBeGreaterThan(0);
+    expect(apiClient.put).not.toHaveBeenCalled();
+    fireEvent.change(campo, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(screen.getByText(/Indica una cantidad entera/)).toBeInTheDocument();
+    fireEvent.change(campo, { target: { value: '30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1', expect.objectContaining({ cantidad_personas: 30 })));
+  });
+
+  it('permite completar el aforo faltante en una reserva histórica', async () => {
+    preparar([reservas[0]]);
+    mostrar();
+    expect(await screen.findByText('No registrado')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    fireEvent.change(screen.getByLabelText('Cantidad de personas esperadas'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1', expect.objectContaining({ cantidad_personas: 10 })));
+  });
+
   it('publica sin reiniciar la aprobación ni actualizar los datos de la reserva', async () => {
     preparar([{ ...reservas[1], evento_id: 25, evento_publico: 0 }]);
     mostrar();

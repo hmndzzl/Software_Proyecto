@@ -6,6 +6,7 @@ import { ROLES } from '../../../utils/roles';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import { useAuth } from '../../../context/AuthContext';
 import type { Espacio } from '../../espacios/components/EspacioCard';
+import AforoField, { errorAforo } from '../../../components/ui/AforoField';
 import styles from '../../../styles/Form.module.css';
 
 interface CrearReservaFormProps {
@@ -21,6 +22,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const [espacioId, setEspacioId] = useState('');
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [cantidad, setCantidad] = useState('');
   const [publico, setPublico] = useState(false);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [espaciosCargados, setEspaciosCargados] = useState(false);
@@ -32,6 +34,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const { tieneRol } = useAuth();
   const puedeAprobar = tieneRol([ROLES.SACERDOTE]);
   const puedePublicar = tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
+  const espacioSeleccionado = espacios.find(esp => String(esp.id) === espacioId);
 
   useEffect(() => {
     if (!autoFocus) return;
@@ -70,10 +73,12 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     e.preventDefault();
     if (loading) return;
 
-    if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo || !descripcion) {
+    if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo.trim() || !descripcion.trim() || !cantidad) {
       toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
+    const errorCantidad = errorAforo(cantidad, espacioSeleccionado?.capacidad);
+    if (errorCantidad) { toast.error('Revisa el aforo esperado', errorCantidad); return; }
 
     if (horaInicio >= horaFin) {
       toast.error('Horario inválido', 'La hora de inicio debe ser menor que la hora de fin.');
@@ -110,8 +115,9 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         hora_inicio: horaInicio,
         hora_fin: horaFin,
         espacio_id: Number(espacioId),
-        titulo,
-        descripcion,
+        titulo: titulo.trim(),
+        descripcion: descripcion.trim(),
+        cantidad_personas: Number(cantidad),
         ...(puedePublicar ? { publico } : {}),
       });
       const nombreEspacio = espacios.find(esp => esp.id === Number(espacioId))?.nombre ?? 'el espacio seleccionado';
@@ -128,6 +134,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       setEspacioId('');
       setTitulo('');
       setDescripcion('');
+      setCantidad('');
       setPublico(false);
       if (onReservaCreada) onReservaCreada();
     } catch (error: unknown) {
@@ -163,7 +170,8 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        <p className={styles.fieldNote}>Selecciona el espacio, indica cuántas personas asistirán y completa la fecha, el horario y los datos de la actividad. La solicitud quedará pendiente de aprobación.</p>
         <div className={styles.field}>
           <label htmlFor="espacio_id" className={`${styles.label} ${styles.required}`}>Espacio:</label>
           <select
@@ -182,6 +190,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
           </select>
         </div>
 
+        <AforoField value={cantidad} onChange={setCantidad} capacidad={espacioSeleccionado ? espacioSeleccionado.capacidad ?? null : undefined} />
         <div className={styles.field}>
           <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
