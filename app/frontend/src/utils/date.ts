@@ -17,6 +17,12 @@ export function formatHora(hora: string): string {
   return hora.substring(0, 5);
 }
 
+/** Rango de horario compartido: 24 horas, sin segundos y con raya corta espaciada. */
+export function formatHorario(inicio?: string, fin?: string): string {
+  if (!inicio || !fin) return 'Horario no indicado';
+  return `${formatHora(inicio)} – ${formatHora(fin)}`;
+}
+
 /** Día y mes abreviado por separado, para bloques de fecha tipo "13 / SEP". */
 export function partesFecha(fecha: string): { dia: string; mesAbrev: string } {
   const d = new Date(fecha);
