@@ -4,6 +4,7 @@ import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
 import { withTransaction } from '../utils/withTransaction';
+import { ErrorAforo, validarCantidadEsperada, validarCapacidad } from '../utils/aforo';
 
 export const crearReserva = async (req: Request, res: Response) => {
   const { fecha, hora_inicio, hora_fin, espacio_id, titulo, descripcion } = req.body;
@@ -54,7 +55,11 @@ export const crearReserva = async (req: Request, res: Response) => {
   const solicitante_id = req.user!.id;
 
   try {
+    const cantidad = validarCantidadEsperada(req.body.cantidad_personas) ?? null;
+    let reservaCreadaId = 0;
+    let confirmada = false;
     await withTransaction(async (conn) => {
+      await validarCapacidad(conn, Number(espacio_id), cantidad);
       const [conflictos]: any = await conn.query(
         `SELECT * FROM reserva
          WHERE espacio_id = ?
@@ -72,9 +77,9 @@ export const crearReserva = async (req: Request, res: Response) => {
       }
 
       const [resResult]: any = await conn.query(
-        `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, solicitante_id]
+        `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id, cantidad_personas)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, solicitante_id, cantidad]
       );
 
       const reservaId = resResult.insertId;
@@ -105,13 +110,13 @@ export const crearReserva = async (req: Request, res: Response) => {
         }
       }
 
-      res.status(HttpStatus.CREATED).json({
-        message: 'Solicitud de reserva y evento creados correctamente',
-        reservaId
-      });
+      reservaCreadaId = reservaId;
+      confirmada = true;
       return 'commit';
     });
+    if (confirmada) res.status(HttpStatus.CREATED).json({ message: 'Solicitud de reserva y evento creados correctamente', reservaId: reservaCreadaId });
   } catch (error) {
+    if (error instanceof ErrorAforo) return res.status(error.status).json({ message: error.message });
     console.error('Error al crear reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al crear la reserva'
@@ -160,6 +165,8 @@ export const editarReserva = async (req: Request, res: Response) => {
   }
 
   try {
+    const cantidadEnviada = validarCantidadEsperada(req.body.cantidad_personas);
+    let guardada = false;
     await withTransaction(async (conn) => {
       const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ?', [id]);
 
@@ -175,9 +182,11 @@ export const editarReserva = async (req: Request, res: Response) => {
         return 'rollback';
       }
 
+      const cantidad = cantidadEnviada ?? rows[0].cantidad_personas ?? null;
+      await validarCapacidad(conn, Number(espacio_id), cantidad);
       await conn.query(
-        `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = ? WHERE id = ?`,
-        [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, id]
+        `UPDATE reserva SET fecha = ?, hora_inicio = ?, hora_fin = ?, espacio_id = ?, estado_reserva_id = ?, cantidad_personas = ? WHERE id = ?`,
+        [fecha, hora_inicio, hora_fin, espacio_id, ESTADOS_RESERVA.PENDIENTE, cantidad, id]
       );
 
       await conn.query(
@@ -206,12 +215,12 @@ export const editarReserva = async (req: Request, res: Response) => {
         }
       }
 
-      res.status(HttpStatus.OK).json({
-        message: 'Reserva actualizada. Vuelve a estado Pendiente para re-aprobación.'
-      });
+      guardada = true;
       return 'commit';
     });
+    if (guardada) res.status(HttpStatus.OK).json({ message: 'Reserva actualizada. Vuelve a estado Pendiente para re-aprobación.' });
   } catch (error) {
+    if (error instanceof ErrorAforo) return res.status(error.status).json({ message: error.message });
     console.error('Error al editar reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al editar la reserva'
@@ -224,7 +233,7 @@ export const obtenerMisReservas = async (req: Request, res: Response) => {
     const solicitante_id = req.user!.id;
 
     const [reservas]: any = await db.query(
-      `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
+      `SELECT r.id, r.espacio_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, r.cantidad_personas,
               esp.nombre AS espacio_nombre,
               ev.id      AS evento_id,
               ev.titulo  AS evento_titulo,
@@ -253,7 +262,7 @@ export const obtenerReservas = async (req: Request, res: Response) => {
     const params = espacio_id ? [Number(espacio_id)] : [];
 
     const [reservas]: any = await db.query(`
-      SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
+      SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, r.cantidad_personas,
              r.espacio_id, r.solicitante_id,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
@@ -369,6 +378,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     }
 
     if (estadoReservaId === ESTADOS_RESERVA.CONFIRMADA) {
+      await validarCapacidad(db, Number(reserva.espacio_id), reserva.cantidad_personas ?? null);
       const [conflictos]: any = await db.query(
         `SELECT * FROM reserva
          WHERE espacio_id = ?
@@ -423,6 +433,7 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       message: mensajes[estadoReservaId]
     });
   } catch (error) {
+    if (error instanceof ErrorAforo) return res.status(error.status).json({ message: error.message });
     console.error('Error al cambiar estado de la reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al actualizar el estado de la reserva'
