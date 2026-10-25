@@ -41,6 +41,21 @@ describe('calendario unificado semanal', () => {
     expect(screen.getByText('Visitar enfermos')).toBeInTheDocument();
     expect(screen.getByText('Sin asignar')).toBeInTheDocument();
     expect(screen.getAllByText('Sin compromisos registrados')).toHaveLength(6);
+    // Una tarea sin evento_id es el caso normal (lector, comunión, coro...), no un
+    // dato faltante — no debe anunciarse con un rótulo de grupo.
+    expect(screen.queryByText('Tareas sin evento asociado')).not.toBeInTheDocument();
+    expect(screen.queryByText('Vinculada a un evento')).not.toBeInTheDocument();
+  });
+
+  it('avisa en la propia tarjeta si una tarea quedó vinculada a un evento que no se cargó', async () => {
+    const tareaVinculadaSinEvento = { ...independiente, id: 3, titulo: 'Tarea huérfana', evento_id: 99 };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : { eventos: [evento], tareas: [tarea, tareaVinculadaSinEvento] },
+    }));
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    expect(screen.getByText('Vinculada a un evento')).toBeInTheDocument();
+    expect(screen.queryByText('Tareas sin evento asociado')).not.toBeInTheDocument();
   });
 
   it('aprueba una reserva pendiente ajena desde el detalle y refresca el calendario', async () => {
@@ -265,6 +280,16 @@ describe('calendario mensual', () => {
     await screen.findByRole('table');
     await userEvent.click(screen.getByRole('button', { name: 'Semana' }));
     await screen.findByText('Misa del lunes');
+  });
+
+  it('muestra en cada vista previa del mes quién sirve o el estado del evento', async () => {
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    const tabla = await screen.findByRole('table');
+    const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*2 compromisos/ });
+    expect(within(dia).getByText('Confirmada')).toBeInTheDocument();
+    expect(within(dia).getByText('Sin asignar')).toBeInTheDocument();
   });
 
   it('limita los resúmenes y mantiene todos los compromisos en el detalle diario', async () => {
