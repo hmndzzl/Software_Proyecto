@@ -4,6 +4,7 @@ const reserva = { id: 7, fecha: '2099-10-20', hora_inicio: '14:00:00', hora_fin:
 const decisiones = [
   { id: 2, resultado: 'aprobada', actor_id: 1, actor_nombre: 'Diego Calderon', fecha: '2026-10-25T14:05:06.123000Z' },
   { id: 1, resultado: 'rechazada', actor_id: 6, actor_nombre: 'Padre Luis', fecha: '2026-10-24T16:00:00.000000Z' },
+  { id: 0, resultado: 'pendiente', actor_id: 7, actor_nombre: 'Coordinador', fecha: '2026-10-24T14:00:00.000000Z' },
 ];
 
 async function preparar(page: Page) {
@@ -31,6 +32,10 @@ test('reservas y mis reservas muestran autores y horas de Guatemala sin desborda
     await expect(dialog.getByText('Por Diego Calderon', { exact: true })).toBeVisible();
     await expect(dialog.getByText('Por Padre Luis', { exact: true })).toBeVisible();
     await expect(dialog.locator('time').first()).toContainText('08:05:06');
+    await expect(dialog.getByText(/Fechas y horas de Guatemala/)).toHaveCount(0);
+    await expect(dialog.getByText('Aprobada', { exact: true })).toHaveCSS('color', 'rgb(47, 122, 77)');
+    await expect(dialog.getByText('Devuelta a pendiente', { exact: true })).toHaveCSS('color', 'rgb(164, 116, 3)');
+    await expect(dialog.getByText('Rechazada', { exact: true })).toHaveCSS('color', 'rgb(157, 47, 47)');
     await expect(dialog.getByText('20', { exact: true })).toBeVisible();
     for (const width of [320, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });

@@ -46,13 +46,12 @@ export default function DetalleConDecisiones({ titulo, endpoint, campos, onClose
       {campos.map(campo => <div key={campo.etiqueta}><dt>{campo.etiqueta}</dt><dd>{campo.valor}</dd></div>)}
     </dl>
     <h3 className={styles.titulo}>Historial de decisiones</h3>
-    <p className={styles.ayuda}>Fechas y horas de Guatemala (UTC−6). El nombre corresponde al momento de la decisión.</p>
     {estado === 'cargando' && <LoadingState label="Cargando decisiones..." />}
     {estado === 'error' && <ErrorState message="No se pudo cargar el historial de decisiones." onRetry={() => setIntento(n => n + 1)} />}
     {estado === 'listo' && (datos.length === 0
       ? <p className={styles.ayuda}>No hay decisiones registradas. Las decisiones anteriores a la incorporación del historial no tienen autor ni fecha disponibles.</p>
       : <ol className={styles.historial} aria-label="Decisiones registradas">
-        {datos.map(decision => <li key={decision.id}>
+        {datos.map(decision => <li key={decision.id} data-resultado={decision.resultado}>
           <strong>{RESULTADO[decision.resultado]}</strong>
           <span>Por {decision.actor_nombre}</span>
           <time dateTime={decision.fecha}>{fechaDecision(decision.fecha)}</time>

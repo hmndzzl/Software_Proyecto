@@ -14,6 +14,10 @@ describe('detalle con historial', () => {
     render(<DetalleConDecisiones {...props} />);
     expect(screen.getByText('Cargando decisiones...')).toBeInTheDocument();
     const lista = await screen.findByRole('list', { name: 'Decisiones registradas' });
+    expect(screen.queryByText(/Fechas y horas de Guatemala/)).not.toBeInTheDocument();
+    for (const resultado of ['aprobada', 'rechazada', 'pendiente', 'cancelada']) {
+      expect(lista.querySelector(`li[data-resultado="${resultado}"]`)).toBeInTheDocument();
+    }
     expect(within(lista).getAllByRole('listitem')).toHaveLength(4);
     expect(within(lista).getByText('Aprobada')).toBeInTheDocument();
     expect(within(lista).getByText('Rechazada')).toBeInTheDocument();
