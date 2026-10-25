@@ -85,11 +85,17 @@ export async function getCalendario(req: Request, res: Response): Promise<void> 
       const filtradas = persona === undefined ? tareas : tareas.filter(t => t.asignados.some((a: { persona_id: number }) => a.persona_id === Number(persona)));
       const idsVinculados = new Set(filtradas.map(t => t.evento_id));
       const personaConsulta = vista === 'personal' ? usuario.id : persona === undefined ? null : Number(persona);
+      // Sacerdote/Admin ven en su calendario personal, además de sus propios
+      // compromisos, toda reserva pendiente de la parroquia en el rango consultado
+      // — es la cola de aprobaciones que les toca resolver, con la fecha en la que
+      // está planificada (no hace falta ir a otra pantalla a buscarla).
+      const esPersonalPrivilegiado = vista === 'personal' && privilegiado;
       respuesta = {
         tareas: filtradas,
         eventos: eventos.filter(e => {
           if (e.estado_reserva_id === ESTADOS_RESERVA.CANCELADA) return false;
           if (vista === 'parroquial') return e.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA;
+          if (esPersonalPrivilegiado && e.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE) return true;
           if (personaConsulta !== null) return e.encargado_id === personaConsulta || idsVinculados.has(e.id);
           return [ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA].includes(e.estado_reserva_id) || idsVinculados.has(e.id);
         }).map(e => ({ ...e, tareas: tareas.filter(t => t.evento_id === e.id) })) as RowDataPacket[],
