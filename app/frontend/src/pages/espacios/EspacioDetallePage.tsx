@@ -9,6 +9,7 @@ import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
 import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
+import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
@@ -27,6 +28,7 @@ export default function EspacioDetallePage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [qrAbierto, setQrAbierto] = useState(false);
+  const [checkinLoading, setCheckinLoading] = useState<number | null>(null);
 
   const { tieneRol } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
@@ -68,6 +70,22 @@ export default function EspacioDetallePage() {
     }
   };
 
+  // HU-15: check-in real al escanear el QR. "en_uso"/"reservas_checkin_disponible"
+  // ya vienen filtrados por rol desde el backend (propia reserva, o cualquiera si
+  // el actor es privilegiado) — aquí solo se presentan y se dispara la confirmación.
+  const confirmarCheckin = async (reservaId: number) => {
+    setCheckinLoading(reservaId);
+    try {
+      await apiClient.put(`/api/reservas/${reservaId}/checkin`, {});
+      toast.success('Check-in registrado', 'El salón ya aparece en uso mientras dure tu reserva.');
+      cargarEspacio();
+    } catch (err: unknown) {
+      toast.error('No se pudo hacer check-in', getApiErrorMessage(err, 'Error al hacer check-in de la reserva.', 'message'));
+    } finally {
+      setCheckinLoading(null);
+    }
+  };
+
   if (cargando) return <LoadingState label="Cargando..." />;
 
   if (error || !espacio) {
@@ -101,6 +119,33 @@ export default function EspacioDetallePage() {
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
+
+          {puedeReservar && (
+            <div className={styles.checkinWrap}>
+              {espacio.en_uso && <Badge kind="bad">En uso ahora</Badge>}
+
+              {espacio.reservas_checkin_disponible && espacio.reservas_checkin_disponible.length > 0 ? (
+                espacio.reservas_checkin_disponible.map((r) => (
+                  <div key={r.id} className={styles.checkinItem}>
+                    <p className={styles.checkinInfo}>
+                      Reserva de <strong>{r.solicitante_nombre}</strong>, hoy {fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}
+                    </p>
+                    {r.checkin_en ? (
+                      <span className={styles.checkinHecho}>
+                        Check-in hecho a las {fmtH(r.checkin_en.split(' ')[1] ?? '')}
+                      </span>
+                    ) : (
+                      <Btn kind="ok" size="sm" onClick={() => confirmarCheckin(r.id)} disabled={checkinLoading === r.id}>
+                        {checkinLoading === r.id ? 'Confirmando...' : 'Confirmar check-in'}
+                      </Btn>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={styles.checkinAviso}>No tienes una reserva en este horario.</p>
+              )}
+            </div>
+          )}
 
           <div className={styles.infoCards}>
             <div className={styles.infoCard}>
