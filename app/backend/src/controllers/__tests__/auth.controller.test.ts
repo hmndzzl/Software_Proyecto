@@ -194,6 +194,19 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Usuario registrado exitosamente' });
     });
 
+    it('crea la cuenta como pendiente de aprobación', async () => {
+      req.body = { nombre: 'Nuevo', correo: 'nuevo@test.com', password: 'pass', rol_id: 2 };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (bcrypt.hash as any).mockResolvedValue('hashedpass');
+
+      await register(req as Request, res as Response);
+
+      const [sql, params] = (pool.execute as any).mock.calls[1];
+      expect(sql).toContain('estado_cuenta');
+      expect(params).toContain('pendiente');
+    });
+
     it('debería fallar si el correo ya está registrado (400)', async () => {
       req.body = { nombre: 'Existe', correo: 'existe@test.com', password: 'pass', rol_id: 2 };
 
