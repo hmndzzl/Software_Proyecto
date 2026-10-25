@@ -134,6 +134,55 @@ describe('integración del detalle de un espacio', () => {
     expect(screen.getByRole('heading', { name: 'Calendario del Espacio' })).toBeInTheDocument();
   });
 
+  it('muestra la reserva propia disponible para check-in y confirma al tocar el botón', async () => {
+    const espacioConCheckin = {
+      ...espacio,
+      en_uso: false,
+      reservas_checkin_disponible: [
+        { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: null },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioConCheckin : reservas }));
+    mostrar();
+    await screen.findByText('Catequesis');
+
+    expect(screen.getByText(/Reserva de/)).toBeInTheDocument();
+    expect(screen.getByText('Admin', { exact: false })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar check-in' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/10/checkin', {}));
+  });
+
+  it('muestra "en uso ahora" y el check-in ya hecho cuando checkin_en viene con valor', async () => {
+    const espacioEnUso = {
+      ...espacio,
+      en_uso: true,
+      reservas_checkin_disponible: [
+        { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: '2026-08-11 13:50:00' },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioEnUso : reservas }));
+    mostrar();
+    await screen.findByText('Catequesis');
+
+    expect(screen.getByText('En uso ahora')).toBeInTheDocument();
+    expect(screen.getByText(/Check-in hecho a las 13:50/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirmar check-in' })).not.toBeInTheDocument();
+  });
+
+  it('muestra el aviso de "sin reserva en este horario" cuando no hay nada para check-in', async () => {
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.getByText('No tienes una reserva en este horario.')).toBeInTheDocument();
+  });
+
+  it('no muestra la sección de check-in a un Ministro', async () => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 4, nombre: 'Ministro', correo: 'm@test.com', rol_id: ROLES.MINISTRO }));
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.queryByText('No tienes una reserva en este horario.')).not.toBeInTheDocument();
+  });
+
   it('usa mensajes de red de respaldo al cargar y cambiar estado', async () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValueOnce({ data: [] });
     const vista = mostrar();
