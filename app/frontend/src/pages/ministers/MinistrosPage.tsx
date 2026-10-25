@@ -10,6 +10,8 @@ import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
+import TableFilters from '../../components/ui/TableFilters';
+import { useTableFilters } from '../../hooks/useTableFilters';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
@@ -46,7 +48,14 @@ export default function MinistrosPage() {
   const toast = useToast();
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
 
-  const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(ministros, SORT_VALUE);
+  const filtros = useTableFilters(ministros, {
+    search: m => [m.nombre, m.correo, ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'],
+    selects: [
+      { key: 'disponibilidad', label: 'Disponibilidad', value: m => m.disponible ? 'Disponible' : 'No disponible' },
+      { key: 'rol', label: 'Rol', value: m => ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const { tieneRol } = useAuth();
   const puedeGestionar = tieneRol([ROLES.COORDINADOR_MINISTROS]);
@@ -97,6 +106,7 @@ export default function MinistrosPage() {
         />
 
         {loading && <LoadingState label="Cargando ministros..." />}
+        {!loading && !error && <TableFilters {...filtros.controls} label="Filtros del directorio" />}
         {error   && <ErrorState message={error} onRetry={cargarMinistros} />}
 
         {!loading && !error && ministros.length === 0 && (

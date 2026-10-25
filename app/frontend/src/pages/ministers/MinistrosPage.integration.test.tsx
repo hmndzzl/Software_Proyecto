@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../api/client';
@@ -31,12 +31,12 @@ describe('integración del directorio de ministros', () => {
     render(<MinistrosPage />, { wrapper });
     await screen.findByText('Ana María López');
     expect(screen.getByText('AM')).toBeInTheDocument();
-    expect(screen.getAllByText('Ministro')).toHaveLength(2);
-    expect(screen.getAllByText('Disponible')).toHaveLength(2);
+    expect(within(screen.getByRole('table')).getAllByText('Ministro')).toHaveLength(2);
+    expect(within(screen.getByRole('table')).getAllByText('Disponible')).toHaveLength(2);
     for (const label of ['Nombre', 'Correo', 'Rol', 'Disponibilidad']) {
       const header = screen.getByRole('columnheader', { name: new RegExp(label) });
-      await userEvent.click(header);
-      await userEvent.click(header);
+      fireEvent.click(header);
+      fireEvent.click(header);
     }
   });
 
