@@ -136,6 +136,36 @@ describe('calendario unificado semanal', () => {
     await screen.findByText('No hay ministros activos en tu directorio.');
   });
 
+  it('avisa a un Sacerdote/Admin de cuentas pendientes y enlaza a /cuentas', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [{ id: 9, nombre: 'Ana' }]
+        : url === '/api/cuentas' ? [{ id: 1, nombre: 'X' }, { id: 2, nombre: 'Y' }]
+        : datos,
+    }));
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    const aviso = await screen.findByRole('link', { name: /Tienes 2 cuentas pendientes de aprobar/ });
+    expect(aviso).toHaveAttribute('href', '/cuentas');
+  });
+
+  it('no muestra el aviso de cuentas a un Ministro, aunque haya pendientes', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : url === '/api/cuentas' ? [{ id: 1, nombre: 'X' }] : datos,
+    }));
+    mostrar(4);
+    await screen.findByText('Misa del lunes');
+    expect(screen.queryByRole('link', { name: /pendientes de aprobar/ })).not.toBeInTheDocument();
+  });
+
+  it('no muestra el aviso a un Sacerdote/Admin cuando no hay cuentas pendientes', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [{ id: 9, nombre: 'Ana' }] : url === '/api/cuentas' ? [] : datos,
+    }));
+    mostrar();
+    await screen.findByText('Misa del lunes');
+    expect(screen.queryByRole('link', { name: /pendientes de aprobar/ })).not.toBeInTheDocument();
+  });
+
   it('descarta datos y filtros cuando cambian el usuario o su rol', async () => {
     const { rerender } = mostrar();
     await screen.findByText('Misa del lunes');
