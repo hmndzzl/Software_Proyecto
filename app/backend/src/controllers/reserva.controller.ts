@@ -236,11 +236,19 @@ export const obtenerReservas = async (req: Request, res: Response) => {
   try {
     const { espacio_id } = req.query;
     const filtro = espacio_id ? 'WHERE r.espacio_id = ?' : '';
-    const params = espacio_id ? [Number(espacio_id)] : [];
+    const params = [ESTADOS_RESERVA.CONFIRMADA, ...(espacio_id ? [Number(espacio_id)] : [])];
 
+    // HU-15: "en_uso" para que el calendario del espacio pueda resaltar la
+    // reserva con check-in activo ahora mismo (mismo criterio que espacio.controller).
     const [reservas]: any = await db.query(`
       SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
              r.espacio_id, r.solicitante_id,
+             DATE_FORMAT(r.checkin_en, '%Y-%m-%d %H:%i:%s') AS checkin_en,
+             (r.checkin_en IS NOT NULL
+              AND r.estado_reserva_id = ?
+              AND r.fecha = DATE(${AHORA_GUATEMALA_SQL})
+              AND TIME(${AHORA_GUATEMALA_SQL}) BETWEEN r.hora_inicio AND r.hora_fin
+             ) AS en_uso,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
              ev.id AS evento_id, ev.publico AS evento_publico,
@@ -253,6 +261,10 @@ export const obtenerReservas = async (req: Request, res: Response) => {
       ${filtro}
       ORDER BY r.fecha ASC, r.hora_inicio ASC
     `, params);
+
+    for (const r of reservas) {
+      r.en_uso = Boolean(r.en_uso);
+    }
 
     return res.status(HttpStatus.OK).json(reservas);
   } catch (error) {
