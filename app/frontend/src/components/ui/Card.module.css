@@ -22,6 +22,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+  flex: 1 1 200px;
 }
 
 .headBar {
@@ -33,6 +36,8 @@
 }
 
 .headTitle {
+  max-width: calc(100% - 16px);
+  overflow-wrap: anywhere;
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
@@ -66,4 +71,6 @@
   .body { padding: 18px; }
   .headLeft { min-width: 0; }
   .headTitle { font-size: 14px; }
+  .headHint { flex-basis: 100%; padding-left: 16px; overflow-wrap: anywhere; }
+  .headRight { max-width: 100%; flex-wrap: wrap; }
 }
