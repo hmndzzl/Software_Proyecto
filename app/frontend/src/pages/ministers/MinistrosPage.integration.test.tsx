@@ -14,7 +14,7 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter><ToastProvider>{children}</ToastProvider></MemoryRouter>;
 const ministros = [
-  { id: 1, nombre: '  Ana María López ', correo: 'ana@test.com', rol_id: 1, disponible: true },
+  { id: 1, nombre: '  Ana María López ', correo: 'ana@test.com', telefono: '+50255551234', rol_id: 1, disponible: true },
   { id: 2, nombre: 'Bruno', correo: 'bruno@test.com', rol_id: 99, disponible: false },
   { id: 3, nombre: 'Carla', correo: 'carla@test.com', disponible: true },
 ];
@@ -33,7 +33,9 @@ describe('integración del directorio de ministros', () => {
     expect(screen.getByText('AM')).toBeInTheDocument();
     expect(within(screen.getByRole('table')).getAllByText('Ministro')).toHaveLength(2);
     expect(within(screen.getByRole('table')).getAllByText('Disponible')).toHaveLength(2);
-    for (const label of ['Nombre', 'Correo', 'Rol', 'Disponibilidad']) {
+    expect(screen.getByRole('link', { name: '+50255551234' })).toHaveAttribute('href', 'tel:+50255551234');
+    expect(screen.getAllByText('Sin teléfono')).toHaveLength(2);
+    for (const label of ['Nombre', 'Correo', 'Teléfono', 'Rol', 'Disponibilidad']) {
       const header = screen.getByRole('columnheader', { name: new RegExp(label) });
       fireEvent.click(header);
       fireEvent.click(header);
