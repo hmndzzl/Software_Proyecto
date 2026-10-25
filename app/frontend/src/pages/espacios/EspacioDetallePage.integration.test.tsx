@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -132,6 +132,88 @@ describe('integración del detalle de un espacio', () => {
     await screen.findByText('Catequesis');
     expect(screen.getByRole('heading', { name: 'Próximas Reservas' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Calendario del Espacio' })).toBeInTheDocument();
+  });
+
+  it('muestra la reserva propia disponible para check-in y confirma al tocar el botón', async () => {
+    const espacioConCheckin = {
+      ...espacio,
+      en_uso: false,
+      reservas_checkin_disponible: [
+        { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: null },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioConCheckin : reservas }));
+    mostrar();
+    await screen.findByText('Catequesis');
+
+    expect(screen.getByText(/Se detectó una reserva a tu nombre/)).toBeInTheDocument();
+    expect(screen.getByText(/de 14:00 a 16:00/)).toBeInTheDocument();
+    expect(screen.getByText(/¿Deseas confirmar el check-in/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sí, confirmar check-in' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/10/checkin', {}));
+  });
+
+  it('identifica por nombre una reserva ajena cuando el actor es privilegiado', async () => {
+    const espacioConCheckinAjeno = {
+      ...espacio,
+      en_uso: false,
+      reservas_checkin_disponible: [
+        { id: 11, hora_inicio: '17:00:00', hora_fin: '18:00:00', solicitante_id: 2, solicitante_nombre: 'María Gómez', checkin_en: null },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioConCheckinAjeno : reservas }));
+    mostrar();
+    await screen.findByText('Catequesis');
+
+    expect(screen.getByText(/Se detectó una reserva a nombre de/)).toBeInTheDocument();
+    expect(screen.getByText('María Gómez')).toBeInTheDocument();
+  });
+
+  it('muestra "en uso ahora" y el check-in ya hecho cuando checkin_en viene con valor', async () => {
+    const espacioEnUso = {
+      ...espacio,
+      en_uso: true,
+      reservas_checkin_disponible: [
+        { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: '2026-08-11 13:50:00' },
+      ],
+    };
+    const reservasConEnUso = [
+      { id: 10, fecha: '2099-10-20', hora_inicio: '14:00:00', hora_fin: '16:00:00', estado_reserva_id: 2, evento_titulo: 'Ensayo de coro', evento_descripcion: null, solicitante_nombre: 'Admin', checkin_en: '2026-08-11 13:50:00', en_uso: true },
+    ];
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioEnUso : reservasConEnUso }));
+    mostrar();
+    await screen.findByText('Ensayo de coro');
+
+    expect(screen.getByText('En uso ahora')).toBeInTheDocument();
+    expect(screen.getByText(/Check-in hecho a las 13:50/)).toBeInTheDocument();
+    expect(screen.queryByText(/¿Deseas confirmar el check-in/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sí, confirmar check-in' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /En uso ahora/ }));
+    expect(await screen.findByRole('heading', { name: 'Ensayo de coro' })).toBeInTheDocument();
+    expect(screen.getByText('En uso por: Admin')).toBeInTheDocument();
+  });
+
+  it('muestra "Libre" cuando ningún horario está en uso en este momento', async () => {
+    const vista = mostrar();
+    await screen.findByText('Catequesis');
+    const estadoWrap = vista.container.querySelector('[class*="estadoActualWrap"]') as HTMLElement;
+    expect(within(estadoWrap).getByText('Libre')).toBeInTheDocument();
+    expect(within(estadoWrap).queryByText('En uso ahora')).not.toBeInTheDocument();
+  });
+
+  it('muestra el aviso de "sin reserva en este horario" cuando no hay nada para check-in', async () => {
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.getByText('No tienes una reserva en este horario.')).toBeInTheDocument();
+  });
+
+  it('no muestra la sección de check-in a un Ministro', async () => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 4, nombre: 'Ministro', correo: 'm@test.com', rol_id: ROLES.MINISTRO }));
+    mostrar();
+    await screen.findByText('Catequesis');
+    expect(screen.queryByText('No tienes una reserva en este horario.')).not.toBeInTheDocument();
   });
 
   it('usa mensajes de red de respaldo al cargar y cambiar estado', async () => {

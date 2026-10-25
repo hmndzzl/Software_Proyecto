@@ -9,7 +9,9 @@ import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
 import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
+import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
@@ -27,8 +29,10 @@ export default function EspacioDetallePage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [qrAbierto, setQrAbierto] = useState(false);
+  const [checkinLoading, setCheckinLoading] = useState<number | null>(null);
+  const [detalleEnUsoAbierto, setDetalleEnUsoAbierto] = useState(false);
 
-  const { tieneRol } = useAuth();
+  const { tieneRol, usuario } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
   const puedeReservar = tieneRol(ROLES_RESERVAS);
 
@@ -56,6 +60,11 @@ export default function EspacioDetallePage() {
 
   const toast = useToast();
 
+  // Misma fuente que el calendario: a lo sumo una reserva confirmada cubre el
+  // instante actual (las confirmadas nunca se solapan), así que esto identifica
+  // de forma única quién está usando el salón ahora mismo, si alguien lo está.
+  const reservaEnUso = reservas.find(r => r.en_uso);
+
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
@@ -65,6 +74,22 @@ export default function EspacioDetallePage() {
       setReservas(res.data);
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+    }
+  };
+
+  // HU-15: check-in real al escanear el QR. "en_uso"/"reservas_checkin_disponible"
+  // ya vienen filtrados por rol desde el backend (propia reserva, o cualquiera si
+  // el actor es privilegiado) — aquí solo se presentan y se dispara la confirmación.
+  const confirmarCheckin = async (reservaId: number) => {
+    setCheckinLoading(reservaId);
+    try {
+      await apiClient.put(`/api/reservas/${reservaId}/checkin`, {});
+      toast.success('Check-in registrado', 'El salón ya aparece en uso mientras dure tu reserva.');
+      cargarEspacio();
+    } catch (err: unknown) {
+      toast.error('No se pudo hacer check-in', getApiErrorMessage(err, 'Error al hacer check-in de la reserva.', 'message'));
+    } finally {
+      setCheckinLoading(null);
     }
   };
 
@@ -101,6 +126,50 @@ export default function EspacioDetallePage() {
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
+
+          <div className={styles.estadoActualWrap}>
+            {reservaEnUso ? (
+              <button
+                type="button"
+                className={styles.estadoActualBtn}
+                onClick={() => setDetalleEnUsoAbierto(true)}
+                title="Ver quién lo está usando"
+              >
+                <Badge kind="bad">En uso ahora</Badge>
+              </button>
+            ) : (
+              <Badge kind="ok">Libre</Badge>
+            )}
+          </div>
+
+          {puedeReservar && (
+            <div className={styles.checkinWrap}>
+              {espacio.reservas_checkin_disponible && espacio.reservas_checkin_disponible.length > 0 ? (
+                espacio.reservas_checkin_disponible.map((r) => (
+                  <div key={r.id} className={styles.checkinItem}>
+                    <p className={styles.checkinInfo}>
+                      {r.solicitante_id === usuario?.id
+                        ? 'Se detectó una reserva a tu nombre'
+                        : <>Se detectó una reserva a nombre de <strong>{r.solicitante_nombre}</strong></>}
+                      {' '}hoy, de {fmtH(r.hora_inicio)} a {fmtH(r.hora_fin)}.
+                      {!r.checkin_en && ' ¿Deseas confirmar el check-in para usar este espacio?'}
+                    </p>
+                    {r.checkin_en ? (
+                      <span className={styles.checkinHecho}>
+                        Check-in hecho a las {fmtH(r.checkin_en.split(' ')[1] ?? '')}
+                      </span>
+                    ) : (
+                      <Btn kind="ok" size="sm" onClick={() => confirmarCheckin(r.id)} disabled={checkinLoading === r.id}>
+                        {checkinLoading === r.id ? 'Confirmando...' : 'Sí, confirmar check-in'}
+                      </Btn>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={styles.checkinAviso}>No tienes una reserva en este horario.</p>
+              )}
+            </div>
+          )}
 
           <div className={styles.infoCards}>
             <div className={styles.infoCard}>
@@ -196,6 +265,26 @@ export default function EspacioDetallePage() {
         espacio={espacio}
         onClose={() => setQrAbierto(false)}
       />
+
+      {detalleEnUsoAbierto && reservaEnUso && (
+        <DetalleEventoModal
+          open
+          onClose={() => setDetalleEnUsoAbierto(false)}
+          titulo={reservaEnUso.evento_titulo || `Reserva #${reservaEnUso.id}`}
+          fecha={reservaEnUso.fecha}
+          horaInicio={reservaEnUso.hora_inicio}
+          horaFin={reservaEnUso.hora_fin}
+          descripcion={reservaEnUso.evento_descripcion}
+          extra={
+            <div className={styles.solicitanteEnUsoRow}>
+              <p>En uso por: {reservaEnUso.solicitante_nombre ?? 'Desconocido'}</p>
+              {reservaEnUso.checkin_en && (
+                <p>Check-in hecho a las {fmtH(reservaEnUso.checkin_en.split(' ')[1] ?? '')}</p>
+              )}
+            </div>
+          }
+        />
+      )}
     </div>
   );
 }
