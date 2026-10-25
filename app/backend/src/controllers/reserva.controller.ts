@@ -161,7 +161,7 @@ export const editarReserva = async (req: Request, res: Response) => {
 
   try {
     await withTransaction(async (conn) => {
-      const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ?', [id]);
+      const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ? FOR UPDATE', [id]);
 
       if (!rows || rows.length === 0) {
         res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
@@ -173,6 +173,17 @@ export const editarReserva = async (req: Request, res: Response) => {
       if (!esSolicitante && !esPrivilegiado) {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
         return 'rollback';
+      }
+
+      if (String(rows[0].fecha).slice(0, 10) !== fechaSoloFecha) {
+        const [vinculadas]: any = await conn.query(
+          `SELECT t.id FROM tarea t JOIN evento e ON e.id = t.evento_id
+           WHERE e.reserva_id = ? FOR UPDATE`, [id],
+        );
+        if (vinculadas.length) {
+          res.status(HttpStatus.CONFLICT).json({ message: 'Desvincula y reprograma las tareas asociadas antes de cambiar el día de esta reserva' });
+          return 'rollback';
+        }
       }
 
       await conn.query(

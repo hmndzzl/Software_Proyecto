@@ -1,12 +1,12 @@
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { validarEventoTarea } from './tareaEvento.service';
 import { withTransaction } from '../utils/withTransaction';
 import { ROLES } from '../config/roles';
 import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { Tarea, TareaCreateInput } from '../types/tarea.types';
 
-export class ErrorAsignacion extends Error {
-  constructor(public readonly status: number, mensaje: string) { super(mensaje); }
-}
+import { ErrorAsignacion } from './asignacionError';
+export { ErrorAsignacion } from './asignacionError';
 
 export function validarMinistros(ids: unknown): number[] {
   if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100
@@ -33,6 +33,8 @@ export async function guardarTareaConMinistros(
       tarea = { ...entrada, id: 0 };
     }
 
+    if (typeof entrada !== 'number') await validarEventoTarea(conn, tarea.evento_id, tarea.fecha);
+
     // Serializa las asignaciones múltiples del mismo ministro y respeta el directorio activo.
     const placeholders = ids.map(() => '?').join(', ');
     const [ministros] = await conn.execute<RowDataPacket[]>(
@@ -58,8 +60,8 @@ export async function guardarTareaConMinistros(
     }
     if (typeof entrada !== 'number') {
       const [result] = await conn.execute<ResultSetHeader>(
-        'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion) VALUES (?, ?, ?, ?, ?)',
-        [tarea.fecha, tarea.hora_inicio, tarea.hora_fin, tarea.titulo, tarea.descripcion],
+        'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [tarea.fecha, tarea.hora_inicio, tarea.hora_fin, tarea.titulo, tarea.descripcion, tarea.evento_id ?? null],
       );
       tarea.id = result.insertId;
     }

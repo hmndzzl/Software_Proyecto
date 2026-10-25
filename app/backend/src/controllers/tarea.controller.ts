@@ -1,3 +1,4 @@
+import { validarEventoTarea } from '../services/tareaEvento.service';
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
@@ -129,7 +130,7 @@ export const getTareaById = async (req: Request, res: Response): Promise<void> =
 
 // Manejo de creación de tarea con POST /api/tareas
 export const createTarea = async (req: Request, res: Response): Promise<void> => {
-  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id } = req.body as TareaCreateInput;
 
   if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
@@ -148,19 +149,26 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
   try {
     if (req.body.persona_ids !== undefined) {
       const ids = validarMinistros(req.body.persona_ids);
-      const resultado = await guardarTareaConMinistros({ fecha, hora_inicio, hora_fin, titulo, descripcion }, ids, req.user!);
+      const resultado = await guardarTareaConMinistros({ fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id }, ids, req.user!);
       res.status(HttpStatus.CREATED).json({ mensaje: 'Tarea creada y asignada exitosamente', ...resultado });
       return;
     }
-    const [result] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion) VALUES (?, ?, ?, ?, ?)',
-      [fecha, hora_inicio, hora_fin, titulo, descripcion]
-    );
+    let tareaId = 0;
+    await withTransaction(async conn => {
+      await validarEventoTarea(conn, evento_id, fecha);
+      const [result] = await conn.execute<ResultSetHeader>(
+        'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id ?? null],
+      );
+      tareaId = result.insertId;
+      return 'commit';
+    });
 
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Tarea creada exitosamente',
       tarea: {
-        id: result.insertId,
+        id: tareaId,
+        evento_id: evento_id ?? null,
         fecha,
         hora_inicio,
         hora_fin,
@@ -182,7 +190,7 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
 // manejo de PUT para actualizar una tarea con PUT /api/tareas/:id
 export const updateTarea = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id } = req.body as TareaCreateInput;
 
   if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
@@ -223,21 +231,32 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
       }
     }
 
-    const [result] = await pool.execute<ResultSetHeader>(
-      'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, titulo = ?, descripcion = ? WHERE id = ?',
-      [fecha, hora_inicio, hora_fin, titulo, descripcion, id]
-    );
-
-    if (result.affectedRows === 0) {
+    let eventoActual: number | null = null;
+    let existe = true;
+    await withTransaction(async conn => {
+      const [actual] = await conn.execute<RowDataPacket[]>('SELECT * FROM tarea WHERE id = ? FOR UPDATE', [id]);
+      if (!actual.length) { existe = false; return 'rollback'; }
+      eventoActual = evento_id === undefined ? (actual[0].evento_id ?? null) : evento_id;
+      await validarEventoTarea(conn, eventoActual, fecha, eventoActual !== actual[0].evento_id);
+      await conn.execute(
+        'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, titulo = ?, descripcion = ?, evento_id = ? WHERE id = ?',
+        [fecha, hora_inicio, hora_fin, titulo, descripcion, eventoActual, id],
+      );
+      return 'commit';
+    });
+    if (!existe) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
       return;
     }
-
     res.status(HttpStatus.OK).json({
       mensaje: 'Tarea actualizada exitosamente',
-      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, titulo, descripcion },
+      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id: eventoActual },
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en updateTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar la tarea' });
   }

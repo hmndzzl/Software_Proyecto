@@ -246,7 +246,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 2, rol_id: ROLES.MINISTRO } as any;
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]); // Le pertenece al user 1
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]); // Le pertenece al user 1
 
       await editarReserva(req as Request, res as Response);
 
@@ -258,7 +258,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 2, rol_id: ROLES.ADMIN } as any; // Admin
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]); // Pertenece al 1
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]); // Pertenece al 1
       mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
       mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno más)
@@ -274,7 +274,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any; // Solicitante real
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]);
       mockConnection.query.mockResolvedValueOnce([{}]);
       mockConnection.query.mockResolvedValueOnce([{}]);
       mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno)
@@ -290,7 +290,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 5, rol_id: ROLES.ADMIN } as any; // Admin edita la reserva de otro
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]);
       mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
       mockConnection.query.mockResolvedValueOnce([[{ id: 9 }]]); // SELECT aprobadores (otro Sacerdote)
@@ -310,6 +310,17 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
         [9, 50]
       );
       expect(mockConnection.commit).toHaveBeenCalled();
+    });
+
+    it('impide cambiar de día una reserva con tareas vinculadas', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-13', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]);
+      mockConnection.query.mockResolvedValueOnce([[{ id: 9 }]]);
+      await editarReserva(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(mockConnection.query.mock.calls.some(([sql]: [string]) => sql.includes('UPDATE reserva'))).toBe(false);
     });
 
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
