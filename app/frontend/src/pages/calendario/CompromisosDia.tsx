@@ -37,9 +37,11 @@ export default function CompromisosDia({ items, onSeleccionar }: { items: Compro
         aria-label={`Ver detalle del evento ${item.dato.titulo}`}
         onClick={() => onSeleccionar(item)}
       >
-        <div className={styles.timeRow}>
-          <ClockIcon />
-          <span>{horario(item.dato)}</span>
+        <div className={styles.cardHeader}>
+          <div className={styles.timeRow}>
+            <ClockIcon />
+            <span>{horario(item.dato)}</span>
+          </div>
           <ReservaEstadoBadge estadoId={item.dato.estado_reserva_id} />
         </div>
         <p className={styles.taskDesc}>{item.dato.titulo}</p>

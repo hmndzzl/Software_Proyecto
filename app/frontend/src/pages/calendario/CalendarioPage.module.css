@@ -262,6 +262,17 @@
 .evento { border-left-color: var(--color-rojo); }
 .tarea { border-left-color: var(--color-tierra); }
 
+/* Horario + estado nunca comparten línea: evita que el badge (ancho fijo,
+   sin salto de línea) se encime con el horario verbose ("10:00 a. m. – ...")
+   en columnas angostas de 1/7 del ancho de la semana. */
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
 .timeRow {
   display: flex;
   align-items: center;
@@ -270,14 +281,15 @@
   font-size: 12.5px;
   color: var(--color-rojo);
   font-weight: 600;
+  min-width: 0;
+}
+
+.timeRow span {
+  overflow-wrap: anywhere;
 }
 
 .timeRow svg {
   flex-shrink: 0;
-}
-
-.timeRow .estadoBadge {
-  margin-left: auto;
 }
 
 .taskDesc {
