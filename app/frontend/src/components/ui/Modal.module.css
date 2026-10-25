@@ -11,6 +11,7 @@
 }
 
 .panel {
+  max-width: 100%;
   background: var(--color-blanco);
   border-radius: var(--radius-card);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
@@ -31,10 +32,8 @@
 
 .title {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
   color: var(--color-tierra);
   margin: 0;
 }
@@ -43,8 +42,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -57,6 +56,11 @@
 .closeBtn:hover {
   background: var(--color-cremaDk);
   color: var(--color-carbon);
+}
+
+.closeBtn:focus-visible {
+  outline: 3px solid var(--color-rojo);
+  outline-offset: 2px;
 }
 
 .body {
