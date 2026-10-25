@@ -5,7 +5,7 @@
   gap: var(--gap-card);
   width: 100%;
   min-width: 0;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.5;
   color: var(--color-ink);
 }
@@ -28,7 +28,7 @@
   border-radius: var(--radius-btn);
   padding: 10px 16px;
   font-family: var(--font-body);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   text-decoration: none;
   transition: var(--transition);
@@ -66,7 +66,7 @@
 
 .field label {
   font-family: var(--font-display);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -102,7 +102,7 @@
 
 .navigation > strong {
   font-family: var(--font-body);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--color-ink);
 }
@@ -127,7 +127,7 @@
   color: inherit;
   min-height: 44px;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   border: 1px solid var(--color-line);
   background: var(--color-crema);
@@ -167,7 +167,7 @@
 
 .summary {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -178,7 +178,7 @@
 .note {
   margin: 0;
   color: var(--color-muted);
-  font-size: 13.5px;
+  font-size: 14.5px;
 }
 
 @media (max-width: 650px) {
@@ -227,7 +227,7 @@
 }
 
 .dayTitle {
-  font-size: 16px;
+  font-size: 17px;
   margin: 0;
   padding: 14px;
   background: var(--color-crema);
@@ -246,7 +246,7 @@
 .todayLabel {
   display: block;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -310,7 +310,7 @@
   align-items: center;
   gap: 5px;
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--color-rojo);
   font-weight: 600;
   min-width: 0;
@@ -326,7 +326,7 @@
 
 .taskDesc {
   font-family: var(--font-body);
-  font-size: 14.5px;
+  font-size: 15.5px;
   font-weight: 600;
   color: var(--color-ink);
   line-height: 1.4;
@@ -346,14 +346,14 @@
 
 .assignName {
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--color-tierra);
   font-weight: 600;
 }
 
 .unassignedBadge {
   font-family: var(--font-display);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: .05em;
   color: var(--color-muted);
@@ -381,7 +381,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 6px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.4;
 }
 
@@ -394,7 +394,7 @@
 .team li .teamHorario {
   font-family: var(--font-mono);
   color: var(--color-rojo);
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .team li .teamNombres {
@@ -406,7 +406,7 @@
 .vinculadaTag {
   align-self: flex-start;
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -422,16 +422,19 @@
   text-align: center;
   color: var(--color-muted);
   font-family: var(--font-body);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-style: italic;
 }
 
-/* ── Modal de detalle (DetalleCompromiso) ── */
+/* ── Modal de detalle (DetalleCompromiso) ──
+   Cada bloque de información (fecha/hora, estado/lugar/encargado, acciones,
+   tareas asociadas, descripción) vive en su propia .detailSection con un
+   separador sutil arriba — evita que todo se lea como un único párrafo largo. */
 .detail {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 15px;
+  gap: 4px;
+  font-size: 16px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -440,22 +443,75 @@
   margin: 0;
 }
 
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-lineSoft);
+}
+
+.detailSection:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.detailSectionTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+}
+
 .detailActions {
   display: flex;
   gap: 10px;
 }
 
 .serviceList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin: 0;
-  padding-left: 22px;
+  padding: 0;
+  list-style: none;
 }
 
-.serviceList li {
-  margin-bottom: 14px;
-}
-
-.serviceList span {
+.serviceItem {
   display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-blanco);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.serviceItem:hover, .serviceItem:focus-visible {
+  border-color: var(--color-oro);
+  background: var(--color-crema);
+}
+
+.serviceItem:disabled {
+  cursor: default;
+}
+
+.serviceItem:disabled:hover {
+  border-color: var(--color-line);
+  background: var(--color-blanco);
+}
+
+.serviceItem span {
+  display: block;
+  font-size: 14.5px;
+  color: var(--color-muted);
 }
 
 /* ── Vista mensual ──
@@ -474,14 +530,14 @@
   text-align: left;
   padding: 0 0 14px;
   font-family: var(--font-body);
-  font-size: 14.5px;
+  font-size: 15.5px;
   color: var(--color-muted);
 }
 
 .monthTable th {
   padding: 4px 2px 10px;
   font-family: var(--font-display);
-  font-size: 12.5px;
+  font-size: 14.5px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -494,13 +550,19 @@
   padding: 0;
 }
 
+/* Toda la celda (no solo el número) selecciona el día para el panel de abajo;
+   cada tarjeta dentro sigue abriendo su propio detalle al burbujear el clic. */
+.monthCell {
+  cursor: pointer;
+}
+
 .monthDay {
   width: 100%;
-  height: 158px;
+  height: 184px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  gap: 7px;
   padding: 10px;
   border: 1px solid var(--color-line);
   border-radius: 8px;
@@ -510,15 +572,35 @@
   transition: var(--transition);
 }
 
+/* El número ahora es su propio botón (abre el panel con TODOS los compromisos
+   del día) — ya no es el mismo clic que abrir el detalle de un compromiso. */
+.monthDayNumBtn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.monthDayNumBtn:hover {
+  background: var(--color-crema);
+}
+
+.monthDayNumBtn[aria-pressed='true'] {
+  background: var(--color-okBg);
+}
+
 .monthDayNum {
   display: flex;
   align-items: baseline;
   gap: 7px;
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--color-ink);
-  flex-shrink: 0;
 }
 
 .monthDay:hover {
@@ -532,36 +614,41 @@
   background: var(--color-oroSoft);
 }
 
-/* Seleccionado gana sobre "hoy" cuando coinciden (más deliberado, el clic del usuario). */
-.monthDay[aria-pressed='true'] {
-  border: 1.5px solid var(--color-rojo);
-  background: var(--color-crema);
-  box-shadow: 0 0 0 3px rgba(157, 47, 56, .1);
-}
-
 .monthPreviewList {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
   min-height: 0;
   overflow: hidden;
 }
 
-/* Barra de color a la izquierda (no un punto de 6px, invisible a esta escala)
-   — mismo código de color que ya usan las tarjetas de la semana: rojo =
-   evento, tierra = tarea. Un vistazo a la columna de barras del día basta
-   para saber la mezcla, sin leer una palabra.
-   Segunda línea (monthPreviewSub): quién sirve, o el estado si es un evento
-   — el dato que de verdad ayuda a decidir si hace falta entrar al detalle. */
+/* Cada compromiso es su propio botón: un clic abre directamente su detalle,
+   sin pasar por "seleccionar el día" ni bajar al panel de más abajo.
+   Barra de color a la izquierda (no un punto, invisible a esta escala) — mismo
+   código que las tarjetas de la semana: rojo = evento, tierra = tarea.
+   Segunda línea (monthPreviewSub): quién sirve, o el estado si es un evento —
+   el dato que de verdad ayuda a decidir si hace falta entrar al detalle. */
 .monthPreview {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
-  padding-left: 6px;
+  width: 100%;
+  padding: 3px 3px 3px 7px;
+  margin: 0;
+  border: none;
   border-left: 3px solid var(--color-line);
-  font-family: var(--font-body);
-  line-height: 1.25;
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.monthPreview:hover {
+  background: var(--color-crema);
 }
 
 .monthPreviewEvento { border-left-color: var(--color-rojo); }
@@ -576,13 +663,13 @@
 
 .monthPreviewHora {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13.5px;
   color: var(--color-muted);
   flex-shrink: 0;
 }
 
 .monthPreviewTitulo {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-ink);
   font-weight: 600;
   overflow: hidden;
@@ -592,7 +679,7 @@
 }
 
 .monthPreviewSub {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-tierra);
   font-weight: 600;
   overflow: hidden;
@@ -605,7 +692,7 @@
   padding: 10px;
   color: var(--color-line);
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .monthDetails {
@@ -621,7 +708,7 @@
 
 .monthDetails h2 {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: .04em;
   color: var(--color-ink);
@@ -643,7 +730,7 @@
   }
   .monthAgenda > h2 {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 16px;
     margin: 0;
   }
 }
@@ -651,7 +738,7 @@
 /* ── Legacy (compatibilidad temporal, ver migración del calendario) ── */
 .detailLink {
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--calendario-acento);
 }
