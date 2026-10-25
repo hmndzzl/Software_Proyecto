@@ -54,6 +54,9 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       release: vi.fn(),
     };
     (db.getConnection as any).mockResolvedValue(mockConnection);
+    // crearReserva/editarReserva consultan la hora de Guatemala vía db.query antes
+    // de entrar a la transacción; valor por defecto equivalente al fake time de abajo.
+    (db.query as any).mockResolvedValue([[{ hoy: '2026-08-11', horaActual: '12:00' }]]);
 
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => { });
