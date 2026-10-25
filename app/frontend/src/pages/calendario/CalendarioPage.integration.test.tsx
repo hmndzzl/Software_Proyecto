@@ -135,6 +135,21 @@ describe('calendario unificado semanal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar ministros' }));
     await screen.findByText('No hay ministros activos en tu directorio.');
   });
+
+  it('descarta datos y filtros cuando cambian el usuario o su rol', async () => {
+    const { rerender } = mostrar();
+    await screen.findByText('Misa del lunes');
+    vi.mocked(apiClient.get).mockResolvedValue({ data: vacio });
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 9, nombre: 'Ana', correo: 'ana@test.com', rol_id: 4 }));
+    rerender(<CalendarioPage />);
+    expect(screen.queryByText('Misa del lunes')).not.toBeInTheDocument();
+    await screen.findAllByText('Sin compromisos registrados');
+    expect(consultas().slice(-1)[0]?.[1]).toEqual({ params: { fecha_inicio: '2026-10-05', fecha_fin: '2026-10-11', vista: 'personal' } });
+    const anteriores = consultas().length;
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 10, nombre: 'Luis', correo: 'luis@test.com', rol_id: 4 }));
+    rerender(<CalendarioPage />);
+    await waitFor(() => expect(consultas()).toHaveLength(anteriores + 1));
+  });
 });
 
 describe('calendario mensual', () => {

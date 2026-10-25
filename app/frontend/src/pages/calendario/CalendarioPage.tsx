@@ -16,6 +16,12 @@ import styles from './CalendarioPage.module.css';
 
 export default function CalendarioPage() {
   const { usuario } = useAuth();
+  // Una sesión o rol nuevo debe consultar su propio alcance y descartar datos previos.
+  return <CalendarioContenido key={`${usuario?.id}-${usuario?.rol_id}`} />;
+}
+
+function CalendarioContenido() {
+  const { usuario } = useAuth();
   const puedeCoordinar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
   const [fecha, setFecha] = useState(() => new Date());
   const [periodo, setPeriodo] = useState<'semana' | 'mes'>('semana');
