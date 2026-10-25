@@ -418,12 +418,16 @@
   display: block;
 }
 
-/* ── Vista mensual ── */
+/* ── Vista mensual ──
+   Cada celda tiene alto fijo (no min-height) + overflow:hidden: ningún día
+   puede estirar su fila, el grid se mantiene uniforme sin importar cuánto
+   contenido tenga. Los días vacíos no repiten "Sin compromisos" — solo el
+   número; el silencio visual ya comunica que no hay nada. */
 .monthTable {
   width: 100%;
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 8px;
+  border-spacing: 6px;
 }
 
 .monthTable caption {
@@ -437,11 +441,12 @@
 .monthTable th {
   padding: 4px 2px 10px;
   font-family: var(--font-display);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--color-tierra);
+  text-align: left;
 }
 
 .monthTable td {
@@ -451,52 +456,99 @@
 
 .monthDay {
   width: 100%;
-  min-height: 112px;
+  height: 104px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
-  padding: 10px;
+  gap: 4px;
+  padding: 8px 9px;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   background: var(--color-blanco);
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow: hidden;
   transition: var(--transition);
 }
 
-.monthDay > strong {
+.monthDayNum {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--color-ink);
+  flex-shrink: 0;
 }
 
 .monthDay:hover {
-  background: var(--color-crema);
-  box-shadow: 0 2px 8px rgba(60, 40, 20, .06);
+  border-color: var(--color-oro);
+  box-shadow: 0 2px 8px rgba(60, 40, 20, .08);
 }
 
+/* Hoy: mismo tratamiento dorado que la vista semanal */
+.monthDayToday {
+  border-color: var(--color-oro);
+  background: var(--color-oroSoft);
+}
+
+/* Seleccionado gana sobre "hoy" cuando coinciden (más deliberado, el clic del usuario). */
 .monthDay[aria-pressed='true'] {
   border: 1.5px solid var(--color-rojo);
   background: var(--color-crema);
+  box-shadow: 0 0 0 3px rgba(157, 47, 56, .1);
+}
+
+.monthPreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .monthPreview {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
   font-family: var(--font-body);
-  font-size: 11.5px;
-  color: var(--color-tierra);
-  border-top: 1px solid var(--color-lineSoft);
-  padding-top: 6px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.monthDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.monthDotEvento { background: var(--color-rojo); }
+.monthDotTarea  { background: var(--color-tierra); }
+
+.monthPreviewHora {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.monthPreviewTitulo {
+  color: var(--color-ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .outsideMonth {
   display: block;
-  padding: 12px;
+  padding: 8px 9px;
   color: var(--color-line);
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .monthDetails {

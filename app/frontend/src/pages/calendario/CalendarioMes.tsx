@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DIAS_SEMANA } from '../../utils/date';
 import CompromisosDia from './CompromisosDia';
-import { claveDia, estadoEvento, fechaCompleta, horaLegible, type Compromiso } from './calendario.utils';
+import { claveDia, fechaCompleta, type Compromiso } from './calendario.utils';
 import styles from './CalendarioPage.module.css';
 
 interface Props {
@@ -25,17 +25,24 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
         {dias.slice(semana * 7, semana * 7 + 7).map(dia => {
           const clave = claveDia(dia);
           const items = porDia.get(clave) ?? [];
+          const esHoy = clave === hoy;
           return <td key={clave}>
             {dia.getMonth() !== fecha.getMonth() ? <span className={styles.outsideMonth}>{dia.getDate()}</span>
-              : <button type="button" className={styles.monthDay} aria-pressed={clave === diaSeleccionado}
-                aria-label={`${fechaCompleta(clave)}${clave === hoy ? ', hoy' : ''}, ${items.length} compromisos`}
+              : <button type="button" className={`${styles.monthDay}${esHoy ? ` ${styles.monthDayToday}` : ''}`} aria-pressed={clave === diaSeleccionado}
+                aria-label={`${fechaCompleta(clave)}${esHoy ? ', hoy' : ''}, ${items.length} compromisos`}
                 onClick={() => setDiaSeleccionado(clave)}>
-                <strong>{dia.getDate()}{clave === hoy && <span className={styles.todayLabel}>Hoy</span>}</strong>
-                {items.slice(0, 2).map(item => <span key={`${item.tipo}-${item.dato.id}`} className={styles.monthPreview}>
-                  {item.tipo === 'evento' ? `Evento · ${estadoEvento(item.dato.estado_reserva_id)}` : 'Tarea'} · {horaLegible(item.dato.hora_inicio)}<br />{item.dato.titulo}
-                </span>)}
-                {items.length > 2 ? <span className={styles.detailLink}>Ver los {items.length} compromisos</span>
-                  : <span>{items.length ? `${items.length} compromiso${items.length === 1 ? '' : 's'}` : 'Sin compromisos'}</span>}
+                <span className={styles.monthDayNum}>
+                  {dia.getDate()}
+                  {esHoy && <span className={styles.todayLabel}>Hoy</span>}
+                </span>
+                {items.length > 0 && <div className={styles.monthPreviewList}>
+                  {items.slice(0, 2).map(item => <span key={`${item.tipo}-${item.dato.id}`} className={styles.monthPreview}>
+                    <span className={`${styles.monthDot} ${item.tipo === 'evento' ? styles.monthDotEvento : styles.monthDotTarea}`} />
+                    <span className={styles.monthPreviewHora}>{item.dato.hora_inicio.slice(0, 5)}</span>
+                    <span className={styles.monthPreviewTitulo}>{item.dato.titulo}</span>
+                  </span>)}
+                  {items.length > 2 && <span className={styles.detailLink}>Ver los {items.length} compromisos</span>}
+                </div>}
               </button>}
           </td>;
         })}
