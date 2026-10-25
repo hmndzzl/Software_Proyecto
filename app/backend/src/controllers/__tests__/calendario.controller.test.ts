@@ -83,6 +83,16 @@ describe('calendario unificado', () => {
     expect(conn.execute).toHaveBeenCalledTimes(1);
   });
 
+  it.each([1, 5])('incluye en el personal de Sacerdote/Admin las reservas pendientes de toda la parroquia (rol %s)', async rol => {
+    const { body } = await consultar({ vista: 'personal' }, rol);
+    expect(body.eventos.map((e: { id: number }) => e.id)).toEqual([8, 9]);
+  });
+
+  it('no amplía el personal de un coordinador de ministros (no privilegiado) a reservas ajenas', async () => {
+    const { body } = await consultar({ vista: 'personal' }, 2);
+    expect(body.eventos.map((e: { id: number }) => e.id)).toEqual([8]);
+  });
+
   it('la vista personal filtra tareas y nombres por usuario autenticado', async () => {
     const { body } = await consultar({ vista: 'personal' }, 4);
     expect(conn.execute.mock.calls[0][0]).toContain('a.persona_id = ?');
