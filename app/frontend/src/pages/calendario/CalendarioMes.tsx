@@ -36,8 +36,8 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
                   {esHoy && <span className={styles.todayLabel}>Hoy</span>}
                 </span>
                 {items.length > 0 && <div className={styles.monthPreviewList}>
-                  {items.slice(0, 2).map(item => <span key={`${item.tipo}-${item.dato.id}`} className={styles.monthPreview}>
-                    <span className={`${styles.monthDot} ${item.tipo === 'evento' ? styles.monthDotEvento : styles.monthDotTarea}`} />
+                  {items.slice(0, 2).map(item => <span key={`${item.tipo}-${item.dato.id}`}
+                    className={`${styles.monthPreview} ${item.tipo === 'evento' ? styles.monthPreviewEvento : styles.monthPreviewTarea}`}>
                     <span className={styles.monthPreviewHora}>{item.dato.hora_inicio.slice(0, 5)}</span>
                     <span className={styles.monthPreviewTitulo}>{item.dato.titulo}</span>
                   </span>)}
