@@ -104,6 +104,8 @@ export interface Reserva {
   evento_publico?: 0 | 1 | boolean;
   evento_titulo: string | null;
   evento_descripcion: string | null;
+  checkin_en?: string | null;
+  en_uso?: boolean;
 }
 
 export interface AsignadoInfo {

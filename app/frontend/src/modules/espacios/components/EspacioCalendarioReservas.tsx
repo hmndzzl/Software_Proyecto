@@ -107,7 +107,7 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
                       <button
                         key={r.id}
                         type="button"
-                        className={styles.reservaCard}
+                        className={`${styles.reservaCard}${r.en_uso ? ` ${styles.reservaCardEnUso}` : ''}`}
                         onClick={() => setReservaSeleccionada(r)}
                       >
                         <div className={styles.timeRow}>
@@ -115,6 +115,12 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
                           <span>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</span>
                         </div>
                         <p className={styles.reservaTitulo}>{r.evento_titulo || `Reserva #${r.id}`}</p>
+                        {r.en_uso && (
+                          <span className={styles.enUsoTag}>
+                            <span className={styles.enUsoDot} />
+                            En uso ahora
+                          </span>
+                        )}
                       </button>
                     ))
                   )}
