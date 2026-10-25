@@ -24,6 +24,14 @@ function mostrar(ui: React.ReactNode) {
 }
 
 describe('layout integrado con sesión y notificaciones', () => {
+  it('ofrece un enlace visible al sitio público y elimina la búsqueda sin acción', async () => {
+    mostrar(<TopBar />);
+    expect(screen.queryByRole('button', { name: 'Buscar' })).not.toBeInTheDocument();
+    const enlace = screen.getByRole('link', { name: 'Sitio público' });
+    expect(enlace).toHaveAttribute('href', '/');
+    await userEvent.click(enlace);
+    expect(screen.getByText('Destino: /')).toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Ana María López', correo: 'ana@test.com', rol_id: 5 }));

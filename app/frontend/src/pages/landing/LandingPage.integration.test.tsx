@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LandingPage from './LandingPage';
+import { AuthProvider } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
 vi.mock('./ContactoForm', () => ({ default: () => <form aria-label="contacto" /> }));
@@ -31,7 +32,7 @@ describe('navegación del portal público', () => {
   });
 
   it('abre y cierra el menú y actualiza la sección activa al desplazarse', async () => {
-    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><LandingPage /></MemoryRouter>);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
     const menu = screen.getByRole('button', { name: 'Menú' });
     const quienesSomos = screen.getAllByRole('link', { name: 'Quiénes Somos' })[0];
     expect(menu).toHaveAttribute('aria-expanded', 'false');
@@ -57,20 +58,20 @@ describe('navegación del portal público', () => {
   });
 
   it('mantiene la agenda como único CTA del hero', () => {
-    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><LandingPage /></MemoryRouter>);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
     const agenda = screen.getByRole('link', { name: 'AGENDA PARROQUIAL' });
     expect(agenda).toHaveAttribute('href', '/agenda');
     expect(agenda.closest('.hero-cta')?.querySelectorAll('a')).toHaveLength(1);
   });
 
   it('enlaza el portal con la agenda pública', () => {
-    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><LandingPage /></MemoryRouter>);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'AGENDA PARROQUIAL' })).toHaveAttribute('href', '/agenda');
   });
 
   it('consulta M3 y muestra el contenido publicado sin interpretar HTML', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: contenidoPublicado });
-    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><LandingPage /></MemoryRouter>);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
 
     expect(await screen.findByRole('heading', { name: 'Contenido publicado desde administración' })).toBeInTheDocument();
     expect(screen.getByText('14')).toBeInTheDocument();
@@ -80,7 +81,7 @@ describe('navegación del portal público', () => {
 
   it('elimina el listener de desplazamiento al desmontarse', () => {
     const remove = vi.spyOn(window, 'removeEventListener');
-    const vista = render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><LandingPage /></MemoryRouter>);
+    const vista = render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
     vista.unmount();
     expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function));
   });

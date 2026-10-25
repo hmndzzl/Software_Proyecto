@@ -105,12 +105,12 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
       <div className={styles.spacer} />
 
       <div className={styles.actions}>
-        {/* Búsqueda */}
-        <button type="button" className={`${styles.iconBtn} ${styles.searchBtn}`} title="Buscar" aria-label="Buscar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        <Link to="/" className={styles.publicLink}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a18 18 0 0 0 0 18 18 18 0 0 0 0-18" />
           </svg>
-        </button>
+          <span>Sitio público</span>
+        </Link>
 
         {/* Notificaciones */}
         <div className={styles.bellWrap} ref={wrapRef}>
