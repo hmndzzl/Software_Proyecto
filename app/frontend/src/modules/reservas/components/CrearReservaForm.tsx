@@ -180,6 +180,16 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
               </option>
             ))}
           </select>
+          {espacioId && (
+            <a
+              href={`/espacios/${espacioId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.espacioDetalleLink}
+            >
+              Ver detalle del espacio
+            </a>
+          )}
         </div>
 
         <div className={styles.field}>
