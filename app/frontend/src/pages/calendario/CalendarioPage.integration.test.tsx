@@ -184,7 +184,8 @@ describe('calendario mensual', () => {
     const tabla = await screen.findByRole('table');
     const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*3 compromisos/ });
     expect(within(dia).getByText('Ver los 3 compromisos')).toBeInTheDocument();
-    expect(dia).toHaveTextContent('Evento · Pendiente de aprobación');
+    expect(within(dia).getByText('Reunión')).toBeInTheDocument();
+    expect(dia).toHaveTextContent('08:00');
     expect(dia).not.toHaveTextContent('Misa del lunes');
     await userEvent.click(dia);
     const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
