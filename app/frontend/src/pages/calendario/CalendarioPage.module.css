@@ -113,13 +113,18 @@
   gap: 8px;
 }
 
+/* Solo cursor, a propósito: "color/font: inherit" aquí (clase+etiqueta) le ganaría
+   por especificidad a los kinds de Btn ( .ok/.bad son una sola clase), dejando el
+   texto de Aprobar/Rechazar heredando el café oscuro del modal en vez del blanco
+   que les corresponde. El resto de botones propios del calendario que sí necesitan
+   heredar fuente/color lo piden explícito en su propio selector, más abajo. */
 .page button {
-  font: inherit;
-  color: inherit;
   cursor: pointer;
 }
 
 .buttons button, .field button {
+  font: inherit;
+  color: inherit;
   min-height: 44px;
   font-family: var(--font-body);
   font-size: 14px;
