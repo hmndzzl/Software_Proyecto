@@ -1,249 +1,106 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
+import type { VistaCalendario } from '../../api/calendario';
+import type { Ministro } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { ROLES, rolTieneAcceso } from '../../utils/roles';
 import PageHeader from '../../components/ui/PageHeader';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
-import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
-import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey } from '../../utils/date';
-import type { Tarea } from '../../types';
+import CompromisosDia from './CompromisosDia';
+import DetalleCompromiso from './DetalleCompromiso';
+import { claveDia, compromisosPorDia, diasSemana, fechaCompleta, type Compromiso } from './calendario.utils';
+import { useCalendario } from './useCalendario';
 import styles from './CalendarioPage.module.css';
 
-const formatHora = (h?: string | null): string => (h ? h.substring(0, 5) : '--:--');
-
-// Ordena por hora de inicio y, en empate, por hora de fin, para que el orden
-// dentro de la columna no dependa del ORDER BY de la API.
-const compararPorHora = (a: Tarea, b: Tarea): number =>
-  (a.hora_inicio ?? '').localeCompare(b.hora_inicio ?? '') ||
-  (a.hora_fin ?? '').localeCompare(b.hora_fin ?? '');
-
-// Agrupa las tareas por dia en una sola pasada, descartando repetidos por id.
-const agruparPorDia = (tareas: Tarea[]): Map<string, Tarea[]> => {
-  const porDia = new Map<string, Tarea[]>();
-  const vistas = new Set<number>();
-
-  for (const tarea of tareas) {
-    const dia = fechaKey(tarea.fecha);
-    if (!dia || vistas.has(tarea.id)) continue;
-    vistas.add(tarea.id);
-
-    const delDia = porDia.get(dia);
-    if (delDia) {
-      delDia.push(tarea);
-    } else {
-      porDia.set(dia, [tarea]);
-    }
-  }
-
-  porDia.forEach(delDia => delDia.sort(compararPorHora));
-  return porDia;
-};
-
 export default function CalendarioPage() {
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-  const [tareas, setTareas]           = useState<Tarea[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState('');
-  const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
-
-  const activeMonday = getMonday(currentDate);
-
-  const activeSunday = new Date(activeMonday);
-  activeSunday.setDate(activeMonday.getDate() + 6);
-
-  // Generate the 7 days of the active week (Monday to Sunday)
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(activeMonday);
-    day.setDate(activeMonday.getDate() + i);
-    return day;
-  });
-
-  // silent=true evita el parpadeo de "Cargando..." cuando el refresco ocurre
-  const cargarTareas = (silent = false) => {
-    if (!silent) {
-      setLoading(true);
-      setError('');
-    }
-
-    const startStr = formatYYYYMMDD(activeMonday);
-    const endStr   = formatYYYYMMDD(activeSunday);
-
-    apiClient.get<Tarea[]>(`/api/tareas?fecha_inicio=${startStr}&fecha_fin=${endStr}`)
-      .then(res => {
-        setTareas(res.data);
-        if (silent) setError('');
-      })
-      .catch(() => {
-        if (!silent) setError('Error al cargar las tareas del calendario.');
-      })
-      .finally(() => {
-        if (!silent) setLoading(false);
-      });
-  };
+  const { usuario } = useAuth();
+  const puedeCoordinar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
+  const [fecha, setFecha] = useState(() => new Date());
+  const [vista, setVista] = useState<VistaCalendario>(() => puedeCoordinar ? 'coordinacion' : 'personal');
+  const [personaId, setPersonaId] = useState('');
+  const [ministros, setMinistros] = useState<Ministro[]>([]);
+  const [errorMinistros, setErrorMinistros] = useState(false);
+  const [cargandoMinistros, setCargandoMinistros] = useState(puedeCoordinar);
+  const [intentoMinistros, setIntentoMinistros] = useState(0);
+  const [seleccion, setSeleccion] = useState<{ tipo: Compromiso['tipo']; id: number } | null>(null);
+  const dias = diasSemana(fecha);
+  const inicio = claveDia(dias[0]);
+  const fin = claveDia(dias[6]);
+  const { datos, loading, error, reintentar } = useCalendario(inicio, fin, vista, personaId);
+  const porDia = compromisosPorDia(datos);
+  const hoy = claveDia(new Date());
+  const item: Compromiso | undefined = seleccion?.tipo === 'evento'
+    ? datos.eventos.filter(e => e.id === seleccion.id).map(dato => ({ tipo: 'evento' as const, dato }))[0]
+    : seleccion?.tipo === 'tarea' ? datos.tareas.filter(t => t.id === seleccion.id).map(dato => ({ tipo: 'tarea' as const, dato }))[0] : undefined;
 
   useEffect(() => {
-    cargarTareas();
+    if (!puedeCoordinar) return;
+    let vigente = true;
+    setCargandoMinistros(true);
+    setErrorMinistros(false);
+    apiClient.get<Ministro[]>('/api/personas').then(res => { if (vigente) setMinistros(res.data); })
+      .catch(() => { if (vigente) setErrorMinistros(true); })
+      .finally(() => { if (vigente) setCargandoMinistros(false); });
+    return () => { vigente = false; };
+  }, [puedeCoordinar, usuario?.id, intentoMinistros]);
 
-    // Las tareas pueden crearse/modificarse desde otra pestaña sin que este componente se vuelva a montar, al recuperar el foco o visibilidad, se refresca para no depender de un
-    // recargo manual de la página.
-    const handleRefresh = () => {
-      if (document.visibilityState === 'visible') {
-        cargarTareas(true);
-      }
-    };
-    window.addEventListener('focus', handleRefresh);
-    document.addEventListener('visibilitychange', handleRefresh);
-
-    return () => {
-      window.removeEventListener('focus', handleRefresh);
-      document.removeEventListener('visibilitychange', handleRefresh);
-    };
-  }, [currentDate]);
-
-  const handlePrevWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 7);
-    setCurrentDate(newDate);
+  const seleccionar = (compromiso: Compromiso) => setSeleccion({ tipo: compromiso.tipo, id: compromiso.dato.id });
+  const navegar = (cantidad: number) => {
+    const siguiente = new Date(fecha);
+    siguiente.setDate(fecha.getDate() + cantidad * 7);
+    setSeleccion(null);
+    setFecha(siguiente);
   };
+  const persona = ministros.find(m => String(m.id) === personaId);
+  const resumen = vista === 'personal' ? 'Mis compromisos' : vista === 'parroquial' ? 'Eventos de la parroquia'
+    : persona ? `Horario de ${persona.nombre}` : usuario?.rol_id === ROLES.COORDINADOR_MINISTROS ? 'Todos mis ministros y eventos' : 'Todos los ministros y eventos';
 
-  const handleNextWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 7);
-    setCurrentDate(newDate);
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const todayStr = formatYYYYMMDD(new Date());
-
-  const tareasPorDia = agruparPorDia(tareas);
-
-  return (
-    <div className={styles.page}>
-      <PageHeader
-        kicker="Agenda Parroquial"
-        title="Calendario de Tareas"
-        subtitle="Visualiza la asignación semanal de tareas y compromisos de los ministros."
-      />
-
-      {/* Navigation Controls */}
-      <div className={styles.controlsRow}>
-        <div className={styles.titleArea}>
-          <span className={styles.kicker}>Semana Activa</span>
-          <span className={styles.rangeText}>{formatRangeText(activeMonday, activeSunday)}</span>
+  return <div className={styles.page}>
+    <PageHeader title="Calendario" subtitle="Consulta tus compromisos y conoce quién sirve en cada misa o evento." />
+    <div className={styles.controls}>
+      <div className={styles.filters}>
+        <div className={styles.field}>
+          <label htmlFor="calendario-vista">Qué deseas consultar</label>
+          <select id="calendario-vista" value={vista} onChange={e => { setVista(e.target.value as VistaCalendario); setPersonaId(''); setSeleccion(null); }}>
+            {puedeCoordinar && <option value="coordinacion">Calendario de coordinación</option>}
+            <option value="personal">Mis compromisos</option>
+            <option value="parroquial">Eventos de la parroquia</option>
+          </select>
         </div>
-        <div className={styles.btnGroup}>
-          <button type="button" className={styles.navBtn} onClick={handlePrevWeek}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Anterior
-          </button>
-          <button type="button" className={`${styles.navBtn} ${styles.todayBtn}`} onClick={handleToday}>
-            Hoy
-          </button>
-          <button type="button" className={styles.navBtn} onClick={handleNextWeek}>
-            Siguiente
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
+        {puedeCoordinar && vista === 'coordinacion' && <div className={styles.field}>
+          <label htmlFor="calendario-ministro">Ver horario de un ministro</label>
+          <select id="calendario-ministro" value={personaId} disabled={cargandoMinistros || errorMinistros} onChange={e => { setPersonaId(e.target.value); setSeleccion(null); }}>
+            <option value="">{usuario?.rol_id === ROLES.COORDINADOR_MINISTROS ? 'Todos mis ministros' : 'Todos los ministros'}</option>
+            {ministros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+          </select>
+          {cargandoMinistros && <span role="status">Cargando ministros…</span>}
+          {errorMinistros && <span role="alert">No se pudo cargar el selector. <button type="button" onClick={() => setIntentoMinistros(n => n + 1)}>Reintentar ministros</button></span>}
+          {!cargandoMinistros && !errorMinistros && !ministros.length && <span>No hay ministros activos en tu directorio.</span>}
+        </div>}
+      </div>
+      <div className={styles.navigation}>
+        <strong>Semana del {fechaCompleta(inicio)} al {fechaCompleta(fin)}</strong>
+        <div className={styles.buttons}>
+          <button type="button" onClick={() => navegar(-1)}>Semana anterior</button>
+          <button type="button" className={styles.todayButton} onClick={() => { setFecha(new Date()); setSeleccion(null); }}>Hoy</button>
+          <button type="button" onClick={() => navegar(1)}>Semana siguiente</button>
         </div>
       </div>
-
-      {loading && <LoadingState label="Cargando calendario..." />}
-      {error && <ErrorState message={error} onRetry={() => cargarTareas()} />}
-
-      {!loading && !error && (
-        <div className={styles.grid}>
-          {weekDays.map((day, idx) => {
-            const dayStr = formatYYYYMMDD(day);
-            const isToday = dayStr === todayStr;
-
-            const dayTareas = tareasPorDia.get(dayStr) ?? [];
-
-            return (
-              <div
-                key={dayStr}
-                className={`${styles.dayColumn}${isToday ? ` ${styles.todayColumn}` : ''}`}
-              >
-                <div className={styles.dayHeader}>
-                  <span className={styles.weekdayName}>{DIAS_SEMANA[idx]}</span>
-                  <span className={styles.dayNum}>{day.getDate()}</span>
-                </div>
-
-                <div className={styles.tasksList}>
-                  {dayTareas.length === 0 ? (
-                    <div className={styles.emptyState}>Sin tareas</div>
-                  ) : (
-                    dayTareas.map(t => {
-                      // Fallback name matching our join result or first assignee
-                      const ministerName = t.persona_nombre || t.asignados?.[0]?.nombre;
-
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          className={styles.taskCard}
-                          onClick={() => setTareaSeleccionada(t)}
-                        >
-                          <div className={styles.timeRow}>
-                            <svg className={styles.clockIcon} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                            </svg>
-                            <span>{formatHora(t.hora_inicio)} – {formatHora(t.hora_fin)}</span>
-                          </div>
-
-                          <p className={styles.taskDesc}>{t.titulo}</p>
-
-                          <div className={styles.assigneeRow}>
-                            {ministerName ? (
-                              <>
-                                <svg className={styles.assignIcon} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                                </svg>
-                                <span className={styles.assignName}>{ministerName}</span>
-                              </>
-                            ) : (
-                              <span className={styles.unassignedBadge}>Sin asignar</span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {tareaSeleccionada && (
-        <DetalleEventoModal
-          open
-          onClose={() => setTareaSeleccionada(null)}
-          titulo={tareaSeleccionada.titulo}
-          fecha={tareaSeleccionada.fecha}
-          horaInicio={tareaSeleccionada.hora_inicio}
-          horaFin={tareaSeleccionada.hora_fin}
-          descripcion={tareaSeleccionada.descripcion}
-          extra={
-            <div className={styles.modalAsignados}>
-              {(tareaSeleccionada.asignados?.length ?? 0) > 0 ? (
-                tareaSeleccionada.asignados.map(a => (
-                  <span key={a.persona_id} className={styles.modalAsignadoChip}>{a.nombre}</span>
-                ))
-              ) : tareaSeleccionada.persona_nombre ? (
-                <span className={styles.modalAsignadoChip}>{tareaSeleccionada.persona_nombre}</span>
-              ) : (
-                <span className={styles.unassignedBadge}>Sin asignar</span>
-              )}
-            </div>
-          }
-        />
-      )}
     </div>
-  );
+    <p role="status" className={styles.summary}>{resumen}</p>
+    <p className={styles.note}>Cada evento reúne sus tareas y ministros. Selecciona un compromiso para ver el detalle.</p>
+    {loading && <LoadingState label="Cargando calendario…" />}
+    {error && <ErrorState message={error} onRetry={reintentar} />}
+    {!loading && !error && <div className={styles.weekGrid}>
+      {dias.map(dia => {
+        const clave = claveDia(dia);
+        return <section key={clave} className={`${styles.day} ${clave === hoy ? styles.today : ''}`} aria-label={fechaCompleta(clave)}>
+          <h2 className={styles.dayTitle}>{fechaCompleta(clave)}{clave === hoy && <span className={styles.todayLabel}>Hoy</span>}</h2>
+          <div className={styles.dayContent}><CompromisosDia items={porDia.get(clave) ?? []} onSeleccionar={seleccionar} /></div>
+        </section>;
+      })}
+    </div>}
+    {!loading && !error && item && <DetalleCompromiso item={item} onClose={() => setSeleccion(null)} />}
+  </div>;
 }
