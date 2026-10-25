@@ -72,7 +72,7 @@ export async function getCalendario(req: Request, res: Response): Promise<void> 
 
       const [eventos] = await conn.execute<RowDataPacket[]>(
         `SELECT e.id, e.titulo, e.descripcion, e.encargado_id, p.nombre AS nombre_encargado,
-                r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, esp.nombre AS nombre_espacio
+                r.id AS reserva_id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, esp.nombre AS nombre_espacio
          FROM evento e JOIN reserva r ON r.id = e.reserva_id
          JOIN persona p ON p.id = e.encargado_id LEFT JOIN espacio esp ON esp.id = r.espacio_id
          WHERE r.fecha BETWEEN ? AND ? ORDER BY r.fecha, r.hora_inicio, e.id`, [inicio, fin],
