@@ -28,7 +28,7 @@ const tareas = Array.from({ length: 9 }, (_, indice) => ({
 
 function prepararApi() {
   vi.mocked(apiClient.get).mockImplementation(async (url) => ({
-    data: url === '/api/personas' ? personas : tareas,
+    data: url === '/api/personas' ? personas : url === '/api/eventos' ? [] : tareas,
   }));
   vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
   vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
@@ -62,11 +62,29 @@ describe('integración de tareas, asignaciones y permisos', () => {
 
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas', {
       titulo: 'Nueva tarea', descripcion: 'Descripción de prueba', fecha: '2099-11-01',
-      hora_inicio: '14:00', hora_fin: '15:00', persona_ids: [10],
+      hora_inicio: '14:00', hora_fin: '15:00', persona_ids: [10], evento_id: null,
     }));
     expect(await screen.findByRole('status')).toHaveTextContent('Tarea creada');
     expect(screen.getByLabelText('Título:')).toHaveValue('');
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: undefined }));
+  });
+
+  it('sugiere el horario del evento y guarda una tarea de preparación con horario propio', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/eventos'
+      ? [{ id: 20, titulo: 'Misa dominical', fecha: '2099-11-01', hora_inicio: '10:00', hora_fin: '11:00', estado_reserva_id: 2 }]
+      : url === '/api/personas' ? personas : tareas }));
+    mostrar();
+    await screen.findByRole('option', { name: /Misa dominical/ });
+    await userEvent.selectOptions(screen.getByLabelText('Misa o evento asociado (opcional)'), '20');
+    expect(screen.getByLabelText('Fecha:')).toHaveValue('2099-11-01');
+    expect(screen.getByLabelText('Hora de Inicio:')).toHaveValue('10:00');
+    await userEvent.type(screen.getByLabelText('Título:'), 'Preparar altar');
+    await userEvent.type(screen.getByLabelText('Descripción:'), 'Preparación');
+    fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: '09:30' } });
+    fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: '10:00' } });
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas', expect.objectContaining({ evento_id: 20, hora_inicio: '09:30', hora_fin: '10:00' })));
   });
 
   it('valida campos y horario antes de crear', async () => {

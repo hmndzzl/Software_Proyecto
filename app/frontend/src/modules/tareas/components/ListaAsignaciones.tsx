@@ -14,9 +14,11 @@ import type { Ministro, Tarea } from '../../../types';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaAsignaciones.module.css';
 import formStyles from '../../../styles/Form.module.css';
+import EventoTareaSelect from './EventoTareaSelect';
 
 interface Asignacion {
   tarea_id: number;
+  evento_id: number | null;
   persona_id: number;
   titulo_tarea: string;
   descripcion_tarea: string;
@@ -70,6 +72,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   const [editHoraInicio, setEditHoraInicio] = useState('');
   const [editHoraFin, setEditHoraFin] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+  const [editEventoId, setEditEventoId] = useState<number | null>(null);
 
   const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
 
@@ -87,6 +90,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
         const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea) =>
           (tarea.asignados.length ? tarea.asignados : [{ persona_id: 0, nombre: 'Sin ministro asignado' }]).map((asignado) => ({
             tarea_id: tarea.id,
+            evento_id: tarea.evento_id ?? null,
             persona_id: asignado.persona_id,
             titulo_tarea: tarea.titulo,
             descripcion_tarea: tarea.descripcion,
@@ -156,6 +160,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
 
   const abrirEdicionTarea = (asignacion: Asignacion) => {
     setEditandoTarea(asignacion);
+    setEditEventoId(asignacion.evento_id);
     setEditTitulo(asignacion.titulo_tarea);
     setEditDescripcion(asignacion.descripcion_tarea);
     setEditFecha(asignacion.fecha);
@@ -184,6 +189,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
         hora_inicio: editHoraInicio,
         hora_fin: editHoraFin,
         titulo: editTitulo,
+        evento_id: editEventoId,
         descripcion: editDescripcion,
       });
       toast.success('Tarea actualizada', `Los cambios en "${editTitulo}" se guardaron.`);
@@ -209,6 +215,10 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
             <h4 className={formStyles.modalTitle}>Editar Tarea #{editandoTarea.tarea_id}</h4>
 
             <div className={formStyles.form}>
+              <EventoTareaSelect value={editEventoId} disabled={editLoading} onChange={(id, evento) => {
+                setEditEventoId(id);
+                if (evento) setEditFecha(evento.fecha.slice(0, 10));
+              }} />
               <div className={formStyles.field}>
                 <label className={`${formStyles.label} ${formStyles.required}`}>Título:</label>
                 <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />

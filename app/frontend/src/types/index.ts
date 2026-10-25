@@ -12,6 +12,8 @@ export interface Persona {
 
 export interface Evento {
   id: number;
+  titulo?: string;
+  estado_reserva_id?: number;
   publico?: 0 | 1 | boolean;
   descripcion: string;
   encargado_id: number;
@@ -115,6 +117,7 @@ export interface AsignadoInfo {
 
 export interface Tarea {
   id: number;
+  evento_id?: number | null;
   titulo: string;
   descripcion: string;
   fecha: string;
