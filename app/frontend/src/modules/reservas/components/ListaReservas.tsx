@@ -8,6 +8,8 @@ import EmptyState from '../../../components/ui/EmptyState';
 import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
@@ -19,10 +21,14 @@ import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion';
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
+  inicio: r => r.hora_inicio,
+  fin: r => r.hora_fin,
+  titulo: r => r.evento_titulo ?? '',
+  descripcion: r => r.evento_descripcion ?? '',
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
   estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
@@ -52,7 +58,15 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );
 
-  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(reservas, SORT_VALUE);
+  const filtros = useTableFilters(reservas, {
+    search: r => [r.id, r.espacio_nombre, r.evento_titulo, r.evento_descripcion, r.solicitante_nombre],
+    date: r => r.fecha,
+    selects: [
+      { key: 'estado', label: 'Estado', value: r => etiquetaEstadoReserva(r.estado_reserva_id) || 'Desconocido' },
+      { key: 'espacio', label: 'Espacio', value: r => r.espacio_nombre ?? 'Sin espacio' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const fetchReservas = async () => {
     setLoading(true);
@@ -167,6 +181,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   return (
     <div>
       <CardHead title="Lista de Reservas" hint={!loading ? `${reservas.length} registradas` : undefined} />
+      {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
 
       {editando && (
         <div className={formStyles.modalOverlay}>
@@ -267,10 +282,10 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                <th>Hora Inicio</th>
-                <th>Hora Fin</th>
-                <th>Título del Evento</th>
-                <th>Descripción</th>
+                <SortableTh label="Hora Inicio" sortKey="inicio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Hora Fin" sortKey="fin" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Título del Evento" sortKey="titulo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Descripción" sortKey="descripcion" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Registrado por" sortKey="solicitante" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
