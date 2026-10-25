@@ -312,6 +312,17 @@ describe('calendario mensual', () => {
     expect(within(celda).getByText('Sin asignar')).toBeInTheDocument();
   });
 
+  it('no agrega el sufijo "+N" en la vista previa cuando la tarea tiene un solo asignado', async () => {
+    const soloUno = { ...tarea, id: 3, titulo: 'Ujier', asignados: [tarea.asignados[0]] };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? [] : { eventos: [], tareas: [soloUno] } }));
+    mostrar(4);
+    await screen.findAllByText('Sin compromisos registrados');
+    await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
+    const tabla = await screen.findByRole('table');
+    const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*1 compromiso\b/ });
+    expect(within(celda).getByText('Ana')).toBeInTheDocument();
+  });
+
   it('selecciona el día para el panel de abajo al hacer clic en cualquier parte de la celda', async () => {
     mostrar();
     await screen.findByText('Misa del lunes');
@@ -342,11 +353,10 @@ describe('calendario mensual', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Mes' }));
     const tabla = await screen.findByRole('table');
     const celda = within(tabla).getByRole('cell', { name: /lunes.*5 de octubre.*3 compromisos/ });
-    expect(within(celda).getByText('Ver los 3 compromisos')).toBeInTheDocument();
     expect(within(celda).getByText('Reunión')).toBeInTheDocument();
     expect(celda).toHaveTextContent('08:00');
     expect(celda).not.toHaveTextContent('Misa del lunes');
-    await userEvent.click(within(celda).getByRole('button', { name: /Ver todos los compromisos/ }));
+    await userEvent.click(within(celda).getByRole('button', { name: 'Ver los 3 compromisos' }));
     const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
     expect(within(detalle).getByText('Visitar enfermos')).toBeInTheDocument();
     expect(within(detalle).getByText('Reunión')).toBeInTheDocument();
