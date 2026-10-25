@@ -34,11 +34,15 @@ interface SortableThProps<K extends string> {
 
 export default function SortableTh<K extends string>({ label, sortKey, activeKey, dir, onSort }: SortableThProps<K>) {
   return (
-    <th className={styles.thOrdenable} onClick={() => onSort(sortKey)}>
+    <th className={styles.thOrdenable} scope="col"
+      aria-sort={activeKey === sortKey && dir ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      onClick={() => onSort(sortKey)}>
+      <button type="button" className={styles.sortButton} onClick={event => { event.stopPropagation(); onSort(sortKey); }}>
       <span className={styles.thContenido}>
         {label}
         <SortIcon dir={activeKey === sortKey ? dir : null} />
       </span>
+      </button>
     </th>
   );
 }
