@@ -45,7 +45,8 @@ test('consulta semana y mes, filtra por ministro y conserva legibilidad en móvi
   await page.keyboard.press('Escape');
   await expect(abrir).toBeFocused();
   await page.getByRole('button', { name: 'Mes', exact: true }).click();
-  await page.getByRole('table').getByRole('button', { name: /lunes.*5 de octubre.*1 compromisos/ }).click();
+  await page.getByRole('table').getByRole('cell', { name: /lunes.*5 de octubre.*1 compromiso/ })
+    .getByRole('button', { name: /Ver todos los compromisos/ }).click();
   await expect(page.getByRole('region', { name: /Compromisos del lunes/ }).getByText('Preparar altar')).toBeVisible();
   for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 }]) {
     await page.setViewportSize(viewport);
