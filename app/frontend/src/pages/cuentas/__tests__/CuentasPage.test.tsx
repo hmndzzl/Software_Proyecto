@@ -163,7 +163,7 @@ describe('CuentasPage', () => {
       await userEvent.type(screen.getByLabelText('Contraseña inicial'), password);
     };
 
-    it('crea la cuenta con el rol elegido y avisa que ya puede iniciar sesión', async () => {
+    it('crea la cuenta con el rol elegido y avisa que queda pendiente de aprobación', async () => {
       vi.mocked(crearCuentaApi).mockResolvedValue({});
       render(<CuentasPage />, { wrapper: ToastProvider });
       await abrirFormulario();
@@ -178,11 +178,11 @@ describe('CuentasPage', () => {
         password: 'clave-segura',
         rol_id: ROLES.COORDINADOR_MINISTROS,
       }));
-      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta creadaLuis Pérez ya puede iniciar sesión como Coord. de Ministros con su correo y la contraseña inicial.');
+      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta creadaLuis Pérez quedó pendiente de aprobación. Al aprobarla como Coord. de Ministros se le avisará por correo.');
       expect(screen.queryByRole('button', { name: 'Crear cuenta' })).not.toBeInTheDocument();
-      // Se pasa a la pestaña Activas para que se vea la cuenta recién creada.
-      await waitFor(() => expect(listarCuentasApi).toHaveBeenLastCalledWith('activa'));
-      expect(screen.getByRole('tab', { name: 'Activas' })).toHaveAttribute('aria-selected', 'true');
+      // Se queda en la pestaña Pendientes, donde aparece la cuenta recién creada.
+      await waitFor(() => expect(listarCuentasApi).toHaveBeenLastCalledWith('pendiente'));
+      expect(screen.getByRole('tab', { name: 'Pendientes' })).toHaveAttribute('aria-selected', 'true');
     });
 
     it('avisa con una advertencia (no como éxito) si la cuenta se creó pero Clerk la rechazó', async () => {
@@ -197,7 +197,7 @@ describe('CuentasPage', () => {
       expect(aviso).toHaveTextContent('Cuenta creada con una advertencia');
       expect(aviso).toHaveTextContent('Luis Pérez quedó registrado como Ministro.');
       expect(aviso).toHaveTextContent('No se pudo crear el usuario en Clerk');
-      expect(aviso).not.toHaveTextContent('ya puede iniciar sesión como Ministro con su correo');
+      expect(aviso).not.toHaveTextContent('quedó pendiente de aprobación');
     });
 
     it('avisa si faltan el nombre o el correo, sin llamar al servidor', async () => {
@@ -266,7 +266,7 @@ describe('CuentasPage', () => {
       await abrirActivas([luis]);
 
       await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
-      expect(screen.getByText(/ya no pertenece a la parroquia/)).toBeInTheDocument();
+      expect(screen.getByText(/Dejará de poder iniciar sesión y se le avisará por correo/)).toBeInTheDocument();
       expect(rechazarCuentaApi).not.toHaveBeenCalled();
 
       await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));

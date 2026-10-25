@@ -173,12 +173,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const telefono = normalizarTelefono(req.body.telefono);
     const hashedPassword = await bcrypt.hash(password, 10);
+    // La cuenta nace 'pendiente': hasta que Admin o Sacerdote la aprueben (y se envíe el correo) no puede entrar.
     let personaId: number;
     if (telefono) {
       let creadoId = 0;
       await withTransaction(async conn => {
         const [resultado] = await conn.execute<ResultSetHeader>(
-          'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id],
+          'INSERT INTO persona (nombre, correo, password, rol_id, estado_cuenta) VALUES (?, ?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id, ESTADOS_CUENTA.PENDIENTE],
         );
         creadoId = resultado.insertId;
         await conn.execute('INSERT INTO telefono (numero, persona_id) VALUES (?, ?)', [telefono, creadoId]);
@@ -187,7 +188,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       personaId = creadoId;
     } else {
       const [resultado] = await pool.execute<ResultSetHeader>(
-        'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id],
+        'INSERT INTO persona (nombre, correo, password, rol_id, estado_cuenta) VALUES (?, ?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id, ESTADOS_CUENTA.PENDIENTE],
       );
       personaId = resultado.insertId;
     }

@@ -36,6 +36,13 @@ services:
       - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
       - NODE_ENV=${NODE_ENV}
       - CORS_ORIGIN=${CORS_ORIGIN}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_SECURE=${SMTP_SECURE}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - FRONTEND_URL=${FRONTEND_URL}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
     depends_on:
       mariadb:
