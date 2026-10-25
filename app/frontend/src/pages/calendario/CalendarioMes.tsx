@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { DIAS_SEMANA } from '../../utils/date';
 import { obtenerEstadoReserva } from '../../utils/estadosReserva';
 import CompromisosDia from './CompromisosDia';
@@ -27,6 +27,14 @@ interface Props {
 
 export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Props) {
   const [diaSeleccionado, setDiaSeleccionado] = useState(claveDia(fecha));
+  const detalleRef = useRef<HTMLElement>(null);
+  // El panel con los compromisos del día queda debajo de la tabla, fuera de vista
+  // en pantallas chicas o meses con muchas filas — sin este scroll, "Ver todos los
+  // compromisos"/"Ver los N compromisos" parece no hacer nada.
+  const seleccionarDia = (clave: string) => {
+    setDiaSeleccionado(clave);
+    detalleRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
   const hoy = claveDia(new Date());
   const mes = fecha.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
   const delMes = dias.filter(d => d.getMonth() === fecha.getMonth());
@@ -44,12 +52,12 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
           const delMesActual = dia.getMonth() === fecha.getMonth();
           return <td key={clave} aria-label={delMesActual ? descripcionDia : undefined}
             className={delMesActual ? styles.monthCell : undefined}
-            onClick={delMesActual ? () => setDiaSeleccionado(clave) : undefined}>
+            onClick={delMesActual ? () => seleccionarDia(clave) : undefined}>
             {!delMesActual ? <span className={styles.outsideMonth}>{dia.getDate()}</span>
               : <div className={`${styles.monthDay}${esHoy ? ` ${styles.monthDayToday}` : ''}`}>
                 <button type="button" className={styles.monthDayNumBtn} aria-pressed={clave === diaSeleccionado}
                   aria-label={`Ver todos los compromisos: ${descripcionDia}`}
-                  onClick={() => setDiaSeleccionado(clave)}>
+                  onClick={() => seleccionarDia(clave)}>
                   <span className={styles.monthDayNum}>
                     {dia.getDate()}
                     {esHoy && <span className={styles.todayLabel}>Hoy</span>}
@@ -72,7 +80,7 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
                     </button>;
                   })}
                   {items.length > 2 && (
-                    <button type="button" className={styles.detailLink} onClick={() => setDiaSeleccionado(clave)}>
+                    <button type="button" className={styles.detailLink} onClick={() => seleccionarDia(clave)}>
                       Ver los {items.length} compromisos
                     </button>
                   )}
@@ -82,7 +90,7 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
         })}
       </tr>)}</tbody>
     </table>
-    <section className={styles.monthDetails} aria-labelledby="detalle-dia-titulo">
+    <section ref={detalleRef} className={styles.monthDetails} aria-labelledby="detalle-dia-titulo">
       <h2 id="detalle-dia-titulo" tabIndex={-1} aria-live="polite">Compromisos del {fechaCompleta(diaSeleccionado)}</h2>
       <CompromisosDia items={porDia.get(diaSeleccionado) ?? []} onSeleccionar={onSeleccionar} />
     </section>
