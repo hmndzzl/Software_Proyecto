@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DIAS_SEMANA } from '../../utils/date';
 import CompromisosDia from './CompromisosDia';
-import { claveDia, fechaCompleta, horaLegible, type Compromiso } from './calendario.utils';
+import { claveDia, estadoEvento, fechaCompleta, horaLegible, type Compromiso } from './calendario.utils';
 import styles from './CalendarioPage.module.css';
 
 interface Props {
@@ -32,7 +32,7 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
                 onClick={() => setDiaSeleccionado(clave)}>
                 <strong>{dia.getDate()}{clave === hoy && <span className={styles.todayLabel}>Hoy</span>}</strong>
                 {items.slice(0, 2).map(item => <span key={`${item.tipo}-${item.dato.id}`} className={styles.monthPreview}>
-                  {item.tipo === 'evento' ? 'Evento' : 'Tarea'} · {horaLegible(item.dato.hora_inicio)}<br />{item.dato.titulo}
+                  {item.tipo === 'evento' ? `Evento · ${estadoEvento(item.dato.estado_reserva_id)}` : 'Tarea'} · {horaLegible(item.dato.hora_inicio)}<br />{item.dato.titulo}
                 </span>)}
                 {items.length > 2 ? <span className={styles.detailLink}>Ver los {items.length} compromisos</span>
                   : <span>{items.length ? `${items.length} compromiso${items.length === 1 ? '' : 's'}` : 'Sin compromisos'}</span>}

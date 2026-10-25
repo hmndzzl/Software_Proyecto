@@ -176,7 +176,7 @@ describe('calendario mensual', () => {
   });
 
   it('limita los resúmenes y mantiene todos los compromisos en el detalle diario', async () => {
-    const muchos = { eventos: [evento, { ...evento, id: 9, titulo: 'Reunión', tareas: [], nombre_espacio: null, estado_reserva_id: 1 }], tareas: [tarea, independiente] };
+    const muchos = { eventos: [evento, { ...evento, id: 9, titulo: 'Reunión', hora_inicio: '08:00:00', tareas: [], nombre_espacio: null, estado_reserva_id: 1 }], tareas: [tarea, independiente] };
     vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? [] : muchos }));
     mostrar();
     await screen.findByText('Misa del lunes');
@@ -184,7 +184,8 @@ describe('calendario mensual', () => {
     const tabla = await screen.findByRole('table');
     const dia = within(tabla).getByRole('button', { name: /lunes.*5 de octubre.*3 compromisos/ });
     expect(within(dia).getByText('Ver los 3 compromisos')).toBeInTheDocument();
-    expect(within(dia).queryByText('Visitar enfermos')).not.toBeInTheDocument();
+    expect(dia).toHaveTextContent('Evento · Pendiente de aprobación');
+    expect(dia).not.toHaveTextContent('Misa del lunes');
     await userEvent.click(dia);
     const detalle = screen.getByRole('region', { name: /Compromisos del lunes.*5 de octubre/ });
     expect(within(detalle).getByText('Visitar enfermos')).toBeInTheDocument();
