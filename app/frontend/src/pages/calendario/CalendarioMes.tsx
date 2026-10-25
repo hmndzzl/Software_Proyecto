@@ -1,8 +1,22 @@
 import { useState } from 'react';
 import { DIAS_SEMANA } from '../../utils/date';
+import { obtenerEstadoReserva } from '../../utils/estadosReserva';
 import CompromisosDia from './CompromisosDia';
 import { claveDia, fechaCompleta, type Compromiso } from './calendario.utils';
 import styles from './CalendarioPage.module.css';
+
+/** Segunda línea de cada vista previa: lo más útil para decidir si hace falta
+ * entrar al detalle — a quién le toca servir (tarea) o si ya está confirmado
+ * o sigue pendiente de aprobación (evento) — sin repetir el título ni la hora. */
+function subtituloCompromiso(item: Compromiso): { texto: string; color?: string } {
+  if (item.tipo === 'tarea') {
+    const [primero, ...resto] = item.dato.asignados;
+    if (!primero) return { texto: 'Sin asignar' };
+    return { texto: resto.length ? `${primero.nombre} +${resto.length}` : primero.nombre };
+  }
+  const estado = obtenerEstadoReserva(item.dato.estado_reserva_id);
+  return { texto: estado.label, color: `var(--estado-reserva-${estado.kind}-fg)` };
+}
 
 interface Props {
   fecha: Date;
@@ -36,11 +50,19 @@ export default function CalendarioMes({ fecha, dias, porDia, onSeleccionar }: Pr
                   {esHoy && <span className={styles.todayLabel}>Hoy</span>}
                 </span>
                 {items.length > 0 && <div className={styles.monthPreviewList}>
-                  {items.slice(0, 2).map(item => <span key={`${item.tipo}-${item.dato.id}`}
-                    className={`${styles.monthPreview} ${item.tipo === 'evento' ? styles.monthPreviewEvento : styles.monthPreviewTarea}`}>
-                    <span className={styles.monthPreviewHora}>{item.dato.hora_inicio.slice(0, 5)}</span>
-                    <span className={styles.monthPreviewTitulo}>{item.dato.titulo}</span>
-                  </span>)}
+                  {items.slice(0, 2).map(item => {
+                    const subtitulo = subtituloCompromiso(item);
+                    return <span key={`${item.tipo}-${item.dato.id}`}
+                      className={`${styles.monthPreview} ${item.tipo === 'evento' ? styles.monthPreviewEvento : styles.monthPreviewTarea}`}>
+                      <span className={styles.monthPreviewMain}>
+                        <span className={styles.monthPreviewHora}>{item.dato.hora_inicio.slice(0, 5)}</span>
+                        <span className={styles.monthPreviewTitulo}>{item.dato.titulo}</span>
+                      </span>
+                      <span className={styles.monthPreviewSub} style={subtitulo.color ? { color: subtitulo.color } : undefined}>
+                        {subtitulo.texto}
+                      </span>
+                    </span>;
+                  })}
                   {items.length > 2 && <span className={styles.detailLink}>Ver los {items.length} compromisos</span>}
                 </div>}
               </button>}
