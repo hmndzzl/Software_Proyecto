@@ -11,6 +11,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import CompromisosDia from './CompromisosDia';
 import DetalleCompromiso from './DetalleCompromiso';
 import CalendarioMes from './CalendarioMes';
+import { formatRangeText } from '../../utils/date';
 import { claveDia, compromisosPorDia, diasSemana, diasMes, desplazarMes, fechaCompleta, type Compromiso } from './calendario.utils';
 import { useCalendario } from './useCalendario';
 import styles from './CalendarioPage.module.css';
@@ -109,7 +110,7 @@ function CalendarioContenido() {
           <button type="button" aria-pressed={periodo === 'semana'} onClick={() => { setPeriodo('semana'); setSeleccion(null); }}>Semana</button>
           <button type="button" aria-pressed={periodo === 'mes'} onClick={() => { setPeriodo('mes'); setSeleccion(null); }}>Mes</button>
         </div>
-        <strong>{periodo === 'semana' ? `Semana del ${fechaCompleta(inicio)} al ${fechaCompleta(fin)}` : fecha.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' })}</strong>
+        <strong>{periodo === 'semana' ? formatRangeText(dias[0], dias[dias.length - 1]) : fecha.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' })}</strong>
         <div className={styles.buttons}>
           <button type="button" onClick={() => navegar(-1)}>{periodo === 'semana' ? 'Semana anterior' : 'Mes anterior'}</button>
           <button type="button" className={styles.todayButton} onClick={() => { setFecha(new Date()); setSeleccion(null); }}>Hoy</button>
