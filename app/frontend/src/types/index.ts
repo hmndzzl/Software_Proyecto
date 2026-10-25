@@ -93,6 +93,7 @@ export interface ReservaDisponible {
 }
 
 export interface Reserva {
+  cantidad_personas?: number | null;
   id: number;
   fecha: string;
   hora_inicio: string;
@@ -130,6 +131,7 @@ export interface Tarea {
 }
 
 export interface Ministro {
+  telefono?: string | null;
   id: number;
   nombre: string;
   correo: string;

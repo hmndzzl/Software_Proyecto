@@ -6,6 +6,7 @@ import Btn from '../../components/ui/Btn';
 import { Field, InputUI, SelectUI } from '../../components/ui/Field';
 import { ROLES } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { normalizarTelefono } from '../../utils/telefono';
 import styles from './CuentasPage.module.css';
 
 const PASSWORD_MIN = 8;
@@ -20,6 +21,7 @@ interface Props {
 export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Props) {
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [password, setPassword] = useState('');
   const [rolId, setRolId] = useState<number>(ROLES.MINISTRO);
   const toast = useToast();
@@ -28,6 +30,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
   const cerrar = () => {
     setNombre('');
     setCorreo('');
+    setTelefono('');
     setPassword('');
     setRolId(ROLES.MINISTRO);
     onClose();
@@ -35,6 +38,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
+    if (enviando) return;
 
     if (!nombre.trim() || !correo.trim()) {
       toast.error('Faltan datos', 'Completa el nombre y el correo.');
@@ -44,10 +48,17 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
       toast.error('Contraseña muy corta', `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`);
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) {
+      toast.error('Correo inválido', 'Ingresa un correo electrónico válido.');
+      return;
+    }
+    let numero: string;
+    try { numero = normalizarTelefono(telefono); }
+    catch (error) { toast.error('Teléfono inválido', (error as Error).message); return; }
 
     setEnviando(true);
     try {
-      const { advertencia } = await crearCuentaApi({ nombre: nombre.trim(), correo: correo.trim(), password, rol_id: rolId });
+      const { advertencia } = await crearCuentaApi({ nombre: nombre.trim(), correo: correo.trim(), password, rol_id: rolId, ...(numero ? { telefono: numero } : {}) });
       const creada = nombre.trim();
       const rolCreado = rolId;
       cerrar();
@@ -60,13 +71,17 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
   };
 
   return (
-    <Modal open={open} title="Nueva cuenta" onClose={cerrar}>
+    <Modal open={open} title="Nueva cuenta" onClose={() => { if (!enviando) cerrar(); }}>
       <form onSubmit={enviar} className={styles.form} noValidate>
+        <p>Registra los datos personales y el rol de acceso. El teléfono es opcional.</p>
         <Field label="Nombre completo" required>
           <InputUI aria-label="Nombre completo" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={100} autoComplete="off" />
         </Field>
         <Field label="Correo electrónico" required>
           <InputUI aria-label="Correo electrónico" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} maxLength={100} autoComplete="off" />
+        </Field>
+        <Field label="Teléfono (opcional)" hint="Acepta 8 dígitos locales o un número internacional con + y código de país.">
+          <InputUI aria-label="Teléfono (opcional)" type="tel" autoComplete="tel" maxLength={50} value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+502 5555 1234" disabled={enviando} />
         </Field>
         <Field label="Contraseña inicial" required hint={`Mínimo ${PASSWORD_MIN} caracteres. Compártela con la persona de forma segura.`}>
           <InputUI aria-label="Contraseña inicial" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
@@ -80,7 +95,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
         </Field>
 
         <div className={styles.confirmAcciones}>
-          <Btn type="button" kind="ghost" onClick={cerrar}>Cancelar</Btn>
+          <Btn type="button" kind="ghost" onClick={cerrar} disabled={enviando}>Cancelar</Btn>
           <Btn type="submit" disabled={enviando}>{enviando ? 'Creando…' : 'Crear cuenta'}</Btn>
         </div>
       </form>

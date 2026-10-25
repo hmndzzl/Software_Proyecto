@@ -41,6 +41,7 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
       <h3 className={styles.sectionTitle}>Crear Nuevo Grupo</h3>
 
       <form onSubmit={handleSubmit} className={styles.form}>
+        <p className={styles.fieldNote}>Escribe el nombre del grupo y selecciona su coordinador entre las cuentas habilitadas para ese rol.</p>
         <div className={styles.field}>
           <label htmlFor="nombre" className={styles.label}>Nombre del Grupo:</label>
           <input

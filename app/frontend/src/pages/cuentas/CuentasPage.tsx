@@ -12,6 +12,10 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import Btn from '../../components/ui/Btn';
+import SortableTh from '../../components/ui/SortableTh';
+import TableFilters from '../../components/ui/TableFilters';
+import { useSortableTable } from '../../hooks/useSortableTable';
+import { useTableFilters } from '../../hooks/useTableFilters';
 import Modal from '../../components/ui/Modal';
 import { useToast } from '../../context/ToastContext';
 import { SelectUI } from '../../components/ui/Field';
@@ -52,6 +56,16 @@ export default function CuentasPage() {
   const [rolPorCuenta, setRolPorCuenta] = useState<Record<number, number>>({});
   const [porRechazar, setPorRechazar] = useState<Cuenta | null>(null);
   const [creando, setCreando] = useState(false);
+  const rolVisible = (cuenta: Cuenta) => rolLabel(estado === 'activa' ? cuenta.rol_id : rolPorCuenta[cuenta.id] ?? ROLES.MINISTRO);
+  const filtros = useTableFilters(cuentas, {
+    search: c => [c.nombre, c.correo, rolVisible(c)],
+    selects: [{ key: 'rol', label: estado === 'activa' ? 'Rol' : 'Rol a asignar', value: rolVisible }],
+  });
+  const orden = useSortableTable(filtros.filteredData, {
+    nombre: (c: Cuenta) => c.nombre.toLowerCase(),
+    correo: (c: Cuenta) => c.correo.toLowerCase(),
+    rol: rolVisible,
+  });
 
   // Solo un Admin puede otorgar el rol de Administrador; el backend también lo valida.
   const rolesDisponibles = ROL_OPCIONES.filter(
@@ -72,6 +86,7 @@ export default function CuentasPage() {
   }, [cargar]);
 
   const cambiarPestana = (nuevo: EstadoCuenta) => {
+    filtros.controls.clear();
     setEstado(nuevo);
   };
 
@@ -150,6 +165,7 @@ export default function CuentasPage() {
         </div>
 
         {loading && <LoadingState label="Cargando cuentas..." />}
+        {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de cuentas" />}
         {error && <ErrorState message={error} onRetry={cargar} />}
 
         {!loading && !error && cuentas.length === 0 && (
@@ -161,14 +177,14 @@ export default function CuentasPage() {
             <table className="styled-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>{asignaRol ? 'Rol a asignar' : 'Rol'}</th>
+                  <SortableTh label="Nombre" sortKey="nombre" activeKey={orden.sortKey} dir={orden.sortDir} onSort={orden.toggleSort} />
+                  <SortableTh label="Correo" sortKey="correo" activeKey={orden.sortKey} dir={orden.sortDir} onSort={orden.toggleSort} />
+                  <SortableTh label={asignaRol ? 'Rol a asignar' : 'Rol'} sortKey="rol" activeKey={orden.sortKey} dir={orden.sortDir} onSort={orden.toggleSort} />
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {cuentas.map((c) => (
+                {orden.sortedData.map((c) => (
                   <tr key={c.id}>
                     <td>
                       <div className={styles.nameCell}>
@@ -217,6 +233,7 @@ export default function CuentasPage() {
         roles={rolesDisponibles}
         onClose={() => setCreando(false)}
         onCreada={(nombre, rolId, advertencia) => {
+          filtros.controls.clear();
           if (advertencia) toast.warning('Cuenta creada con una advertencia', `${nombre} quedó registrado como ${rolLabel(rolId)}. ${advertencia}`);
           else toast.success('Cuenta creada', `${nombre} ya puede iniciar sesión como ${rolLabel(rolId)} con su correo y la contraseña inicial.`);
           // Las cuentas nuevas quedan activas: se muestra esa pestaña para que se vea la recién creada.

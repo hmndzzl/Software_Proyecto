@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import NotificacionesPage from '../NotificacionesPage';
 import { AuthProvider } from '../../../context/AuthContext';
@@ -74,6 +74,57 @@ function mostrar(initialEntry = '/notificaciones') {
     </AuthProvider></MemoryRouter></ToastProvider>
   );
 }
+
+describe('búsqueda y ordenamiento de las bandejas', () => {
+  it('combina búsqueda sin acentos, tipo y lectura, y permite limpiar', async () => {
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'PRIMERA NOTIFICACION' } });
+    fireEvent.change(screen.getByLabelText('Estado de lectura'), { target: { value: 'leida' } });
+    expect(screen.queryByText('Segunda notificación')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'global' } });
+    expect(screen.getByText('No hay notificaciones que coincidan con los filtros.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(screen.getByText('Segunda notificación')).toBeInTheDocument();
+  });
+
+  it('ordena todas las columnas de recibidas, enviadas y papelera', async () => {
+    usuarioSacerdote();
+    vi.mocked(apiClient.get).mockImplementation(async url => {
+      if (url.endsWith('/enviadas')) return { data: [...enviadas, { ...enviadas[0], id: 8, mensaje: 'Otra enviada', total_leidas: 2, destinatarios_nombres: null, enviado_en: '2026-10-24T12:30:00Z' }] };
+      if (url.endsWith('/papelera')) return { data: [...papelera, { ...papelera[0], id: 10, mensaje: 'Otra eliminada', remitente_nombre: 'Padre Test' }] };
+      return { data: [notificaciones[0], { ...notificaciones[1], remitente_nombre: 'Padre Test', enviado_en: '2026-10-24T12:30:00Z' }] };
+    });
+    mostrar();
+    for (const tab of ['Recibidas', 'Enviadas', 'Papelera']) {
+      fireEvent.click(screen.getByRole('button', { name: tab }));
+      const table = await screen.findByRole('table');
+      for (const header of within(table).getAllByRole('columnheader')) {
+        if (!header.textContent) continue;
+        fireEvent.click(header);
+        expect(header).toHaveAttribute('aria-sort', 'descending');
+        fireEvent.click(header);
+        expect(header).toHaveAttribute('aria-sort', 'ascending');
+        fireEvent.click(header);
+        expect(header).toHaveAttribute('aria-sort', 'none');
+      }
+    }
+  });
+
+  it('busca por destinatarios en enviadas y por remitente en la papelera', async () => {
+    usuarioSacerdote();
+    mostrar();
+    fireEvent.click(screen.getByRole('button', { name: 'Enviadas' }));
+    await screen.findByText('Aviso importante');
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'xitumul' } });
+    expect(screen.getByText('Aviso importante')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'desconocido' } });
+    expect(screen.getByText('No hay notificaciones que coincidan con los filtros.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    fireEvent.change(screen.getByLabelText('Buscar'), { target: { value: 'sistema' } });
+    expect(await screen.findByText('Notificación eliminada')).toBeInTheDocument();
+  });
+});
 
 describe('Filtro por fecha y hora', () => {
   it('filtra recibidas por minuto, explica históricos y limpia el rango', async () => {
@@ -280,7 +331,7 @@ describe('Nueva notificación (Sacerdote)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Nueva notificación/i }));
     expect(await screen.findByText('Nueva Notificación')).toBeInTheDocument();
 
-    const selects = screen.getAllByRole('combobox');
+    const selects = within(screen.getByPlaceholderText(/Escribe el mensaje/i).closest('form')!).getAllByRole('combobox');
     fireEvent.change(selects[0], { target: { value: 'global' } });
     fireEvent.change(screen.getByPlaceholderText(/Escribe el mensaje/i), { target: { value: 'Test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Enviar notificación' }));

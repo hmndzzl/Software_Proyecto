@@ -26,6 +26,39 @@ function mostrar() { return render(<ToastProvider><ListaReservas /></ToastProvid
 describe('integración de reservas, estados y edición', () => {
   beforeEach(() => { vi.clearAllMocks(); preparar(); });
 
+  it('muestra y ordena el aforo, valida al editarlo y guarda la cantidad numérica', async () => {
+    preparar([{ ...reservas[0], cantidad_personas: 20 }, { ...reservas[1], cantidad_personas: 10 }]);
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/espacios' ? [{ id: 2, nombre: 'Salón', capacidad: 30 }] : [{ ...reservas[0], cantidad_personas: 20 }, { ...reservas[1], cantidad_personas: 10 }] }));
+    mostrar();
+    await screen.findByRole('cell', { name: '20' });
+    fireEvent.click(screen.getByRole('columnheader', { name: /Personas esperadas/ }));
+    fireEvent.click(screen.getByRole('columnheader', { name: /Personas esperadas/ }));
+    const filas = within(screen.getByRole('table')).getAllByRole('row');
+    expect(within(filas[1]).getByRole('cell', { name: '10' })).toBeInTheDocument();
+    await userEvent.click(within(filas[2]).getByRole('button', { name: 'Editar' }));
+    const campo = screen.getByLabelText('Cantidad de personas esperadas');
+    fireEvent.change(campo, { target: { value: '31' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(screen.getAllByText(/supera la capacidad/).length).toBeGreaterThan(0);
+    expect(apiClient.put).not.toHaveBeenCalled();
+    fireEvent.change(campo, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(screen.getByText(/Indica una cantidad entera/)).toBeInTheDocument();
+    fireEvent.change(campo, { target: { value: '30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1', expect.objectContaining({ cantidad_personas: 30 })));
+  });
+
+  it('permite completar el aforo faltante en una reserva histórica', async () => {
+    preparar([reservas[0]]);
+    mostrar();
+    expect(await screen.findByText('No registrado')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    fireEvent.change(screen.getByLabelText('Cantidad de personas esperadas'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1', expect.objectContaining({ cantidad_personas: 10 })));
+  });
+
   it('publica sin reiniciar la aprobación ni actualizar los datos de la reserva', async () => {
     preparar([{ ...reservas[1], evento_id: 25, evento_publico: 0 }]);
     mostrar();
@@ -53,7 +86,7 @@ describe('integración de reservas, estados y edición', () => {
 
   it('lista todos los estados, valores faltantes y permite ordenar', async () => {
     mostrar();
-    await screen.findByText('Confirmada');
+    await screen.findByRole('cell', { name: 'Confirmada' });
     for (const texto of ['Pendiente', 'Rechazada', 'Cancelada', 'Desconocido', '—']) expect(screen.getAllByText(texto).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Ana Gómez').length).toBeGreaterThan(0);
     for (const nombre of ['#', 'Espacio', 'Fecha', 'Registrado por', 'Estado']) fireEvent.click(screen.getByRole('columnheader', { name: new RegExp(nombre === '#' ? '#' : nombre) }));
@@ -61,7 +94,7 @@ describe('integración de reservas, estados y edición', () => {
 
   it('aprueba, cancela la propia y rechaza la reserva ajena', async () => {
     mostrar();
-    await screen.findByText('Confirmada');
+    await screen.findByRole('cell', { name: 'Confirmada' });
     await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
     preparar();
@@ -82,7 +115,7 @@ describe('integración de reservas, estados y edición', () => {
 
   it('edita una reserva confirmada y advierte que volverá a pendiente', async () => {
     mostrar();
-    const fila = (await screen.findByText('Confirmada')).closest('tr')!;
+    const fila = (await screen.findByRole('cell', { name: 'Confirmada' })).closest('tr')!;
     await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
     expect(screen.getByText(/volverá a estado/)).toBeInTheDocument();
     const titulo = screen.getByDisplayValue('Reunión');
@@ -94,7 +127,7 @@ describe('integración de reservas, estados y edición', () => {
 
   it('valida campos y horario de la edición y permite cerrarla', async () => {
     mostrar();
-    const fila = (await screen.findByText('Pendiente')).closest('tr')!;
+    const fila = (await screen.findByRole('cell', { name: 'Pendiente' })).closest('tr')!;
     await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
     const titulo = screen.getByDisplayValue('Reunión');
     await userEvent.clear(titulo);
@@ -111,7 +144,7 @@ describe('integración de reservas, estados y edición', () => {
   it('cancela desde el modal solo con confirmación y conserva errores', async () => {
     vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
     mostrar();
-    const fila = (await screen.findByText('Pendiente')).closest('tr')!;
+    const fila = (await screen.findByRole('cell', { name: 'Pendiente' })).closest('tr')!;
     await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar Reserva' }));
     expect(apiClient.put).not.toHaveBeenCalled();

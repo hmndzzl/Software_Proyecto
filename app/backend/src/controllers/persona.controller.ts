@@ -6,6 +6,8 @@ import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { isClerkEnabled } from '../config/clerk';
 import { sincronizarPerfilEnClerk } from '../services/clerkProfile.service';
+import { withTransaction } from '../utils/withTransaction';
+import { normalizarTelefono, guardarTelefono, TELEFONO_PRINCIPAL_SQL, ErrorTelefono, esTelefonoDuplicado } from '../utils/telefono';
 
 export const getCoordinadoresGrupo = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -30,7 +32,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
   try {
     if (req.user?.rol_id === ROLES.COORDINADOR_MINISTROS) {
       const [rows] = await pool.execute<RowDataPacket[]>(
-        `SELECT p.id, p.nombre, p.correo, p.disponible
+        `SELECT p.id, p.nombre, p.correo, p.disponible, ${TELEFONO_PRINCIPAL_SQL}
          FROM persona p
          INNER JOIN coordinador_ministro cm ON cm.ministro_id = p.id
          WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'
@@ -42,7 +44,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
     }
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.disponible
+      `SELECT p.id, p.nombre, p.correo, p.disponible, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p
        INNER JOIN rol r ON r.id = p.rol_id
        WHERE LOWER(TRIM(r.detalle)) = 'ministro' AND p.estado_cuenta = 'activa'
@@ -78,7 +80,7 @@ export const getPersonaById = async (req: Request, res: Response): Promise<void>
   const { id } = req.params;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, r.detalle AS rol_nombre
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p
        JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
@@ -131,7 +133,7 @@ export const actualizarDisponibilidad = async (req: Request, res: Response): Pro
 };
 
 // PUT /api/personas/:id — editar perfil propio
-// Campos editables: nombre, correo, password (opcional). Si la persona está vinculada a Clerk,
+// Campos editables: nombre, correo, teléfono principal y password (opcionales). Si la persona está vinculada a Clerk,
 // la nueva contraseña y el nuevo correo también se actualizan allá.
 // rol_id: solo Admin puede modificarlo.
 export const editarPerfil = async (req: Request, res: Response): Promise<void> => {
@@ -149,9 +151,9 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
   const { nombre, correo, password, rol_id } = req.body;
 
   // Al menos uno de los campos editables debe venir
-  if (!nombre && !correo && !password && rol_id === undefined) {
+  if (!nombre && !correo && !password && rol_id === undefined && req.body.telefono === undefined) {
     res.status(HttpStatus.BAD_REQUEST).json({
-      mensaje: 'Debes enviar al menos un campo para actualizar: nombre, correo, password',
+      mensaje: 'Debes enviar al menos un campo para actualizar: nombre, correo, password, telefono',
     });
     return;
   }
@@ -163,6 +165,7 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
   }
 
   try {
+    const telefono = normalizarTelefono(req.body.telefono);
     // Verificar que la persona existe
     const [existing] = await pool.execute<RowDataPacket[]>(
       'SELECT id, nombre, correo, rol_id, clerk_user_id FROM persona WHERE id = ?',
@@ -183,6 +186,11 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
         res.status(HttpStatus.CONFLICT).json({ mensaje: 'El correo ya está en uso por otra persona' });
         return;
       }
+    }
+
+    if (req.body.telefono !== undefined && telefono) {
+      const [duplicados] = await pool.execute<RowDataPacket[]>('SELECT id FROM telefono WHERE numero = ? AND persona_id <> ? LIMIT 1', [telefono, targetId]);
+      if (duplicados.length) throw new ErrorTelefono(409, 'El teléfono ya está registrado en otra cuenta');
     }
 
     // Clerk guarda su propia contraseña y correo: se cambian primero allá, para que si los
@@ -224,19 +232,25 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
 
     valores.push(targetId); // para el WHERE
 
-    const [result] = await pool.execute<ResultSetHeader>(
-      `UPDATE persona SET ${campos.join(', ')} WHERE id = ?`,
-      valores
-    );
-
-    if (result.affectedRows === 0) {
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
-      return;
+    if (req.body.telefono !== undefined) {
+      await withTransaction(async conn => {
+        // Bloquea la persona para serializar cambios del teléfono principal.
+        await conn.execute('SELECT id FROM persona WHERE id = ? FOR UPDATE', [targetId]);
+        if (campos.length) await conn.execute(`UPDATE persona SET ${campos.join(', ')} WHERE id = ?`, valores);
+        await guardarTelefono(conn, targetId, telefono);
+        return 'commit';
+      });
+    } else {
+      const [result] = await pool.execute<ResultSetHeader>(`UPDATE persona SET ${campos.join(', ')} WHERE id = ?`, valores);
+      if (result.affectedRows === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
+        return;
+      }
     }
 
     // Devolver datos actualizados (sin password)
     const [updated] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, r.detalle AS rol_nombre
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
       [targetId]
@@ -247,6 +261,10 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
       persona: updated[0],
     });
   } catch (error) {
+    if (error instanceof ErrorTelefono || esTelefonoDuplicado(error)) {
+      res.status(error instanceof ErrorTelefono ? error.status : 409).json({ mensaje: error instanceof ErrorTelefono ? error.message : 'El teléfono ya está registrado en otra cuenta' });
+      return;
+    }
     console.error('Error en editarPerfil:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar el perfil' });
   }

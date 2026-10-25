@@ -11,6 +11,7 @@ export interface Cuenta {
 }
 
 export interface NuevaCuenta {
+  telefono?: string;
   nombre: string;
   correo: string;
   password: string;

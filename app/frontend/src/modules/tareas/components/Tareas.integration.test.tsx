@@ -297,7 +297,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Quitar ministro de esta tarea' }));
     expect(confirmar).toHaveBeenCalledWith(expect.stringContaining('La tarea y los demás ministros se conservarán'));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/tareas/asignar', { data: { tarea_id: 1, persona_id: 9 } });
-    expect(await screen.findByText('Sin ministro asignado')).toBeInTheDocument();
+    expect(await screen.findByRole('cell', { name: 'Sin ministro asignado' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Quitar ministro de esta tarea' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Eliminar tarea' })).toBeInTheDocument();
     await userEvent.selectOptions(await screen.findByLabelText('Tarea'), '1');

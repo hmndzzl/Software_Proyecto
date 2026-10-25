@@ -6,6 +6,8 @@ import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES, rolTieneAcceso } from '../../../utils/roles';
@@ -74,7 +76,14 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   const [editLoading, setEditLoading] = useState(false);
   const [editEventoId, setEditEventoId] = useState<number | null>(null);
 
-  const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
+  const filtros = useTableFilters(asignaciones, {
+    search: a => [a.tarea_id, a.titulo_tarea, a.descripcion_tarea, a.nombre_persona], date: a => a.fecha,
+    selects: esMinistro ? [] : [
+      { key: 'ministro', label: 'Ministro', value: a => a.nombre_persona },
+      { key: 'asignacion', label: 'Asignación', value: a => a.persona_id ? 'Con ministro' : 'Sin ministro' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   useEffect(() => {
     if (!puedeGestionar) return;
@@ -208,6 +217,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   return (
     <div>
       <h3 className={styles.seccionTitulo}>{esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'}</h3>
+      <TableFilters {...filtros.controls} label="Filtros de tareas" />
 
       {editandoTarea && (
         <div className={formStyles.modalOverlay}>

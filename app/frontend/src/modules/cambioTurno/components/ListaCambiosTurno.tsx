@@ -7,6 +7,8 @@ import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
@@ -97,8 +99,16 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   const recibidas = usuario ? cambios.filter(c => c.destinatario_id === usuario.id) : [];
   const enviadas = usuario ? cambios.filter(c => c.solicitante_id === usuario.id) : [];
 
-  const recibidasSort = useSortableTable(recibidas, SORT_VALUE_RECIBIDAS);
-  const enviadasSort = useSortableTable(enviadas, SORT_VALUE_ENVIADAS);
+  const recibidasFiltros = useTableFilters(recibidas, {
+    search: c => [c.tarea_titulo, c.tarea_descripcion, c.solicitante_nombre], date: c => c.tarea_fecha,
+    selects: [{ key: 'estado', label: 'Estado', value: c => ESTADO_LABEL[c.estado] }],
+  });
+  const enviadasFiltros = useTableFilters(enviadas, {
+    search: c => [c.tarea_titulo, c.tarea_descripcion, c.destinatario_nombre], date: c => c.tarea_fecha,
+    selects: [{ key: 'estado', label: 'Estado', value: c => ESTADO_LABEL[c.estado] }],
+  });
+  const recibidasSort = useSortableTable(recibidasFiltros.filteredData, SORT_VALUE_RECIBIDAS);
+  const enviadasSort = useSortableTable(enviadasFiltros.filteredData, SORT_VALUE_ENVIADAS);
 
   if (loading) return <LoadingState label="Cargando solicitudes de cambio de turno..." />;
   if (error) return <ErrorState message={error} onRetry={cargarCambios} />;
@@ -108,6 +118,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
       <CardHead title="Cambios de Turno" hint={!loading ? `${cambios.length} solicitudes` : undefined} />
 
       <h3 className={styles.seccionTitulo}>Solicitudes Recibidas</h3>
+      <TableFilters {...recibidasFiltros.controls} label="Filtros de cambios recibidos" />
       {recibidas.length === 0 ? (
         <EmptyState message="No has recibido solicitudes de cambio de turno." />
       ) : (
@@ -151,6 +162,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
       )}
 
       <h3 className={styles.seccionTitulo}>Mis Solicitudes Enviadas</h3>
+      <TableFilters {...enviadasFiltros.controls} label="Filtros de cambios enviados" />
       {enviadas.length === 0 ? (
         <EmptyState message="No has solicitado ningún cambio de turno." />
       ) : (

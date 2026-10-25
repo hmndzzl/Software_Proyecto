@@ -90,8 +90,9 @@ export default function EditarEventoForm({
 
       <form onSubmit={handleUpdate} className={styles.form} aria-busy={guardando}>
         <div className={styles.field}>
-          <label className={styles.label}>Descripción:</label>
+          <label htmlFor="editar-evento-descripcion" className={styles.label}>Descripción:</label>
           <input
+            id="editar-evento-descripcion"
             type="text"
             disabled={guardando}
             className={styles.input}
@@ -101,8 +102,9 @@ export default function EditarEventoForm({
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Encargado:</label>
+          <label htmlFor="editar-evento-encargado" className={styles.label}>Encargado:</label>
           <select
+            id="editar-evento-encargado"
             disabled={guardando}
             className={styles.input}
             value={encargadoId}

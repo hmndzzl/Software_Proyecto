@@ -8,6 +8,8 @@ import { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN 
 import { isClerkEnabled, getClerkClient } from '../config/clerk';
 import { ESTADOS_CUENTA, respuestaCuentaNoActiva } from '../config/cuentas';
 import { ROLES } from '../config/roles';
+import { withTransaction } from '../utils/withTransaction';
+import { normalizarTelefono, ErrorTelefono, esTelefonoDuplicado } from '../utils/telefono';
 
 const REFRESH_MAX_AGE = 15 * 24 * 60 * 60 * 1000;
 
@@ -169,15 +171,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const telefono = normalizarTelefono(req.body.telefono);
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const [resultado] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)',
-      [nombre, correo, hashedPassword, rol_id]
-    );
+    let personaId: number;
+    if (telefono) {
+      let creadoId = 0;
+      await withTransaction(async conn => {
+        const [resultado] = await conn.execute<ResultSetHeader>(
+          'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id],
+        );
+        creadoId = resultado.insertId;
+        await conn.execute('INSERT INTO telefono (numero, persona_id) VALUES (?, ?)', [telefono, creadoId]);
+        return 'commit';
+      });
+      personaId = creadoId;
+    } else {
+      const [resultado] = await pool.execute<ResultSetHeader>(
+        'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id],
+      );
+      personaId = resultado.insertId;
+    }
 
     // La cuenta ya existe en la BD; si Clerk falla se avisa en la respuesta en lugar de callar el problema.
-    const clerk = isClerkEnabled() ? await crearUsuarioEnClerk(resultado.insertId, nombre, correo, hashedPassword) : null;
+    const clerk = isClerkEnabled() ? await crearUsuarioEnClerk(personaId, nombre, correo, hashedPassword) : null;
 
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Usuario registrado exitosamente',
@@ -186,6 +202,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         : {}),
     });
   } catch (error) {
+    if (error instanceof ErrorTelefono || esTelefonoDuplicado(error)) {
+      res.status(error instanceof ErrorTelefono ? error.status : 409).json({ mensaje: error instanceof ErrorTelefono ? error.message : 'El teléfono ya está registrado en otra cuenta' });
+      return;
+    }
     console.error('Error en el controlador de registro:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
   }

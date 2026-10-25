@@ -11,6 +11,8 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import SortableTh from '../../components/ui/SortableTh';
+import TableFilters from '../../components/ui/TableFilters';
+import { useTableFilters } from '../../hooks/useTableFilters';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import { useToast } from '../../context/ToastContext';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -23,6 +25,7 @@ const endpoint = '/api/coordinadores-ministros';
 const sortValues = {
   nombre: (m: MinistroAsignado) => m.nombre.toLowerCase(),
   correo: (m: MinistroAsignado) => m.correo.toLowerCase(),
+  cuenta: (m: MinistroAsignado) => m.estado_cuenta === 'activa' ? 'Activa' : 'No activa',
 };
 
 export default function CoordinadoresMinistrosPage() {
@@ -40,7 +43,11 @@ export default function CoordinadoresMinistrosPage() {
   const [revisionAsignados, setRevisionAsignados] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const [porQuitar, setPorQuitar] = useState<MinistroAsignado | null>(null);
-  const { sortKey, sortDir, toggleSort, sortedData } = useSortableTable(asignados ?? [], sortValues);
+  const filtros = useTableFilters(asignados ?? [], {
+    search: m => [m.nombre, m.correo],
+    selects: [{ key: 'cuenta', label: 'Cuenta', value: m => m.estado_cuenta === 'activa' ? 'Activa' : 'No activa' }],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData } = useSortableTable(filtros.filteredData, sortValues);
 
   useEffect(() => {
     let vigente = true;
@@ -119,7 +126,7 @@ export default function CoordinadoresMinistrosPage() {
             {coordinadores.length === 0 ? <EmptyState message="No hay coordinadores de ministros registrados." /> : (
               <Field label="Coordinador de ministros">
                 <SelectUI aria-label="Coordinador de ministros" value={coordinadorId} disabled={guardando || porQuitar !== null}
-                  onChange={e => { setCoordinadorId(e.target.value); setMinistroId(''); setAsignados(null); setErrorAsignados(''); }}>
+                  onChange={e => { filtros.controls.clear(); setCoordinadorId(e.target.value); setMinistroId(''); setAsignados(null); setErrorAsignados(''); }}>
                   <option value="">Selecciona un coordinador</option>
                   {coordinadores.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.estado_cuenta !== 'activa' ? ' (cuenta no activa)' : ''}</option>)}
                 </SelectUI>
@@ -146,13 +153,14 @@ export default function CoordinadoresMinistrosPage() {
                       </Field>
                       <Btn type="submit" disabled={!ministroId || guardando || porQuitar !== null}>{guardando && !porQuitar ? 'Asignando…' : 'Asignar ministro'}</Btn>
                     </form>}
+                <TableFilters {...filtros.controls} label="Filtros de ministros del coordinador" />
                 {asignados.length === 0 ? <EmptyState message="Este coordinador todavía no tiene ministros asignados." /> : (
                   <div className="table-container">
                     <table className="styled-table">
                       <thead><tr>
                         <SortableTh label="Ministro" sortKey="nombre" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                         <SortableTh label="Correo" sortKey="correo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                        <th>Cuenta</th><th>Acciones</th>
+                        <SortableTh label="Cuenta" sortKey="cuenta" activeKey={sortKey} dir={sortDir} onSort={toggleSort} /><th>Acciones</th>
                       </tr></thead>
                       <tbody>{sortedData.map(m => <tr key={m.id}>
                         <td>{m.nombre}</td><td>{m.correo}</td>
