@@ -50,7 +50,10 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     mockConnection = {
       beginTransaction: vi.fn(),
-      execute: vi.fn(),
+      execute: vi.fn(async (sql: string, params: unknown[]) => {
+        if (sql.startsWith('SELECT * FROM tarea')) return [[{ evento_id: null }]];
+        return pool.execute(sql, params as never);
+      }),
       commit: vi.fn(),
       rollback: vi.fn(),
       release: vi.fn(),
@@ -354,11 +357,34 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
     });
 
+    it('conserva la asociación cuando el cliente omite evento_id', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      req.body = { fecha: '2026-08-12', hora_inicio: '09:30', hora_fin: '10:00', titulo: 'Preparar', descripcion: 'Altar' };
+      mockConnection.execute.mockResolvedValueOnce([[{ evento_id: 8 }]])
+        .mockResolvedValueOnce([[{ fecha: '2026-08-12', estado_reserva_id: 2 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      await updateTarea(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ tarea: expect.objectContaining({ evento_id: 8 }) }));
+    });
+
+    it('retira la asociación explícitamente sin consultar el evento', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      req.body = { fecha: '2026-08-12', hora_inicio: '09:30', hora_fin: '10:00', titulo: 'Preparar', descripcion: 'Altar', evento_id: null };
+      mockConnection.execute.mockResolvedValueOnce([[{ evento_id: 8 }]]).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      await updateTarea(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(mockConnection.execute).toHaveBeenCalledTimes(2);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ tarea: expect.objectContaining({ evento_id: null }) }));
+    });
+
     it('debería retornar 404 si la tarea no existe', async () => {
       req.params = { id: '99' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 0 }]);
+      mockConnection.execute.mockResolvedValueOnce([[]]);
 
       await updateTarea(req as Request, res as Response);
 

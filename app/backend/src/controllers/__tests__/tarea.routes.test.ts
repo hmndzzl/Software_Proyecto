@@ -56,7 +56,7 @@ describe('RBAC en mutaciones de tareas (DT-06)', () => {
     });
 
     it.each(ROLES_PERMITIDOS)('permite a rol %s crear una tarea (201)', async (rol) => {
-      (pool.execute as any).mockResolvedValueOnce([{ insertId: 1 }]);
+      conn.execute.mockResolvedValueOnce([{ insertId: 1 }]);
       const res = await request(app).post('/api/tareas').set('Authorization', `Bearer ${token(rol)}`).send(tareaBody);
       expect(res.status).toBe(201);
     });

@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../../../utils/apiError';
 import type { Ministro, Tarea } from '../../../types';
 import ErrorState from '../../../components/ui/ErrorState';
 import LoadingState from '../../../components/ui/LoadingState';
+import EventoTareaSelect from './EventoTareaSelect';
 
 const TOPE_SERVICIOS_MES = 8;
 
@@ -17,6 +18,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [tareaId, setTareaId] = useState('');
+  const [eventoId, setEventoId] = useState<number | null>(null);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
@@ -77,10 +79,12 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
       else await apiClient.post('/api/tareas', {
         titulo: titulo.trim(), descripcion: descripcion.trim(), fecha,
         hora_inicio: horaInicio, hora_fin: horaFin, persona_ids: seleccionados,
+        evento_id: eventoId,
       });
       toast.success(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', 'Las asignaciones se guardaron correctamente.');
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
+      setEventoId(null);
       onTareaCreada?.();
     } catch (error: unknown) {
       toast.error('No se pudo guardar la tarea', getApiErrorMessage(error, 'Error de red al intentar guardar la tarea.'));
@@ -101,6 +105,14 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </select>
         </div>
         {!tareaId && <>
+          <EventoTareaSelect value={eventoId} disabled={guardando} onChange={(id, evento) => {
+            setEventoId(id);
+            if (evento) {
+              setFecha(evento.fecha.slice(0, 10));
+              setHoraInicio(evento.hora_inicio.slice(0, 5));
+              setHoraFin(evento.hora_fin.slice(0, 5));
+            }
+          }} />
           <div className={styles.field}>
             <label htmlFor="titulo" className={styles.label}>Título:</label>
             <input id="titulo" className={styles.input} value={titulo} maxLength={255} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Lectura primera" />

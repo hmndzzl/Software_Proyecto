@@ -50,6 +50,22 @@ describe('integración API y MariaDB', () => {
     await container?.stop();
   });
 
+  it('la migración de tareas y eventos es repetible y conserva tareas y asignaciones', async () => {
+    const conn = await pool.getConnection();
+    try {
+      const [antes] = await conn.query<RowDataPacket[]>('SELECT id, titulo FROM tarea ORDER BY id');
+      const [asignaciones] = await conn.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea ORDER BY tarea_id, persona_id');
+      const sql = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261024_tarea_evento.sql'), 'utf8');
+      for (let intento = 0; intento < 2; intento++) {
+        for (const statement of sql.split(';').filter(s => s.trim())) await conn.query(statement);
+      }
+      const [despues] = await conn.query<RowDataPacket[]>('SELECT id, titulo FROM tarea ORDER BY id');
+      const [asignacionesDespues] = await conn.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea ORDER BY tarea_id, persona_id');
+      expect(despues).toEqual(antes);
+      expect(asignacionesDespues).toEqual(asignaciones);
+    } finally { conn.release(); }
+  });
+
   it('autentica con credenciales persistidas y devuelve un JWT utilizable', async () => {
     const login = await request(app)
       .post('/api/auth/login')

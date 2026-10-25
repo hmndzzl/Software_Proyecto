@@ -147,13 +147,15 @@ INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado
   ('2026-10-30', '14:00:00', '16:00:00', 2, 1, 8),  -- Pendiente, Coord Grupos
   ('2026-11-05', '18:00:00', '20:00:00', 6, 2, 7),  -- Confirmada, Coord Ministros
   ('2026-11-12', '09:00:00', '10:00:00', 5, 3, 13), -- Rechazada, Coord Ministros Sur
-  ('2026-10-26', '16:00:00', '18:00:00', 3, 4, 9);  -- Cancelada por el propio solicitante (Ministro Test)
+  ('2026-10-26', '16:00:00', '18:00:00', 3, 4, 6);  -- Cancelada por el propio solicitante (Sacerdote). Ministro NO
+                                                     -- puede solicitar reservas (reserva.routes.ts solo permite
+                                                     -- Coordinador de Ministros/Grupos + jerarquía Sacerdote/Admin).
 
 INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `publico`) VALUES
   ('Asamblea de catequistas',        8,  2, 'Planificación del trimestre de catequesis.',                         0),
   ('Procesión y vigilia',            7,  3, 'Convivencia de ministros de la liturgia en el patio central.',       0),
   ('Taller de formación bíblica',    13, 4, 'Solicitud de formación para los ministros del sector sur.',          0),
-  ('Ensayo de coro',                 9,  5, 'Ensayo cancelado por el propio solicitante.',                       0);
+  ('Ensayo de coro',                 6,  5, 'Ensayo cancelado por el propio solicitante.',                       0);
 
 -- Notificaciones adicionales (individuales y una global), con sus persona_notificacion.
 INSERT INTO `notificacion` (`mensaje`, `fecha`, `tipo`, `remitente_id`, `grupo_id`) VALUES
@@ -177,3 +179,19 @@ INSERT INTO `periodo_ausencia` (`ministro_id`, `titulo`, `justificacion`, `fecha
 -- Mensaje de contacto público (HU-32), sin notificación asociada.
 INSERT INTO `mensaje_contacto` (`nombre`, `correo`, `telefono`, `motivo`, `mensaje`, `fecha`) VALUES
   ('Rosa Martinez', 'rosa.martinez@example.com', '55512345', 'Información general', 'Quisiera saber el horario de la misa de los sábados.', '2026-10-20');
+
+-- Eventos con tareas vinculadas (evento_id) — para probar en el calendario la lista
+-- de "Tareas asociadas a este evento" (clickeable) dentro del detalle del evento.
+-- Reutilizan tareas y asignaciones ya existentes, cada una dentro del horario de
+-- su reserva: la Misa de las 12pm (tareas 11,12 → Ministro Test/Ana, coordinador 7)
+-- y la Misa de las 9am del sector sur (tareas 13,14 → Carlos/Lucía, coordinador 13).
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`) VALUES
+  ('2026-11-08', '12:00:00', '13:00:00', 1, 2, 6),
+  ('2026-11-15', '09:00:00', '09:30:00', 7, 2, 13);
+
+INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `publico`) VALUES
+  ('Misa dominical de las 12pm', 6,  6, 'Misa dominical de mediodía con lectura, comunión y participación del equipo litúrgico.', 0),
+  ('Misa dominical de las 9am',  13, 7, 'Misa dominical con el equipo litúrgico del sector sur.',                                 0);
+
+UPDATE `tarea` SET `evento_id` = 6 WHERE `id` IN (11, 12);
+UPDATE `tarea` SET `evento_id` = 7 WHERE `id` IN (13, 14);

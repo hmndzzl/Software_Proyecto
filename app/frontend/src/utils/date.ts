@@ -77,3 +77,20 @@ export function formatRangeText(mon: Date, sun: Date): string {
 export function fechaKey(fecha?: string | null): string {
   return fecha ? fecha.slice(0, 10) : '';
 }
+
+/**
+ * Determina si una tarea (con fecha YYYY-MM-DD o ISO y hora_inicio HH:MM[:SS])
+ * tiene una fecha/hora futura respecto a una fecha de referencia (por defecto 'ahora').
+ */
+export function esTareaFutura(fecha?: string | null, horaInicio?: string | null, ahora = new Date()): boolean {
+  if (!fecha) return false;
+  const f = fechaKey(fecha);
+  const hoyStr = formatYYYYMMDD(ahora);
+  if (f > hoyStr) return true;
+  if (f < hoyStr) return false;
+  if (!horaInicio) return false;
+  const hh = String(ahora.getHours()).padStart(2, '0');
+  const mm = String(ahora.getMinutes()).padStart(2, '0');
+  const horaActualStr = `${hh}:${mm}`;
+  return horaInicio.substring(0, 5) > horaActualStr;
+}

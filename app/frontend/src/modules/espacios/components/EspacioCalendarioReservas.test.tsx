@@ -109,6 +109,21 @@ describe('EspacioCalendarioReservas', () => {
     expect(screen.getByText('Registrado por Desconocido')).toBeInTheDocument();
   });
 
+  it('resalta la tarjeta con check-in activo y no resalta las demás', () => {
+    const reservas = [
+      { id: 20, fecha: fechaDelDia(0), hora_inicio: '08:00:00', hora_fin: '09:00:00', estado_reserva_id: 2, evento_titulo: 'Con check-in', evento_descripcion: null, solicitante_nombre: 'Ana', en_uso: true },
+      { id: 21, fecha: fechaDelDia(0), hora_inicio: '10:00:00', hora_fin: '11:00:00', estado_reserva_id: 2, evento_titulo: 'Sin check-in', evento_descripcion: null, solicitante_nombre: 'Ana', en_uso: false },
+    ];
+
+    render(<EspacioCalendarioReservas reservas={reservas} />);
+
+    expect(screen.getByText('En uso ahora')).toBeInTheDocument();
+    const conCheckin = screen.getByText('Con check-in').closest('button');
+    const sinCheckin = screen.getByText('Sin check-in').closest('button');
+    expect(conCheckin?.className).toContain('reservaCardEnUso');
+    expect(sinCheckin?.className).not.toContain('reservaCardEnUso');
+  });
+
   it('resalta la columna del día actual', () => {
     const { container } = render(<EspacioCalendarioReservas reservas={[]} />);
     const columnas = within(container).getAllByText('Libre').map(el => el.parentElement?.parentElement);

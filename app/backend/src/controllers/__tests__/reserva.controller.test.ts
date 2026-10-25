@@ -9,7 +9,8 @@ import {
   obtenerMisReservas,
   obtenerReservas,
   obtenerReservaPorId,
-  cambiarEstadoReserva
+  cambiarEstadoReserva,
+  checkinReserva
 } from '../reserva.controller';
 
 vi.mock('../../config/db', () => ({
@@ -53,6 +54,9 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       release: vi.fn(),
     };
     (db.getConnection as any).mockResolvedValue(mockConnection);
+    // crearReserva/editarReserva consultan la hora de Guatemala vía db.query antes
+    // de entrar a la transacción; valor por defecto equivalente al fake time de abajo.
+    (db.query as any).mockResolvedValue([[{ hoy: '2026-08-11', horaActual: '12:00' }]]);
 
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => { });
@@ -246,7 +250,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 2, rol_id: ROLES.MINISTRO } as any;
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]); // Le pertenece al user 1
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]); // Le pertenece al user 1
 
       await editarReserva(req as Request, res as Response);
 
@@ -258,7 +262,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 2, rol_id: ROLES.ADMIN } as any; // Admin
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]); // Pertenece al 1
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]); // Pertenece al 1
       mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
       mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno más)
@@ -274,7 +278,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any; // Solicitante real
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]);
       mockConnection.query.mockResolvedValueOnce([{}]);
       mockConnection.query.mockResolvedValueOnce([{}]);
       mockConnection.query.mockResolvedValueOnce([[]]); // SELECT aprobadores (ninguno)
@@ -290,7 +294,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
       req.user = { id: 5, rol_id: ROLES.ADMIN } as any; // Admin edita la reserva de otro
 
-      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1 }]]);
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]);
       mockConnection.query.mockResolvedValueOnce([{}]); // Update reserva
       mockConnection.query.mockResolvedValueOnce([{}]); // Update evento
       mockConnection.query.mockResolvedValueOnce([[{ id: 9 }]]); // SELECT aprobadores (otro Sacerdote)
@@ -310,6 +314,17 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
         [9, 50]
       );
       expect(mockConnection.commit).toHaveBeenCalled();
+    });
+
+    it('impide cambiar de día una reserva con tareas vinculadas', async () => {
+      req.params = { id: '1' };
+      req.body = { fecha: '2026-08-13', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 1, titulo: 'T', descripcion: 'D' };
+      mockConnection.query.mockResolvedValueOnce([[{ solicitante_id: 1, fecha: '2026-08-12' }]]);
+      mockConnection.query.mockResolvedValueOnce([[{ id: 9 }]]);
+      await editarReserva(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(mockConnection.rollback).toHaveBeenCalled();
+      expect(mockConnection.query.mock.calls.some(([sql]: [string]) => sql.includes('UPDATE reserva'))).toBe(false);
     });
 
     it('debería hacer rollback y retornar 500 en caso de error de BD', async () => {
@@ -347,25 +362,26 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
   describe('obtenerReservas', () => {
     it('debería retornar 200 y reservas con filtro opcional', async () => {
       req.query = { espacio_id: '1' };
-      const mockRows = [{ id: 1 }];
+      const mockRows = [{ id: 1, en_uso: 0 }];
       (db.query as any).mockResolvedValue([mockRows]);
 
       await obtenerReservas(req as Request, res as Response);
 
-      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE r.espacio_id = ?'), [1]);
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE r.espacio_id = ?'), [2, 1]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith(mockRows);
+      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, en_uso: false }]);
     });
 
     it('debería retornar 200 sin filtro opcional', async () => {
       req.query = {};
-      const mockRows = [{ id: 1 }];
+      const mockRows = [{ id: 1, en_uso: 1 }];
       (db.query as any).mockResolvedValue([mockRows]);
 
       await obtenerReservas(req as Request, res as Response);
 
-      expect(db.query).toHaveBeenCalledWith(expect.not.stringContaining('WHERE r.espacio_id = ?'), []);
+      expect(db.query).toHaveBeenCalledWith(expect.not.stringContaining('WHERE r.espacio_id = ?'), [2]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, en_uso: true }]);
     });
 
     it('debería retornar 500 en caso de error', async () => {
@@ -658,6 +674,135 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       await cambiarEstadoReserva(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    });
+  });
+
+  describe('checkinReserva', () => {
+    it('debería retornar 404 si la reserva no existe', async () => {
+      req.params = { id: '99' };
+      (db.query as any).mockResolvedValueOnce([[]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 403 si el actor no es el solicitante ni Admin/Sacerdote', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.MINISTRO } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 2, estado_reserva_id: 2, espacio_id: 1, checkin_en: null
+      }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    });
+
+    it('debería retornar 400 si la reserva no está confirmada', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 1, estado_reserva_id: 1, espacio_id: 1, checkin_en: null
+      }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'Solo se puede hacer check-in de una reserva confirmada'
+      }));
+    });
+
+    it('debería retornar 400 si la reserva no tiene espacio asignado', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 1, estado_reserva_id: 2, espacio_id: null, checkin_en: null
+      }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'Esta reserva no tiene un salón asignado'
+      }));
+    });
+
+    it('debería retornar 200 idempotente si ya se había hecho check-in', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 1, estado_reserva_id: 2, espacio_id: 1, checkin_en: '2026-08-11 13:50:00'
+      }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'Ya se había hecho check-in de esta reserva',
+        checkin_en: '2026-08-11 13:50:00'
+      }));
+    });
+
+    it('debería retornar 400 si está fuera de la ventana de check-in', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 1, estado_reserva_id: 2, espacio_id: 1, checkin_en: null
+      }]]);
+      (db.query as any).mockResolvedValueOnce([[{ dentro_de_ventana: 0 }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: expect.stringContaining('check-in solo está disponible')
+      }));
+    });
+
+    it('debería registrar el check-in correctamente dentro de la ventana con tolerancia', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 1, estado_reserva_id: 2, espacio_id: 1, checkin_en: null
+      }]]);
+      (db.query as any).mockResolvedValueOnce([[{ dentro_de_ventana: 1 }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+      (db.query as any).mockResolvedValueOnce([[{ checkin_en: '2026-08-11 13:50:00' }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'Check-in registrado correctamente',
+        checkin_en: '2026-08-11 13:50:00'
+      }));
+    });
+
+    it('debería permitir a un Admin/Sacerdote hacer check-in de la reserva de otra persona', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 99, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{
+        id: 1, solicitante_id: 1, estado_reserva_id: 2, espacio_id: 1, checkin_en: null
+      }]]);
+      (db.query as any).mockResolvedValueOnce([[{ dentro_de_ventana: 1 }]]);
+      (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
+      (db.query as any).mockResolvedValueOnce([[{ checkin_en: '2026-08-11 13:50:00' }]]);
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('debería retornar 500 en caso de error de BD', async () => {
+      req.params = { id: '1' };
+      (db.query as any).mockRejectedValueOnce(new Error('DB Error'));
+
+      await checkinReserva(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   });
 });

@@ -13,7 +13,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import { formatFecha } from '../../../utils/date';
+import { formatFecha, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaCambiosTurno.module.css';
 
@@ -82,7 +82,11 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
     cargarCambios();
   }, [refreshKey]);
 
-  const responder = async (id: number, aceptar: boolean) => {
+  const responder = async (id: number, aceptar: boolean, tareaFecha?: string, tareaHoraInicio?: string) => {
+    if (aceptar && tareaFecha && !esTareaFutura(tareaFecha, tareaHoraInicio)) {
+      toast.error('Tarea vencida', 'No se puede aceptar un cambio de turno para una tarea cuya fecha ya pasó.');
+      return;
+    }
     try {
       const res = await apiClient.put<{ mensaje: string }>(`/api/cambios-turno/${id}/responder`, { aceptar });
       toast.success(aceptar ? 'Cambio aceptado' : 'Cambio rechazado', res.data.mensaje);
@@ -141,8 +145,12 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
                   <td>
                     {c.estado === 'pendiente' && (
                       <div className={styles.acciones}>
-                        <Btn kind="ok" size="sm" onClick={() => responder(c.id, true)}>Aceptar</Btn>
-                        <Btn kind="bad" size="sm" onClick={() => responder(c.id, false)}>Rechazar</Btn>
+                        {esTareaFutura(c.tarea_fecha, c.tarea_hora_inicio) ? (
+                          <Btn kind="ok" size="sm" onClick={() => responder(c.id, true, c.tarea_fecha, c.tarea_hora_inicio)}>Aceptar</Btn>
+                        ) : (
+                          <Badge kind="rechazada">Vencida</Badge>
+                        )}
+                        <Btn kind="bad" size="sm" onClick={() => responder(c.id, false, c.tarea_fecha, c.tarea_hora_inicio)}>Rechazar</Btn>
                       </div>
                     )}
                   </td>

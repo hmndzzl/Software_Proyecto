@@ -4,6 +4,8 @@ import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
 import { withTransaction } from '../utils/withTransaction';
+import { CHECKIN_ANTICIPACION_MIN } from '../config/constants';
+import { AHORA_GUATEMALA_SQL, obtenerFechaHoraGuatemala } from '../utils/horaGuatemala';
 import { ErrorAforo, validarCantidadEsperada, validarCapacidad } from '../utils/aforo';
 
 export const crearReserva = async (req: Request, res: Response) => {
@@ -28,15 +30,7 @@ export const crearReserva = async (req: Request, res: Response) => {
     });
   }
 
-  const ahora = new Date();
-  const y = ahora.getFullYear();
-  const m = String(ahora.getMonth() + 1).padStart(2, '0');
-  const d = String(ahora.getDate()).padStart(2, '0');
-  const hoyStr = `${y}-${m}-${d}`;
-
-  const hh = String(ahora.getHours()).padStart(2, '0');
-  const mm = String(ahora.getMinutes()).padStart(2, '0');
-  const horaActualStr = `${hh}:${mm}`;
+  const { hoy: hoyStr, horaActual: horaActualStr } = await obtenerFechaHoraGuatemala(db);
 
   const fechaSoloFecha = fecha.split('T')[0];
 
@@ -140,15 +134,7 @@ export const editarReserva = async (req: Request, res: Response) => {
     });
   }
 
-  const ahora = new Date();
-  const y = ahora.getFullYear();
-  const m = String(ahora.getMonth() + 1).padStart(2, '0');
-  const d = String(ahora.getDate()).padStart(2, '0');
-  const hoyStr = `${y}-${m}-${d}`;
-
-  const hh = String(ahora.getHours()).padStart(2, '0');
-  const mm = String(ahora.getMinutes()).padStart(2, '0');
-  const horaActualStr = `${hh}:${mm}`;
+  const { hoy: hoyStr, horaActual: horaActualStr } = await obtenerFechaHoraGuatemala(db);
 
   const fechaSoloFecha = fecha.split('T')[0];
 
@@ -168,7 +154,7 @@ export const editarReserva = async (req: Request, res: Response) => {
     const cantidadEnviada = validarCantidadEsperada(req.body.cantidad_personas);
     let guardada = false;
     await withTransaction(async (conn) => {
-      const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ?', [id]);
+      const [rows]: any = await conn.query('SELECT * FROM reserva WHERE id = ? FOR UPDATE', [id]);
 
       if (!rows || rows.length === 0) {
         res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
@@ -180,6 +166,17 @@ export const editarReserva = async (req: Request, res: Response) => {
       if (!esSolicitante && !esPrivilegiado) {
         res.status(HttpStatus.FORBIDDEN).json({ message: 'No tienes permiso para editar esta reserva' });
         return 'rollback';
+      }
+
+      if (String(rows[0].fecha).slice(0, 10) !== fechaSoloFecha) {
+        const [vinculadas]: any = await conn.query(
+          `SELECT t.id FROM tarea t JOIN evento e ON e.id = t.evento_id
+           WHERE e.reserva_id = ? FOR UPDATE`, [id],
+        );
+        if (vinculadas.length) {
+          res.status(HttpStatus.CONFLICT).json({ message: 'Desvincula y reprograma las tareas asociadas antes de cambiar el día de esta reserva' });
+          return 'rollback';
+        }
       }
 
       const cantidad = cantidadEnviada ?? rows[0].cantidad_personas ?? null;
@@ -259,11 +256,19 @@ export const obtenerReservas = async (req: Request, res: Response) => {
   try {
     const { espacio_id } = req.query;
     const filtro = espacio_id ? 'WHERE r.espacio_id = ?' : '';
-    const params = espacio_id ? [Number(espacio_id)] : [];
+    const params = [ESTADOS_RESERVA.CONFIRMADA, ...(espacio_id ? [Number(espacio_id)] : [])];
 
+    // HU-15: "en_uso" para que el calendario del espacio pueda resaltar la
+    // reserva con check-in activo ahora mismo (mismo criterio que espacio.controller).
     const [reservas]: any = await db.query(`
       SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, r.cantidad_personas,
              r.espacio_id, r.solicitante_id,
+             DATE_FORMAT(r.checkin_en, '%Y-%m-%d %H:%i:%s') AS checkin_en,
+             (r.checkin_en IS NOT NULL
+              AND r.estado_reserva_id = ?
+              AND r.fecha = DATE(${AHORA_GUATEMALA_SQL})
+              AND TIME(${AHORA_GUATEMALA_SQL}) BETWEEN r.hora_inicio AND r.hora_fin
+             ) AS en_uso,
              e.nombre AS espacio_nombre,
              ev.titulo AS evento_titulo,
              ev.id AS evento_id, ev.publico AS evento_publico,
@@ -276,6 +281,10 @@ export const obtenerReservas = async (req: Request, res: Response) => {
       ${filtro}
       ORDER BY r.fecha ASC, r.hora_inicio ASC
     `, params);
+
+    for (const r of reservas) {
+      r.en_uso = Boolean(r.en_uso);
+    }
 
     return res.status(HttpStatus.OK).json(reservas);
   } catch (error) {
@@ -437,6 +446,93 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
     console.error('Error al cambiar estado de la reserva:', error);
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       message: 'Error interno al actualizar el estado de la reserva'
+    });
+  }
+};
+
+// HU-15: check-in real de espacio vía QR. Permite confirmar presencia desde
+// CHECKIN_ANTICIPACION_MIN minutos antes de hora_inicio hasta hora_fin — el estado
+// "en uso" real (sin tolerancia) se calcula dinámicamente en espacio.controller.ts
+// a partir de checkin_en, así que no hace falta liberar nada manualmente.
+export const checkinReserva = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // checkin_en se formatea con DATE_FORMAT (mismo patrón que notificacion.enviado_en)
+    // para que mysql2 no la reinterprete como Date con la zona horaria del servidor.
+    const [rows]: any = await db.query(
+      `SELECT id, solicitante_id, estado_reserva_id, espacio_id,
+              DATE_FORMAT(checkin_en, '%Y-%m-%d %H:%i:%s') AS checkin_en
+       FROM reserva WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Reserva no encontrada' });
+    }
+
+    const reserva = rows[0];
+
+    const esSolicitante = reserva.solicitante_id === req.user!.id;
+    const esPrivilegiado = req.user!.rol_id === ROLES.ADMIN || req.user!.rol_id === ROLES.SACERDOTE;
+
+    if (!esSolicitante && !esPrivilegiado) {
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: 'No tienes permiso para hacer check-in de esta reserva'
+      });
+    }
+
+    if (reserva.estado_reserva_id !== ESTADOS_RESERVA.CONFIRMADA) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Solo se puede hacer check-in de una reserva confirmada'
+      });
+    }
+
+    if (reserva.espacio_id === null) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Esta reserva no tiene un salón asignado'
+      });
+    }
+
+    if (reserva.checkin_en) {
+      return res.status(HttpStatus.OK).json({
+        message: 'Ya se había hecho check-in de esta reserva',
+        checkin_en: reserva.checkin_en
+      });
+    }
+
+    const anticipacion = `00:${String(CHECKIN_ANTICIPACION_MIN).padStart(2, '0')}:00`;
+    const [ventana]: any = await db.query(
+      `SELECT
+         (fecha = DATE(${AHORA_GUATEMALA_SQL})
+          AND hora_fin > TIME(${AHORA_GUATEMALA_SQL})
+          AND SUBTIME(hora_inicio, ?) <= TIME(${AHORA_GUATEMALA_SQL})
+         ) AS dentro_de_ventana
+       FROM reserva WHERE id = ?`,
+      [anticipacion, id]
+    );
+
+    if (!ventana[0].dentro_de_ventana) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: `El check-in solo está disponible desde ${CHECKIN_ANTICIPACION_MIN} minutos antes de que inicie la reserva hasta que termine`
+      });
+    }
+
+    await db.query(`UPDATE reserva SET checkin_en = ${AHORA_GUATEMALA_SQL} WHERE id = ?`, [id]);
+
+    const [actualizada]: any = await db.query(
+      `SELECT DATE_FORMAT(checkin_en, '%Y-%m-%d %H:%i:%s') AS checkin_en FROM reserva WHERE id = ?`,
+      [id]
+    );
+
+    return res.status(HttpStatus.OK).json({
+      message: 'Check-in registrado correctamente',
+      checkin_en: actualizada[0].checkin_en
+    });
+  } catch (error) {
+    console.error('Error al hacer checkin de la reserva:', error);
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      message: 'Error interno al hacer check-in de la reserva'
     });
   }
 };

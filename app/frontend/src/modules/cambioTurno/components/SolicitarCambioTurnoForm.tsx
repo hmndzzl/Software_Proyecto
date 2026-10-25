@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
-import { formatFecha } from '../../../utils/date';
+import { formatFecha, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import EmptyState from '../../../components/ui/EmptyState';
 import type { Tarea, Ministro } from '../../../types';
@@ -24,7 +24,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
     if (!usuario) return;
 
     apiClient.get<Tarea[]>('/api/tareas', { params: { persona_id: usuario.id } })
-      .then(res => setMisTareas(res.data))
+      .then(res => setMisTareas(res.data.filter(t => esTareaFutura(t.fecha, t.hora_inicio))))
       .catch(() => {});
 
     apiClient.get<Pick<Ministro, 'id' | 'nombre'>[]>('/api/cambios-turno/destinatarios')
@@ -38,6 +38,12 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
 
     if (!tareaId || !destinatarioId) {
       toast.error('Faltan datos', 'Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
+      return;
+    }
+
+    const tareaSeleccionada = misTareas.find(t => t.id === Number(tareaId));
+    if (!tareaSeleccionada || !esTareaFutura(tareaSeleccionada.fecha, tareaSeleccionada.hora_inicio)) {
+      toast.error('Fecha inválida', 'No se puede solicitar un cambio de turno para una tarea cuya fecha ya pasó.');
       return;
     }
 
