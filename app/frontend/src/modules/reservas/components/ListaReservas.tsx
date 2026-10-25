@@ -21,6 +21,7 @@ import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 import AforoField, { errorAforo } from '../../../components/ui/AforoField';
+import DetalleReserva from './DetalleReserva';
 
 type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion' | 'aforo';
 
@@ -44,6 +45,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [error, setError] = useState('');
 
   const [editando, setEditando] = useState<Reserva | null>(null);
+  const [detalle, setDetalle] = useState<Reserva | null>(null);
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
   const [editHoraFin, setEditHoraFin] = useState('');
@@ -193,6 +195,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       <CardHead title="Lista de Reservas" hint={!loading ? `${reservas.length} registradas` : undefined} />
       {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
 
+      {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
       {editando && (
         <div className={formStyles.modalOverlay}>
           <div className={formStyles.modalCard}>
@@ -319,6 +322,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>{r.cantidad_personas ?? 'No registrado'}</td>
                   <td>
                     <div className={styles.acciones}>
+                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
                       {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                         <>
                           <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>

@@ -20,6 +20,7 @@ import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
 import type { Reserva } from '../../types';
+import DetalleReserva from '../../modules/reservas/components/DetalleReserva';
 import styles from './MisReservasPage.module.css';
 
 type MiReserva = Reserva;
@@ -44,6 +45,7 @@ export default function MisReservasPage() {
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const [detalle, setDetalle] = useState<Reserva | null>(null);
 
   const filtros = useTableFilters(reservas, {
     search: r => [r.id, r.espacio_nombre, r.evento_titulo, r.evento_descripcion], date: r => r.fecha,
@@ -94,6 +96,7 @@ export default function MisReservasPage() {
         )}
       />
 
+      {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
         <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />
@@ -151,6 +154,7 @@ export default function MisReservasPage() {
                     </td>
                     <td>{r.cantidad_personas ?? 'No registrado'}</td>
                     <td>
+                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
                       {puedeCancelarReserva(r.estado_reserva_id) && (
                         <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
                       )}
