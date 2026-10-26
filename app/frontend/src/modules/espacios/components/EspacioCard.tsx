@@ -1,5 +1,6 @@
 import styles from './EspacioCard.module.css';
 import Badge from '../../../components/ui/Badge';
+import EspacioFoto from './EspacioFoto';
 
 export interface ReservaCheckinDisponible {
   id: number;
@@ -14,6 +15,7 @@ export interface Espacio {
   id: number;
   nombre: string;
   capacidad: number | null;
+  foto_url?: string | null;
   disponible?: boolean | 0 | 1;
   en_uso?: boolean | 0 | 1;
   reservas_checkin_disponible?: ReservaCheckinDisponible[];
@@ -31,9 +33,7 @@ export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
   return (
     <div className={styles.card} onClick={() => onClick(espacio.id)}>
 
-      <div className={styles.photoSlot}>
-        [ foto · {espacio.nombre.toLowerCase()} ]
-      </div>
+      <EspacioFoto className={styles.photoSlot} nombre={espacio.nombre} fotoUrl={espacio.foto_url} />
 
       <div className={styles.body}>
         <p className={styles.tipo}>Espacio parroquial</p>

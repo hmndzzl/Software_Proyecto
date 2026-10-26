@@ -13,7 +13,7 @@ function mostrar() {
 }
 
 const espacios = [
-  { id: 1, nombre: 'Salón', capacidad: 80, disponible: true },
+  { id: 1, nombre: 'Salón', capacidad: 80, disponible: true, foto_url: '/uploads/espacios/salon-01-v1.webp' },
   { id: 2, nombre: 'Capilla', capacidad: null, disponible: 0 },
   { id: 3, nombre: 'Patio', capacidad: 20, disponible: false, en_uso: true },
 ];
@@ -24,11 +24,20 @@ describe('integración de consulta de espacios', () => {
   it('lista disponibilidad, capacidad y navega al detalle', async () => {
     mostrar();
     expect(await screen.findByText('Salón')).toBeInTheDocument();
+    const foto = screen.getByRole('img', { name: 'Fotografía de Salón' });
+    expect(foto).toHaveAttribute('src', '/uploads/espacios/salon-01-v1.webp');
     expect(screen.getByText('80 personas')).toBeInTheDocument();
     expect(screen.getAllByText('Ocupado')).toHaveLength(2);
     expect(screen.getByText('En uso ahora')).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Ver Detalle' })[0]);
     expect(await screen.findByText('Destino /espacios/1')).toBeInTheDocument();
+  });
+
+  it('recupera el marcador de posición si la fotografía falla', async () => {
+    mostrar();
+    const foto = await screen.findByRole('img', { name: 'Fotografía de Salón' });
+    fireEvent.error(foto);
+    expect(screen.getByText('[ foto · salón ]')).toBeInTheDocument();
   });
 
   it('exige los tres filtros y valida el orden horario', async () => {
