@@ -12,6 +12,7 @@ import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
 import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
@@ -31,6 +32,7 @@ export default function EspacioDetallePage() {
   const [qrAbierto, setQrAbierto] = useState(false);
   const [checkinLoading, setCheckinLoading] = useState<number | null>(null);
   const [detalleEnUsoAbierto, setDetalleEnUsoAbierto] = useState(false);
+  const [reservaPorRechazar, setReservaPorRechazar] = useState<Reserva | null>(null);
 
   const { tieneRol, usuario } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
@@ -74,6 +76,7 @@ export default function EspacioDetallePage() {
       setReservas(res.data);
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+      throw err;
     }
   };
 
@@ -244,8 +247,8 @@ export default function EspacioDetallePage() {
                     <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                       <div className={styles.reservaBotones}>
-                        <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, 2)}>Aprobar</Btn>
-                        <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, 3)}>Rechazar</Btn>
+                        <Btn kind="ok" size="sm" onClick={() => { void cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA).catch(() => {}); }}>Aprobar</Btn>
+                        <Btn kind="bad" size="sm" onClick={() => setReservaPorRechazar(r)}>Rechazar</Btn>
                       </div>
                     )}
                   </div>
@@ -259,6 +262,15 @@ export default function EspacioDetallePage() {
       </div>
 
       <EspacioCalendarioReservas reservas={reservas} />
+
+      <ConfirmDialog open={reservaPorRechazar !== null} title="Rechazar reserva" confirmLabel="Rechazar reserva"
+        description={`¿Rechazar la solicitud de ${reservaPorRechazar?.solicitante_nombre ?? 'esta persona'} para ${reservaPorRechazar?.evento_titulo ?? espacio.nombre}?`}
+        onCancel={() => setReservaPorRechazar(null)}
+        onConfirm={async () => {
+          if (!reservaPorRechazar) return;
+          await cambiarEstado(reservaPorRechazar.id, ESTADOS_RESERVA.RECHAZADA);
+          setReservaPorRechazar(null);
+        }} />
 
       <EspacioQrModal
         open={qrAbierto}

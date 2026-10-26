@@ -8,6 +8,7 @@ import EmptyState from '../../../components/ui/EmptyState';
 import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
 import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
 import SortableTh from '../../../components/ui/SortableTh';
 import TableFilters from '../../../components/ui/TableFilters';
@@ -42,6 +43,7 @@ const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const confirmacionId = useId();
+  const [estadoPorConfirmar, setEstadoPorConfirmar] = useState<{ reserva: Reserva; estado: number; accion: string } | null>(null);
   const [confirmandoCancelacion, setConfirmandoCancelacion] = useState(false);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
@@ -105,7 +107,14 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       fetchReservas();
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+      throw err;
     }
+  };
+
+  const confirmarCambioEstado = async () => {
+    if (!estadoPorConfirmar) return;
+    await cambiarEstado(estadoPorConfirmar.reserva.id, estadoPorConfirmar.estado);
+    setEstadoPorConfirmar(null);
   };
 
   const abrirEdicion = (r: Reserva) => {
@@ -336,15 +345,15 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                       <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
                       {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                         <>
-                          <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
+                          <Btn kind="ok" size="sm" onClick={() => { void cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA).catch(() => {}); }}>
                             Aprobar
                           </Btn>
                           {usuario && r.solicitante_id === usuario.id ? (
-                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CANCELADA)}>
+                            <Btn kind="bad" size="sm" onClick={() => setEstadoPorConfirmar({ reserva: r, estado: ESTADOS_RESERVA.CANCELADA, accion: 'cancelar' })}>
                               Cancelar
                             </Btn>
                           ) : (
-                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
+                            <Btn kind="bad" size="sm" onClick={() => setEstadoPorConfirmar({ reserva: r, estado: ESTADOS_RESERVA.RECHAZADA, accion: 'rechazar' })}>
                               Rechazar
                             </Btn>
                           )}
@@ -363,6 +372,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           </table>
         </div>
       )}
+      <ConfirmDialog open={estadoPorConfirmar !== null}
+        title={estadoPorConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
+        confirmLabel={estadoPorConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
+        description={estadoPorConfirmar?.accion === 'cancelar'
+          ? `¿Cancelar la reserva de ${estadoPorConfirmar.reserva.evento_titulo ?? estadoPorConfirmar.reserva.espacio_nombre} del ${formatFecha(estadoPorConfirmar.reserva.fecha)}? Se liberará el espacio reservado.`
+          : `¿Rechazar la solicitud de ${estadoPorConfirmar?.reserva.solicitante_nombre ?? 'esta persona'} para ${estadoPorConfirmar?.reserva.evento_titulo ?? estadoPorConfirmar?.reserva.espacio_nombre}?`}
+        onCancel={() => setEstadoPorConfirmar(null)} onConfirm={confirmarCambioEstado} />
     </div>
   );
 }
