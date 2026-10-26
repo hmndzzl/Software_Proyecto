@@ -147,7 +147,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
       await userEvent.click(header);
     }
     await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
-    await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
+    await userEvent.selectOptions(within(fila).getByRole('combobox', { name: 'Responsable de Lectura dominical' }), '10');
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/tareas/asignar', {
       tarea_id: 1, persona_actual_id: 9, persona_nueva_id: 10,
     }));
@@ -156,7 +156,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     const filaActualizada = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
     await userEvent.click(within(filaActualizada).getByRole('button', { name: 'Editar' }));
     const modal = screen.getByText('Editar Tarea #1').parentElement!;
-    const titulo = within(modal).getByDisplayValue('Lectura dominical');
+    const titulo = within(modal).getByLabelText('Título:');
     await userEvent.clear(titulo);
     await userEvent.type(titulo, 'Lectura actualizada');
     await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
@@ -175,6 +175,22 @@ describe('integración de tareas, asignaciones y permisos', () => {
     await userEvent.clear(titulo);
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datos');
+  });
+
+  it('asocia y enfoca los cinco campos de edición sin confundirlos con la creación', async () => {
+    mostrar();
+    await userEvent.click((await screen.findAllByRole('button', { name: 'Editar' }))[0]);
+    const modal = screen.getByText('Editar Tarea #1').parentElement!;
+    for (const nombre of ['Título:', 'Descripción:', 'Fecha:', 'Hora de Inicio:', 'Hora de Fin:']) {
+      const control = within(modal).getByLabelText(nombre);
+      expect(control).toBeRequired();
+      await userEvent.click(within(modal).getByText(nombre, { exact: true }));
+      expect(control).toHaveFocus();
+      expect(screen.getAllByLabelText(nombre, { exact: true })).toHaveLength(2);
+    }
+    const ids = Array.from(document.querySelectorAll('[id]'), element => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(apiClient.put).not.toHaveBeenCalled();
   });
 
   it('muestra error de carga y permite reintentar', async () => {

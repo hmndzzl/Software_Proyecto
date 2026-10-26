@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useId, useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import Btn from '../../../components/ui/Btn';
@@ -53,6 +53,7 @@ const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
 };
 
 export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey?: number; onCambio?: () => void }) {
+  const fieldId = useId();
   const { usuario } = useAuth();
   const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
   const puedeGestionar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
@@ -230,28 +231,28 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
                 if (evento) setEditFecha(evento.fecha.slice(0, 10));
               }} />
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Título:</label>
-                <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
+                <label htmlFor={`${fieldId}-titulo`} className={`${formStyles.label} ${formStyles.required}`}>Título:</label>
+                <input id={`${fieldId}-titulo`} aria-required="true" type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
               </div>
 
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Descripción:</label>
-                <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
+                <label htmlFor={`${fieldId}-descripcion`} className={`${formStyles.label} ${formStyles.required}`}>Descripción:</label>
+                <input id={`${fieldId}-descripcion`} aria-required="true" type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
               </div>
 
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
-                <input type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
+                <label htmlFor={`${fieldId}-fecha`} className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
+                <input id={`${fieldId}-fecha`} aria-required="true" type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
               </div>
 
               <div className={formStyles.fieldRow}>
                 <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
-                  <input type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
+                  <label htmlFor={`${fieldId}-inicio`} className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
+                  <input id={`${fieldId}-inicio`} aria-required="true" type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
                 </div>
                 <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
-                  <input type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
+                  <label htmlFor={`${fieldId}-fin`} className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
+                  <input id={`${fieldId}-fin`} aria-required="true" type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -292,18 +293,24 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
                     {!esMinistro && (
                       <td>
                         {!asignacion.persona_id || !puedeGestionar ? asignacion.nombre_persona : editandoKey === key ? (
-                          <select
-                            className={styles.reasignarSelect}
-                            autoFocus
-                            defaultValue={asignacion.persona_id}
-                            disabled={reasignando}
-                            onChange={(e) => reasignar(asignacion.tarea_id, asignacion.persona_id, Number(e.target.value))}
-                            onBlur={() => setEditandoKey(null)}
-                          >
-                            {ministros.map((m) => (
-                              <option key={m.id} value={m.id}>{m.nombre}</option>
-                            ))}
-                          </select>
+                          <>
+                            <label htmlFor={`${fieldId}-responsable-${key}`} className={styles.srOnly}>
+                              Responsable de {asignacion.titulo_tarea}
+                            </label>
+                            <select
+                              id={`${fieldId}-responsable-${key}`}
+                              className={styles.reasignarSelect}
+                              autoFocus
+                              defaultValue={asignacion.persona_id}
+                              disabled={reasignando}
+                              onChange={(e) => reasignar(asignacion.tarea_id, asignacion.persona_id, Number(e.target.value))}
+                              onBlur={() => setEditandoKey(null)}
+                            >
+                              {ministros.map((m) => (
+                                <option key={m.id} value={m.id}>{m.nombre}</option>
+                              ))}
+                            </select>
+                          </>
                         ) : (
                           <button
                             type="button"

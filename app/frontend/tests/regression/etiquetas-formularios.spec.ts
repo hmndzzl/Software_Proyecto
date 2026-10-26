@@ -65,3 +65,32 @@ test('los consumidores de Field asocian etiquetas y ayudas en móvil y ambos tem
     }
   }
 });
+
+test('la edición y la reasignación de tareas tienen etiquetas independientes', async ({ page }) => {
+  await page.route('http://api.test/api/tareas', route => route.fulfill({ json: [{
+    id: 1, titulo: 'Preparar altar', descripcion: 'Preparación', fecha: '2099-11-01',
+    hora_inicio: '10:00', hora_fin: '11:00', asignados: [{ persona_id: 9, nombre: 'Ana Ministra' }],
+  }] }));
+  await page.goto('/tareas');
+  await page.getByTitle('Cambiar responsable').click();
+  await expect(page.getByRole('combobox', { name: 'Responsable de Preparar altar' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  const editor = page.getByRole('heading', { name: 'Editar Tarea #1', exact: true }).locator('..');
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const tema of ['claro', 'oscuro']) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
+      for (const nombre of ['Título:', 'Descripción:', 'Fecha:', 'Hora de Inicio:', 'Hora de Fin:']) {
+        await editor.getByText(nombre, { exact: true }).click();
+        await expect(editor.getByLabel(nombre, { exact: true })).toBeFocused();
+        await expect(page.getByLabel(nombre, { exact: true })).toHaveCount(2);
+      }
+      expect(await page.evaluate(() => {
+        const ids = Array.from(document.querySelectorAll('[id]'), element => element.id);
+        return new Set(ids).size === ids.length;
+      })).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+  }
+});
