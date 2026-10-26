@@ -4,7 +4,7 @@ type SearchValue = string | number | null | undefined;
 export interface TableSelectFilter<T> {
   key: string;
   label: string;
-  value: (item: T) => string;
+  value: (item: T) => string | string[];
 }
 interface FilterConfig<T> {
   search: (item: T) => SearchValue[];
@@ -29,7 +29,11 @@ export function useTableFilters<T>(data: T[], config: FilterConfig<T>) {
     if (invalidRange) return false;
     const text = normalizarBusqueda(config.search(item).join(' '));
     if (!terms.every(term => text.includes(term))) return false;
-    if (!selects.every(filter => !selected[filter.key] || filter.value(item) === selected[filter.key])) return false;
+    if (!selects.every(filter => {
+      if (!selected[filter.key]) return true;
+      const values = filter.value(item);
+      return Array.isArray(values) ? values.includes(selected[filter.key]) : values === selected[filter.key];
+    })) return false;
     if (config.date && (from || to)) {
       const date = config.date(item)?.slice(0, 10);
       if (!date || (from && date < from) || (to && date > to)) return false;
@@ -46,7 +50,7 @@ export function useTableFilters<T>(data: T[], config: FilterConfig<T>) {
       hasDates: Boolean(config.date), total: data.length, count: filteredData.length,
       selects: selects.map(filter => ({
         key: filter.key, label: filter.label, value: selected[filter.key] ?? '',
-        options: [...new Set(data.map(filter.value).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
+        options: [...new Set(data.flatMap(filter.value).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
         onChange: (value: string) => setSelected(previous => ({ ...previous, [filter.key]: value })),
       })),
     },
