@@ -2,6 +2,7 @@ import { useId, useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import Btn from '../../../components/ui/Btn';
+import { CardHead } from '../../../components/ui/Card';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -217,7 +218,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
 
   return (
     <div>
-      <h3 className={styles.seccionTitulo}>{esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'}</h3>
+      <CardHead title={esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'} />
       <TableFilters {...filtros.controls} label="Filtros de tareas" />
 
       {editandoTarea && (
