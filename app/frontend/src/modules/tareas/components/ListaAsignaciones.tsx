@@ -266,7 +266,16 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
         </form>}
         {vista === 'ministros' && <>
           {cargandoMinistros ? <LoadingState label="Cargando ministros..." /> : errorMinistros ? <ErrorState message="No se pudo cargar tu directorio de ministros." onRetry={() => setRevisionMinistros(n => n + 1)} /> : <>
-            <div className={styles.lista}><ul>{activa.asignados.map(a => <li key={a.persona_id} className={styles.miembro}>
+            {activa.asignados.length > 0 && <>
+              <div className={form.field}>
+                <label htmlFor={`${id}-buscar-gestion`} className={form.label}>Buscar ministro asignado</label>
+                <input id={`${id}-buscar-gestion`} className={form.input} type="search" value={busquedaAsignados}
+                  placeholder="Buscar por nombre…" onChange={event => { setBusquedaAsignados(event.target.value); setReemplazando(null); }} />
+              </div>
+              <p className={styles.recuento} aria-live="polite">Mostrando {asignadosVisibles.length} de {activa.asignados.length} ministros asignados.</p>
+              {!asignadosVisibles.length && <p>No hay ministros asignados que coincidan con la búsqueda.</p>}
+            </>}
+            <div className={styles.lista}><ul aria-label="Ministros para gestionar">{asignadosVisibles.map(a => <li key={a.persona_id} className={styles.miembro}>
               <span>{a.nombre}</span>
               {puedeGestionarMinistro(a.persona_id) && <div className={styles.acciones}>
                 {reemplazando === a.persona_id ? <div className={form.field}>

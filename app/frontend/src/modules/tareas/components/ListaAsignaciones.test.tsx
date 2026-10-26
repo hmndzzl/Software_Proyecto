@@ -94,6 +94,29 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     expect(within(modal).getByRole('status')).toHaveTextContent('No hay ministros asignados que coincidan');
   });
 
+  it('encuentra un ministro entre cien y limita el retiro a la persona elegida', async () => {
+    registros[0].asignados = Array.from({ length: 100 }, (_, i) => ({ persona_id: i + 100, nombre: `Ministro ${i + 1}` }));
+    vi.mocked(apiClient.delete).mockImplementationOnce(async () => {
+      registros[0].asignados = registros[0].asignados.filter(a => a.persona_id !== 199);
+      return { data: {} };
+    });
+    mostrar();
+    const modal = await gestionar();
+    const buscar = within(modal).getByLabelText('Buscar ministro asignado');
+    await userEvent.type(buscar, 'Ministro 100');
+    const lista = within(modal).getByRole('list', { name: 'Ministros para gestionar' });
+    expect(within(lista).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(modal).getByText('Mostrando 1 de 100 ministros asignados.')).toBeInTheDocument();
+    await userEvent.click(within(lista).getByRole('button', { name: 'Quitar a Ministro 100' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Quitar ministro' }));
+    expect(apiClient.delete).toHaveBeenCalledWith('/api/tareas/asignar', { data: { tarea_id: 1, persona_id: 199 } });
+    expect(await within(modal).findByText('Mostrando 0 de 99 ministros asignados.')).toBeInTheDocument();
+    await userEvent.clear(within(modal).getByLabelText('Buscar ministro asignado'));
+    await userEvent.type(within(modal).getByLabelText('Buscar ministro asignado'), 'inexistente');
+    expect(within(modal).getByText('No hay ministros asignados que coincidan con la búsqueda.')).toBeInTheDocument();
+    expect(within(modal).queryByRole('button', { name: /^Quitar a / })).not.toBeInTheDocument();
+  });
+
   it('agrega ministros desde la tarjeta sin volver a asignar los existentes', async () => {
     vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { alertas: [{ persona_id: 14,
       ministro_no_disponible: true, tope_servicios_superado: true, servicios_en_el_mes: 9, tope_servicios_mes: 8 }] } });
