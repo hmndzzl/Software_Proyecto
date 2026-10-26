@@ -210,15 +210,30 @@ describe('Pestaña Papelera', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
     await screen.findByText('Notificación eliminada');
 
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
     fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
 
-    confirmSpy.mockReturnValueOnce(true);
     fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Vaciar papelera' }));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/notificaciones/papelera');
     await waitFor(() => expect(screen.getByText('La papelera está vacía.')).toBeInTheDocument());
-    confirmSpy.mockRestore();
+  });
+
+  it('conserva la confirmación si falla vaciar la papelera y permite reintentar', async () => {
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    await screen.findByText('Notificación eliminada');
+    fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Vaciar papelera' });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Vaciar papelera' }));
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('No se pudo completar la acción');
+    expect(screen.getByText('Notificación eliminada')).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Vaciar papelera' }));
+    expect(await screen.findByText('La papelera está vacía.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('muestra estado de error si falla al cargar la papelera', async () => {

@@ -5,6 +5,7 @@ import SortableTh from '../../components/ui/SortableTh';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import { normalizarBusqueda } from '../../hooks/useTableFilters';
 import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import LoadingState from '../../components/ui/LoadingState';
@@ -65,6 +66,7 @@ export default function NotificacionesPage() {
 
   const [vista, setVista] = useState<Vista>('recibidas');
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false);
+  const [confirmandoVaciar, setConfirmandoVaciar] = useState(false);
   const [notifSeleccionadaExcusa, setNotifSeleccionadaExcusa] = useState<Notificacion | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const resaltarId = searchParams.get('resaltar') ? Number(searchParams.get('resaltar')) : null;
@@ -119,8 +121,8 @@ export default function NotificacionesPage() {
   };
 
   const handleVaciarPapelera = async () => {
-    if (!window.confirm('¿Seguro que deseas vaciar la papelera? Esta acción no se puede deshacer.')) return;
     await vaciar();
+    setConfirmandoVaciar(false);
   };
 
   // useNotificaciones y usePapelera mantienen listas independientes: al mover o
@@ -308,7 +310,7 @@ export default function NotificacionesPage() {
             hint={!cargandoPapelera && !errorPapelera ? `${papeleraFiltrada.length} notificaciones (se purgan a los 15 días)` : undefined}
             right={
               papelera.length > 0 ? (
-                <Btn kind="bad" size="sm" onClick={handleVaciarPapelera}>
+                <Btn kind="bad" size="sm" onClick={() => setConfirmandoVaciar(true)}>
                   Vaciar papelera
                 </Btn>
               ) : undefined
@@ -346,6 +348,9 @@ export default function NotificacionesPage() {
       )}
 
       {/* Modal para redactar nueva notificación */}
+      <ConfirmDialog open={confirmandoVaciar} title="Vaciar papelera" confirmLabel="Vaciar papelera"
+        description="¿Seguro que deseas vaciar la papelera? Esta acción no se puede deshacer."
+        onCancel={() => setConfirmandoVaciar(false)} onConfirm={handleVaciarPapelera} />
       <Modal
         open={modalNuevaAbierto}
         title="Nueva Notificación"
