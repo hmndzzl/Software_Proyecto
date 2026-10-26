@@ -4,6 +4,7 @@ import styles from '../../../styles/Form.module.css';
 import local from './TareaForm.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
+import { formatFecha, formatHorario } from '../../../utils/date';
 import type { Ministro, Tarea } from '../../../types';
 import ErrorState from '../../../components/ui/ErrorState';
 import LoadingState from '../../../components/ui/LoadingState';
@@ -104,7 +105,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           <label htmlFor="tarea" className={styles.label}>Tarea</label>
           <select id="tarea" className={styles.input} value={tareaId} onChange={e => { setTareaId(e.target.value); setSeleccionados([]); }}>
             <option value="">Crear una nueva tarea</option>
-            {tareas.map(tarea => <option key={tarea.id} value={tarea.id}>{tarea.titulo} · {tarea.fecha.split('T')[0]} · {tarea.hora_inicio.slice(0, 5)}</option>)}
+            {tareas.map(tarea => <option key={tarea.id} value={tarea.id}>{tarea.titulo} · {formatFecha(tarea.fecha)} · {formatHorario(tarea.hora_inicio, tarea.hora_fin)}</option>)}
           </select>
         </div>
         {!tareaId && <>
