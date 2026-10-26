@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('la tarjeta mantiene cien ministros compactos y uniforma sus tres acciones', async ({ page }) => {
-  const asignados = Array.from({ length: 100 }, (_, i) => ({ persona_id: i + 9, nombre: `Ministro ${i + 1}` }));
+  const asignados = Array.from({ length: 100 }, (_, i) => ({ persona_id: i + 9, nombre: `Ministro ${i + 1} de la comunidad parroquial con nombre y apellidos extensos` }));
   await page.addInitScript(() => {
     localStorage.setItem('token', 'jwt-de-regresion');
     localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: 5 }));
@@ -13,13 +13,13 @@ test('la tarjeta mantiene cien ministros compactos y uniforma sus tres acciones'
     await page.setViewportSize({ width, height: 900 });
     for (const tema of ['claro', 'oscuro']) {
       await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
-      await page.getByRole('button', { name: 'Servicio compartido', exact: true }).click();
+      const fila = page.getByRole('button', { name: 'Servicio compartido', exact: true }).locator('..').locator('..');
+      await expect(fila.getByRole('button', { name: 'Ver los 100 ministros de Servicio compartido' })).toHaveText('+98 más');
+      await fila.getByRole('button', { name: 'Ver los 100 ministros de Servicio compartido' }).click();
       const tarjeta = page.getByRole('dialog', { name: 'Servicio compartido' });
       const lista = tarjeta.getByRole('list', { name: 'Ministros de la tarea' });
-      await expect(lista.getByRole('listitem')).toHaveCount(100);
-      const medidas = await lista.evaluate(element => ({ altura: element.clientHeight, total: element.scrollHeight }));
-      expect(medidas.altura).toBeLessThanOrEqual(176);
-      expect(medidas.total).toBeGreaterThan(medidas.altura);
+      await expect(lista.getByRole('listitem')).toHaveCount(6);
+      await expect(tarjeta.getByText('Mostrando 6 de 100 ministros.')).toBeVisible();
       const acciones = ['Editar tarea', 'Gestionar ministros', 'Eliminar tarea'].map(name => tarjeta.getByRole('button', { name, exact: true }));
       const fuentes = await Promise.all(acciones.map(boton => boton.evaluate(element => {
         const estilo = getComputedStyle(element);
@@ -33,9 +33,29 @@ test('la tarjeta mantiene cien ministros compactos y uniforma sus tres acciones'
         expect(caja!.width).toBeCloseTo(cajas[0]!.width, 0);
         expect(caja!.height).toBeCloseTo(cajas[0]!.height, 0);
       }
-      await tarjeta.getByLabel('Buscar ministro asignado').fill('Ministro 100');
-      await expect(lista.getByRole('listitem')).toHaveCount(1);
-      await expect(lista.getByText('Ministro 100', { exact: true })).toBeVisible();
+      await tarjeta.getByRole('button', { name: 'Ver listado completo (100)', exact: true }).click();
+      const listado = page.getByRole('dialog', { name: 'Listado de ministros de Servicio compartido' });
+      const listaCompleta = listado.getByRole('list', { name: 'Ministros de la tarea' });
+      await expect(listaCompleta.getByRole('listitem')).toHaveCount(10);
+      const medidas = await listaCompleta.evaluate(element => ({ altura: element.clientHeight, total: element.scrollHeight }));
+      expect(medidas.altura).toBeLessThanOrEqual(176);
+      expect(medidas.total).toBeGreaterThan(medidas.altura);
+      await listado.getByRole('button', { name: 'Siguiente', exact: true }).click();
+      await expect(listado.getByText('Página 2 de 10', { exact: true })).toBeVisible();
+      await listado.getByLabel('Buscar ministro asignado').fill('Ministro 100');
+      await expect(listaCompleta.getByRole('listitem')).toHaveCount(1);
+      await expect(listaCompleta.getByText(asignados[99].nombre, { exact: true })).toBeVisible();
+      await expect(listado.getByText('Página 1 de 1', { exact: true })).toBeVisible();
+      await listado.getByRole('button', { name: 'Volver a la tarjeta anterior' }).click();
+      await expect(tarjeta.getByRole('listitem')).toHaveCount(6);
+      await tarjeta.getByRole('button', { name: 'Gestionar ministros', exact: true }).click();
+      const gestion = page.getByRole('dialog', { name: 'Ministros de Servicio compartido' });
+      await gestion.getByLabel('Buscar ministro asignado', { exact: true }).fill('Ministro 100');
+      await expect(gestion.getByRole('list', { name: 'Ministros para gestionar' }).getByRole('listitem')).toHaveCount(1);
+      await expect(gestion.getByText('Mostrando 1 de 100 ministros asignados.')).toBeVisible();
+      await gestion.getByRole('button', { name: `Quitar a ${asignados[99].nombre}`, exact: true }).click();
+      await expect(page.getByRole('dialog', { name: 'Quitar ministro', exact: true })).toContainText(asignados[99].nombre);
+      await page.getByRole('dialog').getByRole('button', { name: 'Cancelar', exact: true }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.keyboard.press('Escape');
     }
