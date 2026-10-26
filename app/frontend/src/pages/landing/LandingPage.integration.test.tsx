@@ -82,6 +82,12 @@ describe('navegación del portal público', () => {
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
 
     expect(await screen.findByRole('heading', { name: 'Contenido publicado desde administración' })).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'contenido-principal');
+    expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('link', { name: 'Saltar al contenido principal' })).toHaveAttribute('href', '#contenido-principal');
+    for (const nombre of ['Contenido publicado desde administración', 'Nuestra historia', 'Valores publicados', 'Hablemos']) {
+      expect(screen.getByRole('region', { name: nombre })).toBeInTheDocument();
+    }
     expect(screen.getByText('14')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Esperanza' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Altar preparado para una celebración' })).toHaveAttribute('src', expect.stringContaining('.webp'));

@@ -158,12 +158,12 @@ export default function LandingPage() {
   return (
     <PublicPortalLayout page="landing" activeSection={active} onSectionClick={seleccionarSeccion} nombreParroquia={contenido.nombre_parroquia}
       textoPie={contenido.texto_pie} horariosOficina={contenido.horarios_oficina}>
-      <main>
-      <section id="home" className="hero">
+      <main id="contenido-principal" tabIndex={-1}>
+      <section id="home" className="hero" aria-labelledby="titulo-inicio">
         <div className="wrap hero-in">
           <div>
             <div className="kicker">{contenido.lema}</div>
-            <h1>{contenido.titulo_principal}</h1>
+            <h1 id="titulo-inicio">{contenido.titulo_principal}</h1>
             <div className="rule" />
             <p>{contenido.descripcion_principal}</p>
             <div className="hero-cta">
@@ -178,7 +178,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="quienes-somos" className="sec sec-alt">
+      <section id="quienes-somos" className="sec sec-alt" aria-labelledby="titulo-quienes-somos">
         <div className="wrap">
           <div className="about">
             <div className="about-media">
@@ -188,7 +188,7 @@ export default function LandingPage() {
             </div>
             <div>
               <div className="kicker">Quiénes somos</div>
-              <h2 className="h2-lg">{contenido.quienes_somos.titulo}</h2>
+              <h2 id="titulo-quienes-somos" className="h2-lg">{contenido.quienes_somos.titulo}</h2>
               <div className="rule" style={{ marginTop: 18 }} />
               <p className="lede" style={{ marginTop: 22 }}>{contenido.quienes_somos.descripcion}</p>
               <div className="about-list">
@@ -216,11 +216,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="valores" className="sec">
+      <section id="valores" className="sec" aria-labelledby="titulo-valores">
         <div className="wrap">
           <div className="sec-head center">
             <div className="kicker">Nuestros valores</div>
-            <h2>{contenido.valores_encabezado.titulo}</h2>
+            <h2 id="titulo-valores">{contenido.valores_encabezado.titulo}</h2>
             <div className="rule" />
             <p className="lede">{contenido.valores_encabezado.descripcion}</p>
           </div>
@@ -239,12 +239,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="contacto" className="sec sec-alt">
+      <section id="contacto" className="sec sec-alt" aria-labelledby="titulo-contacto">
         <div className="wrap">
           <div className="contact">
             <div>
               <div className="kicker">Contáctanos</div>
-              <h2 className="h2-lg">{contenido.contacto.titulo}</h2>
+              <h2 id="titulo-contacto" className="h2-lg">{contenido.contacto.titulo}</h2>
               <div className="rule" style={{ marginTop: 18 }} />
               <p className="lede" style={{ marginTop: 20 }}>Escríbenos para solicitar un sacramento, reservar un salón, sumarte a un grupo o simplemente conversar. Respondemos dentro de las siguientes 48 horas.</p>
               <div className="cinfo">
