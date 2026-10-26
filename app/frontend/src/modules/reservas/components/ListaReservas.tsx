@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useId, useEffect, useRef, useState } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { CardHead } from '../.././../components/ui/Card';
@@ -7,6 +7,8 @@ import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
+import Modal from '../../../components/ui/Modal';
+import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
 import SortableTh from '../../../components/ui/SortableTh';
 import TableFilters from '../../../components/ui/TableFilters';
 import { useTableFilters } from '../../../hooks/useTableFilters';
@@ -39,6 +41,8 @@ const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
+  const confirmacionId = useId();
+  const [confirmandoCancelacion, setConfirmandoCancelacion] = useState(false);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,13 +128,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   };
 
   const cerrarEdicion = () => {
+    setConfirmandoCancelacion(false);
     setEditando(null);
     setEditMensaje('');
   };
 
   const cancelarReservaDesdeEdicion = async () => {
-    if (!editando) return;
-    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    if (!editando || editLoading) return;
     setEditLoading(true);
     setEditMensaje('');
     try {
@@ -197,9 +201,16 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
       {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
       {editando && (
-        <div className={formStyles.modalOverlay}>
-          <div className={formStyles.modalCard}>
-            <h4 className={formStyles.modalTitle}>Editar Reserva #{editando.id}</h4>
+        <Modal open title={confirmandoCancelacion ? 'Cancelar reserva' : `Editar Reserva #${editando.id}`}
+          closeDisabled={editLoading} describedBy={confirmandoCancelacion ? confirmacionId : undefined}
+          initialFocusSelector={confirmandoCancelacion ? '[data-confirm-cancel]' : undefined}
+          onClose={() => { if (!editLoading) { if (confirmandoCancelacion) { setConfirmandoCancelacion(false); setEditMensaje(''); } else cerrarEdicion(); } }}>
+          {confirmandoCancelacion ? <>
+            <ConfirmDialogContent descriptionId={confirmacionId} confirmLabel="Cancelar reserva" busy={editLoading}
+              description="¿Estás seguro de que deseas cancelar esta reserva? Se liberará el espacio reservado."
+              onConfirm={cancelarReservaDesdeEdicion} onCancel={() => { setConfirmandoCancelacion(false); setEditMensaje(''); }} />
+            {editMensaje && <p role="alert" className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>}
+          </> : <>
 
             {editando.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
@@ -263,7 +274,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <button
                   type="button"
                   className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
-                  onClick={cancelarReservaDesdeEdicion}
+                  onClick={() => { setEditMensaje(''); setConfirmandoCancelacion(true); }}
                   disabled={editLoading}
                 >
                   Cancelar Reserva
@@ -276,8 +287,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 {editLoading ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
-          </div>
-        </div>
+          </>}
+        </Modal>
       )}
 
       {loading && <LoadingState label="Cargando reservas..." />}
