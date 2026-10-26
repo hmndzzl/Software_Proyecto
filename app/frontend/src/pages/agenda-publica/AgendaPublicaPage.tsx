@@ -66,7 +66,7 @@ export default function AgendaPublicaPage() {
 
   return (
     <PublicPortalLayout page="agenda-publica">
-      <main>
+      <main id="contenido-principal" tabIndex={-1}>
         <section className="agenda-hero" aria-labelledby="agenda-titulo">
           <div className="wrap">
             <p className="agenda-kicker">Comunidad en movimiento</p>
@@ -75,7 +75,7 @@ export default function AgendaPublicaPage() {
           </div>
         </section>
 
-        <section className="agenda-content wrap" aria-live="polite" aria-busy={cargando}>
+        <section className="agenda-content wrap" aria-label="Actividades públicas" aria-live="polite" aria-busy={cargando}>
           {cargando && (
             <div className="agenda-state" role="status">
               <span className="agenda-loader" aria-hidden="true" />
