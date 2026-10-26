@@ -87,10 +87,11 @@ export default function EditarGrupoForm({
           <select
             id="edit-coordinador"
             className={styles.input} disabled={eliminando}
+            data-placeholder={coordinadorId === '' ? 'true' : undefined}
             value={coordinadorId}
             onChange={(e) => setCoordinadorId(e.target.value)}
           >
-            <option value="">-- Elige un coordinador --</option>
+            <option value="" disabled hidden>Selecciona un coordinador</option>
             {personas.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre}
