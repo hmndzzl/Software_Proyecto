@@ -52,14 +52,14 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
 
     it('debería retornar todos los espacios si no se envía ningún parámetro', async () => {
       req.query = {};
-      const mockEspacios = [{ id: 1, nombre: 'Sala A', en_uso: 0 }];
+      const mockEspacios = [{ id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', en_uso: 0 }];
       (pool.execute as any).mockResolvedValue([mockEspacios]);
 
       await obtenerEspacios(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('FROM espacio e'), [2]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, nombre: 'Sala A', en_uso: false }]);
+      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', en_uso: false }]);
     });
 
     it('debería retornar 400 si hora_inicio >= hora_fin', async () => {
@@ -72,7 +72,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     it('debería retornar los espacios con el flag de disponible correctamente calculado', async () => {
       req.query = { fecha: '2026-08-11', hora_inicio: '10:00', hora_fin: '11:00' };
       const mockEspacios = [
-        { id: 1, nombre: 'Sala A', disponible: 1, en_uso: 1 },
+        { id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', disponible: 1, en_uso: 1 },
         { id: 2, nombre: 'Sala B', disponible: 0, en_uso: 0 }
       ];
       (pool.execute as any).mockResolvedValue([mockEspacios]);
@@ -80,9 +80,10 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       await obtenerEspacios(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalled();
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('e.foto_url'), expect.any(Array));
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith([
-        { id: 1, nombre: 'Sala A', disponible: true, en_uso: true },
+        { id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', disponible: true, en_uso: true },
         { id: 2, nombre: 'Sala B', disponible: false, en_uso: false }
       ]);
     });

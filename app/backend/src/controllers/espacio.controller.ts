@@ -11,6 +11,7 @@ interface EspacioRow extends RowDataPacket {
   id: number;
   nombre: string;
   capacidad: number | null;
+  foto_url: string | null;
   disponible?: 0 | 1;
   en_uso?: 0 | 1;
 }
@@ -77,6 +78,7 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
          e.id,
          e.nombre,
          e.capacidad,
+         e.foto_url,
          CASE
            WHEN EXISTS (
              SELECT 1

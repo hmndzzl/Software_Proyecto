@@ -38,6 +38,7 @@ CREATE TABLE `espacio` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `capacidad` int(11) DEFAULT NULL CHECK (`capacidad` > 0),
+  `foto_url` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 

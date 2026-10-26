@@ -10,14 +10,14 @@ INSERT INTO `rol` (`detalle`) VALUES
   ('Admin');
 
 -- Espacios físicos de la parroquia
-INSERT INTO `espacio` (`nombre`, `capacidad`) VALUES
-  ('Templo Principal',      500),
-  ('Salón Parroquial',      150),
-  ('Sala de Catequesis A',   30),
-  ('Sala de Catequesis B',   30),
-  ('Sala de Reuniones',      20),
-  ('Patio Central',         200),
-  ('Capilla Lateral',        80);
+INSERT INTO `espacio` (`nombre`, `capacidad`, `foto_url`) VALUES
+  ('Templo Principal',      500, '/uploads/espacios/salon-01-v1.webp'),
+  ('Salón Parroquial',      150, '/uploads/espacios/salon-02-v1.webp'),
+  ('Sala de Catequesis A',   30, '/uploads/espacios/salon-03-v1.webp'),
+  ('Sala de Catequesis B',   30, '/uploads/espacios/salon-04-v1.webp'),
+  ('Sala de Reuniones',      20, '/uploads/espacios/salon-05-v1.webp'),
+  ('Patio Central',         200, '/uploads/espacios/salon-06-v1.webp'),
+  ('Capilla Lateral',        80, '/uploads/espacios/salon-07-v1.webp');
 
 -- Estados de reserva
 -- id: 1=Pendiente, 2=Confirmada, 3=Rechazada (por Sacerdote/Admin), 4=Cancelada (por el solicitante)

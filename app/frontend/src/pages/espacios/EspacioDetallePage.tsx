@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { avisoCambioEstadoReserva, ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
+import EspacioFoto from '../../modules/espacios/components/EspacioFoto';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
@@ -124,7 +125,7 @@ export default function EspacioDetallePage() {
 
         {/* Panel izquierdo — info del espacio */}
         <div className={styles.infoPanel}>
-          <div className={styles.photoSlot}>[ foto · {espacio.nombre.toLowerCase()} ]</div>
+          <EspacioFoto className={styles.photoSlot} nombre={espacio.nombre} fotoUrl={espacio.foto_url} eager />
 
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>

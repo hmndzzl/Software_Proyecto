@@ -1,5 +1,6 @@
 FROM node:20-alpine AS dev
 WORKDIR /app
+ENV DEV_BACKEND_TARGET=http://backend:3001
 COPY package*.json ./
 RUN npm ci
 COPY . .

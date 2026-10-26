@@ -4,14 +4,25 @@ import './LandingPage.css';
 import PublicPortalLayout, { PUBLIC_NAV_LINKS } from '../public-portal/PublicPortalLayout';
 import ContactoForm from './ContactoForm';
 import { obtenerContenidoLanding, type ContenidoLanding } from '../../api/landing';
+import fachada from '../../assets/landing/fachada-v1.webp';
+import comunidad from '../../assets/landing/comunidad-v1.webp';
+import celebracion from '../../assets/landing/celebracion-v1.webp';
+import servicio from '../../assets/landing/servicio-v1.webp';
+import feViva from '../../assets/landing/fe-viva-v1.webp';
+import voluntarios from '../../assets/landing/voluntarios-v1.webp';
+import encuentro from '../../assets/landing/encuentro-v1.webp';
+import grupo from '../../assets/landing/grupo-v1.webp';
+import familia from '../../assets/landing/familia-v1.webp';
+import tradicion from '../../assets/landing/tradicion-v1.webp';
+import entrada from '../../assets/landing/entrada-v1.webp';
 
 const VALORES = [
-  { titulo: 'Fe viva', foto: 'Momento de oración', texto: 'Celebramos los sacramentos con cuidado y reverencia, y cultivamos una oración que acompaña la vida real de cada familia.' },
-  { titulo: 'Servicio', foto: 'Voluntarios sirviendo', texto: 'Nadie sirve solo. Ministros, coordinadores y voluntarios trabajan juntos para que cada necesidad encuentre una respuesta.' },
-  { titulo: 'Comunidad', foto: 'Familias en el atrio', texto: 'Aquí nadie es un extraño. Creamos espacios donde jóvenes, adultos y mayores se encuentran y se acompañan.' },
-  { titulo: 'Formación', foto: 'Catequesis o formación', texto: 'Catequesis para niños, preparación sacramental y círculos de estudio abiertos a quien desee profundizar su fe.' },
-  { titulo: 'Caridad', foto: 'Apoyo a familias', texto: 'Acompañamos a las familias que atraviesan dificultades con apoyo concreto, discreto y sostenido en el tiempo.' },
-  { titulo: 'Tradición', foto: 'Fiesta patronal', texto: 'Cuidamos las celebraciones y devociones que nos identifican, heredadas de quienes levantaron esta parroquia.' },
+  { titulo: 'Fe viva', foto: 'Altar preparado para una celebración', src: feViva, texto: 'Celebramos los sacramentos con cuidado y reverencia, y cultivamos una oración que acompaña la vida real de cada familia.' },
+  { titulo: 'Servicio', foto: 'Ministros reunidos en la parroquia', src: voluntarios, texto: 'Nadie sirve solo. Ministros, coordinadores y voluntarios trabajan juntos para que cada necesidad encuentre una respuesta.' },
+  { titulo: 'Comunidad', foto: 'Comunidad parroquial reunida', src: encuentro, texto: 'Aquí nadie es un extraño. Creamos espacios donde jóvenes, adultos y mayores se encuentran y se acompañan.' },
+  { titulo: 'Formación', foto: 'Grupo parroquial reunido', src: grupo, texto: 'Catequesis para niños, preparación sacramental y círculos de estudio abiertos a quien desee profundizar su fe.' },
+  { titulo: 'Caridad', foto: 'Vitral de la Sagrada Familia', src: familia, texto: 'Acompañamos a las familias que atraviesan dificultades con apoyo concreto, discreto y sostenido en el tiempo.' },
+  { titulo: 'Tradición', foto: 'Procesión parroquial', src: tradicion, texto: 'Cuidamos las celebraciones y devociones que nos identifican, heredadas de quienes levantaron esta parroquia.' },
 ];
 
 const CONTENIDO_INICIAL: ContenidoLanding = {
@@ -67,7 +78,13 @@ const svgProps = {
   strokeLinejoin: 'round',
 } as const;
 
-function Slot({ label }: { label: string }) {
+function Slot({ label, src, eager = false }: { label: string; src?: string; eager?: boolean }) {
+  const [urlFallida, setUrlFallida] = useState<string | null>(null);
+  if (src && urlFallida !== src) {
+    return <div className="slot">
+      <img src={src} alt={label} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setUrlFallida(src)} />
+    </div>;
+  }
   return <div className="slot" role="img" aria-label={label}>{label}</div>;
 }
 
@@ -157,7 +174,7 @@ export default function LandingPage() {
               <div><div className="stat-n">{contenido.cantidad_espacios}</div><div className="stat-l">Espacios parroquiales</div></div>
             </div>
           </div>
-          <div className="hero-photo"><Slot label="Fachada o interior del templo — foto horizontal" /></div>
+          <div className="hero-photo"><Slot label="Vista exterior de la parroquia" src={fachada} eager /></div>
         </div>
       </section>
 
@@ -165,9 +182,9 @@ export default function LandingPage() {
         <div className="wrap">
           <div className="about">
             <div className="about-media">
-              <div className="ph ph-tall"><Slot label="Comunidad reunida (vertical)" /></div>
-              <div className="ph"><Slot label="Celebración" /></div>
-              <div className="ph"><Slot label="Servicio social" /></div>
+              <div className="ph ph-tall"><Slot label="Miembros de la comunidad parroquial" src={comunidad} /></div>
+              <div className="ph"><Slot label="Celebración litúrgica" src={celebracion} /></div>
+              <div className="ph"><Slot label="Ministros de la parroquia" src={servicio} /></div>
             </div>
             <div>
               <div className="kicker">Quiénes somos</div>
@@ -210,7 +227,7 @@ export default function LandingPage() {
           <div className="values">
             {contenido.valores.map((v, i) => (
               <article key={v.titulo} className="vcard">
-                <div className="vcard-ph"><Slot label={`Imagen pendiente para ${v.titulo}`} /></div>
+                <div className="vcard-ph"><Slot label={VALORES[i]?.foto ?? `Imagen pendiente para ${v.titulo}`} src={VALORES[i]?.src} /></div>
                 <div className="vcard-body">
                   <div className="vnum">{String(i + 1).padStart(2, '0')}</div>
                   <h3>{v.titulo}</h3>
@@ -248,7 +265,7 @@ export default function LandingPage() {
                   <div><h3>CORREO Y TELÉFONO</h3><p>{contenido.contacto.correo}{contenido.contacto.correo && contenido.contacto.telefono && <br />}{contenido.contacto.telefono}</p></div>
                 </div>}
               </div>
-              <div className="cmap"><Slot label="Mapa o foto de la entrada" /></div>
+              <div className="cmap"><Slot label="Entrada a la parroquia" src={entrada} /></div>
             </div>
 
             <ContactoForm />
