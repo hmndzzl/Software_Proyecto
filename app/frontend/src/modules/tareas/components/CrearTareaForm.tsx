@@ -1,4 +1,4 @@
-import { useId, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import local from './TareaForm.module.css';
@@ -8,13 +8,12 @@ import type { Ministro, Tarea } from '../../../types';
 import ErrorState from '../../../components/ui/ErrorState';
 import LoadingState from '../../../components/ui/LoadingState';
 import EventoTareaSelect from './EventoTareaSelect';
-import { normalizarBusqueda } from '../../../hooks/useTableFilters';
+import SelectorMinistros from './SelectorMinistros';
 
 const TOPE_SERVICIOS_MES = 8;
 
 export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshKey?: number; onTareaCreada?: () => void }) {
-  const busquedaId = useId();
-  const [busquedaMinistro, setBusquedaMinistro] = useState('');
+  const [selectorRevision, setSelectorRevision] = useState(0);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
@@ -41,7 +40,6 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
         setMinistros(personas.data);
         setTareas(servicios.data);
         setSeleccionados([]);
-        setBusquedaMinistro('');
       })
       .catch(() => { if (vigente) setError('No se pudieron cargar las tareas y los ministros.'); })
       .finally(() => { if (vigente) setCargando(false); });
@@ -49,7 +47,6 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
   }, [refreshKey, intento]);
 
   const existente = tareas.find(tarea => String(tarea.id) === tareaId);
-  const ministrosFiltrados = ministros.filter(ministro => normalizarBusqueda(ministro.nombre).includes(normalizarBusqueda(busquedaMinistro)));
   const dia = existente?.fecha.split('T')[0] ?? fecha;
   const inicio = existente?.hora_inicio.slice(0, 5) ?? horaInicio;
   const fin = existente?.hora_fin.slice(0, 5) ?? horaFin;
@@ -89,7 +86,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
       toast.success(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', 'Las asignaciones se guardaron correctamente.');
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
-      setBusquedaMinistro('');
+      setSelectorRevision(value => value + 1);
       setEventoId(null);
       onTareaCreada?.();
     } catch (error: unknown) {
@@ -143,24 +140,8 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </div>
         </>}
         {existente && <p>{existente.descripcion} · {dia} · {inicio}–{fin}</p>}
-        <fieldset className={local.ministros}>
-          <legend className={styles.label}>Ministros ({seleccionados.length} seleccionados)</legend>
-          <div className={styles.field}>
-            <label htmlFor={busquedaId} className={styles.label}>Buscar ministro</label>
-            <input id={busquedaId} type="search" className={styles.input} value={busquedaMinistro}
-              onChange={event => setBusquedaMinistro(event.target.value)} placeholder="Buscar por nombre…" />
-          </div>
-          <p className={local.recuento} aria-live="polite">Mostrando {ministrosFiltrados.length} de {ministros.length} ministros.</p>
-          {!ministros.length && <p>No hay ministros disponibles en tu directorio para asignar.</p>}
-          {ministros.length > 0 && !ministrosFiltrados.length && <p>No hay ministros que coincidan con la búsqueda.</p>}
-          <div className={local.listaMinistros} role="group" aria-label="Ministros disponibles">
-            {ministrosFiltrados.map(ministro => <label key={ministro.id} className={local.option}>
-              <input type="checkbox" checked={seleccionados.includes(ministro.id) || yaAsignados.includes(ministro.id)} disabled={yaAsignados.includes(ministro.id)}
-                onChange={event => setSeleccionados(actual => event.target.checked ? [...actual, ministro.id] : actual.filter(id => id !== ministro.id))} />
-              <span>{ministro.nombre}{yaAsignados.includes(ministro.id) ? ' (ya asignado)' : ''}</span>
-            </label>)}
-          </div>
-        </fieldset>
+        <SelectorMinistros key={`${tareaId}-${selectorRevision}`} ministros={ministros}
+          seleccionados={seleccionados} yaAsignados={yaAsignados} onChange={setSeleccionados} disabled={guardando} />
         {avisos.map(({ ministro, conflictos, servicios }) => (
           (conflictos.length > 0 || !ministro.disponible || (dia && servicios > TOPE_SERVICIOS_MES)) &&
           <div key={ministro.id} className={styles.modalWarning}>

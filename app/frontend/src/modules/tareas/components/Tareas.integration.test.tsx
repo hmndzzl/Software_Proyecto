@@ -40,12 +40,18 @@ function mostrar(rol: number = ROLES.ADMIN) {
   return render(<ToastProvider><TareasPage /></ToastProvider>);
 }
 
+async function abrirMinistros() {
+  const boton = await screen.findByRole('button', { name: /opciones de ministros$/ });
+  if (boton.getAttribute('aria-expanded') === 'false') await userEvent.click(boton);
+}
+
 async function completarCreacion(inicio = '14:00', fin = '15:00') {
   await userEvent.type(await screen.findByLabelText('Título:'), 'Nueva tarea');
   await userEvent.type(screen.getByLabelText('Descripción:'), 'Descripción de prueba');
   fireEvent.change(screen.getByLabelText('Fecha:'), { target: { value: '2099-11-01' } });
   fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: inicio } });
   fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: fin } });
+  await abrirMinistros();
   await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
 }
 
@@ -60,15 +66,21 @@ describe('integración de tareas, asignaciones y permisos', () => {
     vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? muchos : [] }));
     mostrar();
     const buscar = await screen.findByLabelText('Buscar ministro');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    await userEvent.click(buscar);
     expect(screen.getAllByRole('checkbox')).toHaveLength(40);
     await userEvent.type(buscar, 'ministro 40');
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Ministro 40' }));
     await userEvent.clear(buscar);
     await userEvent.type(buscar, 'ministro 01');
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Ministro 01' }));
-    expect(screen.getByRole('group', { name: 'Ministros (2 seleccionados)' })).toBeInTheDocument();
+    expect(screen.getByText('2 ministros seleccionados.')).toBeInTheDocument();
     await userEvent.clear(buscar);
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Ministro 40' })).toBeChecked();
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Ministro 01' })).toBeChecked();
     await userEvent.type(buscar, 'inexistente');
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
@@ -80,6 +92,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
       ...tareas[0], asignados: [{ persona_id: 9, nombre: 'Ana Ministra' }, { persona_id: 10, nombre: 'Luis Ministro' }],
     }] }));
     mostrar(ROLES.COORDINADOR_MINISTROS);
+    await abrirMinistros();
     await screen.findByRole('checkbox', { name: 'Ana Ministra' });
     expect(screen.queryByRole('checkbox', { name: 'Luis Ministro' })).not.toBeInTheDocument();
     const filas = screen.getAllByRole('cell', { name: 'Lectura dominical' }).map(celda => celda.closest('tr')!);
@@ -118,6 +131,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     await userEvent.type(screen.getByLabelText('Descripción:'), 'Preparación');
     fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: '09:30' } });
     fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: '10:00' } });
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas', expect.objectContaining({ evento_id: 20, hora_inicio: '09:30', hora_fin: '10:00' })));
@@ -149,6 +163,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     mostrar();
     await completarCreacion();
     fireEvent.change(screen.getByLabelText('Fecha:'), { target: { value: '2099-10-20' } });
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Ana Ministra' }));
 
     expect(screen.getByText(/Conflicto de horario/)).toBeInTheDocument();
@@ -164,7 +179,9 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('selecciona al menos un ministro');
 
     await userEvent.selectOptions(screen.getByLabelText('Tarea'), '1');
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Ana Ministra (ya asignado)' })).toBeDisabled();
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     vi.mocked(apiClient.post).mockRejectedValueOnce({ response: { data: { mensaje: 'Ya está asignado' } } });
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Asignación' }));
@@ -294,6 +311,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
   it('crea una tarea y asigna varios ministros con una sola petición', async () => {
     mostrar(ROLES.COORDINADOR_MINISTROS);
     await completarCreacion();
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Ana Ministra' }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas', expect.objectContaining({ persona_ids: [10, 9] })));
@@ -304,6 +322,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
   it('agrega ministros a una tarea existente en el mismo formulario', async () => {
     mostrar();
     await userEvent.selectOptions(await screen.findByLabelText('Tarea'), '1');
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Asignación' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas/asignar', { tarea_id: 1, persona_ids: [10] }));
@@ -313,6 +332,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
   it('permite desmarcar y exige seleccionar al menos un ministro', async () => {
     mostrar();
     await completarCreacion();
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('al menos un ministro');
@@ -330,6 +350,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     rechazar(new Error('sin red'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Error de red');
     expect(screen.getByLabelText('Título:')).toHaveValue('Nueva tarea');
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Luis Ministro' })).toBeChecked();
   });
 
@@ -353,6 +374,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(screen.queryByRole('button', { name: 'Quitar ministro de esta tarea' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Eliminar tarea' })).toBeInTheDocument();
     await userEvent.selectOptions(await screen.findByLabelText('Tarea'), '1');
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Ana Ministra' })).not.toBeDisabled();
     confirmar.mockRestore();
   });

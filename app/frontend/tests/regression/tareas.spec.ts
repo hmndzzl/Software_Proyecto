@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-test('el encabezado usa CardHead y permite seleccionar entre 40 ministros sin desbordar', async ({ page }) => {
-  const ministros = Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, nombre: `Ministro ${String(i + 1).padStart(2, '0')}`, disponible: true }));
+test('el encabezado usa CardHead y permite seleccionar entre 100 ministros sin desbordar', async ({ page }) => {
+  const ministros = Array.from({ length: 100 }, (_, i) => ({ id: 100 + i, nombre: `Ministro ${String(i + 1).padStart(2, '0')}`, disponible: true }));
   await page.addInitScript(() => {
     localStorage.setItem('token', 'jwt-de-regresion');
     localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: 5 }));
@@ -9,9 +9,12 @@ test('el encabezado usa CardHead y permite seleccionar entre 40 ministros sin de
   await page.route('http://api.test/**', route => route.fulfill({ json: new URL(route.request().url()).pathname === '/api/personas' ? ministros : [] }));
   await page.goto('/tareas');
   const lista = page.getByRole('group', { name: 'Ministros disponibles' });
-  await expect(lista.getByRole('checkbox')).toHaveCount(40);
+  await expect(lista).toBeHidden();
+  await page.getByLabel('Buscar ministro', { exact: true }).focus();
+  await expect(lista.getByRole('checkbox')).toHaveCount(100);
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
+    await page.getByLabel('Buscar ministro', { exact: true }).focus();
     for (const tema of ['claro', 'oscuro']) {
       await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
       const titulo = page.getByRole('heading', { name: 'Asignaciones Actuales', exact: true });
@@ -23,7 +26,7 @@ test('el encabezado usa CardHead y permite seleccionar entre 40 ministros sin de
       expect(estilos.margen).toBeGreaterThanOrEqual(18);
       expect(estilos.familia.replace(/["']/g, '')).toBe(estilos.esperada.replace(/["']/g, ''));
       const medidas = await lista.evaluate(element => ({ altura: element.clientHeight, total: element.scrollHeight }));
-      expect(medidas.altura).toBeLessThanOrEqual(320);
+      expect(medidas.altura).toBeLessThanOrEqual(288);
       expect(medidas.total).toBeGreaterThan(medidas.altura);
       await lista.getByRole('checkbox', { name: 'Ministro 40' }).check();
       await expect(lista.getByRole('checkbox', { name: 'Ministro 40' })).toBeChecked();
@@ -36,6 +39,13 @@ test('el encabezado usa CardHead y permite seleccionar entre 40 ministros sin de
   await page.getByLabel('Buscar ministro', { exact: true }).fill('');
   await expect(lista.getByRole('checkbox', { name: 'Ministro 40' })).toBeChecked();
   await expect(lista.getByRole('checkbox', { name: 'Ministro 01' })).toBeChecked();
+  await page.getByRole('button', { name: 'Ver seleccionados', exact: true }).click();
+  await expect(lista.getByRole('checkbox')).toHaveCount(2);
+  await lista.getByRole('checkbox', { name: 'Ministro 40' }).click();
+  await expect(page.getByText('1 ministro seleccionado.', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(lista).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Mostrar opciones de ministros' })).toBeFocused();
 });
 
 test('crea una tarea con varios ministros, quita asignaciones y elimina la tarea en una vista responsive', async ({ page }) => {
@@ -78,6 +88,7 @@ test('crea una tarea con varios ministros, quita asignaciones y elimina la tarea
   await page.getByLabel('Fecha:', { exact: true }).fill('2099-11-01');
   await page.getByLabel('Hora de Inicio:', { exact: true }).fill('14:00');
   await page.getByLabel('Hora de Fin:', { exact: true }).fill('15:00');
+  await page.getByLabel('Buscar ministro', { exact: true }).focus();
   await page.getByRole('checkbox', { name: 'Ana Ministra' }).check();
   await page.getByRole('checkbox', { name: 'Luis Ministro' }).check();
   await page.getByRole('button', { name: 'Crear y asignar tarea', exact: true }).click();
