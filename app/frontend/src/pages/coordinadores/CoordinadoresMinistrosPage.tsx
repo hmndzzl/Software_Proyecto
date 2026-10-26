@@ -6,7 +6,7 @@ import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import { Field, SelectUI } from '../../components/ui/Field';
 import Btn from '../../components/ui/Btn';
 import Badge from '../../components/ui/Badge';
-import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
@@ -175,14 +175,12 @@ export default function CoordinadoresMinistrosPage() {
           </CardBody>
         </Card>}
       </>}
-      <Modal open={porQuitar !== null} title="Quitar ministro del coordinador" onClose={() => { if (!guardando) setPorQuitar(null); }}>
-        <p className={styles.confirmation}>¿Quitar a <strong>{porQuitar?.nombre}</strong> de los ministros de <strong>{coordinador?.nombre}</strong>?</p>
-        <p className={styles.help}>Su cuenta, sus tareas y sus relaciones con otros coordinadores se conservarán.</p>
-        <div className={styles.actions}>
-          <Btn kind="ghost" disabled={guardando} onClick={() => setPorQuitar(null)}>Cancelar</Btn>
-          <Btn kind="bad" disabled={guardando} onClick={quitar}>{guardando ? 'Quitando…' : 'Confirmar retiro'}</Btn>
-        </div>
-      </Modal>
+      <ConfirmDialog open={porQuitar !== null} title="Quitar ministro del coordinador" confirmLabel="Confirmar retiro"
+        busy={guardando} busyLabel="Quitando…" onCancel={() => setPorQuitar(null)} onConfirm={quitar}
+        description={<>
+          <p>¿Quitar a <strong>{porQuitar?.nombre}</strong> de los ministros de <strong>{coordinador?.nombre}</strong>?</p>
+          <p>Su cuenta, sus tareas y sus relaciones con otros coordinadores se conservarán.</p>
+        </>} />
     </div>
   );
 }
