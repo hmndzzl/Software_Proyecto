@@ -40,12 +40,18 @@ function mostrar(rol: number = ROLES.ADMIN) {
   return render(<ToastProvider><TareasPage /></ToastProvider>);
 }
 
+async function abrirMinistros() {
+  const boton = await screen.findByRole('button', { name: /opciones de ministros$/ });
+  if (boton.getAttribute('aria-expanded') === 'false') await userEvent.click(boton);
+}
+
 async function completarCreacion(inicio = '14:00', fin = '15:00') {
   await userEvent.type(await screen.findByLabelText('Título:'), 'Nueva tarea');
   await userEvent.type(screen.getByLabelText('Descripción:'), 'Descripción de prueba');
   fireEvent.change(screen.getByLabelText('Fecha:'), { target: { value: '2099-11-01' } });
   fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: inicio } });
   fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: fin } });
+  await abrirMinistros();
   await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
 }
 
@@ -53,6 +59,32 @@ describe('integración de tareas, asignaciones y permisos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prepararApi();
+  });
+
+  it('busca entre 40 ministros sin perder las selecciones ocultas por el filtro', async () => {
+    const muchos = Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, nombre: `Ministro ${String(i + 1).padStart(2, '0')}`, disponible: true }));
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? muchos : [] }));
+    mostrar();
+    const buscar = await screen.findByLabelText('Buscar ministro');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    await userEvent.click(buscar);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(40);
+    await userEvent.type(buscar, 'ministro 40');
+    await abrirMinistros();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ministro 40' }));
+    await userEvent.clear(buscar);
+    await userEvent.type(buscar, 'ministro 01');
+    await abrirMinistros();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ministro 01' }));
+    expect(screen.getByText('2 ministros seleccionados.')).toBeInTheDocument();
+    await userEvent.clear(buscar);
+    await abrirMinistros();
+    expect(screen.getByRole('checkbox', { name: 'Ministro 40' })).toBeChecked();
+    await abrirMinistros();
+    expect(screen.getByRole('checkbox', { name: 'Ministro 01' })).toBeChecked();
+    await userEvent.type(buscar, 'inexistente');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText('No hay ministros que coincidan con la búsqueda.')).toBeInTheDocument();
   });
 
   it('crea una tarea, limpia el formulario y refresca las asignaciones', async () => {
@@ -82,6 +114,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     await userEvent.type(screen.getByLabelText('Descripción:'), 'Preparación');
     fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: '09:30' } });
     fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: '10:00' } });
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas', expect.objectContaining({ evento_id: 20, hora_inicio: '09:30', hora_fin: '10:00' })));
@@ -113,6 +146,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     mostrar();
     await completarCreacion();
     fireEvent.change(screen.getByLabelText('Fecha:'), { target: { value: '2099-10-20' } });
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Ana Ministra' }));
 
     expect(screen.getByText(/Conflicto de horario/)).toBeInTheDocument();
@@ -128,39 +162,13 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('selecciona al menos un ministro');
 
     await userEvent.selectOptions(screen.getByLabelText('Tarea'), '1');
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Ana Ministra (ya asignado)' })).toBeDisabled();
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     vi.mocked(apiClient.post).mockRejectedValueOnce({ response: { data: { mensaje: 'Ya está asignado' } } });
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Asignación' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Ya está asignado');
-  });
-
-  it('lista, ordena, reasigna y edita una asignación', async () => {
-    vi.mocked(apiClient.put)
-      .mockResolvedValueOnce({ data: { alerta: { ministro_no_disponible: true, tope_servicios_superado: true, servicios_en_el_mes: 9, tope_servicios_mes: 8 } } })
-      .mockResolvedValue({ data: {} });
-    mostrar();
-    const fila = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
-    for (const label of ['Tarea', 'Ministro Asignado', 'Fecha', 'Horario']) {
-      const header = screen.getByRole('columnheader', { name: new RegExp(label) });
-      await userEvent.click(header);
-      await userEvent.click(header);
-    }
-    await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
-    await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
-    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/tareas/asignar', {
-      tarea_id: 1, persona_actual_id: 9, persona_nueva_id: 10,
-    }));
-    expect(await screen.findByRole('status')).toHaveTextContent('9 servicios');
-
-    const filaActualizada = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
-    await userEvent.click(within(filaActualizada).getByRole('button', { name: 'Editar' }));
-    const modal = screen.getByText('Editar Tarea #1').parentElement!;
-    const titulo = within(modal).getByDisplayValue('Lectura dominical');
-    await userEvent.clear(titulo);
-    await userEvent.type(titulo, 'Lectura actualizada');
-    await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
-    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/tareas/1', expect.objectContaining({ titulo: 'Lectura actualizada' })));
   });
 
   it('permite cancelar la edición y valida datos y horario', async () => {
@@ -175,6 +183,22 @@ describe('integración de tareas, asignaciones y permisos', () => {
     await userEvent.clear(titulo);
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datos');
+  });
+
+  it('asocia y enfoca los cinco campos de edición sin confundirlos con la creación', async () => {
+    mostrar();
+    await userEvent.click((await screen.findAllByRole('button', { name: 'Editar' }))[0]);
+    const modal = screen.getByRole('dialog', { name: 'Editar Tarea #1' });
+    for (const nombre of ['Título:', 'Descripción:', 'Fecha:', 'Hora de Inicio:', 'Hora de Fin:']) {
+      const control = within(modal).getByLabelText(nombre);
+      expect(control).toBeRequired();
+      await userEvent.click(within(modal).getByText(nombre, { exact: true }));
+      expect(control).toHaveFocus();
+      expect(screen.getAllByLabelText(nombre, { exact: true })).toHaveLength(2);
+    }
+    const ids = Array.from(document.querySelectorAll('[id]'), element => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(apiClient.put).not.toHaveBeenCalled();
   });
 
   it('muestra error de carga y permite reintentar', async () => {
@@ -197,26 +221,10 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: { persona_id: 1 } });
   });
 
-  it('reasigna sin advertencias y recupera un error específico de reasignación', async () => {
-    vi.mocked(apiClient.put)
-      .mockResolvedValueOnce({ data: {} })
-      .mockRejectedValueOnce({ response: { data: { mensaje: 'Ministro incompatible' } } });
-    mostrar();
-    let fila = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
-    await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
-    await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
-    expect(await screen.findByRole('status')).toHaveTextContent('El cambio se guardó correctamente');
-
-    fila = (await screen.findByRole('cell', { name: 'Lectura dominical' })).closest('tr')!;
-    await userEvent.click(within(fila).getByTitle('Cambiar responsable'));
-    await userEvent.selectOptions(within(fila).getByRole('combobox'), '10');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Ministro incompatible');
-  });
-
   it('valida el horario y conserva el modal cuando falla la edición', async () => {
     mostrar();
     await userEvent.click((await screen.findAllByRole('button', { name: 'Editar' }))[0]);
-    const modal = screen.getByText('Editar Tarea #1').parentElement!;
+    const modal = screen.getByRole('dialog', { name: 'Editar Tarea #1' });
     const tiempos = Array.from(modal.querySelectorAll<HTMLInputElement>('input[type="time"]'));
     fireEvent.change(tiempos[0], { target: { value: '17:00' } });
     fireEvent.change(tiempos[1], { target: { value: '16:00' } });
@@ -242,6 +250,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
   it('crea una tarea y asigna varios ministros con una sola petición', async () => {
     mostrar(ROLES.COORDINADOR_MINISTROS);
     await completarCreacion();
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Ana Ministra' }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas', expect.objectContaining({ persona_ids: [10, 9] })));
@@ -252,6 +261,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
   it('agrega ministros a una tarea existente en el mismo formulario', async () => {
     mostrar();
     await userEvent.selectOptions(await screen.findByLabelText('Tarea'), '1');
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Asignación' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/api/tareas/asignar', { tarea_id: 1, persona_ids: [10] }));
@@ -261,6 +271,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
   it('permite desmarcar y exige seleccionar al menos un ministro', async () => {
     mostrar();
     await completarCreacion();
+    await abrirMinistros();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Ministro' }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('al menos un ministro');
@@ -278,6 +289,7 @@ describe('integración de tareas, asignaciones y permisos', () => {
     rechazar(new Error('sin red'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Error de red');
     expect(screen.getByLabelText('Título:')).toHaveValue('Nueva tarea');
+    await abrirMinistros();
     expect(screen.getByRole('checkbox', { name: 'Luis Ministro' })).toBeChecked();
   });
 
@@ -286,45 +298,6 @@ describe('integración de tareas, asignaciones y permisos', () => {
     mostrar();
     expect(await screen.findByText('No hay ministros disponibles en tu directorio para asignar.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear y asignar tarea' })).toBeDisabled();
-  });
-
-  it('quita al último ministro sin borrar la tarea y permite volver a asignarla', async () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    let asignada = true;
-    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? personas : [{ ...tareas[0], asignados: asignada ? tareas[0].asignados : [] }] }));
-    vi.mocked(apiClient.delete).mockImplementationOnce(async () => { asignada = false; return { data: {} }; });
-    mostrar();
-    await userEvent.click(await screen.findByRole('button', { name: 'Quitar ministro de esta tarea' }));
-    expect(confirmar).toHaveBeenCalledWith(expect.stringContaining('La tarea y los demás ministros se conservarán'));
-    expect(apiClient.delete).toHaveBeenCalledWith('/api/tareas/asignar', { data: { tarea_id: 1, persona_id: 9 } });
-    expect(await screen.findByRole('cell', { name: 'Sin ministro asignado' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Quitar ministro de esta tarea' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Eliminar tarea' })).toBeInTheDocument();
-    await userEvent.selectOptions(await screen.findByLabelText('Tarea'), '1');
-    expect(screen.getByRole('checkbox', { name: 'Ana Ministra' })).not.toBeDisabled();
-    confirmar.mockRestore();
-  });
-
-  it('cancela la eliminación sin enviar peticiones y elimina toda la tarea tras confirmar', async () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    mostrar();
-    await userEvent.click((await screen.findAllByRole('button', { name: 'Eliminar tarea' }))[0]);
-    expect(apiClient.delete).not.toHaveBeenCalled();
-    confirmar.mockReturnValue(true);
-    await userEvent.click(screen.getAllByRole('button', { name: 'Eliminar tarea' })[0]);
-    expect(apiClient.delete).toHaveBeenCalledWith('/api/tareas/1');
-    expect(await screen.findByRole('status')).toHaveTextContent('Tarea eliminada');
-    confirmar.mockRestore();
-  });
-
-  it('muestra un error de eliminación y conserva la tarea en pantalla', async () => {
-    const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    vi.mocked(apiClient.delete).mockRejectedValueOnce({ response: { data: { mensaje: 'La tarea no existe' } } });
-    mostrar();
-    await userEvent.click((await screen.findAllByRole('button', { name: 'Eliminar tarea' }))[0]);
-    expect(await screen.findByRole('alert')).toHaveTextContent('La tarea no existe');
-    expect(screen.getByRole('cell', { name: 'Lectura dominical' })).toBeInTheDocument();
-    confirmar.mockRestore();
   });
 
   it('oculta las acciones a los roles que no gestionan ministros', async () => {

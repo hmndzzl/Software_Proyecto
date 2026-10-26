@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useId, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import EspacioCard, { Espacio } from '../../modules/espacios/components/EspacioCard';
@@ -12,6 +12,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 import styles from './EspaciosPage.module.css';
 
 export default function EspaciosPage() {
+  const fieldId = useId();
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError]       = useState('');
@@ -80,8 +81,8 @@ export default function EspaciosPage() {
         <CardHead title="Disponibilidad" />
         <CardBody>
           <div className={styles.filters}>
-            <Field label="Fecha">
-              <InputUI
+            <Field label="Fecha" htmlFor={`${fieldId}-fecha`}>
+              <InputUI id={`${fieldId}-fecha`}
                 type="date"
                 required
                 value={fecha}
@@ -89,8 +90,8 @@ export default function EspaciosPage() {
               />
             </Field>
 
-            <Field label="Hora inicio">
-              <InputUI
+            <Field label="Hora inicio" htmlFor={`${fieldId}-inicio`}>
+              <InputUI id={`${fieldId}-inicio`}
                 type="time"
                 required
                 value={horaInicio}
@@ -98,8 +99,8 @@ export default function EspaciosPage() {
               />
             </Field>
 
-            <Field label="Hora fin">
-              <InputUI
+            <Field label="Hora fin" htmlFor={`${fieldId}-fin`}>
+              <InputUI id={`${fieldId}-fin`}
                 type="time"
                 required
                 value={horaFin}

@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Reserva } from '../../types';
 import DetalleReserva from '../../modules/reservas/components/DetalleReserva';
 import styles from './MisReservasPage.module.css';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 type MiReserva = Reserva;
 
@@ -39,6 +40,7 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
 };
 
 export default function MisReservasPage() {
+  const [porCancelar, setPorCancelar] = useState<MiReserva | null>(null);
   const navigate = useNavigate();
   const { tieneRol } = useAuth();
   const puedeReservar = tieneRol(ROLES_RESERVAS);
@@ -72,11 +74,11 @@ export default function MisReservasPage() {
   const toast = useToast();
 
   const cancelarReserva = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
     try {
       await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
       const aviso = avisoCambioEstadoReserva(ESTADOS_RESERVA.CANCELADA);
       toast.success(aviso.titulo, aviso.mensaje);
+      setPorCancelar(null);
       cargarReservas();
     } catch (err: unknown) {
       toast.error('No se pudo cancelar la reserva', getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
@@ -156,7 +158,7 @@ export default function MisReservasPage() {
                     <td>
                       <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
                       {puedeCancelarReserva(r.estado_reserva_id) && (
-                        <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
+                        <Btn kind="bad" size="sm" onClick={() => setPorCancelar(r)}>Cancelar</Btn>
                       )}
                     </td>
                   </tr>
@@ -166,6 +168,9 @@ export default function MisReservasPage() {
           </div>
         )}
       </Card>
+      <ConfirmDialog open={porCancelar !== null} title="Cancelar reserva" confirmLabel="Cancelar reserva"
+        description={porCancelar ? `¿Cancelar la reserva de ${porCancelar.evento_titulo ?? porCancelar.espacio_nombre} del ${formatFecha(porCancelar.fecha)}? Se liberará el espacio reservado.` : ''}
+        onCancel={() => setPorCancelar(null)} onConfirm={() => porCancelar ? cancelarReserva(porCancelar.id) : undefined} />
     </div>
   );
 }

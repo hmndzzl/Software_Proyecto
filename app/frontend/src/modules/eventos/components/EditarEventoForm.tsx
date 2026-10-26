@@ -4,6 +4,7 @@ import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 export default function EditarEventoForm({
   evento,
@@ -21,6 +22,8 @@ export default function EditarEventoForm({
   const [guardando, setGuardando] = useState(false);
   const datosPersistidos = useRef({ descripcion: evento.descripcion, encargado_id: evento.encargado_id });
   const toast = useToast();
+  const [confirmando, setConfirmando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   useEffect(() => {
     setDescripcion(evento.descripcion);
@@ -37,7 +40,7 @@ export default function EditarEventoForm({
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (guardando) return;
+    if (guardando || eliminando) return;
 
     if (!descripcion || !encargadoId) {
       toast.error('Faltan datos', 'La descripción y el encargado son requeridos.');
@@ -73,15 +76,17 @@ export default function EditarEventoForm({
   };
 
   const handleDelete = async () => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar el evento "${evento.descripcion}"?`)) return;
+    if (eliminando || guardando) return;
+    setEliminando(true);
 
     try {
       await apiClient.delete(`/api/eventos/${evento.id}`);
       toast.success('Evento eliminado', `El evento "${evento.descripcion}" fue eliminado.`);
+      setConfirmando(false);
       if (onEventoActualizado) onEventoActualizado();
     } catch (error: unknown) {
       toast.error('No se pudo eliminar el evento', getApiErrorMessage(error, 'Error de red al intentar eliminar el evento.'));
-    }
+    } finally { setEliminando(false); }
   };
 
   return (
@@ -94,7 +99,7 @@ export default function EditarEventoForm({
           <input
             id="editar-evento-descripcion"
             type="text"
-            disabled={guardando}
+            disabled={guardando || eliminando}
             className={styles.input}
             value={descripcion}
             onChange={e => setDescripcion(e.target.value)}
@@ -105,7 +110,7 @@ export default function EditarEventoForm({
           <label htmlFor="editar-evento-encargado" className={styles.label}>Encargado:</label>
           <select
             id="editar-evento-encargado"
-            disabled={guardando}
+            disabled={guardando || eliminando}
             className={styles.input}
             value={encargadoId}
             onChange={e => setEncargadoId(e.target.value)}
@@ -128,7 +133,7 @@ export default function EditarEventoForm({
               type="checkbox"
               checked={publico}
               onChange={e => setPublico(e.target.checked)}
-              disabled={guardando}
+              disabled={guardando || eliminando}
               aria-describedby="publico-ayuda"
             />
             Mostrar en la agenda pública
@@ -140,19 +145,22 @@ export default function EditarEventoForm({
         </div>
 
         <div className={styles.buttonRow}>
-          <button type="submit" className="btn-primary" disabled={guardando}>
+          <button type="submit" className="btn-primary" disabled={guardando || eliminando}>
             {guardando ? 'Guardando…' : 'Guardar Cambios'}
           </button>
-          <button type="button" onClick={handleDelete} className={styles.btnDanger} disabled={guardando}>
+          <button type="button" onClick={() => setConfirmando(true)} className={styles.btnDanger} disabled={guardando || eliminando}>
             Eliminar
           </button>
           {onCancelar && (
-            <button type="button" onClick={onCancelar} className={styles.btnSecondary} disabled={guardando}>
+            <button type="button" onClick={onCancelar} className={styles.btnSecondary} disabled={guardando || eliminando}>
               Cancelar
             </button>
           )}
         </div>
       </form>
+      <ConfirmDialog open={confirmando} title="Eliminar evento" confirmLabel="Eliminar evento"
+        description={`¿Estás seguro de que deseas eliminar el evento "${evento.descripcion}"?`} busy={eliminando}
+        onCancel={() => setConfirmando(false)} onConfirm={handleDelete} />
     </div>
   );
 }

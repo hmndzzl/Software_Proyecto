@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -7,6 +7,7 @@ import { ESTADOS_RESERVA, avisoCambioEstadoReserva } from '../../utils/estadosRe
 import { ROLES, rolTieneAcceso } from '../../utils/roles';
 import Modal from '../../components/ui/Modal';
 import Btn from '../../components/ui/Btn';
+import { ConfirmDialogContent } from '../../components/ui/ConfirmDialog';
 import { nombresAsignados } from './CompromisosDia';
 import { estadoEvento, fechaCompleta, horario, type Compromiso } from './calendario.utils';
 import styles from './CalendarioPage.module.css';
@@ -27,6 +28,9 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
   const { usuario } = useAuth();
   const toast = useToast();
   const [actualizando, setActualizando] = useState(false);
+  const [estadoPorConfirmar, setEstadoPorConfirmar] = useState<number | null>(null);
+  const [errorConfirmacion, setErrorConfirmacion] = useState('');
+  const confirmacionId = useId();
   const esPrivilegiado = rolTieneAcceso(usuario?.rol_id, [ROLES.SACERDOTE]);
 
   const cambiarEstado = async (nuevoEstado: number) => {
@@ -39,12 +43,31 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
       onActualizado?.();
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+      throw err;
     } finally {
       setActualizando(false);
     }
   };
 
-  return <Modal open title={item.dato.titulo} onClose={onClose} onBack={onVolver} width={720}>
+  return <Modal open title={estadoPorConfirmar === ESTADOS_RESERVA.CANCELADA ? 'Cancelar reserva' : estadoPorConfirmar !== null ? 'Rechazar reserva' : item.dato.titulo} onClose={onClose} onBack={onVolver} width={720}
+    closeDisabled={actualizando} describedBy={estadoPorConfirmar !== null ? confirmacionId : undefined}>
+    {estadoPorConfirmar !== null ? <>
+      <ConfirmDialogContent descriptionId={confirmacionId} busy={actualizando}
+      confirmLabel={estadoPorConfirmar === ESTADOS_RESERVA.CANCELADA ? 'Cancelar reserva' : 'Rechazar reserva'}
+      description={estadoPorConfirmar === ESTADOS_RESERVA.CANCELADA
+        ? `¿Cancelar la reserva «${item.dato.titulo}» del ${fechaCompleta(item.dato.fecha)}? Se liberará el espacio reservado.`
+        : `¿Rechazar la solicitud «${item.dato.titulo}»?`}
+      onCancel={() => { setEstadoPorConfirmar(null); setErrorConfirmacion(''); }} onConfirm={async () => {
+        try {
+          await cambiarEstado(estadoPorConfirmar);
+          setEstadoPorConfirmar(null);
+          setErrorConfirmacion('');
+        } catch (err: unknown) {
+          setErrorConfirmacion(getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+        }
+      }} />
+      {errorConfirmacion && <p role="alert">{errorConfirmacion}</p>}
+    </> : <>
     <div className={styles.detail}>
       <div className={styles.detailSection}>
         <p>{fechaCompleta(item.dato.fecha)}</p>
@@ -62,15 +85,15 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
         {esPrivilegiado && item.dato.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
           <div className={styles.detailSection}>
             <div className={styles.detailActions}>
-              <Btn kind="ok" size="sm" onClick={() => cambiarEstado(ESTADOS_RESERVA.CONFIRMADA)} disabled={actualizando}>
+              <Btn kind="ok" size="sm" onClick={() => { void cambiarEstado(ESTADOS_RESERVA.CONFIRMADA).catch(() => {}); }} disabled={actualizando}>
                 Aprobar
               </Btn>
               {usuario && item.dato.encargado_id === usuario.id ? (
-                <Btn kind="bad" size="sm" onClick={() => cambiarEstado(ESTADOS_RESERVA.CANCELADA)} disabled={actualizando}>
+                <Btn kind="bad" size="sm" onClick={() => { setErrorConfirmacion(''); setEstadoPorConfirmar(ESTADOS_RESERVA.CANCELADA); }} disabled={actualizando}>
                   Cancelar
                 </Btn>
               ) : (
-                <Btn kind="bad" size="sm" onClick={() => cambiarEstado(ESTADOS_RESERVA.RECHAZADA)} disabled={actualizando}>
+                <Btn kind="bad" size="sm" onClick={() => { setErrorConfirmacion(''); setEstadoPorConfirmar(ESTADOS_RESERVA.RECHAZADA); }} disabled={actualizando}>
                   Rechazar
                 </Btn>
               )}
@@ -96,5 +119,6 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
 
       {item.dato.descripcion && <div className={styles.detailSection}><p>{item.dato.descripcion}</p></div>}
     </div>
+    </>}
   </Modal>;
 }

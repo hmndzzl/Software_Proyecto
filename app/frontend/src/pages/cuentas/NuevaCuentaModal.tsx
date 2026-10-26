@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { crearCuentaApi } from '../../api/cuentas';
 import { useToast } from '../../context/ToastContext';
 import Modal from '../../components/ui/Modal';
 import Btn from '../../components/ui/Btn';
+import PasswordInput from '../../components/ui/PasswordInput';
 import { Field, InputUI, SelectUI } from '../../components/ui/Field';
 import { ROLES } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -19,10 +20,12 @@ interface Props {
 }
 
 export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Props) {
+  const fieldId = useId();
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [telefono, setTelefono] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordRevision, setPasswordRevision] = useState(0);
   const [rolId, setRolId] = useState<number>(ROLES.MINISTRO);
   const toast = useToast();
   const [enviando, setEnviando] = useState(false);
@@ -32,6 +35,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
     setCorreo('');
     setTelefono('');
     setPassword('');
+    setPasswordRevision(previous => previous + 1);
     setRolId(ROLES.MINISTRO);
     onClose();
   };
@@ -74,20 +78,20 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
     <Modal open={open} title="Nueva cuenta" onClose={() => { if (!enviando) cerrar(); }}>
       <form onSubmit={enviar} className={styles.form} noValidate>
         <p>Registra los datos personales y el rol de acceso. El teléfono es opcional.</p>
-        <Field label="Nombre completo" required>
-          <InputUI aria-label="Nombre completo" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={100} autoComplete="off" />
+        <Field label="Nombre completo" htmlFor={`${fieldId}-nombre`} required>
+          <InputUI aria-required="true" id={`${fieldId}-nombre`} aria-label="Nombre completo" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={100} autoComplete="off" />
         </Field>
-        <Field label="Correo electrónico" required>
-          <InputUI aria-label="Correo electrónico" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} maxLength={100} autoComplete="off" />
+        <Field label="Correo electrónico" htmlFor={`${fieldId}-correo`} required>
+          <InputUI aria-required="true" id={`${fieldId}-correo`} aria-label="Correo electrónico" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} maxLength={100} autoComplete="off" />
         </Field>
-        <Field label="Teléfono (opcional)" hint="Acepta 8 dígitos locales o un número internacional con + y código de país.">
-          <InputUI aria-label="Teléfono (opcional)" type="tel" autoComplete="tel" maxLength={50} value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+502 5555 1234" disabled={enviando} />
+        <Field label="Teléfono (opcional)" htmlFor={`${fieldId}-telefono`} hint="Acepta 8 dígitos locales o un número internacional con + y código de país.">
+          <InputUI aria-describedby={`${fieldId}-telefono-hint`} id={`${fieldId}-telefono`} aria-label="Teléfono (opcional)" type="tel" autoComplete="tel" maxLength={50} value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+502 5555 1234" disabled={enviando} />
         </Field>
-        <Field label="Contraseña inicial" required hint={`Mínimo ${PASSWORD_MIN} caracteres. Compártela con la persona de forma segura.`}>
-          <InputUI aria-label="Contraseña inicial" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+        <Field label="Contraseña inicial" htmlFor={`${fieldId}-password`} required hint={`Mínimo ${PASSWORD_MIN} caracteres. Compártela con la persona de forma segura.`}>
+          <PasswordInput aria-required="true" aria-describedby={`${fieldId}-password-hint`} id={`${fieldId}-password`} key={passwordRevision} aria-label="Contraseña inicial" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={enviando} />
         </Field>
-        <Field label="Rol" required>
-          <SelectUI aria-label="Rol de la nueva cuenta" value={rolId} onChange={(e) => setRolId(Number(e.target.value))}>
+        <Field label="Rol" htmlFor={`${fieldId}-rol`} required>
+          <SelectUI aria-required="true" id={`${fieldId}-rol`} aria-label="Rol de la nueva cuenta" value={rolId} onChange={(e) => setRolId(Number(e.target.value))}>
             {roles.map((rol) => (
               <option key={rol.id} value={rol.id}>{rol.label}</option>
             ))}

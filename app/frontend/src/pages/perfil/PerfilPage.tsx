@@ -5,6 +5,7 @@ import { useAuth, type Usuario } from '../../context/AuthContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
+import PasswordInput from '../../components/ui/PasswordInput';
 import { getApiErrorMessage, getApiErrorStatus } from '../../utils/apiError';
 import { normalizarTelefono } from '../../utils/telefono';
 import form from '../../styles/Form.module.css';
@@ -41,6 +42,7 @@ export default function PerfilPage() {
   });
 
   const [saving,  setSaving]  = useState(false);
+  const [passwordRevision, setPasswordRevision] = useState(0);
   const [telefono, setTelefono] = useState('');
   const [telefonoOriginal, setTelefonoOriginal] = useState('');
   const [estadoTelefono, setEstadoTelefono] = useState<'cargando' | 'listo' | 'error'>('cargando');
@@ -109,6 +111,7 @@ export default function PerfilPage() {
       });
 
       setFormData(prev => ({ ...prev, password: '', confirmar: '' }));
+      setPasswordRevision(previous => previous + 1);
       toast.success('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
     } catch (err: unknown) {
       if (getApiErrorStatus(err) === 409) {
@@ -206,10 +209,11 @@ export default function PerfilPage() {
               <div className={form.fieldRow}>
                 <div className={form.field}>
                   <label className={form.label} htmlFor="password">Nueva contraseña</label>
-                  <input
+                  <PasswordInput
+                    key={`password-${passwordRevision}`}
                     id="password"
                     name="password"
-                    type="password"
+                    disabled={saving}
                     className={form.input}
                     value={formData.password}
                     onChange={handleChange}
@@ -220,10 +224,11 @@ export default function PerfilPage() {
 
                 <div className={form.field}>
                   <label className={form.label} htmlFor="confirmar">Confirmar contraseña</label>
-                  <input
+                  <PasswordInput
+                    key={`confirmar-${passwordRevision}`}
                     id="confirmar"
                     name="confirmar"
-                    type="password"
+                    disabled={saving}
                     className={form.input}
                     value={formData.confirmar}
                     onChange={handleChange}

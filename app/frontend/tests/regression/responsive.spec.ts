@@ -135,6 +135,6 @@ test('el selector de ministros limita su panel y permite elegir opciones al fina
     await last.scrollIntoViewIfNeeded();
     await last.click();
     await expect(select).toHaveValue('48');
-    await expect(page.getByRole('status')).toHaveText('Horario de Ministro 40 de la comunidad parroquial con nombre largo');
+    await expect(page.getByRole('status').filter({ hasText: 'Horario de Ministro 40' })).toHaveText('Horario de Ministro 40 de la comunidad parroquial con nombre largo');
   }
 });

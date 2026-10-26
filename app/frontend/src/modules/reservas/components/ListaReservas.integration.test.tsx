@@ -93,17 +93,40 @@ describe('integración de reservas, estados y edición', () => {
   });
 
   it('aprueba, cancela la propia y rechaza la reserva ajena', async () => {
-    mostrar();
+    const vista = mostrar();
     await screen.findByRole('cell', { name: 'Confirmada' });
     await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar reserva' })).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
+    vista.unmount();
     preparar();
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 99, nombre: 'Otro admin', correo: 'otro@test.com', rol_id: ROLES.ADMIN }));
     const { unmount } = mostrar();
     await screen.findAllByText('Pendiente');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Rechazar reserva' })).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar reserva' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 3 });
     unmount();
+  });
+
+  it('muestra datos de respaldo en la confirmación cuando faltan título o solicitante', async () => {
+    const reservaIncompletaPropia = { ...reservas[0], id: 10, solicitante_id: 1, solicitante_nombre: null, evento_titulo: null, espacio_nombre: 'Capilla' };
+    preparar([reservaIncompletaPropia]);
+    const vista = mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar' }));
+    expect(screen.getByText(/¿Cancelar la reserva de Capilla/)).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Cancelar reserva' })).getByRole('button', { name: 'Cancelar' }));
+    vista.unmount();
+
+    const reservaIncompletaAjena = { ...reservas[0], id: 11, solicitante_id: 8, solicitante_nombre: null, evento_titulo: null, espacio_nombre: 'Capilla' };
+    preparar([reservaIncompletaAjena]);
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByText(/¿Rechazar la solicitud de esta persona para Capilla\?/)).toBeInTheDocument();
   });
 
   it('muestra el error del servidor al cambiar estado', async () => {
@@ -142,14 +165,17 @@ describe('integración de reservas, estados y edición', () => {
   });
 
   it('cancela desde el modal solo con confirmación y conserva errores', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
     mostrar();
     const fila = (await screen.findByRole('cell', { name: 'Pendiente' })).closest('tr')!;
     await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar Reserva' }));
     expect(apiClient.put).not.toHaveBeenCalled();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
+    expect(screen.getByText('Editar Reserva #1')).toBeInTheDocument();
     vi.mocked(apiClient.put).mockRejectedValueOnce(new Error('red'));
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar Reserva' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
     expect(await screen.findByText('Error al cancelar la reserva.')).toBeInTheDocument();
   });
 

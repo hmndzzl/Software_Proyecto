@@ -16,7 +16,7 @@ import SortableTh from '../../components/ui/SortableTh';
 import TableFilters from '../../components/ui/TableFilters';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import { useTableFilters } from '../../hooks/useTableFilters';
-import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { SelectUI } from '../../components/ui/Field';
 import NuevaCuentaModal from './NuevaCuentaModal';
@@ -122,11 +122,12 @@ export default function CuentasPage() {
   };
 
   const confirmarRechazo = async () => {
-    if (!porRechazar) return;
+    if (!porRechazar || actuandoId === porRechazar.id) return;
     const cuenta = porRechazar;
     setActuandoId(cuenta.id);
     try {
       await rechazarCuentaApi(cuenta.id);
+      setPorRechazar(null);
       quitarDeLista(cuenta.id);
       toast.success(
         'Cuenta rechazada',
@@ -136,7 +137,6 @@ export default function CuentasPage() {
       toast.error('No se pudo rechazar la cuenta', getApiErrorMessage(err, 'Intenta de nuevo en unos momentos.'));
     } finally {
       setActuandoId(null);
-      setPorRechazar(null);
     }
   };
 
@@ -254,19 +254,16 @@ export default function CuentasPage() {
         }}
       />
 
-      <Modal open={porRechazar !== null} title="Rechazar cuenta" onClose={() => setPorRechazar(null)}>
-        <p className={styles.confirmTexto}>
+      <ConfirmDialog open={porRechazar !== null} title="Rechazar cuenta" confirmLabel="Rechazar cuenta"
+        busy={actuandoId === porRechazar?.id} busyLabel="Rechazando…"
+        onCancel={() => setPorRechazar(null)} onConfirm={confirmarRechazo}
+        description={<p>
           ¿Rechazar la cuenta de <strong>{porRechazar?.nombre}</strong> ({porRechazar?.correo})?{' '}
           {porRechazar?.estado_cuenta === 'activa'
             ? 'Dejará de poder iniciar sesión y se le avisará por correo.'
             : 'No podrá entrar al sistema y se le avisará por correo.'}{' '}
           Podrás aprobarla de nuevo más adelante desde la pestaña Rechazadas.
-        </p>
-        <div className={styles.confirmAcciones}>
-          <Btn kind="ghost" onClick={() => setPorRechazar(null)}>Cancelar</Btn>
-          <Btn kind="bad" onClick={confirmarRechazo}>Rechazar cuenta</Btn>
-        </div>
-      </Modal>
+        </p>} />
     </div>
   );
 }

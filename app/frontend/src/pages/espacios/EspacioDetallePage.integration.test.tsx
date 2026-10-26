@@ -63,6 +63,9 @@ describe('integración del detalle de un espacio', () => {
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 2 }));
     expect(await screen.findByRole('status')).toHaveTextContent('Reserva aprobada');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Rechazar reserva' })).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar reserva' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 3 }));
     expect(await screen.findByRole('status')).toHaveTextContent('Reserva rechazada');
   });
@@ -227,5 +230,67 @@ describe('integración del detalle de un espacio', () => {
     mostrar();
     await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Error al cambiar el estado de la reserva');
+  });
+
+  it('muestra error cuando el check-in falla', async () => {
+    const espacioConCheckin = {
+      ...espacio,
+      en_uso: false,
+      reservas_checkin_disponible: [
+        { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: null },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioConCheckin : reservas }));
+    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { message: 'Fallo al hacer check-in' } } });
+    mostrar();
+    await screen.findByText('Catequesis');
+    await userEvent.click(screen.getByRole('button', { name: 'Sí, confirmar check-in' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Fallo al hacer check-in');
+  });
+
+  it('permite volver al listado de espacios cuando ocurre un error de carga', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: [] });
+    mostrar();
+    expect(await screen.findByText('Espacio no encontrado')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a Espacios' }));
+    expect(await screen.findByText('Destino /espacios')).toBeInTheDocument();
+  });
+
+  it('abre el modal de en uso con valores por defecto cuando no tiene título ni solicitante ni checkin_en', async () => {
+    const espacioEnUso = { ...espacio, en_uso: true, reservas_checkin_disponible: [] };
+    const reservasConEnUso = [
+      { id: 15, fecha: '2099-10-20', hora_inicio: '14:00:00', hora_fin: '16:00:00', estado_reserva_id: 2, evento_titulo: null, evento_descripcion: null, solicitante_nombre: null, checkin_en: null, en_uso: true },
+    ];
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioEnUso : reservasConEnUso }));
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: /En uso ahora/ }));
+    expect(await screen.findByRole('heading', { name: 'Reserva #15' })).toBeInTheDocument();
+    expect(screen.getByText('En uso por: Desconocido')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('heading', { name: 'Reserva #15' })).not.toBeInTheDocument();
+  });
+
+  it('muestra textos de respaldo al rechazar una reserva sin solicitante ni título', async () => {
+    const reservasSinDatos = [
+      { id: 20, fecha: '2099-10-21', hora_inicio: '10:00:00', hora_fin: '11:00:00', estado_reserva_id: 1, evento_titulo: null, evento_descripcion: null, solicitante_nombre: null },
+    ];
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacio : reservasSinDatos }));
+    mostrar();
+    await screen.findByText('Reserva #20');
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByRole('dialog', { name: 'Rechazar reserva' })).toHaveTextContent('¿Rechazar la solicitud de esta persona para Salón Mayor?');
+  });
+
+  it('muestra check-in hecho con cadena sin espacio de separación', async () => {
+    const espacioCheckinSinEspacio = {
+      ...espacio,
+      en_uso: false,
+      reservas_checkin_disponible: [
+        { id: 10, hora_inicio: '14:00:00', hora_fin: '16:00:00', solicitante_id: 1, solicitante_nombre: 'Admin', checkin_en: 'sin_espacio' },
+      ],
+    };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).startsWith('/api/espacios/') ? espacioCheckinSinEspacio : [] }));
+    mostrar();
+    expect(await screen.findByText(/Check-in hecho a las/)).toBeInTheDocument();
   });
 });

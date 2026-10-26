@@ -5,6 +5,7 @@ import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { authValue } from '../../test/authValue';
 import { ToastProvider } from '../../context/ToastContext';
+import { ROLES } from '../../utils/roles';
 import CalendarioPage from './CalendarioPage';
 
 vi.mock('../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
@@ -89,7 +90,26 @@ describe('calendario unificado semanal', () => {
     expect(within(modal).queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
 
     await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar reserva' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/201/estado', { estado_id: 4 }));
+  });
+
+  it('rechaza una reserva pendiente ajena desde el detalle y maneja error al confirmar', async () => {
+    const pendienteAjena = { ...evento, id: 20, reserva_id: 200, titulo: 'Asamblea de catequistas', estado_reserva_id: 1, encargado_id: 2 };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: url === '/api/personas' ? [] : { eventos: [pendienteAjena], tareas: [] },
+    }));
+    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { message: 'Fallo al rechazar' } } }).mockResolvedValueOnce({ data: {} });
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: /Ver detalle del evento Asamblea de catequistas/ }));
+    const modal = screen.getByRole('dialog', { name: 'Asamblea de catequistas' });
+    await userEvent.click(within(modal).getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Rechazar reserva' }));
+    expect(await within(modal).findByRole('alert')).toHaveTextContent('Fallo al rechazar');
+    await userEvent.click(within(modal).getByRole('button', { name: 'Rechazar reserva' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenLastCalledWith('/api/reservas/200/estado', { estado_id: 3 }));
   });
 
   it('no muestra acciones de aprobación a un Ministro sobre una reserva pendiente', async () => {
@@ -376,5 +396,24 @@ describe('calendario mensual', () => {
     await screen.findByRole('table');
     await userEvent.click(screen.getByRole('button', { name: 'Hoy' }));
     await waitFor(() => expect(consultas().slice(-1)[0]?.[1]).toEqual({ params: { fecha_inicio: '2026-09-28', fecha_fin: '2026-11-01', vista: 'personal' } }));
+  });
+
+  it('muestra aviso singular o plural de cuentas pendientes para rol privilegiado', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => {
+      if (url === '/api/cuentas') return { data: [{ id: 1 }] };
+      if (url === '/api/personas') return { data: [] };
+      return { data: datos };
+    });
+    mostrar(1);
+    expect(await screen.findByText('Tienes 1 cuenta pendiente de aprobar — Ver cuentas')).toBeInTheDocument();
+  });
+
+  it('maneja error al cargar el catálogo de ministros', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => {
+      if (url === '/api/personas') throw new Error('red');
+      return { data: datos };
+    });
+    mostrar(ROLES.COORDINADOR_MINISTROS);
+    await screen.findByText('Misa del lunes');
   });
 });

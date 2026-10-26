@@ -79,7 +79,7 @@ describe('asignación múltiple transaccional', () => {
   it('respeta los ministros propios del coordinador', async () => {
     const usuario = { id: 3, rol_id: ROLES.COORDINADOR_MINISTROS };
     await guardarTareaConMinistros(entrada, [9, 10], usuario);
-    expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('coordinador_ministro'), [3, 9, 10]);
+    expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('coordinador_ministro'), [3, 9, 10, ROLES.MINISTRO]);
   });
 
   it('impide al coordinador asignar a ministros ajenos', async () => {

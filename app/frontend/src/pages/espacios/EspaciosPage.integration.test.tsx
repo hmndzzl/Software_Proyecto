@@ -15,7 +15,7 @@ function mostrar() {
 const espacios = [
   { id: 1, nombre: 'Salón', capacidad: 80, disponible: true },
   { id: 2, nombre: 'Capilla', capacidad: null, disponible: 0 },
-  { id: 3, nombre: 'Patio', capacidad: 20, disponible: false },
+  { id: 3, nombre: 'Patio', capacidad: 20, disponible: false, en_uso: true },
 ];
 
 describe('integración de consulta de espacios', () => {
@@ -26,6 +26,7 @@ describe('integración de consulta de espacios', () => {
     expect(await screen.findByText('Salón')).toBeInTheDocument();
     expect(screen.getByText('80 personas')).toBeInTheDocument();
     expect(screen.getAllByText('Ocupado')).toHaveLength(2);
+    expect(screen.getByText('En uso ahora')).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Ver Detalle' })[0]);
     expect(await screen.findByText('Destino /espacios/1')).toBeInTheDocument();
   });

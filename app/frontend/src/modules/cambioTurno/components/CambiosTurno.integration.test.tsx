@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../../api/client';
@@ -123,6 +123,9 @@ describe('integración de cambios de turno', () => {
     render(<ListaCambiosTurno />, { wrapper });
     await screen.findByText('Ana');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(within(screen.getByRole('dialog', { name: 'Rechazar cambio de turno' })).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar solicitud' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/cambios-turno/1/responder', { aceptar: false }));
     await userEvent.click(screen.getByRole('button', { name: 'Aceptar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Ya fue respondida');

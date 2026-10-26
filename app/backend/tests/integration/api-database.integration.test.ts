@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { MariaDbContainer, type StartedMariaDbContainer } from '@testcontainers/mariadb';
 
@@ -250,6 +251,45 @@ describe('integración API y MariaDB', () => {
     } finally { await connection.end(); }
     const despues = await request(app).get('/api/public/landing').expect(200);
     expect(despues.body).toEqual(anterior.body);
+  });
+
+  it('limita creación, asignación individual y múltiple, reasignación y retiro a ministros propios', async () => {
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const norte = jwt.sign({ id: 7, rol_id: 2 }, JWT_SECRET);
+    const sur = jwt.sign({ id: 13, rol_id: 2 }, JWT_SECRET);
+    const admin = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const propios = await request(app).get('/api/personas').auth(norte, { type: 'bearer' }).expect(200);
+    const ajenos = await request(app).get('/api/personas').auth(sur, { type: 'bearer' }).expect(200);
+    const idsPropios = propios.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
+    const idsAjenos = ajenos.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
+    expect(idsPropios).toEqual([9, 10, 14, 15, 16, 17, 18, 19, 20, 21]);
+    expect(idsAjenos).toEqual([11, 12, 22, 23, 24, 25, 26, 27, 28, 29]);
+    expect(idsPropios.filter((id: number) => idsAjenos.includes(id))).toEqual([]);
+    const datos = { titulo: 'Alcance de coordinadores', descripcion: 'Verificar permisos', fecha: '2098-07-20', hora_inicio: '10:00', hora_fin: '11:00' };
+    const creada = await request(app).post('/api/tareas').auth(norte, { type: 'bearer' }).send({ ...datos, persona_ids: [9] }).expect(201);
+    const tarea_id = creada.body.tarea.id;
+    try {
+      await request(app).post('/api/tareas').auth(norte, { type: 'bearer' })
+        .send({ ...datos, titulo: 'Asignación ajena rechazada', persona_ids: [9, 11] }).expect(403);
+      await request(app).post('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_ids: [10, 11] }).expect(403);
+      await request(app).post('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_id: 11 }).expect(403);
+      await request(app).post('/api/tareas/asignar').auth(sur, { type: 'bearer' }).send({ tarea_id, persona_id: 9 }).expect(403);
+      for (const [persona_actual_id, persona_nueva_id] of [[9, 11], [11, 10]]) {
+        await request(app).put('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_actual_id, persona_nueva_id }).expect(403);
+      }
+      await request(app).delete('/api/tareas/asignar').auth(sur, { type: 'bearer' }).send({ tarea_id, persona_id: 9 }).expect(403);
+      const [asignaciones] = await pool.query<RowDataPacket[]>('SELECT persona_id FROM asignacion_tarea WHERE tarea_id = ?', [tarea_id]);
+      expect(asignaciones.map(a => a.persona_id)).toEqual([9]);
+      const [parciales] = await pool.query<RowDataPacket[]>('SELECT id FROM tarea WHERE titulo = ?', ['Asignación ajena rechazada']);
+      expect(parciales).toHaveLength(0);
+      await request(app).post('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_id: 10 }).expect(201);
+      await request(app).delete('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_id: 10 }).expect(204);
+      await request(app).put('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_actual_id: 9, persona_nueva_id: 10 }).expect(200);
+      await request(app).post('/api/tareas/asignar').auth(sur, { type: 'bearer' }).send({ tarea_id, persona_id: 11 }).expect(201);
+      await request(app).post('/api/tareas/asignar').auth(admin, { type: 'bearer' }).send({ tarea_id, persona_id: 12 }).expect(201);
+    } finally {
+      await request(app).delete(`/api/tareas/${tarea_id}`).auth(admin, { type: 'bearer' }).expect(204);
+    }
   });
 
   it('crea y asigna a varios ministros, evita resultados parciales y conserva tareas sin asignados', async () => {

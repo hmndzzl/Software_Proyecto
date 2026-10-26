@@ -78,7 +78,6 @@ describe('integración de eventos, reservas y permisos', () => {
   it('actualiza y elimina un evento confirmado', async () => {
     const actualizado = vi.fn();
     const cancelar = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     conToast(<EditarEventoForm evento={evento as any} onEventoActualizado={actualizado} onCancelar={cancelar} />);
     await screen.findByRole('option', { name: 'Padre Luis' });
     const descripcion = screen.getByDisplayValue('Misa mayor');
@@ -87,21 +86,36 @@ describe('integración de eventos, reservas y permisos', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/eventos/7', { descripcion: 'Misa actualizada', encargado_id: 2 });
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(apiClient.delete).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar evento' }));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/eventos/7');
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(cancelar).toHaveBeenCalled();
   });
 
   it('no elimina sin confirmación y valida/expone errores al editar', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     vi.mocked(apiClient.put).mockRejectedValueOnce(new Error('red'));
     conToast(<EditarEventoForm evento={evento as any} />);
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     const descripcion = screen.getByDisplayValue('Misa mayor');
     await userEvent.clear(descripcion);
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datos');
+  });
+
+  it('conserva la confirmación y permite reintentar si falla eliminar el evento', async () => {
+    const actualizado = vi.fn();
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    conToast(<EditarEventoForm evento={evento as any} onEventoActualizado={actualizado} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar evento' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar el evento');
+    expect(screen.getByRole('dialog', { name: 'Eliminar evento' })).toBeInTheDocument();
+    expect(actualizado).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar evento' }));
+    expect(actualizado).toHaveBeenCalledOnce();
   });
 
   it.each([0, 1] as const)('cambia la publicación desde el estado %s sin modificar otros datos', async (publico) => {

@@ -210,15 +210,30 @@ describe('Pestaña Papelera', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
     await screen.findByText('Notificación eliminada');
 
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
     fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
 
-    confirmSpy.mockReturnValueOnce(true);
     fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Vaciar papelera' }));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/notificaciones/papelera');
     await waitFor(() => expect(screen.getByText('La papelera está vacía.')).toBeInTheDocument());
-    confirmSpy.mockRestore();
+  });
+
+  it('conserva la confirmación si falla vaciar la papelera y permite reintentar', async () => {
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    mostrar();
+    await screen.findByText('Primera notificación');
+    fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
+    await screen.findByText('Notificación eliminada');
+    fireEvent.click(screen.getByRole('button', { name: 'Vaciar papelera' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Vaciar papelera' });
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Vaciar papelera' }));
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent('No se pudo completar la acción');
+    expect(screen.getByText('Notificación eliminada')).toBeInTheDocument();
+    fireEvent.click(within(dialogo).getByRole('button', { name: 'Vaciar papelera' }));
+    expect(await screen.findByText('La papelera está vacía.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('muestra estado de error si falla al cargar la papelera', async () => {
@@ -256,6 +271,9 @@ describe('Sincronización entre Recibidas y Papelera', () => {
     mostrar();
     await screen.findByText('Primera notificación');
     fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Mover a papelera' })).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Mover a papelera' })).getByRole('button', { name: 'Mover a papelera' }));
     await waitFor(() => expect(screen.queryByText('Primera notificación')).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
@@ -420,6 +438,8 @@ describe('Confirmación y cancelación de asistencia', () => {
 
     // Cancelar asistencia confirmada
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar asistencia' }));
+    const dialogoCancelar = screen.getByRole('dialog', { name: 'Cancelar asistencia' });
+    fireEvent.click(within(dialogoCancelar).getByRole('button', { name: 'Cancelar asistencia' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-asistencia');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Cancelar asistencia' })).not.toBeInTheDocument();
@@ -475,6 +495,8 @@ describe('Reportar inasistencia y revertirla', () => {
     await screen.findByRole('button', { name: 'Quitar no asistencia' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Quitar no asistencia' }));
+    const dialogoQuitar = screen.getByRole('dialog', { name: 'Quitar no asistencia' });
+    fireEvent.click(within(dialogoQuitar).getByRole('button', { name: 'Quitar no asistencia' }));
 
     expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-inasistencia');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument());

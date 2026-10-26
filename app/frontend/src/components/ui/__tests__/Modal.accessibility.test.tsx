@@ -20,3 +20,18 @@ it('anuncia el diálogo, contiene el foco y lo devuelve al control de origen', a
   rerender(<><button>Abrir detalle</button><Modal open={false} title="Misa" onClose={close}><button>Último control</button></Modal></>);
   expect(origen).toHaveFocus();
 });
+
+it('cambia el foco al pasar de una tarjeta a su confirmación dentro del mismo modal', () => {
+  const close = vi.fn();
+  const { rerender } = render(<><button>Abrir reserva</button><Modal open={false} title="Reserva" onClose={close}><input aria-label="Título" /></Modal></>);
+  const origen = screen.getByText('Abrir reserva');
+  origen.focus();
+  rerender(<><button>Abrir reserva</button><Modal open title="Reserva" onClose={close}><input aria-label="Título" /></Modal></>);
+  rerender(<><button>Abrir reserva</button><Modal open title="Cancelar reserva" onClose={close} initialFocusSelector="[data-confirm-cancel]">
+    <button data-confirm-cancel>Cancelar</button><button>Cancelar reserva</button>
+  </Modal></>);
+  expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+  expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  rerender(<><button>Abrir reserva</button><Modal open={false} title="Reserva" onClose={close}><input aria-label="Título" /></Modal></>);
+  expect(origen).toHaveFocus();
+});

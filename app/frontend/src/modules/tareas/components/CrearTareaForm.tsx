@@ -8,10 +8,12 @@ import type { Ministro, Tarea } from '../../../types';
 import ErrorState from '../../../components/ui/ErrorState';
 import LoadingState from '../../../components/ui/LoadingState';
 import EventoTareaSelect from './EventoTareaSelect';
+import SelectorMinistros from './SelectorMinistros';
 
 const TOPE_SERVICIOS_MES = 8;
 
 export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshKey?: number; onTareaCreada?: () => void }) {
+  const [selectorRevision, setSelectorRevision] = useState(0);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
@@ -84,6 +86,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
       toast.success(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', 'Las asignaciones se guardaron correctamente.');
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
+      setSelectorRevision(value => value + 1);
       setEventoId(null);
       onTareaCreada?.();
     } catch (error: unknown) {
@@ -137,15 +140,8 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </div>
         </>}
         {existente && <p>{existente.descripcion} · {dia} · {inicio}–{fin}</p>}
-        <fieldset className={local.ministros}>
-          <legend className={styles.label}>Ministros ({seleccionados.length} seleccionados)</legend>
-          {!ministros.length && <p>No hay ministros disponibles en tu directorio para asignar.</p>}
-          {ministros.map(ministro => <label key={ministro.id} className={local.option}>
-            <input type="checkbox" checked={seleccionados.includes(ministro.id) || yaAsignados.includes(ministro.id)} disabled={yaAsignados.includes(ministro.id)}
-              onChange={event => setSeleccionados(actual => event.target.checked ? [...actual, ministro.id] : actual.filter(id => id !== ministro.id))} />
-            <span>{ministro.nombre}{yaAsignados.includes(ministro.id) ? ' (ya asignado)' : ''}</span>
-          </label>)}
-        </fieldset>
+        <SelectorMinistros key={`${tareaId}-${selectorRevision}`} ministros={ministros}
+          seleccionados={seleccionados} yaAsignados={yaAsignados} onChange={setSeleccionados} disabled={guardando} />
         {avisos.map(({ ministro, conflictos, servicios }) => (
           (conflictos.length > 0 || !ministro.disponible || (dia && servicios > TOPE_SERVICIOS_MES)) &&
           <div key={ministro.id} className={styles.modalWarning}>

@@ -1,5 +1,6 @@
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { validarEventoTarea } from './tareaEvento.service';
+import { validarMinistrosPropios } from './alcanceMinistros.service';
 import { withTransaction } from '../utils/withTransaction';
 import { ROLES } from '../config/roles';
 import { TOPE_SERVICIOS_MES } from '../config/constants';
@@ -42,13 +43,7 @@ export async function guardarTareaConMinistros(
       [...ids, ROLES.MINISTRO],
     );
     if (ministros.length !== ids.length) throw new ErrorAsignacion(404, 'Uno o más ministros ya no están disponibles en el directorio');
-    if (usuario.rol_id === ROLES.COORDINADOR_MINISTROS) {
-      const [propios] = await conn.execute<RowDataPacket[]>(
-        `SELECT ministro_id FROM coordinador_ministro WHERE coordinador_id = ? AND ministro_id IN (${placeholders})`,
-        [usuario.id, ...ids],
-      );
-      if (propios.length !== ids.length) throw new ErrorAsignacion(403, 'Solo puedes asignar a tus propios ministros');
-    }
+    await validarMinistrosPropios(conn, usuario, ids);
 
     for (const ministro of ministros) {
       const [conflictos] = await conn.execute<RowDataPacket[]>(
