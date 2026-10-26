@@ -58,7 +58,7 @@ test('agrupa cinco ministros, abre la tarjeta y pagina dentro de los márgenes c
   const abrir = page.getByRole('button', { name: 'Tarea compartida', exact: true });
   await expect(abrir).toBeVisible();
   await expect(page.getByRole('row')).toHaveCount(11);
-  await expect(page.getByRole('button', { name: 'Ver los 5 ministros de Tarea compartida' })).toContainText('5 ministros');
+  await expect(page.getByRole('button', { name: 'Ver los 5 ministros de Tarea compartida' })).toHaveText('+3 más');
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const tema of ['claro', 'oscuro']) {
