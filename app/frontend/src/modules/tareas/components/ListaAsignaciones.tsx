@@ -58,6 +58,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   const [reemplazando, setReemplazando] = useState<number | null>(null);
   const [nuevos, setNuevos] = useState<number[]>([]);
   const [busquedaAsignados, setBusquedaAsignados] = useState('');
+  const [paginaListado, setPaginaListado] = useState(1);
   const [edicion, setEdicion] = useState({ titulo: '', descripcion: '', fecha: '', hora_inicio: '', hora_fin: '', evento_id: null as number | null });
   const [pagina, setPagina] = useState(1);
   const contenido = useRef<HTMLDivElement>(null);
@@ -66,6 +67,9 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   }, [vista, activaId]);
   const activa = tareas.find(t => t.id === activaId);
   const asignadosVisibles = activa?.asignados.filter(a => normalizarBusqueda(a.nombre).includes(normalizarBusqueda(busquedaAsignados))) ?? [];
+  const paginasListado = Math.max(1, Math.ceil(asignadosVisibles.length / POR_PAGINA));
+  const paginaActualListado = Math.min(paginaListado, paginasListado);
+  const ministrosPagina = asignadosVisibles.slice((paginaActualListado - 1) * POR_PAGINA, paginaActualListado * POR_PAGINA);
   const puedeGestionarMinistro = (personaId: number) => puedeGestionar && !cargandoMinistros && !errorMinistros
     && (usuario?.rol_id !== ROLES.COORDINADOR_MINISTROS || ministros.some(m => m.id === personaId));
   const puedeEditar = (tarea: Tarea) => puedeGestionar && (usuario?.rol_id !== ROLES.COORDINADOR_MINISTROS
@@ -112,6 +116,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   const abrir = (tarea: Tarea, destino: Vista = 'detalle') => {
     setActivaId(tarea.id); setVista(destino); setReemplazando(null); setNuevos([]);
     setBusquedaAsignados('');
+    setPaginaListado(1);
     if (destino === 'editar') setEdicion({ titulo: tarea.titulo, descripcion: tarea.descripcion,
       fecha: tarea.fecha.slice(0, 10), hora_inicio: tarea.hora_inicio.slice(0, 5), hora_fin: tarea.hora_fin.slice(0, 5), evento_id: tarea.evento_id ?? null });
   };
@@ -243,7 +248,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
             {tarjetasMinistros(activa.asignados.slice(0, 6), true)}
             {activa.asignados.length > 6 && <div className={styles.resumenListado}>
               <span>Mostrando 6 de {activa.asignados.length} ministros.</span>
-              <Btn type="button" kind="ghost" onClick={() => { setBusquedaAsignados(''); setVista('listado'); }}>Ver listado completo ({activa.asignados.length})</Btn>
+              <Btn type="button" kind="ghost" onClick={() => { setBusquedaAsignados(''); setPaginaListado(1); setVista('listado'); }}>Ver listado completo ({activa.asignados.length})</Btn>
             </div>}
           </> : <p>Sin ministro asignado</p>}
           {puedeGestionar && <div className={styles.accionesTarjeta}>
@@ -256,10 +261,16 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
           <div className={form.field}>
             <label htmlFor={`${id}-buscar-asignados`} className={form.label}>Buscar ministro asignado</label>
             <input id={`${id}-buscar-asignados`} className={form.input} type="search" value={busquedaAsignados}
-              placeholder="Buscar por nombre…" onChange={event => setBusquedaAsignados(event.target.value)} />
+              placeholder="Buscar por nombre…" onChange={event => { setBusquedaAsignados(event.target.value); setPaginaListado(1); }} />
           </div>
-          {tarjetasMinistros(asignadosVisibles)}
+          <p className={styles.recuento} aria-live="polite">{asignadosVisibles.length} de {activa.asignados.length} ministros.</p>
+          {tarjetasMinistros(ministrosPagina)}
           {!asignadosVisibles.length && <p role="status">No hay ministros asignados que coincidan con la búsqueda.</p>}
+          <nav className={styles.paginacion} aria-label="Paginación de ministros asignados">
+            <Btn type="button" kind="ghost" size="sm" disabled={paginaActualListado === 1} onClick={() => setPaginaListado(paginaActualListado - 1)}>Anterior</Btn>
+            <span aria-live="polite">Página {paginaActualListado} de {paginasListado}</span>
+            <Btn type="button" kind="ghost" size="sm" disabled={paginaActualListado === paginasListado} onClick={() => setPaginaListado(paginaActualListado + 1)}>Siguiente</Btn>
+          </nav>
         </>}
         {vista === 'editar' && <form className={form.form} onSubmit={event => { event.preventDefault(); void guardarEdicion(); }}>
           <fieldset className={styles.campos} disabled={ocupado}>

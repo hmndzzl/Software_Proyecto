@@ -89,10 +89,16 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     expect(within(lista).getAllByRole('listitem')).toHaveLength(6);
     await userEvent.click(within(modal).getByRole('button', { name: 'Ver listado completo (100)' }));
     lista = within(modal).getByRole('list', { name: 'Ministros de la tarea' });
-    expect(within(lista).getAllByRole('listitem')).toHaveLength(100);
+    expect(within(lista).getAllByRole('listitem')).toHaveLength(10);
+    await userEvent.click(within(modal).getByRole('button', { name: 'Siguiente' }));
+    expect(within(modal).getByText('Página 2 de 10')).toBeInTheDocument();
+    expect(within(lista).queryByText('Ministro 1')).not.toBeInTheDocument();
+    expect(within(lista).getByText('Ministro 11')).toBeInTheDocument();
     await userEvent.type(within(modal).getByLabelText('Buscar ministro asignado'), 'ministro 100');
     expect(within(lista).getAllByRole('listitem')).toHaveLength(1);
     expect(within(lista).getByText('Ministro 100')).toBeInTheDocument();
+    expect(within(modal).getByText('Página 1 de 1')).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: 'Siguiente' })).toBeDisabled();
     await userEvent.clear(within(modal).getByLabelText('Buscar ministro asignado'));
     await userEvent.type(within(modal).getByLabelText('Buscar ministro asignado'), 'inexistente');
     expect(within(modal).getByRole('status')).toHaveTextContent('No hay ministros asignados que coincidan');
