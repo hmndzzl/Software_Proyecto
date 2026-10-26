@@ -56,6 +56,7 @@ export default function PublicPortalLayout({ page, activeSection, onSectionClick
 
   return (
     <div className={`public-portal ${page}`}>
+      <a href="#contenido-principal" className="skip-link">Saltar al contenido principal</a>
       <header className={`nav${open ? ' open' : ''}`}>
         <div className="wrap nav-in">
           <a href={isLanding ? '#home' : '/'} className="brand" onClick={() => selectSection(0)}>

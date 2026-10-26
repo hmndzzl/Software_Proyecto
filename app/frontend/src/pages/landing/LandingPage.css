@@ -76,6 +76,7 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .field label{font-family:'Cinzel',serif;font-weight:700;font-size:var(--text-label);letter-spacing:.08em;color:var(--tierra-text);text-transform:uppercase}
 .landing .field input,.landing .field select,.landing .field textarea{height:52px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--blanco);font-family:'Noto Serif',serif;font-size:16px;color:var(--carbon);outline:none;transition:border-color .14s,box-shadow .14s;width:100%}
 .landing .field textarea{height:128px;padding:14px 16px;resize:vertical;line-height:1.55}
+.landing .field input::placeholder,.landing .field textarea::placeholder{color:var(--muted);opacity:1}
 .landing .field input:focus,.landing .field select:focus,.landing .field textarea:focus{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(157,47,56,.12)}
 .landing .telGroup{display:flex;gap:8px}
 .landing .telPrefix{height:52px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--crema-dk);color:var(--muted);font-family:ui-monospace,monospace;font-size:16px;display:flex;align-items:center;flex-shrink:0}
