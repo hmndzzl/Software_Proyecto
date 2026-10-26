@@ -12,6 +12,10 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
+      '/uploads': {
+        target: process.env.DEV_BACKEND_TARGET || 'http://localhost:3001',
+        changeOrigin: true,
+      },
       '/api': {
         target: process.env.VITE_API_URL || 'http://backend:3001',
         changeOrigin: true,
