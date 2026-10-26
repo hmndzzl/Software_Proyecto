@@ -4,6 +4,7 @@ import { useToast } from '../../../context/ToastContext';
 import Btn from '../../../components/ui/Btn';
 import { CardHead, CardBody } from '../../../components/ui/Card';
 import Modal from '../../../components/ui/Modal';
+import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -234,7 +235,10 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
           </nav>
         </>}
     </CardBody>
-    <Modal open={Boolean(activa)} title={tituloModal} onClose={cerrar} width={720}
+    <Modal open={Boolean(activa)} title={tituloModal} onClose={cerrar} closeDisabled={ocupado}
+      width={vista === 'eliminar' || vista === 'quitar' ? 520 : 720}
+      describedBy={vista === 'eliminar' || vista === 'quitar' ? `${id}-confirmacion` : undefined}
+      initialFocusSelector={vista === 'eliminar' || vista === 'quitar' ? '[data-confirm-cancel]' : undefined}
       onBack={vista !== 'detalle' ? () => { if (!ocupado) { setVista(vista === 'quitar' ? 'ministros' : 'detalle'); setReemplazando(null); } } : undefined}>
       {activa && <div ref={contenido} className={styles.detalle}>
         {vista === 'detalle' && <>
@@ -317,14 +321,12 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
             <Btn type="button" disabled={ocupado || !nuevos.length} onClick={guardarMinistros}>{ocupado ? 'Guardando...' : 'Agregar seleccionados'}</Btn>
           </>}
         </>}
-        {(vista === 'eliminar' || vista === 'quitar') && <>
-          <p>{vista === 'quitar' ? `¿Quitar a ${porQuitar?.nombre} de la tarea "${activa.titulo}"? La tarea y los demás ministros se conservarán.`
-            : `¿Eliminar la tarea "${activa.titulo}"? Se borrarán todas sus asignaciones y solicitudes de cambio de turno. Esta acción no se puede deshacer.`}</p>
-          <div className={styles.acciones}>
-            <Btn type="button" kind="ghost" disabled={ocupado} onClick={() => setVista(vista === 'quitar' ? 'ministros' : 'detalle')}>Cancelar</Btn>
-            <Btn type="button" kind="bad" disabled={ocupado} onClick={confirmarEliminacion}>{ocupado ? 'Procesando...' : vista === 'quitar' ? 'Quitar ministro' : 'Eliminar tarea'}</Btn>
-          </div>
-        </>}
+        {(vista === 'eliminar' || vista === 'quitar') && <ConfirmDialogContent
+          descriptionId={`${id}-confirmacion`} busy={ocupado} onConfirm={confirmarEliminacion}
+          confirmLabel={vista === 'quitar' ? 'Quitar ministro' : 'Eliminar tarea'}
+          onCancel={() => setVista(vista === 'quitar' ? 'ministros' : 'detalle')}
+          description={vista === 'quitar' ? `¿Quitar a ${porQuitar?.nombre} de la tarea "${activa.titulo}"? La tarea y los demás ministros se conservarán.`
+            : `¿Eliminar la tarea "${activa.titulo}"? Se borrarán todas sus asignaciones y solicitudes de cambio de turno. Esta acción no se puede deshacer.`} />}
       </div>}
     </Modal>
   </>;

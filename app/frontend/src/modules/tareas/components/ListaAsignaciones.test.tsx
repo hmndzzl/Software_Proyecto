@@ -201,6 +201,8 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     const modal = await gestionar();
     await userEvent.click(within(modal).getByRole('button', { name: 'Quitar a Ana' }));
     expect(modal).toHaveTextContent('La tarea y los demás ministros se conservarán');
+    expect(modal).toHaveAccessibleDescription(/La tarea y los demás ministros se conservarán/);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
     await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
     await userEvent.click(within(modal).getByRole('button', { name: 'Quitar a Ana' }));
