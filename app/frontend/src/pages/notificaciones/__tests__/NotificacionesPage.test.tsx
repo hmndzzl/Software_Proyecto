@@ -271,7 +271,9 @@ describe('Sincronización entre Recibidas y Papelera', () => {
     mostrar();
     await screen.findByText('Primera notificación');
     fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'Mover a papelera' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Mover a papelera' })).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Mover a papelera' })).getByRole('button', { name: 'Mover a papelera' }));
     await waitFor(() => expect(screen.queryByText('Primera notificación')).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));

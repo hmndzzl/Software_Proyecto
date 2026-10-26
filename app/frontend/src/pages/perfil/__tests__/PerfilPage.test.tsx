@@ -151,4 +151,21 @@ describe('PerfilPage - avisos', () => {
     await guardar();
     expect(await screen.findByRole('alert')).toHaveTextContent('Sin cambios');
   });
+
+  it('muestra aviso de error y permite reintentar si falla la carga del teléfono', async () => {
+    vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValueOnce({ data: { telefono: '+50255551234' } });
+    mostrar();
+    expect(await screen.findByText('No se pudo cargar el teléfono.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Reintentar teléfono' }));
+    expect(await screen.findByDisplayValue('+50255551234')).toBeInTheDocument();
+  });
+
+  it('ignora espacios en blanco en nombre o correo y no envía campos vacíos', async () => {
+    mostrar();
+    fireEvent.change(screen.getByLabelText('Nombre completo'), { target: { value: '   ' } });
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: '   ' } });
+    await guardar();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sin cambios');
+    expect(apiClient.put).not.toHaveBeenCalled();
+  });
 });

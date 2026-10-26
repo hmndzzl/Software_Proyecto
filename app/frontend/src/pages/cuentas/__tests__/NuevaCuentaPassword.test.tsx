@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NuevaCuentaModal from '../NuevaCuentaModal';
@@ -41,5 +41,21 @@ describe('visibilidad de contraseña en nueva cuenta', () => {
     expect(crearCuentaApi).toHaveBeenCalledWith(expect.objectContaining({ password: 'Clave-Segura-1' }));
     expect(screen.getByLabelText('Contraseña inicial')).toHaveValue('');
     expect(screen.getByLabelText('Contraseña inicial')).toHaveAttribute('type', 'password');
+  });
+
+  it('no cierra el modal si se intenta cerrar mientras se está enviando', async () => {
+    let resolver!: () => void;
+    vi.mocked(crearCuentaApi).mockImplementation(() => new Promise(resolve => { resolver = () => resolve({}); }));
+    const onClose = vi.fn();
+    render(<ToastProvider><NuevaCuentaModal open roles={roles} onClose={onClose} onCreada={vi.fn()} /></ToastProvider>);
+    fireEvent.change(screen.getByLabelText('Nombre completo'), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
+    fireEvent.change(screen.getByLabelText('Contraseña inicial'), { target: { value: 'Clave-Segura-1' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => {
+      resolver();
+    });
   });
 });

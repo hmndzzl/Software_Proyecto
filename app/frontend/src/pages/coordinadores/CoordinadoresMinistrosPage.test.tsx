@@ -119,4 +119,8 @@ describe('gestión visual de coordinadores', () => {
     responderNorte();
     await waitFor(() => expect(screen.getByRole('table')).not.toHaveTextContent('Bea'));
   });
+  it('navega de regreso a ministros al hacer clic en el botón del encabezado', async () => {
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Volver a ministros' }));
+  });
 });

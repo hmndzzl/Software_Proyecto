@@ -77,6 +77,10 @@ describe('MisReservasPage — historial', () => {
     fireEvent.click(screen.getByRole('columnheader', { name: 'Fecha' }));
     fireEvent.click(screen.getByRole('columnheader', { name: 'Espacio' }));
     fireEvent.click(screen.getByRole('columnheader', { name: 'Estado' }));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Título del Evento' }));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Evento' }));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Horario' }));
+    fireEvent.click(screen.getByRole('columnheader', { name: 'Personas esperadas' }));
     expect(screen.getAllByRole('button', { name: 'Cancelar' })).toHaveLength(1);
   });
 
@@ -120,5 +124,17 @@ describe('MisReservasPage — historial', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Error al cancelar la reserva.'));
     vi.restoreAllMocks();
+  });
+
+  it('muestra el nombre del espacio en el diálogo de cancelación si no tiene título de evento', async () => {
+    const reservasSinTitulo = [
+      { id: 9, fecha: '2099-10-14', hora_inicio: '10:00:00', hora_fin: '11:00:00', espacio_nombre: 'Capilla',
+        estado_reserva_id: 1, evento_id: null, evento_descripcion: null, evento_titulo: null },
+    ];
+    vi.mocked(apiClient.get).mockResolvedValue({ data: reservasSinTitulo });
+    mostrar(ROLES.COORDINADOR_GRUPOS);
+    const boton = await screen.findByRole('button', { name: 'Cancelar' });
+    fireEvent.click(boton);
+    expect(screen.getByRole('dialog')).toHaveTextContent('¿Cancelar la reserva de Capilla');
   });
 });

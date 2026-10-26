@@ -95,6 +95,18 @@ describe('CuentasPage', () => {
     expect(screen.queryByText('ana@gmail.com')).not.toBeInTheDocument();
   });
 
+  it('advierte que dejará de iniciar sesión al rechazar una cuenta activa', async () => {
+    const activa: Cuenta = { id: 15, nombre: 'Carlos Ruiz', correo: 'carlos@gmail.com', rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' };
+    vi.mocked(listarCuentasApi).mockResolvedValue([activa]);
+    render(<CuentasPage />, { wrapper: ToastProvider });
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Activas' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByText(/Dejará de poder iniciar sesión y se le avisará por correo\./)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('dialog', { name: 'Rechazar cuenta' })).not.toBeInTheDocument();
+  });
+
   it('el modal de rechazo se puede cerrar con la ×', async () => {
     render(<CuentasPage />, { wrapper: ToastProvider });
 
@@ -199,6 +211,17 @@ describe('CuentasPage', () => {
       expect(aviso).toHaveTextContent('Luis Pérez quedó registrado como Ministro.');
       expect(aviso).toHaveTextContent('No se pudo crear el usuario en Clerk');
       expect(aviso).not.toHaveTextContent('quedó pendiente de aprobación');
+    });
+
+    it('al crear una cuenta desde la pestaña activas cambia a la pestaña pendientes', async () => {
+      vi.mocked(crearCuentaApi).mockResolvedValue({});
+      render(<CuentasPage />, { wrapper: ToastProvider });
+      await userEvent.click(await screen.findByRole('tab', { name: 'Activas' }));
+      await abrirFormulario();
+      await llenar();
+      await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta creada');
+      expect(screen.getByRole('tab', { name: 'Pendientes' })).toHaveAttribute('aria-selected', 'true');
     });
 
     it('avisa si faltan el nombre o el correo, sin llamar al servidor', async () => {

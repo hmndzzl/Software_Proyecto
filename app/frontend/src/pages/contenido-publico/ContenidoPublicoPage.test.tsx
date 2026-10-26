@@ -72,6 +72,21 @@ describe('ContenidoPublicoPage', () => {
     })));
   });
 
+  it('elimina un valor sin título y una hora vacía usando los nombres de respaldo', async () => {
+    render(<ContenidoPublicoPage />);
+    await screen.findByDisplayValue('Servicio');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar valor' }));
+    await userEvent.click(within(screen.getByRole('heading', { name: 'Valor 02' }).closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    expect(screen.getByText(/¿Eliminar el valor «Valor 2» del borrador\?/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar valor' }));
+
+    await userEvent.click(screen.getByRole('button', { name: '+ Agregar hora' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar hora 3 del horario de misa 1' }));
+    expect(screen.getByText(/¿Quitar la hora 3 del horario de misa 1\?/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar hora' }));
+  });
+
   it('muestra un mensaje útil y permite reintentar cuando no puede cargar el contenido', async () => {
     const errorSesion = Object.assign(new Error('Sesión vencida'), {
       isAxiosError: true,
@@ -168,7 +183,10 @@ describe('ContenidoPublicoPage', () => {
     fireEvent.change(lema, { target: { value: 'Cambio temporal' } });
     await userEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }));
     const dialogo = screen.getByRole('dialog', { name: 'Descartar cambios' });
-    await userEvent.click(within(dialogo).getByRole('button', { name: 'Descartar cambios' }));
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }));
+    const dialogo2 = screen.getByRole('dialog', { name: 'Descartar cambios' });
+    await userEvent.click(within(dialogo2).getByRole('button', { name: 'Descartar cambios' }));
     expect(await screen.findByDisplayValue('Casa de oración')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Guardar y publicar cambios' }));
@@ -217,5 +235,13 @@ describe('ContenidoPublicoPage', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Los cambios se publicaron');
     expect(screen.getByDisplayValue('Casa publicada')).toBeInTheDocument();
+  });
+
+  it('indica que no hay cambios pendientes si se intenta guardar sin modificar', async () => {
+    render(<ContenidoPublicoPage />);
+    await screen.findByDisplayValue('Casa de oración');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar y publicar cambios' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('No hay cambios pendientes por publicar.');
+    expect(apiClient.patch).not.toHaveBeenCalled();
   });
 });

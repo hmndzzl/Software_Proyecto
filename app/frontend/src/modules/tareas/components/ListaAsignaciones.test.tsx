@@ -92,6 +92,10 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     expect(within(lista).getAllByRole('listitem')).toHaveLength(10);
     await userEvent.click(within(modal).getByRole('button', { name: 'Siguiente' }));
     expect(within(modal).getByText('Página 2 de 10')).toBeInTheDocument();
+    await userEvent.click(within(modal).getByRole('button', { name: 'Anterior' }));
+    expect(within(modal).getByText('Página 1 de 10')).toBeInTheDocument();
+    await userEvent.click(within(modal).getByRole('button', { name: 'Siguiente' }));
+    expect(within(modal).getByText('Página 2 de 10')).toBeInTheDocument();
     expect(within(lista).queryByText('Ministro 1')).not.toBeInTheDocument();
     expect(within(lista).getByText('Ministro 11')).toBeInTheDocument();
     await userEvent.type(within(modal).getByLabelText('Buscar ministro asignado'), 'ministro 100');
@@ -178,6 +182,8 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     expect(within(modal).queryByRole('button', { name: 'Quitar a Luis' })).not.toBeInTheDocument();
     await userEvent.click(within(modal).getByTitle('Cambiar responsable'));
     expect(within(modal).getAllByRole('option').map(option => option.textContent)).toEqual(['Ana']);
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar reemplazo' }));
+    expect(within(modal).getByTitle('Cambiar responsable')).toBeInTheDocument();
   });
 
   it('reasigna con alertas y conserva la tarjeta cuando el servidor rechaza un cambio', async () => {
@@ -253,5 +259,38 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? personas : registros }));
     await userEvent.click(within(modal).getByRole('button', { name: 'Reintentar' }));
     expect(await within(modal).findByLabelText('Buscar ministro')).toBeInTheDocument();
+  });
+
+  it('permite volver a la vista detalle desde el botón volver del modal', async () => {
+    registros[0].asignados = Array.from({ length: 10 }, (_, i) => ({ persona_id: i + 100, nombre: `Ministro ${i + 1}` }));
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Lectura dominical' }));
+    const modal = screen.getByRole('dialog');
+    await userEvent.click(within(modal).getByRole('button', { name: 'Ver listado completo (10)' }));
+    expect(within(modal).getByLabelText('Buscar ministro asignado')).toBeInTheDocument();
+    await userEvent.click(within(modal).getByRole('button', { name: 'Volver a la tarjeta anterior' }));
+    expect(within(modal).getByText('Preparar la celebración')).toBeInTheDocument();
+  });
+
+  it('permite editar una tarea y valida datos requeridos y horarios', async () => {
+    mostrar(1);
+    await userEvent.click(await screen.findByRole('button', { name: 'Lectura dominical' }));
+    const modal = screen.getByRole('dialog');
+    await userEvent.click(within(modal).getByRole('button', { name: 'Editar tarea' }));
+
+    await userEvent.clear(within(modal).getByLabelText('Título:'));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datos');
+
+    await userEvent.type(within(modal).getByLabelText('Título:'), 'Lectura nueva');
+    fireEvent.change(within(modal).getByLabelText('Hora de Inicio:'), { target: { value: '12:00' } });
+    fireEvent.change(within(modal).getByLabelText('Hora de Fin:'), { target: { value: '10:00' } });
+    await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Horario inválido');
+
+    fireEvent.change(within(modal).getByLabelText('Hora de Fin:'), { target: { value: '13:00' } });
+    await userEvent.click(within(modal).getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Tarea actualizada');
+    expect(apiClient.put).toHaveBeenCalledWith('/api/tareas/1', expect.objectContaining({ titulo: 'Lectura nueva' }));
   });
 });

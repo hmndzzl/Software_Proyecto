@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
-import ConfirmDialog from '../ConfirmDialog';
+import ConfirmDialog, { ConfirmDialogContent } from '../ConfirmDialog';
 
 function Mostrar({ onConfirm = vi.fn() }: { onConfirm?: () => void | Promise<void> }) {
   const [open, setOpen] = useState(false);
@@ -67,4 +67,20 @@ it('contiene Tab y Shift+Tab dentro de los controles habilitados', async () => {
   expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveFocus();
   await userEvent.tab({ shift: true });
   expect(screen.getByRole('button', { name: 'Eliminar grupo' })).toHaveFocus();
+});
+
+it('muestra busyLabel y no ejecuta onConfirm si está ocupado en ConfirmDialogContent', () => {
+  const onConfirm = vi.fn();
+  const onCancel = vi.fn();
+  render(<ConfirmDialogContent description="Desc" confirmLabel="Confirmar" onConfirm={onConfirm} onCancel={onCancel} busy={true} />);
+  expect(screen.getByText('Procesando…')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Procesando…'));
+  expect(onConfirm).not.toHaveBeenCalled();
+});
+
+it('ignora cancelar cuando el diálogo está ocupado', () => {
+  const onCancel = vi.fn();
+  render(<ConfirmDialog open={true} title="Título" description="Desc" confirmLabel="Confirmar" onCancel={onCancel} onConfirm={vi.fn()} busy={true} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+  expect(onCancel).not.toHaveBeenCalled();
 });
