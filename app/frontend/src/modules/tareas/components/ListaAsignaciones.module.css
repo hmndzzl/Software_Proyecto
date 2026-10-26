@@ -62,6 +62,7 @@
   color: var(--color-carbon);
   overflow-wrap: anywhere;
 }
+.vistaPrevia { max-height: none; overflow: visible; }
 .avatar {
   display: inline-flex;
   align-items: center;
@@ -79,6 +80,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
+.resumenListado { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--color-muted); font-size: 14px; }
 .accionesTarjeta > button {
   min-width: 0;
   min-height: 44px;

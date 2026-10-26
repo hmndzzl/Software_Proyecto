@@ -73,6 +73,7 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     expect(modal).toHaveTextContent('Preparar la celebración');
     expect(within(modal).getByText('Ministros asignados (5)')).toBeInTheDocument();
     for (const persona of personas.slice(0, 5)) expect(within(modal).getByText(persona.nombre)).toBeInTheDocument();
+    expect(within(modal).queryByRole('button', { name: /Ver listado completo/ })).not.toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(boton).toHaveFocus();
     await userEvent.keyboard('{Enter}');
@@ -84,7 +85,10 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     mostrar();
     await userEvent.click(await screen.findByRole('button', { name: 'Lectura dominical' }));
     const modal = screen.getByRole('dialog');
-    const lista = within(modal).getByRole('list', { name: 'Ministros de la tarea' });
+    let lista = within(modal).getByRole('list', { name: 'Ministros de la tarea' });
+    expect(within(lista).getAllByRole('listitem')).toHaveLength(6);
+    await userEvent.click(within(modal).getByRole('button', { name: 'Ver listado completo (100)' }));
+    lista = within(modal).getByRole('list', { name: 'Ministros de la tarea' });
     expect(within(lista).getAllByRole('listitem')).toHaveLength(100);
     await userEvent.type(within(modal).getByLabelText('Buscar ministro asignado'), 'ministro 100');
     expect(within(lista).getAllByRole('listitem')).toHaveLength(1);
@@ -92,6 +96,20 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     await userEvent.clear(within(modal).getByLabelText('Buscar ministro asignado'));
     await userEvent.type(within(modal).getByLabelText('Buscar ministro asignado'), 'inexistente');
     expect(within(modal).getByRole('status')).toHaveTextContent('No hay ministros asignados que coincidan');
+  });
+
+  it.each([6, 7])('limita la vista previa a seis cuando hay %s ministros', async cantidad => {
+    registros[0].asignados = Array.from({ length: cantidad }, (_, i) => ({ persona_id: i + 100, nombre: `Ministro ${i + 1}` }));
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Lectura dominical' }));
+    const modal = screen.getByRole('dialog');
+    expect(within(modal).getAllByRole('listitem')).toHaveLength(6);
+    if (cantidad === 6) expect(within(modal).queryByRole('button', { name: /Ver listado completo/ })).not.toBeInTheDocument();
+    else {
+      expect(within(modal).queryByText('Ministro 7')).not.toBeInTheDocument();
+      await userEvent.click(within(modal).getByRole('button', { name: 'Ver listado completo (7)' }));
+      expect(within(modal).getAllByRole('listitem')).toHaveLength(7);
+    }
   });
 
   it('encuentra un ministro entre cien y limita el retiro a la persona elegida', async () => {

@@ -21,7 +21,7 @@ import form from '../../../styles/Form.module.css';
 import EventoTareaSelect from './EventoTareaSelect';
 import SelectorMinistros from './SelectorMinistros';
 
-type Vista = 'detalle' | 'editar' | 'ministros' | 'eliminar' | 'quitar';
+type Vista = 'detalle' | 'listado' | 'editar' | 'ministros' | 'eliminar' | 'quitar';
 interface AlertaAsignacion {
   persona_id?: number;
   ministro_no_disponible?: boolean;
@@ -176,7 +176,13 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
     } catch (err) { toast.error('No se pudo completar la acción', getApiErrorMessage(err, 'Error al eliminar. Inténtalo nuevamente.')); }
     finally { setOcupado(false); }
   };
-  const tituloModal = activa ? vista === 'editar' ? `Editar Tarea #${activa.id}` : vista === 'ministros' ? `Ministros de ${activa.titulo}`
+  const tarjetasMinistros = (asignados: AsignadoInfo[], previa = false) => <ul className={`${styles.personas} ${previa ? styles.vistaPrevia : ''}`} aria-label="Ministros de la tarea">
+    {asignados.map(a => <li key={a.persona_id} className={styles.persona}>
+      <span className={styles.avatar} aria-hidden="true">{a.nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(parte => parte[0]).join('')}</span>
+      <span>{a.nombre}</span>
+    </li>)}
+  </ul>;
+  const tituloModal = activa ? vista === 'listado' ? `Listado de ministros de ${activa.titulo}` : vista === 'editar' ? `Editar Tarea #${activa.id}` : vista === 'ministros' ? `Ministros de ${activa.titulo}`
     : vista === 'eliminar' ? 'Eliminar tarea' : vista === 'quitar' ? 'Quitar ministro' : activa.titulo : '';
 
   return <>
@@ -233,25 +239,27 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
             <div><dt>Horario</dt><dd>{formatHorario(activa.hora_inicio, activa.hora_fin)}</dd></div>
           </dl>
           <h3>Ministros asignados ({activa.asignados.length})</h3>
-          {activa.asignados.length > 4 && <div className={form.field}>
-            <label htmlFor={`${id}-buscar-asignados`} className={form.label}>Buscar ministro asignado</label>
-            <input id={`${id}-buscar-asignados`} className={form.input} type="search" value={busquedaAsignados}
-              placeholder="Buscar por nombre…" onChange={event => setBusquedaAsignados(event.target.value)} />
-          </div>}
           {activa.asignados.length ? <>
-            <ul className={styles.personas} aria-label="Ministros de la tarea">
-              {asignadosVisibles.map(a => <li key={a.persona_id} className={styles.persona}>
-                <span className={styles.avatar} aria-hidden="true">{a.nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(parte => parte[0]).join('')}</span>
-                <span>{a.nombre}</span>
-              </li>)}
-            </ul>
-            {!asignadosVisibles.length && <p role="status">No hay ministros asignados que coincidan con la búsqueda.</p>}
+            {tarjetasMinistros(activa.asignados.slice(0, 6), true)}
+            {activa.asignados.length > 6 && <div className={styles.resumenListado}>
+              <span>Mostrando 6 de {activa.asignados.length} ministros.</span>
+              <Btn type="button" kind="ghost" onClick={() => { setBusquedaAsignados(''); setVista('listado'); }}>Ver listado completo ({activa.asignados.length})</Btn>
+            </div>}
           </> : <p>Sin ministro asignado</p>}
           {puedeGestionar && <div className={styles.accionesTarjeta}>
             {puedeEditar(activa) && <Btn type="button" kind="ghost" onClick={() => abrir(activa, 'editar')}>Editar tarea</Btn>}
             <Btn type="button" onClick={() => abrir(activa, 'ministros')}>Gestionar ministros</Btn>
             {puedeEditar(activa) && <Btn type="button" kind="bad" onClick={() => setVista('eliminar')}>Eliminar tarea</Btn>}
           </div>}
+        </>}
+        {vista === 'listado' && <>
+          <div className={form.field}>
+            <label htmlFor={`${id}-buscar-asignados`} className={form.label}>Buscar ministro asignado</label>
+            <input id={`${id}-buscar-asignados`} className={form.input} type="search" value={busquedaAsignados}
+              placeholder="Buscar por nombre…" onChange={event => setBusquedaAsignados(event.target.value)} />
+          </div>
+          {tarjetasMinistros(asignadosVisibles)}
+          {!asignadosVisibles.length && <p role="status">No hay ministros asignados que coincidan con la búsqueda.</p>}
         </>}
         {vista === 'editar' && <form className={form.form} onSubmit={event => { event.preventDefault(); void guardarEdicion(); }}>
           <fieldset className={styles.campos} disabled={ocupado}>
