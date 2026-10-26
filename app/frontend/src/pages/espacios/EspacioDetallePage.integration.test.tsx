@@ -12,7 +12,7 @@ import EspacioDetallePage from './EspacioDetallePage';
 vi.mock('../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const espacio = { id: 5, nombre: 'Salón Mayor', capacidad: 120, disponible: true };
+const espacio = { id: 5, nombre: 'Salón Mayor', capacidad: 120, disponible: true, foto_url: '/uploads/espacios/salon-05-v1.webp' };
 const reservas = [
   { id: 1, fecha: '2099-10-20', hora_inicio: '08:00:00', hora_fin: '09:00:00', estado_reserva_id: 1, evento_titulo: 'Catequesis', evento_descripcion: 'Grupo juvenil', solicitante_nombre: 'Luis Pérez' },
   { id: 2, fecha: '2099-10-21', hora_inicio: '10:00:00', hora_fin: '11:00:00', estado_reserva_id: 2, evento_titulo: null, evento_descripcion: null, solicitante_nombre: null },
@@ -41,6 +41,7 @@ describe('integración del detalle de un espacio', () => {
   it('muestra información, todos los estados y navega desde sus acciones', async () => {
     mostrar();
     await screen.findByRole('heading', { name: 'Salón Mayor' });
+    expect(screen.getByRole('img', { name: 'Fotografía de Salón Mayor' })).toHaveAttribute('src', espacio.foto_url);
     expect(screen.getByText('120 personas')).toBeInTheDocument();
     expect(screen.getByText('Catequesis')).toBeInTheDocument();
     expect(screen.getByText('Reserva #2')).toBeInTheDocument();
