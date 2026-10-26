@@ -64,6 +64,14 @@ describe('navegación del portal público', () => {
     expect(agenda.closest('.hero-cta')?.querySelectorAll('a')).toHaveLength(1);
   });
 
+  it('muestra fotografías reales y conserva el placeholder ante errores de carga', () => {
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
+    const fachada = screen.getByRole('img', { name: 'Vista exterior de la parroquia' });
+    expect(fachada).toHaveAttribute('src', expect.stringContaining('.webp'));
+    fireEvent.error(fachada);
+    expect(screen.getByRole('img', { name: 'Vista exterior de la parroquia' })).toHaveTextContent('Vista exterior de la parroquia');
+  });
+
   it('enlaza el portal con la agenda pública', () => {
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><LandingPage /></AuthProvider></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'AGENDA PARROQUIAL' })).toHaveAttribute('href', '/agenda');
@@ -76,6 +84,7 @@ describe('navegación del portal público', () => {
     expect(await screen.findByRole('heading', { name: 'Contenido publicado desde administración' })).toBeInTheDocument();
     expect(screen.getByText('14')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Esperanza' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Altar preparado para una celebración' })).toHaveAttribute('src', expect.stringContaining('.webp'));
     expect(apiClient.get).toHaveBeenCalledWith('/api/public/landing');
   });
 

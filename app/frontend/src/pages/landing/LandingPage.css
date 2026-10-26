@@ -27,7 +27,7 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .stat-n{font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1;color:var(--rojo)}
 .landing .stat-l{font-size:var(--text-small);color:var(--ink);margin-top:6px;letter-spacing:.03em}
 
-/* Placeholder de imagen (sustituye a <image-slot> del diseño) */
+/* Fotografía y estado de respaldo si el archivo no está disponible. */
 .landing .slot{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:14px;background:repeating-linear-gradient(135deg,rgba(139,90,45,.06) 0 12px,rgba(139,90,45,.11) 12px 24px);color:var(--muted);font-size:var(--text-label);font-style:italic}
 .landing .hero .slot{background:repeating-linear-gradient(135deg,rgba(139,90,45,.06) 0 12px,rgba(139,90,45,.11) 12px 24px);color:var(--muted)}
 .landing .slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
