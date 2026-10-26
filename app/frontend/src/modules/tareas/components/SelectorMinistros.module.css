@@ -86,4 +86,3 @@
 
 .opcion:hover { background: var(--color-crema); }
 .opcion input { flex-shrink: 0; accent-color: var(--color-rojo); }
-
