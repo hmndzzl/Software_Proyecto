@@ -91,22 +91,21 @@ describe('MisReservasPage — historial', () => {
   it('cancela una reserva solo si se confirma', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
     mostrar(ROLES.COORDINADOR_GRUPOS);
     const fila = (await screen.findByText('Ensayo del coro')).closest('tr')!;
 
     fireEvent.click(within(fila).getByRole('button', { name: 'Cancelar' }));
     expect(apiClient.put).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
 
     fireEvent.click(within(fila).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar reserva' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/7/estado', { estado_id: 4 }));
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(2));
-    confirmSpy.mockRestore();
   });
 
   it('avisa si falla la cancelación', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.mocked(apiClient.put)
       .mockRejectedValueOnce({ response: { data: { message: 'No permitido' } } })
       .mockRejectedValueOnce(new Error('red'));
@@ -114,9 +113,11 @@ describe('MisReservasPage — historial', () => {
     const boton = await screen.findByRole('button', { name: 'Cancelar' });
 
     fireEvent.click(boton);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cancelar la reserva');
     expect(screen.getByRole('alert')).toHaveTextContent('No permitido');
-    fireEvent.click(boton);
+    expect(screen.getByRole('dialog', { name: 'Cancelar reserva' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Error al cancelar la reserva.'));
     vi.restoreAllMocks();
   });
