@@ -48,12 +48,35 @@ INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`) VALUES
   ('Lucia Fernandez',  'lucia.ministro@parroquia.com',  '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
   -- Segundo coordinador de ministros (id=13), con un grupo de ministros distinto al de CoordMin (id=7),
   -- para probar que cada coordinador solo puede editar/reasignar tareas de sus propios ministros.
-  ('Coord Ministros Sur', 'coord.min2@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 2);
+  ('Coord Ministros Sur', 'coord.min2@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 2),
+  -- Ocho ministros adicionales del primer coordinador (id=14–21).
+  ('Marta López', 'marta.lopez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('José Morales', 'jose.morales@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Elena Pérez', 'elena.perez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Luis García', 'luis.garcia@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Rosa Méndez', 'rosa.mendez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Pedro Ramírez', 'pedro.ramirez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Isabel Gómez', 'isabel.gomez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Andrés Castro', 'andres.castro@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  -- Ocho ministros adicionales del coordinador sur (id=22–29).
+  ('Carmen Hernández', 'carmen.hernandez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Miguel Flores', 'miguel.flores@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Teresa Vásquez', 'teresa.vasquez@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Jorge Reyes', 'jorge.reyes@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Patricia Cruz', 'patricia.cruz@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Manuel Choc', 'manuel.choc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Sofía Caal', 'sofia.caal@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4),
+  ('Gabriel Tzul', 'gabriel.tzul@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4);
 
--- Relación coordinador-ministro: CoordMin (id=7) coordina a Ministro Test y Ana (id=9,10);
--- Coord Ministros Sur (id=13) coordina a Carlos y Lucía (id=11,12) — grupos distintos y sin solaparse.
+-- Cada coordinador tiene 10 ministros activos, sin compartir ministros entre grupos.
+-- CoordMin (id=7): originales 9,10 y adicionales 14–21.
+-- CoordMin Sur (id=13): originales 11,12 y adicionales 22–29.
+-- Los IDs 1–13 se conservan para los escenarios y pruebas existentes.
 INSERT INTO `coordinador_ministro` (`coordinador_id`, `ministro_id`) VALUES
-  (7, 9), (7, 10), (13, 11), (13, 12);
+  (7, 9), (7, 10),
+  (7, 14), (7, 15), (7, 16), (7, 17), (7, 18), (7, 19), (7, 20), (7, 21),
+  (13, 11), (13, 12),
+  (13, 22), (13, 23), (13, 24), (13, 25), (13, 26), (13, 27), (13, 28), (13, 29);
 
 -- Tareas y asignaciones de prueba para HU-23 (cambio de turno entre ministros).
 -- Tarea 1 (Ministro Test, id=9) es la que se usa para solicitar el cambio; Ana (id=10)
@@ -113,15 +136,15 @@ INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VA
 
 -- ======================================================================
 -- Datos de demostración (actividad futura) — poblar la app con movimiento
--- real en todos los rubros, reutilizando los 2 coordinadores y 4 ministros
--- ya existentes (CoordMin id=7 → 9,10; CoordMin Sur id=13 → 11,12).
+-- real en todos los rubros, reutilizando los 2 coordinadores y los 4 ministros
+-- originales (CoordMin id=7 → 9,10; CoordMin Sur id=13 → 11,12).
 -- ======================================================================
 
 -- Grupo parroquial (coordinador de grupos, id=8)
 INSERT INTO `grupo` (`nombre`, `coordinador_id`) VALUES
   ('Coro Parroquial', 8);
 
--- Tareas futuras repartidas entre los 4 ministros (tarea 15 queda sin asignar
+-- Tareas futuras repartidas entre los 4 ministros originales (tarea 15 queda sin asignar
 -- a propósito, para ver el estado "sin asignar" en ListaAsignaciones/Calendario).
 INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `titulo`, `descripcion`) VALUES
   ('2026-11-01', '10:00:00', '10:15:00', 'Lectura primera',      'Proclamar la primera lectura en la Misa dominical de las 10am'),

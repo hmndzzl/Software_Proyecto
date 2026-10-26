@@ -260,8 +260,11 @@ describe('integración API y MariaDB', () => {
     const admin = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
     const propios = await request(app).get('/api/personas').auth(norte, { type: 'bearer' }).expect(200);
     const ajenos = await request(app).get('/api/personas').auth(sur, { type: 'bearer' }).expect(200);
-    expect(propios.body.map((p: { id: number }) => p.id).sort()).toEqual([10, 9]);
-    expect(ajenos.body.map((p: { id: number }) => p.id).sort()).toEqual([11, 12]);
+    const idsPropios = propios.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
+    const idsAjenos = ajenos.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
+    expect(idsPropios).toEqual([9, 10, 14, 15, 16, 17, 18, 19, 20, 21]);
+    expect(idsAjenos).toEqual([11, 12, 22, 23, 24, 25, 26, 27, 28, 29]);
+    expect(idsPropios.filter((id: number) => idsAjenos.includes(id))).toEqual([]);
     const datos = { titulo: 'Alcance de coordinadores', descripcion: 'Verificar permisos', fecha: '2098-07-20', hora_inicio: '10:00', hora_fin: '11:00' };
     const creada = await request(app).post('/api/tareas').auth(norte, { type: 'bearer' }).send({ ...datos, persona_ids: [9] }).expect(201);
     const tarea_id = creada.body.tarea.id;
