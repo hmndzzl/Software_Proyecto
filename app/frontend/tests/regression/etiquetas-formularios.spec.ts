@@ -72,11 +72,12 @@ test('la edición y la reasignación de tareas tienen etiquetas independientes',
     hora_inicio: '10:00', hora_fin: '11:00', asignados: [{ persona_id: 9, nombre: 'Ana Ministra' }],
   }] }));
   await page.goto('/tareas');
+  await page.getByRole('button', { name: 'Gestionar ministros', exact: true }).click();
   await page.getByTitle('Cambiar responsable').click();
   await expect(page.getByRole('combobox', { name: 'Responsable de Preparar altar' })).toBeFocused();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Editar', exact: true }).click();
-  const editor = page.getByRole('heading', { name: 'Editar Tarea #1', exact: true }).locator('..');
+  const editor = page.getByRole('dialog', { name: 'Editar Tarea #1' });
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const tema of ['claro', 'oscuro']) {
