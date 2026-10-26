@@ -3,6 +3,7 @@ import { crearCuentaApi } from '../../api/cuentas';
 import { useToast } from '../../context/ToastContext';
 import Modal from '../../components/ui/Modal';
 import Btn from '../../components/ui/Btn';
+import PasswordInput from '../../components/ui/PasswordInput';
 import { Field, InputUI, SelectUI } from '../../components/ui/Field';
 import { ROLES } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -23,6 +24,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
   const [correo, setCorreo] = useState('');
   const [telefono, setTelefono] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordRevision, setPasswordRevision] = useState(0);
   const [rolId, setRolId] = useState<number>(ROLES.MINISTRO);
   const toast = useToast();
   const [enviando, setEnviando] = useState(false);
@@ -32,6 +34,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
     setCorreo('');
     setTelefono('');
     setPassword('');
+    setPasswordRevision(previous => previous + 1);
     setRolId(ROLES.MINISTRO);
     onClose();
   };
@@ -84,7 +87,7 @@ export default function NuevaCuentaModal({ open, roles, onClose, onCreada }: Pro
           <InputUI aria-label="Teléfono (opcional)" type="tel" autoComplete="tel" maxLength={50} value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+502 5555 1234" disabled={enviando} />
         </Field>
         <Field label="Contraseña inicial" required hint={`Mínimo ${PASSWORD_MIN} caracteres. Compártela con la persona de forma segura.`}>
-          <InputUI aria-label="Contraseña inicial" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+          <PasswordInput key={passwordRevision} aria-label="Contraseña inicial" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={enviando} />
         </Field>
         <Field label="Rol" required>
           <SelectUI aria-label="Rol de la nueva cuenta" value={rolId} onChange={(e) => setRolId(Number(e.target.value))}>

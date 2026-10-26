@@ -30,10 +30,21 @@ describe('PerfilPage - avisos', () => {
 
     await userEvent.type(screen.getByLabelText('Nueva contraseña'), 'Clave-Segura-1');
     await userEvent.type(screen.getByLabelText('Confirmar contraseña'), 'Clave-Segura-1');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Mostrar contraseña' })[0]);
+    expect(screen.getByLabelText('Nueva contraseña')).toHaveAttribute('type', 'text');
+    expect(screen.getByLabelText('Confirmar contraseña')).toHaveAttribute('type', 'password');
+    await userEvent.click(screen.getByRole('button', { name: 'Mostrar contraseña' }));
+    expect(screen.getByLabelText('Confirmar contraseña')).toHaveAttribute('type', 'text');
+    expect(apiClient.put).not.toHaveBeenCalled();
     await guardar();
 
     expect(await screen.findByRole('status')).toHaveTextContent('Perfil actualizadoTus cambios se guardaron correctamente.');
     expect(actualizarUsuario).toHaveBeenCalledWith({ ...usuario, nombre: 'Ana María' });
+    expect(apiClient.put).toHaveBeenCalledWith('/api/personas/4', expect.objectContaining({ password: 'Clave-Segura-1' }));
+    for (const label of ['Nueva contraseña', 'Confirmar contraseña']) {
+      expect(screen.getByLabelText(label)).toHaveValue('');
+      expect(screen.getByLabelText(label)).toHaveAttribute('type', 'password');
+    }
   });
 
   it('carga, modifica y normaliza el teléfono, y permite retirarlo', async () => {
