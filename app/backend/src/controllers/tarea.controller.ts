@@ -8,6 +8,7 @@ import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 import { withTransaction } from '../utils/withTransaction';
 import { ErrorAsignacion, guardarTareaConMinistros, validarMinistros } from '../services/tareasAsignacion.service';
+import { validarMinistrosPropios } from '../services/alcanceMinistros.service';
 
 // Manejo de get, post, put, delete para tareas y asignaciones
 // Retorna todas las tareas con sus ministros asignados con GET /api/tareas
@@ -311,6 +312,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
 
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
+    await validarMinistrosPropios(pool, req.user!, [Number(persona_id)]);
     const [tareas] = await pool.execute<RowDataPacket[]>(
       'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
@@ -403,6 +405,10 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       return 'commit';
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en asignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al realizar la asignación' });
   }
@@ -424,6 +430,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
   }
 
   try {
+    await validarMinistrosPropios(pool, req.user!, [Number(persona_actual_id), Number(persona_nueva_id)]);
     const [tareas] = await pool.execute<RowDataPacket[]>(
       'SELECT id, titulo, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
@@ -529,6 +536,10 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
       return 'commit';
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en reasignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al reasignar la tarea' });
   }
@@ -544,6 +555,7 @@ export const desasignarTarea = async (req: Request, res: Response): Promise<void
   }
 
   try {
+    await validarMinistrosPropios(pool, req.user!, [Number(persona_id)]);
     const [result] = await pool.execute<ResultSetHeader>(
       'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
       [tarea_id, persona_id]
@@ -572,6 +584,10 @@ export const desasignarTarea = async (req: Request, res: Response): Promise<void
 
     res.status(HttpStatus.NO_CONTENT).send();
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en desasignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar la asignación' });
   }

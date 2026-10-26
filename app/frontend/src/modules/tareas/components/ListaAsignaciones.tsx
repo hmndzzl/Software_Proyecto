@@ -288,12 +288,14 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
             <tbody>
               {asignacionesOrdenadas.map((asignacion) => {
                 const key = `${asignacion.tarea_id}-${asignacion.persona_id}`;
+                const puedeGestionarAsignacion = puedeGestionar && (usuario?.rol_id !== ROLES.COORDINADOR_MINISTROS
+                  || ministros.some(ministro => ministro.id === asignacion.persona_id));
                 return (
                   <tr key={key}>
                     <td>{asignacion.titulo_tarea}</td>
                     {!esMinistro && (
                       <td>
-                        {!asignacion.persona_id || !puedeGestionar ? asignacion.nombre_persona : editandoKey === key ? (
+                        {!asignacion.persona_id || !puedeGestionarAsignacion ? asignacion.nombre_persona : editandoKey === key ? (
                           <>
                             <label htmlFor={`${fieldId}-responsable-${key}`} className={styles.srOnly}>
                               Responsable de {asignacion.titulo_tarea}
@@ -331,7 +333,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
                         <Btn kind="ghost" size="sm" onClick={() => abrirEdicionTarea(asignacion)}>
                           Editar
                         </Btn>
-                        {asignacion.persona_id !== 0 && <Btn kind="ghost" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, true)}>
+                        {asignacion.persona_id !== 0 && puedeGestionarAsignacion && <Btn kind="ghost" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, true)}>
                           Quitar ministro de esta tarea
                         </Btn>}
                         <Btn kind="bad" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, false)}>

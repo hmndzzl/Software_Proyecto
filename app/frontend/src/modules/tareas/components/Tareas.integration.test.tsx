@@ -75,6 +75,22 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(screen.getByText('No hay ministros que coincidan con la búsqueda.')).toBeInTheDocument();
   });
 
+  it('solo ofrece los ministros del directorio autorizado y no gestiona asignaciones ajenas', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? [personas[0]] : url === '/api/eventos' ? [] : [{
+      ...tareas[0], asignados: [{ persona_id: 9, nombre: 'Ana Ministra' }, { persona_id: 10, nombre: 'Luis Ministro' }],
+    }] }));
+    mostrar(ROLES.COORDINADOR_MINISTROS);
+    await screen.findByRole('checkbox', { name: 'Ana Ministra' });
+    expect(screen.queryByRole('checkbox', { name: 'Luis Ministro' })).not.toBeInTheDocument();
+    const filas = screen.getAllByRole('cell', { name: 'Lectura dominical' }).map(celda => celda.closest('tr')!);
+    const propia = filas.find(fila => within(fila).queryByText('Ana Ministra'))!;
+    const ajena = filas.find(fila => within(fila).queryByText('Luis Ministro'))!;
+    expect(within(ajena).queryByTitle('Cambiar responsable')).not.toBeInTheDocument();
+    expect(within(ajena).queryByRole('button', { name: 'Quitar ministro de esta tarea' })).not.toBeInTheDocument();
+    await userEvent.click(within(propia).getByTitle('Cambiar responsable'));
+    expect(within(propia).getAllByRole('option').map(option => option.textContent)).toEqual(['Ana Ministra']);
+  });
+
   it('crea una tarea, limpia el formulario y refresca las asignaciones', async () => {
     mostrar();
     await completarCreacion();
