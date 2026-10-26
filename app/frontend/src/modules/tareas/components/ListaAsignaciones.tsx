@@ -20,6 +20,7 @@ import styles from './ListaAsignaciones.module.css';
 import form from '../../../styles/Form.module.css';
 import EventoTareaSelect from './EventoTareaSelect';
 import SelectorMinistros from './SelectorMinistros';
+import ResumenMinistros from './ResumenMinistros';
 
 type Vista = 'detalle' | 'editar' | 'ministros' | 'eliminar' | 'quitar';
 interface AlertaAsignacion {
@@ -200,11 +201,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
                 event.currentTarget.querySelector<HTMLButtonElement>('[data-detalle]')?.focus(); abrir(tarea);
               }}>
                 <td><button type="button" data-detalle className={styles.enlace} onClick={() => abrir(tarea)}>{tarea.titulo}</button></td>
-                {!esMinistro && <td>{!tarea.asignados.length ? 'Sin ministro asignado' : <>
-                  <span>{tarea.asignados.slice(0, 2).map(a => a.nombre).join(', ')}</span>
-                  {tarea.asignados.length > 2 && <button type="button" className={styles.enlace} onClick={() => abrir(tarea)}
-                    aria-label={`Ver los ${tarea.asignados.length} ministros de ${tarea.titulo}`}>+{tarea.asignados.length - 2} más</button>}
-                </>}</td>}
+                {!esMinistro && <td><ResumenMinistros asignados={tarea.asignados} tarea={tarea.titulo} onVer={() => abrir(tarea)} /></td>}
                 <td>{formatFecha(tarea.fecha)}</td><td>{formatHorario(tarea.hora_inicio, tarea.hora_fin)}</td>
                 {puedeGestionar && <td><div className={styles.acciones}>
                   {puedeEditar(tarea) && <Btn type="button" kind="ghost" size="sm" onClick={() => abrir(tarea, 'editar')}>Editar</Btn>}

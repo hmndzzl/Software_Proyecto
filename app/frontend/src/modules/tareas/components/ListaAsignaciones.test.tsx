@@ -41,7 +41,7 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     await screen.findByRole('cell', { name: 'Lectura dominical' });
     expect(screen.getAllByRole('row')).toHaveLength(11);
     expect(screen.getByText('Ana, Luis')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ver los 5 ministros de Lectura dominical' })).toHaveTextContent('+3 más');
+    expect(screen.getByRole('button', { name: 'Ver los 5 ministros de Lectura dominical' })).toHaveTextContent('5 ministros');
     expect(screen.getByText('Mostrando 12 de 12 registros.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
     expect(screen.getAllByRole('row')).toHaveLength(3);
