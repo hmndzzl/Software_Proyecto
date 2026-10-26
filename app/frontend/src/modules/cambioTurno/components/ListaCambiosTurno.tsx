@@ -13,6 +13,7 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import { formatFecha, formatHorario, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaCambiosTurno.module.css';
@@ -67,6 +68,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   const [cambios, setCambios] = useState<CambioTurno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [porRechazar, setPorRechazar] = useState<CambioTurno | null>(null);
   const toast = useToast();
 
   const cargarCambios = () => {
@@ -93,6 +95,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
       cargarCambios();
     } catch (err: unknown) {
       toast.error('No se pudo responder la solicitud', getApiErrorMessage(err, 'Error al responder la solicitud de cambio de turno.'));
+      throw err;
     }
   };
 
@@ -146,11 +149,11 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
                     {c.estado === 'pendiente' && (
                       <div className={styles.acciones}>
                         {esTareaFutura(c.tarea_fecha, c.tarea_hora_inicio) ? (
-                          <Btn kind="ok" size="sm" onClick={() => responder(c.id, true, c.tarea_fecha, c.tarea_hora_inicio)}>Aceptar</Btn>
+                          <Btn kind="ok" size="sm" onClick={() => { void responder(c.id, true, c.tarea_fecha, c.tarea_hora_inicio).catch(() => {}); }}>Aceptar</Btn>
                         ) : (
                           <Badge kind="rechazada">Vencida</Badge>
                         )}
-                        <Btn kind="bad" size="sm" onClick={() => responder(c.id, false, c.tarea_fecha, c.tarea_hora_inicio)}>Rechazar</Btn>
+                        <Btn kind="bad" size="sm" onClick={() => setPorRechazar(c)}>Rechazar</Btn>
                       </div>
                     )}
                   </td>
@@ -191,6 +194,15 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
           </table>
         </div>
       )}
+      <ConfirmDialog open={porRechazar !== null} title="Rechazar cambio de turno" confirmLabel="Rechazar solicitud"
+        description={porRechazar
+          ? `¿Rechazar la solicitud de ${porRechazar.solicitante_nombre} para intercambiar el turno «${porRechazar.tarea_titulo}» del ${formatFecha(porRechazar.tarea_fecha)}?`
+          : ''}
+        onCancel={() => setPorRechazar(null)} onConfirm={async () => {
+          if (!porRechazar) return;
+          await responder(porRechazar.id, false, porRechazar.tarea_fecha, porRechazar.tarea_hora_inicio);
+          setPorRechazar(null);
+        }} />
     </div>
   );
 }
