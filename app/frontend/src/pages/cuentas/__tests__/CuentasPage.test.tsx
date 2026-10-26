@@ -113,6 +113,7 @@ describe('CuentasPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo rechazar la cuentaNo puedes rechazar tu propia cuenta');
+    expect(screen.getByRole('dialog', { name: 'Rechazar cuenta' })).toBeInTheDocument();
     expect(screen.getByText('ana@gmail.com')).toBeInTheDocument();
   });
 
