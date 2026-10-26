@@ -48,6 +48,11 @@ it('conserva el diálogo ante errores y permite reintentar', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo completar la acción');
   expect(screen.getByRole('dialog')).toBeInTheDocument();
+  document.body.tabIndex = -1;
+  document.body.focus();
+  await userEvent.tab();
+  expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
+  document.body.removeAttribute('tabindex');
   await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(onConfirm).toHaveBeenCalledTimes(2);

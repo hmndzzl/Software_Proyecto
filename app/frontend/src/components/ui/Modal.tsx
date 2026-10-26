@@ -38,6 +38,9 @@ export default function Modal({ open, title, onClose, children, width = 520, onB
         if (!elementos.length) { e.preventDefault(); panel.current?.focus(); return; }
         const primero = elementos[0];
         const ultimo = elementos[elementos.length - 1];
+        if (!elementos.includes(document.activeElement as HTMLElement)) {
+          e.preventDefault(); (e.shiftKey ? ultimo : primero).focus(); return;
+        }
         if (e.shiftKey && document.activeElement === primero) {
           e.preventDefault(); ultimo.focus();
         } else if (!e.shiftKey && document.activeElement === ultimo) {
@@ -51,7 +54,7 @@ export default function Modal({ open, title, onClose, children, width = 520, onB
       document.body.style.overflow = overflowAnterior;
       if (anterior?.isConnected) anterior.focus();
     };
-  }, [open]);
+  }, [open, initialFocusSelector]);
 
   if (!open) return null;
 
