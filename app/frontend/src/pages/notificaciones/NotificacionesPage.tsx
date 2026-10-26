@@ -67,6 +67,7 @@ export default function NotificacionesPage() {
   const [vista, setVista] = useState<Vista>('recibidas');
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false);
   const [confirmandoVaciar, setConfirmandoVaciar] = useState(false);
+  const [accionNotificacion, setAccionNotificacion] = useState<{ id: number; tipo: 'eliminar' | 'cancelar-asistencia' | 'cancelar-inasistencia' } | null>(null);
   const [notifSeleccionadaExcusa, setNotifSeleccionadaExcusa] = useState<Notificacion | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const resaltarId = searchParams.get('resaltar') ? Number(searchParams.get('resaltar')) : null;
@@ -131,6 +132,19 @@ export default function NotificacionesPage() {
     await eliminar(id);
     refetchPapelera();
   };
+
+  const confirmarAccionNotificacion = async () => {
+    if (!accionNotificacion) return;
+    const { id, tipo } = accionNotificacion;
+    if (tipo === 'eliminar') await handleEliminar(id);
+    if (tipo === 'cancelar-asistencia') await cancelarAsistencia(id);
+    if (tipo === 'cancelar-inasistencia') await cancelarInasistencia(id);
+    setAccionNotificacion(null);
+  };
+
+  const notificacionAccion = accionNotificacion
+    ? notificaciones.find((notificacion) => notificacion.id === accionNotificacion.id)
+    : undefined;
 
   const handleRestaurar = async (id: number) => {
     await restaurar(id);
@@ -244,10 +258,10 @@ export default function NotificacionesPage() {
                         onMarcarLeida={marcarLeida}
                         onMarcarNoLeida={marcarNoLeida}
                         onConfirmarAsistencia={confirmarAsistencia}
-                        onCancelarAsistencia={cancelarAsistencia}
-                        onCancelarInasistencia={cancelarInasistencia}
+                        onCancelarAsistencia={(id) => setAccionNotificacion({ id, tipo: 'cancelar-asistencia' })}
+                        onCancelarInasistencia={(id) => setAccionNotificacion({ id, tipo: 'cancelar-inasistencia' })}
                         onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
-                        onEliminar={handleEliminar}
+                        onEliminar={(id) => setAccionNotificacion({ id, tipo: 'eliminar' })}
                         resaltada={n.id === resaltarId}
                       />
                     ))}
@@ -351,6 +365,15 @@ export default function NotificacionesPage() {
       <ConfirmDialog open={confirmandoVaciar} title="Vaciar papelera" confirmLabel="Vaciar papelera"
         description="¿Seguro que deseas vaciar la papelera? Esta acción no se puede deshacer."
         onCancel={() => setConfirmandoVaciar(false)} onConfirm={handleVaciarPapelera} />
+      <ConfirmDialog open={accionNotificacion !== null}
+        title={accionNotificacion?.tipo === 'eliminar' ? 'Mover a papelera' : accionNotificacion?.tipo === 'cancelar-asistencia' ? 'Cancelar asistencia' : 'Quitar no asistencia'}
+        confirmLabel={accionNotificacion?.tipo === 'eliminar' ? 'Mover a papelera' : accionNotificacion?.tipo === 'cancelar-asistencia' ? 'Cancelar asistencia' : 'Quitar no asistencia'}
+        description={accionNotificacion?.tipo === 'eliminar'
+          ? `¿Mover esta notificación a la papelera?${notificacionAccion ? ` «${notificacionAccion.mensaje}»` : ''}`
+          : accionNotificacion?.tipo === 'cancelar-asistencia'
+            ? '¿Cancelar tu confirmación de asistencia? El coordinador ya no verá este turno como confirmado.'
+            : '¿Quitar el aviso de que no podrás asistir? Podrás volver a confirmar tu asistencia después.'}
+        onCancel={() => setAccionNotificacion(null)} onConfirm={confirmarAccionNotificacion} />
       <Modal
         open={modalNuevaAbierto}
         title="Nueva Notificación"

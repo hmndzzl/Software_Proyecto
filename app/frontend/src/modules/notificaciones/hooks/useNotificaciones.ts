@@ -86,25 +86,17 @@ export function useNotificaciones(): UseNotificacionesReturn {
   }, []);
 
   const cancelarAsistencia = useCallback(async (id: number) => {
-    try {
-      await apiClient.put(`/api/notificaciones/${id}/cancelar-asistencia`);
-      setNotificaciones((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: false } : n))
-      );
-    } catch {
-      // no interrumpir UI — se conserva el estado confirmado si no se pudo cancelar
-    }
+    await apiClient.put(`/api/notificaciones/${id}/cancelar-asistencia`);
+    setNotificaciones((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: false } : n))
+    );
   }, []);
 
   const cancelarInasistencia = useCallback(async (id: number) => {
-    try {
-      await apiClient.put(`/api/notificaciones/${id}/cancelar-inasistencia`);
-      setNotificaciones((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, motivo_excusa: null } : n))
-      );
-    } catch {
-      // no interrumpir UI — se conserva el estado si no se pudo actualizar
-    }
+    await apiClient.put(`/api/notificaciones/${id}/cancelar-inasistencia`);
+    setNotificaciones((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, motivo_excusa: null } : n))
+    );
   }, []);
 
   const excusarAsistencia = useCallback(async (id: number, motivo: string) => {
