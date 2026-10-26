@@ -15,6 +15,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
+COPY --chown=node:node media ./media
 USER node
 EXPOSE 3001
 CMD ["npm", "start"]

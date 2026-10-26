@@ -23,6 +23,7 @@ import publicRoutes from './routes/public.routes';
 import landingRoutes from './routes/landing.routes';
 import reporteRoutes from './routes/reporte.routes';
 import coordinadorMinistroRoutes from './routes/coordinadorMinistro.routes';
+import mediaRoutes from './routes/media.routes';
 
 dotenv.config();
 validateEnv();
@@ -59,6 +60,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', mediaRoutes);
 
 // Rutas 
 app.use('/api/auth', authRoutes);
