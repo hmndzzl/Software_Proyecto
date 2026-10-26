@@ -55,6 +55,26 @@ describe('integración de tareas, asignaciones y permisos', () => {
     prepararApi();
   });
 
+  it('busca entre 40 ministros sin perder las selecciones ocultas por el filtro', async () => {
+    const muchos = Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, nombre: `Ministro ${String(i + 1).padStart(2, '0')}`, disponible: true }));
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? muchos : [] }));
+    mostrar();
+    const buscar = await screen.findByLabelText('Buscar ministro');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(40);
+    await userEvent.type(buscar, 'ministro 40');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ministro 40' }));
+    await userEvent.clear(buscar);
+    await userEvent.type(buscar, 'ministro 01');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ministro 01' }));
+    expect(screen.getByRole('group', { name: 'Ministros (2 seleccionados)' })).toBeInTheDocument();
+    await userEvent.clear(buscar);
+    expect(screen.getByRole('checkbox', { name: 'Ministro 40' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Ministro 01' })).toBeChecked();
+    await userEvent.type(buscar, 'inexistente');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText('No hay ministros que coincidan con la búsqueda.')).toBeInTheDocument();
+  });
+
   it('crea una tarea, limpia el formulario y refresca las asignaciones', async () => {
     mostrar();
     await completarCreacion();
