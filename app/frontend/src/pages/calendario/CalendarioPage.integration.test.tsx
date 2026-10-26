@@ -89,6 +89,7 @@ describe('calendario unificado semanal', () => {
     expect(within(modal).queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
 
     await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cancelar reserva' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/201/estado', { estado_id: 4 }));
   });
 

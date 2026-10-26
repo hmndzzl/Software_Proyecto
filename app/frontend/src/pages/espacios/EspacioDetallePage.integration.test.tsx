@@ -63,6 +63,7 @@ describe('integración del detalle de un espacio', () => {
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 2 }));
     expect(await screen.findByRole('status')).toHaveTextContent('Reserva aprobada');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar reserva' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 3 }));
     expect(await screen.findByRole('status')).toHaveTextContent('Reserva rechazada');
   });

@@ -123,6 +123,7 @@ describe('integración de cambios de turno', () => {
     render(<ListaCambiosTurno />, { wrapper });
     await screen.findByText('Ana');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar solicitud' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/cambios-turno/1/responder', { aceptar: false }));
     await userEvent.click(screen.getByRole('button', { name: 'Aceptar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Ya fue respondida');

@@ -122,16 +122,19 @@ describe('ContenidoPublicoPage', () => {
     cambiar('valor-titulo-1', 'Esperanza');
     cambiar('valor-descripcion-1', 'Confiamos en el futuro.');
     await userEvent.click(within(document.getElementById('valor-titulo-0')!.closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar valor' }));
 
     cambiar('misa-dias-0', 'Domingo y festivos');
     cambiar('Hora 1 del horario de misa 1', '09:00');
     await userEvent.click(screen.getByRole('button', { name: '+ Agregar hora' }));
     cambiar('Hora 3 del horario de misa 1', '18:00');
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar hora 3 del horario de misa 1' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Quitar hora' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Agregar horario' })[0]);
     cambiar('misa-dias-1', 'Sábado');
     cambiar('Hora 1 del horario de misa 2', '17:00');
     await userEvent.click(within(document.getElementById('misa-dias-1')!.closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar horario' }));
 
     cambiar('oficina-dias-0', 'Martes a viernes');
     cambiar('oficina-horario-0', '10:00 – 15:00');
@@ -139,6 +142,7 @@ describe('ContenidoPublicoPage', () => {
     cambiar('oficina-dias-1', 'Sábado');
     cambiar('oficina-horario-1', '09:00 – 12:00');
     await userEvent.click(within(document.getElementById('oficina-dias-1')!.closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar horario' }));
 
     cambiar('contacto-titulo', 'Escríbenos');
     cambiar('contacto-correo', 'oficina@example.com');
@@ -163,6 +167,8 @@ describe('ContenidoPublicoPage', () => {
     const lema = await screen.findByDisplayValue('Casa de oración');
     fireEvent.change(lema, { target: { value: 'Cambio temporal' } });
     await userEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Descartar cambios' });
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Descartar cambios' }));
     expect(await screen.findByDisplayValue('Casa de oración')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Guardar y publicar cambios' }));
@@ -175,8 +181,11 @@ describe('ContenidoPublicoPage', () => {
 
     await screen.findByDisplayValue('Una comunidad viva');
     await userEvent.click(within(screen.getByRole('heading', { name: 'Valor 01' }).closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar valor' }));
     await userEvent.click(within(screen.getByRole('heading', { name: 'Horario de misa 1' }).closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar horario' }));
     await userEvent.click(within(screen.getByRole('heading', { name: 'Horario de oficina 1' }).closest('article')!).getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar horario' }));
 
     expect(screen.getByText('No hay valores publicados.')).toBeInTheDocument();
     expect(screen.getByText('No hay horarios de misa publicados.')).toBeInTheDocument();

@@ -93,15 +93,18 @@ describe('integración de reservas, estados y edición', () => {
   });
 
   it('aprueba, cancela la propia y rechaza la reserva ajena', async () => {
-    mostrar();
+    const vista = mostrar();
     await screen.findByRole('cell', { name: 'Confirmada' });
     await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
+    vista.unmount();
     preparar();
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 99, nombre: 'Otro admin', correo: 'otro@test.com', rol_id: ROLES.ADMIN }));
     const { unmount } = mostrar();
     await screen.findAllByText('Pendiente');
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar reserva' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 3 });
     unmount();
   });

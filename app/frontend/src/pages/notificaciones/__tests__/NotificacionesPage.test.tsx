@@ -271,6 +271,7 @@ describe('Sincronización entre Recibidas y Papelera', () => {
     mostrar();
     await screen.findByText('Primera notificación');
     fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Mover a papelera' }));
     await waitFor(() => expect(screen.queryByText('Primera notificación')).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Papelera' }));
@@ -435,6 +436,8 @@ describe('Confirmación y cancelación de asistencia', () => {
 
     // Cancelar asistencia confirmada
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar asistencia' }));
+    const dialogoCancelar = screen.getByRole('dialog', { name: 'Cancelar asistencia' });
+    fireEvent.click(within(dialogoCancelar).getByRole('button', { name: 'Cancelar asistencia' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-asistencia');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Cancelar asistencia' })).not.toBeInTheDocument();
@@ -490,6 +493,8 @@ describe('Reportar inasistencia y revertirla', () => {
     await screen.findByRole('button', { name: 'Quitar no asistencia' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Quitar no asistencia' }));
+    const dialogoQuitar = screen.getByRole('dialog', { name: 'Quitar no asistencia' });
+    fireEvent.click(within(dialogoQuitar).getByRole('button', { name: 'Quitar no asistencia' }));
 
     expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-inasistencia');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument());
