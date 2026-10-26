@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useId, useEffect, useMemo, useState } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import type { DestinatarioInfo, Evento, NotificacionTipo } from '../../../types';
 import Btn from '../../../components/ui/Btn';
-import { Field, SelectUI, TextareaUI } from '../../../components/ui/Field';
+import { Field, FieldGroup, SelectUI, TextareaUI } from '../../../components/ui/Field';
 import { formatFecha, formatHorario } from '../../../utils/date';
 import styles from './EnviarNotificacionForm.module.css';
 
@@ -15,6 +15,7 @@ interface Props {
 }
 
 export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props) {
+  const fieldId = useId();
   const [mensaje,        setMensaje]        = useState('');
   const [tipo,           setTipo]           = useState<NotificacionTipo>('individual');
   const [destinatarios,  setDestinatarios]  = useState<DestinatarioInfo[]>([]);
@@ -112,8 +113,8 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {puedeEnviarGlobal && (
-        <Field label="Tipo de notificación">
-          <SelectUI
+        <Field label="Tipo de notificación" htmlFor={`${fieldId}-tipo`}>
+          <SelectUI id={`${fieldId}-tipo`}
             value={tipo}
             onChange={(e) => {
               setTipo(e.target.value as NotificacionTipo);
@@ -126,8 +127,8 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
         </Field>
       )}
 
-      <Field label="Mensaje" required>
-        <TextareaUI
+      <Field label="Mensaje" htmlFor={`${fieldId}-mensaje`} required>
+        <TextareaUI aria-required="true" id={`${fieldId}-mensaje`}
           value={mensaje}
           onChange={(e) => setMensaje(e.target.value)}
           placeholder="Escribe el mensaje de la notificación…"
@@ -135,7 +136,7 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
         />
       </Field>
 
-      <Field label="Confirmación de asistencia">
+      <FieldGroup label="Confirmación de asistencia">
         <label className={styles.item}>
           <input
             type="checkbox"
@@ -150,22 +151,24 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
         </label>
 
         {requiereConfirmacion && (
-          <SelectUI value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
-            <option value="">-- Elige el evento --</option>
-            {eventos.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.descripcion} · {formatFecha(ev.fecha)} · {formatHorario(ev.hora_inicio, ev.hora_fin)}
-              </option>
-            ))}
-          </SelectUI>
+          <Field label="Evento para confirmar asistencia" htmlFor={`${fieldId}-evento`} required>
+            <SelectUI id={`${fieldId}-evento`} aria-required="true" value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
+              <option value="">-- Elige el evento --</option>
+              {eventos.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.descripcion} · {formatFecha(ev.fecha)} · {formatHorario(ev.hora_inicio, ev.hora_fin)}
+                </option>
+              ))}
+            </SelectUI>
+          </Field>
         )}
         {requiereConfirmacion && eventos.length === 0 && (
           <p className={styles.listaVacia}>No hay eventos disponibles.</p>
         )}
-      </Field>
+      </FieldGroup>
 
       {tipo !== 'global' && (
-        <Field label={soloIndividual ? 'Tus ministros' : 'Destinatarios'} required>
+        <FieldGroup label={soloIndividual ? 'Tus ministros' : 'Destinatarios'} required>
           <div className={styles.destinatariosHead}>
             <span className={styles.destinatariosCount}>
               {seleccionados.length} seleccionado{seleccionados.length !== 1 ? 's' : ''}
@@ -240,7 +243,7 @@ export default function EnviarNotificacionForm({ onEnviada, onCancelar }: Props)
               })
             )}
           </div>
-        </Field>
+        </FieldGroup>
       )}
 
       {tipo === 'global' && (

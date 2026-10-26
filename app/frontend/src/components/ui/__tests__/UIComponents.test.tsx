@@ -91,8 +91,8 @@ describe('UI Components', () => {
   // ----------------------------------------------------
   it('Field - debería renderizar el label, el hint y el input', () => {
     render(
-      <Field label="Nombre Completo" hint="Ingresa tus datos" required>
-        <InputUI placeholder="Escribe aquí..." />
+      <Field label="Nombre Completo" htmlFor="nombre-completo" hint="Ingresa tus datos" required>
+        <InputUI id="nombre-completo" aria-describedby="nombre-completo-hint" placeholder="Escribe aquí..." />
       </Field>
     );
 

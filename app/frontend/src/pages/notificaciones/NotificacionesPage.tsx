@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useId, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
@@ -36,6 +36,7 @@ const SORT_COMUN = {
 };
 
 export default function NotificacionesPage() {
+  const fieldId = useId();
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
   const [busqueda, setBusqueda] = useState('');
@@ -172,24 +173,24 @@ export default function NotificacionesPage() {
       <Card>
         <CardBody>
           <div className={styles.filtros}>
-            <Field label="Buscar">
-              <InputUI aria-label="Buscar" type="search" placeholder="Mensaje, remitente o destinatario…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+            <Field label="Buscar" htmlFor={`${fieldId}-buscar`}>
+              <InputUI id={`${fieldId}-buscar`} aria-label="Buscar" type="search" placeholder="Mensaje, remitente o destinatario…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </Field>
-            <Field label="Tipo">
-              <SelectUI aria-label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
+            <Field label="Tipo" htmlFor={`${fieldId}-tipo`}>
+              <SelectUI id={`${fieldId}-tipo`} aria-label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
                 <option value="">Todos</option><option value="global">Global</option><option value="grupo">Grupo</option><option value="individual">Individual</option>
               </SelectUI>
             </Field>
-            {vista === 'recibidas' && <Field label="Estado de lectura">
-              <SelectUI aria-label="Estado de lectura" value={lectura} onChange={e => setLectura(e.target.value)}>
+            {vista === 'recibidas' && <Field label="Estado de lectura" htmlFor={`${fieldId}-lectura`}>
+              <SelectUI id={`${fieldId}-lectura`} aria-label="Estado de lectura" value={lectura} onChange={e => setLectura(e.target.value)}>
                 <option value="">Todos</option><option value="leida">Leídas</option><option value="no-leida">No leídas</option>
               </SelectUI>
             </Field>}
-            <Field label="Desde (fecha y hora)">
-              <InputUI aria-label="Desde (fecha y hora)" type="datetime-local" value={desde} onChange={e => setDesde(e.target.value)} />
+            <Field label="Desde (fecha y hora)" htmlFor={`${fieldId}-desde`}>
+              <InputUI id={`${fieldId}-desde`} aria-label="Desde (fecha y hora)" type="datetime-local" value={desde} onChange={e => setDesde(e.target.value)} />
             </Field>
-            <Field label="Hasta (fecha y hora)">
-              <InputUI aria-label="Hasta (fecha y hora)" type="datetime-local" value={hasta} onChange={e => setHasta(e.target.value)} />
+            <Field label="Hasta (fecha y hora)" htmlFor={`${fieldId}-hasta`}>
+              <InputUI id={`${fieldId}-hasta`} aria-label="Hasta (fecha y hora)" type="datetime-local" value={hasta} onChange={e => setHasta(e.target.value)} />
             </Field>
             <Btn kind="primary" onClick={() => { setDesde(''); setHasta(''); setBusqueda(''); setTipo(''); setLectura(''); }} disabled={!filtrando}>Limpiar filtros</Btn>
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useId, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import PageHeader from '../../components/ui/PageHeader';
@@ -29,6 +29,7 @@ const sortValues = {
 };
 
 export default function CoordinadoresMinistrosPage() {
+  const fieldId = useId();
   const navigate = useNavigate();
   const toast = useToast();
   const [coordinadores, setCoordinadores] = useState<Coordinador[]>([]);
@@ -124,8 +125,8 @@ export default function CoordinadoresMinistrosPage() {
           <CardHead title="Seleccionar coordinador" />
           <CardBody>
             {coordinadores.length === 0 ? <EmptyState message="No hay coordinadores de ministros registrados." /> : (
-              <Field label="Coordinador de ministros">
-                <SelectUI aria-label="Coordinador de ministros" value={coordinadorId} disabled={guardando || porQuitar !== null}
+              <Field label="Coordinador de ministros" htmlFor={`${fieldId}-coordinador`}>
+                <SelectUI id={`${fieldId}-coordinador`} aria-label="Coordinador de ministros" value={coordinadorId} disabled={guardando || porQuitar !== null}
                   onChange={e => { filtros.controls.clear(); setCoordinadorId(e.target.value); setMinistroId(''); setAsignados(null); setErrorAsignados(''); }}>
                   <option value="">Selecciona un coordinador</option>
                   {coordinadores.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.estado_cuenta !== 'activa' ? ' (cuenta no activa)' : ''}</option>)}
@@ -145,8 +146,8 @@ export default function CoordinadoresMinistrosPage() {
                   : disponibles.length === 0
                     ? <p className={styles.help}>No hay ministros activos disponibles para agregar a este coordinador.</p>
                     : <form className={styles.assignment} onSubmit={asignar} aria-busy={guardando}>
-                      <Field label="Ministro para asignar">
-                        <SelectUI aria-label="Ministro para asignar" value={ministroId} onChange={e => setMinistroId(e.target.value)} disabled={guardando || porQuitar !== null} required>
+                      <Field label="Ministro para asignar" htmlFor={`${fieldId}-ministro`}>
+                        <SelectUI id={`${fieldId}-ministro`} aria-label="Ministro para asignar" value={ministroId} onChange={e => setMinistroId(e.target.value)} disabled={guardando || porQuitar !== null} required>
                           <option value="">Selecciona un ministro</option>
                           {disponibles.map(m => <option key={m.id} value={m.id}>{m.nombre} — {m.correo}</option>)}
                         </SelectUI>

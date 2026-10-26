@@ -52,6 +52,22 @@ describe('EnviarNotificacionForm', () => {
     );
   }
 
+  it('asocia las etiquetas y nombra los grupos y el evento condicional', async () => {
+    renderForm();
+    expect(screen.getByRole('combobox', { name: 'Tipo de notificación' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Mensaje' })).toBeRequired();
+    expect(await screen.findByLabelText('Sacerdote Test')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Tus ministros' })).toContainElement(screen.getByLabelText('Sacerdote Test'));
+    const requiere = screen.getByLabelText('Requiere confirmación de asistencia');
+    expect(screen.getByRole('group', { name: 'Confirmación de asistencia' })).toContainElement(requiere);
+    expect(screen.queryByRole('combobox', { name: 'Evento para confirmar asistencia' })).not.toBeInTheDocument();
+    fireEvent.click(requiere);
+    expect(screen.getByRole('combobox', { name: 'Evento para confirmar asistencia' })).toBeRequired();
+    fireEvent.click(requiere);
+    expect(screen.queryByRole('combobox', { name: 'Evento para confirmar asistencia' })).not.toBeInTheDocument();
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
   it('permite enviar una notificacion individual', async () => {
     renderForm();
     await waitFor(() => expect(screen.queryByText('Cargando destinatarios…')).not.toBeInTheDocument());
