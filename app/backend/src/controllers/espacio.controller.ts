@@ -182,9 +182,9 @@ function validarDatosEspacio(body: Record<string, unknown>) {
   const nombre = body.nombre.trim();
   if (nombre.length > 100) throw new ErrorEspacio(400, 'El nombre no puede superar 100 caracteres');
   const valor = body.capacidad;
-  const capacidad = valor === undefined || valor === null || valor === '' ? null :
+  const capacidad =
     (typeof valor === 'number' || (typeof valor === 'string' && /^\d+$/.test(valor)) ? Number(valor) : NaN);
-  if (capacidad !== null && (!Number.isSafeInteger(capacidad) || capacidad < 1 || capacidad > 2147483647)) {
+  if (!Number.isSafeInteger(capacidad) || capacidad < 1 || capacidad > 2147483647) {
     throw new ErrorEspacio(400, 'La capacidad debe ser un número entero mayor que cero');
   }
   if (body.quitar_imagen !== undefined && ![true, false, 'true', 'false'].includes(body.quitar_imagen as boolean | string)) {

@@ -48,10 +48,10 @@ describe('D2 con MariaDB real', () => {
     expect(metadata.width).toBeLessThanOrEqual(1600); expect(metadata.height).toBeLessThanOrEqual(1200); expect(metadata.exif).toBeUndefined();
     await request(entorno.app).put(urlEspacio).auth(admin, { type: 'bearer' }).send({ nombre: 'D2 editado', capacidad: 40 }).expect(200);
     expect((await datos()).foto_url).toBe(foto1);
-    await request(entorno.app).put(urlEspacio).auth(admin, { type: 'bearer' }).field('nombre', 'D2 reemplazado').attach('imagen', buffer, 'otra.png').expect(200);
+    await request(entorno.app).put(urlEspacio).auth(admin, { type: 'bearer' }).field('nombre', 'D2 reemplazado').field('capacidad', '40').attach('imagen', buffer, 'otra.png').expect(200);
     const foto2 = (await datos()).foto_url as string; fotos.add(foto2);
     expect(foto2).not.toBe(foto1); await request(entorno.app).get(foto1).expect(404);
-    await request(entorno.app).put(urlEspacio).auth(admin, { type: 'bearer' }).send({ nombre: 'D2 sin foto', quitar_imagen: true }).expect(200);
+    await request(entorno.app).put(urlEspacio).auth(admin, { type: 'bearer' }).send({ nombre: 'D2 sin foto', capacidad: 40, quitar_imagen: true }).expect(200);
     expect((await datos()).foto_url).toBeNull(); await request(entorno.app).get(foto2).expect(404);
     await request(entorno.app).get('/uploads/espacios/salon-01-v1.webp').expect(200);
     await request(entorno.app).get('/uploads/espacios/subidas/foto.jpg').expect(404);

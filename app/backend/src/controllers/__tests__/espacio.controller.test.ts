@@ -188,7 +188,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(201);
     });
 
-    it.each([0, -1, 2.5, true, {}, 'abc', '1.5', 2147483648])('rechaza capacidad inválida %j', async capacidad => {
+    it.each([undefined, null, '', 0, -1, 2.5, true, {}, 'abc', '1.5', 2147483648])('rechaza capacidad inválida %j', async capacidad => {
       req.body = { nombre: 'Salón', capacidad };
       await crearEspacio(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(400);
@@ -201,13 +201,6 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(400);
     });
 
-    it('permite capacidad sin especificar', async () => {
-      req.body = { nombre: 'Patio', capacidad: '' };
-      vi.mocked(pool.execute).mockResolvedValue([{ insertId: 5 }] as any);
-      await crearEspacio(req as Request, res as Response);
-      expect(pool.execute).toHaveBeenCalledWith(expect.any(String), ['Patio', null, null]);
-    });
-
     it('conserva la imagen al editar datos y responde después del commit', async () => {
       req.params = { id: '1' }; req.body = { nombre: 'Patio', capacidad: 50 };
       conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: '/uploads/espacios/salon-01-v1.webp' }]]).mockResolvedValueOnce([{}]);
@@ -218,14 +211,14 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     });
 
     it('permite quitar la imagen', async () => {
-      req.params = { id: '1' }; req.body = { nombre: 'Patio', quitar_imagen: 'true' };
+      req.params = { id: '1' }; req.body = { nombre: 'Patio', capacidad: 50, quitar_imagen: 'true' };
       conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: '/uploads/espacios/salon-01-v1.webp' }]]).mockResolvedValueOnce([{}]);
       await actualizarEspacio(req as Request, res as Response);
-      expect(conn.execute).toHaveBeenLastCalledWith(expect.any(String), ['Patio', null, null, '1']);
+      expect(conn.execute).toHaveBeenLastCalledWith(expect.any(String), ['Patio', 50, null, '1']);
     });
 
     it('revierte y devuelve 404 si el espacio ya no existe', async () => {
-      req.params = { id: '99' }; req.body = { nombre: 'Salón' };
+      req.params = { id: '99' }; req.body = { nombre: 'Salón', capacidad: 50 };
       conn.execute.mockResolvedValueOnce([[]]);
       await actualizarEspacio(req as Request, res as Response);
       expect(conn.rollback).toHaveBeenCalledOnce();
@@ -234,7 +227,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     });
 
     it('limpia la nueva imagen si falla la creación en base de datos', async () => {
-      req.body = { nombre: 'Salón' }; req.file = {} as Express.Multer.File;
+      req.body = { nombre: 'Salón', capacidad: 50 }; req.file = {} as Express.Multer.File;
       vi.mocked(guardarFotoEspacio).mockResolvedValue('/uploads/espacios/subidas/nueva.webp');
       vi.mocked(pool.execute).mockRejectedValue(new Error('DB'));
       await crearEspacio(req as Request, res as Response);
@@ -243,7 +236,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     });
 
     it('un reemplazo fallido limpia la nueva imagen y conserva la anterior', async () => {
-      req.params = { id: '1' }; req.body = { nombre: 'Salón' }; req.file = {} as Express.Multer.File;
+      req.params = { id: '1' }; req.body = { nombre: 'Salón', capacidad: 50 }; req.file = {} as Express.Multer.File;
       vi.mocked(guardarFotoEspacio).mockResolvedValue('/uploads/espacios/subidas/nueva.webp');
       conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: '/uploads/espacios/subidas/anterior.webp' }]]).mockResolvedValueOnce([{}]);
       conn.commit.mockRejectedValueOnce(new Error('DB'));
@@ -254,7 +247,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     });
 
     it('no indica éxito cuando falla el commit', async () => {
-      req.params = { id: '1' }; req.body = { nombre: 'Patio' };
+      req.params = { id: '1' }; req.body = { nombre: 'Patio', capacidad: 50 };
       conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: null }]]).mockResolvedValueOnce([{}]);
       conn.commit.mockRejectedValueOnce(new Error('DB'));
       await actualizarEspacio(req as Request, res as Response);

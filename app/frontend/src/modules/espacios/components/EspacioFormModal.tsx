@@ -49,7 +49,7 @@ export default function EspacioFormModal({ espacio, onClose, onSaved }: Props) {
     event.preventDefault();
     if (lock.current) return;
     if (!nombre.trim()) { setError('El nombre del espacio es obligatorio.'); return; }
-    if (capacidad && (!/^\d+$/.test(capacidad) || Number(capacidad) < 1 || Number(capacidad) > 2147483647)) {
+    if (!/^\d+$/.test(capacidad) || Number(capacidad) < 1 || Number(capacidad) > 2147483647) {
       setError('La capacidad debe ser un número entero mayor que cero.'); return;
     }
     lock.current = true;
@@ -72,9 +72,9 @@ export default function EspacioFormModal({ espacio, onClose, onSaved }: Props) {
       <Field label="Nombre del espacio" htmlFor={`${id}-nombre`} required>
         <InputUI id={`${id}-nombre`} value={nombre} onChange={e => setNombre(e.target.value)} maxLength={100} required disabled={guardando} placeholder="Ej. Salón parroquial" />
       </Field>
-      <Field label="Capacidad" htmlFor={`${id}-capacidad`} hint="Opcional. Cantidad máxima de personas.">
-        <InputUI id={`${id}-capacidad`} type="number" min={1} max={2147483647} step={1} value={capacidad}
-          onChange={e => setCapacidad(e.target.value)} disabled={guardando} placeholder="Sin especificar" aria-describedby={`${id}-capacidad-hint`} />
+      <Field label="Capacidad" htmlFor={`${id}-capacidad`} required hint="Cantidad máxima de personas.">
+        <InputUI id={`${id}-capacidad`} type="number" required min={1} max={2147483647} step={1} value={capacidad}
+          onChange={e => setCapacidad(e.target.value)} disabled={guardando} placeholder="Ej. 50" aria-describedby={`${id}-capacidad-hint`} />
       </Field>
       <Field label="Imagen del espacio" htmlFor={`${id}-imagen`} hint="Opcional. JPEG, PNG o WebP, hasta 10 MB. Solo fotografías sin animación.">
         <InputUI id={`${id}-imagen`} type="file" accept="image/jpeg,image/png,image/webp" disabled={guardando}

@@ -82,6 +82,7 @@ test('crear refresca el listado aunque la disponibilidad esté a medio completar
   await page.getByRole('button', { name: 'Crear espacio', exact: true }).click();
   const dialogo = page.getByRole('dialog', { name: 'Crear espacio', exact: true });
   await dialogo.getByLabel('Nombre del espacio').fill('Nuevo salón');
+  await dialogo.getByLabel('Capacidad', { exact: true }).fill('20');
   await dialogo.getByRole('button', { name: 'Crear espacio', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Nuevo salón', exact: true })).toBeVisible();
   await expect(page.getByLabel('Fecha', { exact: true })).toHaveValue('');

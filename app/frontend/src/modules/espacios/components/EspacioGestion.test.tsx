@@ -29,7 +29,7 @@ describe('formularios de gestión de espacios', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Crear espacio' }));
     const dialog = within(screen.getByRole('dialog'));
     await userEvent.type(dialog.getByLabelText(/Nombre del espacio/), 'Salón nuevo');
-    await userEvent.type(dialog.getByLabelText('Capacidad'), '45');
+    await userEvent.type(dialog.getByLabelText(/Capacidad/), '45');
     const file = new File(['foto'], 'salon.png', { type: 'image/png' });
     await userEvent.upload(dialog.getByLabelText('Imagen del espacio'), file);
     expect(dialog.getByAltText('Vista previa de la imagen seleccionada')).toHaveAttribute('src', 'blob:foto');

@@ -2,7 +2,7 @@
 
 Admin y Sacerdote administran los espacios desde **Espacios → Crear espacio** y desde las acciones **Editar espacio / Eliminar espacio** del listado o detalle. Los demás usuarios conservan su consulta habitual sin acceso a las acciones de gestión.
 
-El nombre es obligatorio, se recorta y admite hasta 100 caracteres. La capacidad es opcional; si se indica debe ser un entero positivo hasta 2147483647. La imagen es opcional: al editar se conserva, se reemplaza o se quita explícitamente.
+El nombre es obligatorio, se recorta y admite hasta 100 caracteres. La capacidad es obligatoria y debe ser un entero positivo hasta 2147483647. Los espacios antiguos sin capacidad deben completarse al editar. La imagen es opcional: al editar se conserva, se reemplaza o se quita explícitamente.
 
 ## Fotografías
 
@@ -42,12 +42,12 @@ Las rutas de lectura siguen disponibles para usuarios autenticados. Las siguient
 
 | Método y ruta | Entrada / resultado |
 | --- | --- |
-| `POST /api/espacios` | JSON o multipart: `nombre`, `capacidad` opcional y archivo `imagen` opcional; devuelve `201` con `espacioId`. |
+| `POST /api/espacios` | JSON o multipart: `nombre`, `capacidad` obligatoria y archivo `imagen` opcional; devuelve `201` con `espacioId`. |
 | `PUT /api/espacios/:id` | Mismos campos; `quitar_imagen=true` elimina la foto. No se permite subir y quitar en la misma petición. |
 | `GET /api/espacios/:id/impacto-eliminacion` | Devuelve `{ reservas: [...] }` con id, fecha, horario, estado, solicitante y título del evento de las reservas afectadas. |
 | `DELETE /api/espacios/:id` | Sin confirmación masiva solo permite eliminar sin reservas afectadas. Para cancelarlas requiere JSON `{ cancelar_reservas: true, reserva_ids: [ids revisados] }`. |
 
-En multipart se envía la capacidad como cadena decimal o vacía y el booleano como `true`/`false`; en JSON también se aceptan sus tipos nativos. La URL de foto la genera el servidor: no se admiten URLs arbitrarias del cliente.
+En multipart se envía la capacidad como cadena decimal positiva y el booleano como `true`/`false`; en JSON también se aceptan sus tipos nativos. La URL de foto la genera el servidor: no se admiten URLs arbitrarias del cliente.
 
 Errores: `400` datos o imagen inválidos, `401` sin autenticación, `403` sin permisos, `404` espacio inexistente, `409` reservas que requieren revisión o concurrencia, `413` archivo demasiado grande y `500` fallo interno. Cuando `409` contiene `reservas`, el cliente debe sustituir la lista mostrada y pedir nueva confirmación. Si no contiene lista, volver a consultar el impacto.
 
