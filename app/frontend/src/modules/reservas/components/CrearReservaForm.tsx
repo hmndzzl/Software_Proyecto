@@ -13,10 +13,12 @@ import styles from '../../../styles/Form.module.css';
 interface CrearReservaFormProps {
   onReservaCreada?: () => void;
   autoFocus?: boolean;
+  contexto?: 'reserva' | 'evento';
+  onGuardandoChange?: (guardando: boolean) => void;
   espacioInicial?: string;
 }
 
-export default function CrearReservaForm({ onReservaCreada, autoFocus = false, espacioInicial }: CrearReservaFormProps) {
+export default function CrearReservaForm({ onReservaCreada, autoFocus = false, espacioInicial, contexto = 'reserva', onGuardandoChange }: CrearReservaFormProps) {
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
@@ -109,6 +111,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     }
 
     setLoading(true);
+    onGuardandoChange?.(true);
 
     try {
       await apiClient.post('/api/reservas', {
@@ -123,10 +126,10 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       });
       const nombreEspacio = espacios.find(esp => esp.id === Number(espacioId))?.nombre ?? 'el espacio seleccionado';
       toast.success(
-        'Solicitud enviada',
-        `Tu reserva de ${nombreEspacio} para «${titulo}» el ${formatFecha(fecha)}, ${formatHorario(horaInicio, horaFin)}, quedó pendiente de aprobación${puedeAprobar ? '' : ' del sacerdote'}. ` +
+        contexto === 'evento' ? 'Evento creado' : 'Solicitud enviada',
+        `Tu ${contexto === 'evento' ? 'evento en' : 'reserva de'} ${nombreEspacio} para «${titulo}» el ${formatFecha(fecha)}, ${formatHorario(horaInicio, horaFin)}, quedó pendiente de aprobación${puedeAprobar ? '' : ' del sacerdote'}. ` +
           (puedeAprobar
-            ? 'Puedes aprobarla tú mismo en la lista de solicitudes de esta página.'
+            ? contexto === 'evento' ? 'Puedes aprobar la reserva desde la pantalla Reservas.' : 'Puedes aprobarla tú mismo en la lista de solicitudes de esta página.'
             : 'Puedes revisar su estado en Mis Reservas.')
       );
       setFecha('');
@@ -139,9 +142,10 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       setPublico(false);
       if (onReservaCreada) onReservaCreada();
     } catch (error: unknown) {
-      toast.error('No se pudo crear la reserva', getApiErrorMessage(error, 'Error de red al intentar crear la reserva.', 'message'));
+      toast.error(contexto === 'evento' ? 'No se pudo crear el evento' : 'No se pudo crear la reserva', getApiErrorMessage(error, 'Error de red al intentar crear la reserva.', 'message'));
     } finally {
       setLoading(false);
+      onGuardandoChange?.(false);
     }
   };
 
@@ -268,7 +272,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         )}
 
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Enviando...' : 'Solicitar Reserva'}
+          {loading ? 'Enviando...' : contexto === 'evento' ? 'Crear evento' : 'Solicitar Reserva'}
         </button>
       </form>
     </div>
