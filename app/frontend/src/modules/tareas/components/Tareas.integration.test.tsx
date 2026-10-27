@@ -339,3 +339,17 @@ describe('avisos de ausencia por fecha y hora', () => {
     await waitFor(() => expect(apiClient.post).toHaveBeenCalled());
   });
 });
+
+it('muestra la advertencia definitiva de periodo y tope devuelta por el servidor', async () => {
+  vi.clearAllMocks(); prepararApi();
+  vi.mocked(apiClient.post).mockResolvedValue({ data: { alertas: [
+    { persona_id: 10, ministro_no_disponible: true, periodo_no_disponible: true, tope_servicios_superado: true, servicios_en_el_mes: 9, tope_servicios_mes: 8 },
+    { persona_id: 999, ministro_no_disponible: true }
+  ] } });
+  mostrar(); await completarCreacion();
+  await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
+  const aviso = await screen.findByRole('status');
+  expect(aviso).toHaveTextContent('Tiene un periodo no disponible que coincide con el horario de la tarea.');
+  expect(aviso).toHaveTextContent('supera el tope mensual (9/8)');
+  expect(aviso).toHaveTextContent('Ministro: Está marcado como no disponible.');
+});

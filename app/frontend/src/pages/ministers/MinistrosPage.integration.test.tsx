@@ -89,3 +89,15 @@ describe('integración del directorio de ministros', () => {
     expect(screen.queryByRole('button', { name: 'Gestionar coordinadores' })).not.toBeInTheDocument();
   });
 });
+
+it('abre y cierra los periodos del ministro seleccionado desde el directorio', async () => {
+  vi.mocked(useAuth).mockReturnValue(authValue({ id: 20, nombre: 'Coordinador', correo: 'coord@test.com', rol_id: ROLES.COORDINADOR_MINISTROS }));
+  vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? ministros : [] }));
+  render(<MinistrosPage />, { wrapper });
+  const fila = (await screen.findByText('Carla')).closest('tr')!;
+  fireEvent.click(within(fila).getByRole('button', { name: 'Periodos no disponibles' }));
+  expect(await screen.findByRole('dialog', { name: 'Disponibilidad de Carla' })).toBeInTheDocument();
+  await screen.findByText('No hay periodos registrados.');
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});

@@ -26,10 +26,20 @@ Las respuestas de asignación conservan `ministro_no_disponible` (verdadero si c
 
 Aplicar `app/database/migrations/20261026_disponibilidad_periodo.sql` en cada base existente antes de desplegar el backend. Es aditiva, repetible y conserva datos. Las bases nuevas incluyen la tabla en `01_schema.sql`.
 
-## Punto de reanudación antes del reinicio
+## Pruebas y revisión local
 
-- Backend: 820 pruebas unitarias pasaron; cobertura global de líneas 96,12%. La compilación encontró imports de Vitest omitidos en el test nuevo; ya corregidos, falta repetir build.
-- Frontend: build pasó antes de los últimos ajustes. 58/59 pruebas enfocadas pasaron; la restante esperaba el texto anterior de un aviso, se conservó ese texto y falta repetirla. Falta completar lint, build final y regresión.
-- Falta ampliar las pruebas de previsualización de ausencias y revisar visualmente el nuevo modal; agregar colección Postman.
-- Falta ejecutar la nueva integración real `disponibilidad.integration.test.ts`, aplicar migración local y verificar API. Docker no estaba disponible y el usuario reiniciará el equipo.
-- No hacer push ni PR hasta autorización. Este es un punto de avance, no una entrega terminada.
+- Migración aplicada en la base local, sin borrar volúmenes ni datos. La prueba aislada también comprueba que ejecutarla dos veces conserva los periodos.
+- Backend: compilación y 820 pruebas unitarias aprobadas.
+- Frontend: compilación, lint y 741 pruebas aprobadas; cobertura de ramas 95,03%, cumpliendo el mínimo de 95%.
+- Integración de esta tarea: 8 pruebas con MariaDB aprobadas (permisos, persistencia, eliminación, límites de solapamiento y ausencias existentes).
+- Navegador + API + MariaDB: creación desde el directorio, recarga, advertencia antes/después de asignar y eliminación aprobadas. Diseño revisado a 1440 y 390 píxeles; el botón móvil no recorta su texto.
+- API local: consulta autorizada 200 y sin sesión 401; frontend disponible en http://localhost:5173. Backend y frontend locales actualizados.
+- Integración general: 37/38 pruebas aprobadas. El fallo existente de historial de cuentas/reservas compara la hora de Windows con la de MariaDB con tolerancia de 10 segundos; se verificó un desfase de aproximadamente 12 segundos del reloj de Docker. No se modificó esa prueba ni se relajó su validación.
+
+## Postman
+
+Importar `docs/sprint10/disponibilidad-periodos.postman.json`, configurar `token` y `ministroId`. Tras crear un periodo, copiar su `id` en `periodoId` para retirarlo. La solicitud de ejemplo de tarea usa el ministro 9: sustituirlo por el ministro elegido. Probar con un usuario coordinador asignado al ministro y repetir con un ministro o sin token para comprobar permisos.
+
+## Publicación
+
+Rama local, sin push ni PR. Aplicar la migración también en las bases de los demás entornos antes de actualizar el backend.

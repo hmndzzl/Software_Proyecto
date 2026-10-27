@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import apiClient from '../../api/client';
 import DisponibilidadPeriodos from './DisponibilidadPeriodos';
@@ -45,4 +45,41 @@ it('recupera carga fallida y conserva el periodo si falla quitar', async () => {
   vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red')); fireEvent.click(quitar);
   await screen.findByText('No se pudo quitar el periodo.');
   await waitFor(() => expect(quitar).not.toBeDisabled());
+});
+
+it('no duplica envíos mientras guarda y permite cerrar al terminar', async () => {
+  let resolver!: (value: unknown) => void;
+  vi.mocked(apiClient.post).mockImplementation(() => new Promise(resolve => { resolver = resolve; }) as never);
+  const cerrar = vi.fn();
+  render(<DisponibilidadPeriodos ministro={{ ...ministro, disponible: false }} onClose={cerrar} />);
+  await screen.findByText('No hay periodos registrados.');
+  expect(screen.getByText(/La disponibilidad general está desactivada/)).toBeInTheDocument();
+  completar();
+  const formulario = screen.getByLabelText('No disponible desde').closest('form')!;
+  fireEvent.submit(formulario);
+  expect(apiClient.post).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(document, { key: 'Escape' }); expect(cerrar).not.toHaveBeenCalled();
+  await act(async () => resolver({ data: periodo }));
+  fireEvent.keyDown(document, { key: 'Escape' }); expect(cerrar).toHaveBeenCalledOnce();
+});
+
+it('rechaza envíos incompletos aunque no intervenga la validación del navegador', async () => {
+  abrir(); await screen.findByText('No hay periodos registrados.');
+  const formulario = screen.getByLabelText('No disponible desde').closest('form')!;
+  fireEvent.submit(formulario);
+  expect(apiClient.post).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('No disponible desde'), { target: { value: periodo.desde } });
+  fireEvent.submit(formulario);
+  expect(apiClient.post).not.toHaveBeenCalled();
+  expect(screen.getByText('El inicio debe ser anterior al fin.')).toBeInTheDocument();
+});
+
+it.each([false, true])('descarta respuestas de carga cuando se cierra el modal (error=%s)', async falla => {
+  let resolver!: (value: unknown) => void, rechazar!: (error: Error) => void;
+  vi.mocked(apiClient.get).mockImplementationOnce(() => new Promise((resolve, reject) => { resolver = resolve; rechazar = reject; }) as never);
+  const vista = abrir();
+  expect(screen.getByRole('status')).toHaveTextContent('Cargando periodos');
+  vista.unmount();
+  await act(async () => { if (falla) rechazar(new Error('red')); else resolver({ data: [periodo] }); });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });

@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "Sprint 10 - Disponibilidad por periodos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "ministroId",
+      "value": "9"
+    },
+    {
+      "key": "periodoId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Consultar periodos y ausencias",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/personas/{{ministroId}}/disponibilidad/periodos"
+      }
+    },
+    {
+      "name": "Agregar periodo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/personas/{{ministroId}}/disponibilidad/periodos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"desde\": \"2026-12-10T00:00\",\n  \"hasta\": \"2026-12-16T00:00\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Quitar periodo",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/personas/{{ministroId}}/disponibilidad/periodos/{{periodoId}}"
+      }
+    },
+    {
+      "name": "Crear tarea y comprobar alerta",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/tareas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"titulo\": \"Servicio con aviso\",\n  \"descripcion\": \"Comprobar disponibilidad\",\n  \"fecha\": \"2026-12-12\",\n  \"hora_inicio\": \"10:00\",\n  \"hora_fin\": \"11:00\",\n  \"persona_ids\": [\n    9\n  ]\n}"
+        }
+      }
+    }
+  ]
+}
