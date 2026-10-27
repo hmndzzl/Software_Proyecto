@@ -81,7 +81,7 @@ export default function Modal({ open, title, subtitle, onClose, children, width 
           </button>}
           {subtitle ? <div className={styles.heading}>
             <h2 id={titleId} className={styles.title}>{title}</h2>
-            <p id={subtitleId} className={styles.subtitle}>{subtitle}</p>
+            <p id={subtitleId} className={styles.subtitle} tabIndex={0}>{subtitle}</p>
           </div> : <h2 id={titleId} className={styles.title}>{title}</h2>}
           <button type="button" className={styles.closeBtn} onClick={() => close.current()} disabled={closeDisabled} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

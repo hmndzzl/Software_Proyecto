@@ -37,6 +37,7 @@
   font-size: 18px;
   font-weight: 700;
   color: var(--color-tierra);
+  overflow-wrap: anywhere;
   margin: 0;
 }
 
@@ -73,4 +74,6 @@
 
 .headerWithSubtitle { align-items: flex-start; }
 .heading { flex: 1; min-width: 0; }
-.subtitle { margin: 8px 0 0; font-family: var(--font-body); font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--color-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.subtitle { margin: 8px 0 0; font-family: var(--font-body); font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--color-ink); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30vh; max-height: 30dvh; overflow-y: auto; }
+
+.subtitle:focus-visible { outline: 2px solid var(--color-tierra); outline-offset: 3px; border-radius: var(--radius-btn); }
