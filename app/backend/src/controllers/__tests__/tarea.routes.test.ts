@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -6,6 +7,8 @@ import pool from '../../config/db';
 import tareaRoutes from '../../routes/tarea.routes';
 import { ROLES } from '../../config/roles';
 import { JWT_SECRET } from '../../config/env';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../../config/db', () => ({
   default: {
@@ -35,6 +38,7 @@ const conn = {
 };
 
 function token(rol_id: number, id = 7) {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id, rol_id, estado_cuenta: 'activa' });
   return jwt.sign({ id, rol_id }, JWT_SECRET);
 }
 

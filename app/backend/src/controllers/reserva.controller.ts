@@ -198,7 +198,7 @@ export const editarReserva = async (req: Request, res: Response) => {
       // La edición resetea la reserva a Pendiente: los aprobadores necesitan saber que
       // hay (de nuevo) algo esperando su decisión, igual que al crear una solicitud nueva.
       const [aprobadores]: any = await conn.query(
-        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa' AND id != ?`,
         [ROLES.SACERDOTE, ROLES.ADMIN, req.user!.id]
       );
 
@@ -402,6 +402,10 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       }
 
       if (estadoReservaId === ESTADOS_RESERVA.CONFIRMADA) {
+        if (reserva.espacio_id === null) {
+          res.status(HttpStatus.BAD_REQUEST).json({ message: 'El espacio de esta reserva fue eliminado. Selecciona otro espacio antes de aprobarla' });
+          return 'rollback';
+        }
         await validarCapacidad(conn, Number(reserva.espacio_id), reserva.cantidad_personas ?? null);
         const [conflictos]: any = await conn.query(
           `SELECT * FROM reserva

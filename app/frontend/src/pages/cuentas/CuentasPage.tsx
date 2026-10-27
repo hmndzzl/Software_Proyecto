@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   aprobarCuentaApi,
+  darDeBajaCuentaApi,
   listarCuentasApi,
   rechazarCuentaApi,
   type Cuenta,
@@ -38,6 +39,7 @@ const PESTANAS: { estado: EstadoCuenta; label: string; titulo: string; vacio: st
   { estado: 'pendiente', label: 'Pendientes', titulo: 'Cuentas pendientes', vacio: 'No hay cuentas pendientes de aprobación.' },
   { estado: 'activa', label: 'Activas', titulo: 'Cuentas activas', vacio: 'No hay cuentas activas.' },
   { estado: 'rechazada', label: 'Rechazadas', titulo: 'Cuentas rechazadas', vacio: 'No hay cuentas rechazadas.' },
+  { estado: 'baja', label: 'Dadas de baja', titulo: 'Cuentas dadas de baja', vacio: 'No hay cuentas dadas de baja.' },
 ];
 
 const rolLabel = (rolId: number) => ROL_OPCIONES.find((r) => r.id === rolId)?.label ?? 'Sin rol';
@@ -55,13 +57,15 @@ export default function CuentasPage() {
   const toast = useToast();
   const [actuandoId, setActuandoId] = useState<number | null>(null);
   const [rolPorCuenta, setRolPorCuenta] = useState<Record<number, number>>({});
+  const [porEliminar, setPorEliminar] = useState<Cuenta | null>(null);
   const [porRechazar, setPorRechazar] = useState<Cuenta | null>(null);
   const [creando, setCreando] = useState(false);
   const [detalle, setDetalle] = useState<Cuenta | null>(null);
-  const rolVisible = (cuenta: Cuenta) => rolLabel(estado === 'activa' ? cuenta.rol_id : rolPorCuenta[cuenta.id] ?? ROLES.MINISTRO);
+  const asignaRol = estado === 'pendiente' || estado === 'rechazada';
+  const rolVisible = (cuenta: Cuenta) => rolLabel(asignaRol ? rolPorCuenta[cuenta.id] ?? cuenta.rol_id : cuenta.rol_id);
   const filtros = useTableFilters(cuentas, {
     search: c => [c.nombre, c.correo, rolVisible(c)],
-    selects: [{ key: 'rol', label: estado === 'activa' ? 'Rol' : 'Rol a asignar', value: rolVisible }],
+    selects: [{ key: 'rol', label: asignaRol ? 'Rol a asignar' : 'Rol', value: rolVisible }],
   });
   const orden = useSortableTable(filtros.filteredData, {
     nombre: (c: Cuenta) => c.nombre.toLowerCase(),
@@ -97,11 +101,10 @@ export default function CuentasPage() {
   const rolElegido = (cuenta: Cuenta) =>
     rolPorCuenta[cuenta.id] ?? (rolesDisponibles.some((r) => r.id === cuenta.rol_id) ? cuenta.rol_id : ROLES.MINISTRO);
 
-  // El selector de rol solo tiene sentido al aprobar; en Activas se muestra el rol actual.
-  const asignaRol = estado !== 'activa';
+  // Las cuentas activas y dadas de baja muestran el rol conservado.
 
-  // No se puede rechazar la propia cuenta, ni un Sacerdote la de un Admin (el backend también lo valida).
-  const puedeRechazar = (c: Cuenta) =>
+  // Las acciones de rechazo y baja protegen la cuenta propia y los administradores.
+  const puedeRetirarAcceso = (c: Cuenta) =>
     c.id !== usuario?.id && (c.rol_id !== ROLES.ADMIN || usuario?.rol_id === ROLES.ADMIN);
 
   const quitarDeLista = (id: number) => setCuentas((prev) => prev.filter((c) => c.id !== id));
@@ -131,10 +134,26 @@ export default function CuentasPage() {
       quitarDeLista(cuenta.id);
       toast.success(
         'Cuenta rechazada',
-        `${cuenta.nombre} ${cuenta.estado_cuenta === 'activa' ? 'ya no tiene acceso al sistema' : 'no podrá entrar al sistema'}. Puedes volver a aprobarla desde la pestaña Rechazadas.`
+        `${cuenta.nombre} no podrá entrar al sistema. Puedes volver a aprobarla desde la pestaña Rechazadas.`
       );
     } catch (err: unknown) {
       toast.error('No se pudo rechazar la cuenta', getApiErrorMessage(err, 'Intenta de nuevo en unos momentos.'));
+    } finally {
+      setActuandoId(null);
+    }
+  };
+
+  const confirmarBaja = async () => {
+    if (!porEliminar || actuandoId === porEliminar.id) return;
+    const cuenta = porEliminar;
+    setActuandoId(cuenta.id);
+    try {
+      await darDeBajaCuentaApi(cuenta.id);
+      setPorEliminar(null);
+      quitarDeLista(cuenta.id);
+      toast.success('Cuenta dada de baja', `${cuenta.nombre} ya no tiene acceso al sistema. Su historial de tareas y reservas se conserva.`);
+    } catch (err: unknown) {
+      toast.error('No se pudo eliminar la cuenta', getApiErrorMessage(err, 'Intenta de nuevo en unos momentos.'));
     } finally {
       setActuandoId(null);
     }
@@ -144,8 +163,8 @@ export default function CuentasPage() {
     <div className={styles.page}>
       <PageHeader
         kicker="Administración"
-        title="Aprobación de cuentas"
-        subtitle="Crea cuentas nuevas y revisa las pendientes asignando el rol con el que podrán entrar al sistema."
+        title="Gestión de cuentas"
+        subtitle="Crea y aprueba cuentas, administra el acceso y consulta el historial de las personas dadas de baja."
         actions={<Btn onClick={() => setCreando(true)}>Nueva cuenta</Btn>}
       />
 
@@ -215,14 +234,19 @@ export default function CuentasPage() {
                     <td>
                       <div className={styles.acciones}>
                         <Btn kind="ghost" size="sm" onClick={() => setDetalle(c)}>Ver detalle</Btn>
-                        {estado !== 'activa' && (
+                        {asignaRol && (
                           <Btn kind="ok" size="sm" disabled={actuandoId === c.id} onClick={() => aprobar(c)}>
                             Aprobar
                           </Btn>
                         )}
-                        {estado !== 'rechazada' && puedeRechazar(c) && (
+                        {estado === 'pendiente' && puedeRetirarAcceso(c) && (
                           <Btn kind="bad" size="sm" disabled={actuandoId === c.id} onClick={() => setPorRechazar(c)}>
                             Rechazar
+                          </Btn>
+                        )}
+                        {estado === 'activa' && puedeRetirarAcceso(c) && (
+                          <Btn kind="bad" size="sm" disabled={actuandoId === c.id} onClick={() => setPorEliminar(c)}>
+                            Eliminar
                           </Btn>
                         )}
                       </div>
@@ -238,7 +262,7 @@ export default function CuentasPage() {
       {detalle && <DetalleConDecisiones titulo={`Detalle de cuenta: ${detalle.nombre}`} endpoint={`/api/cuentas/${detalle.id}/decisiones`}
         onClose={() => setDetalle(null)} campos={[
           { etiqueta: 'Nombre', valor: detalle.nombre }, { etiqueta: 'Correo', valor: detalle.correo },
-          { etiqueta: 'Rol actual', valor: rolLabel(detalle.rol_id) }, { etiqueta: 'Estado actual', valor: detalle.estado_cuenta },
+          { etiqueta: 'Rol actual', valor: rolLabel(detalle.rol_id) }, { etiqueta: 'Estado actual', valor: detalle.estado_cuenta === 'baja' ? 'Dada de baja' : detalle.estado_cuenta },
         ]} />}
       <NuevaCuentaModal
         open={creando}
@@ -254,14 +278,19 @@ export default function CuentasPage() {
         }}
       />
 
+      <ConfirmDialog open={porEliminar !== null} title="Eliminar cuenta" confirmLabel="Eliminar cuenta"
+        busy={actuandoId === porEliminar?.id} busyLabel="Eliminando…"
+        onCancel={() => setPorEliminar(null)} onConfirm={confirmarBaja}
+        description={<p>¿Eliminar la cuenta de <strong>{porEliminar?.nombre}</strong> ({porEliminar?.correo})?
+          Dejará de poder acceder al sistema y desaparecerá de los directorios activos. Se conservarán sus tareas,
+          reservas e historial. Esta acción da de baja la cuenta sin borrar sus datos y se le avisará por correo.</p>} />
+
       <ConfirmDialog open={porRechazar !== null} title="Rechazar cuenta" confirmLabel="Rechazar cuenta"
         busy={actuandoId === porRechazar?.id} busyLabel="Rechazando…"
         onCancel={() => setPorRechazar(null)} onConfirm={confirmarRechazo}
         description={<p>
           ¿Rechazar la cuenta de <strong>{porRechazar?.nombre}</strong> ({porRechazar?.correo})?{' '}
-          {porRechazar?.estado_cuenta === 'activa'
-            ? 'Dejará de poder iniciar sesión y se le avisará por correo.'
-            : 'No podrá entrar al sistema y se le avisará por correo.'}{' '}
+          {'No podrá entrar al sistema y se le avisará por correo.'}{' '}
           Podrás aprobarla de nuevo más adelante desde la pestaña Rechazadas.
         </p>} />
     </div>

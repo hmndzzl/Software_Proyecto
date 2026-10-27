@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../client';
-import { aprobarCuentaApi, crearCuentaApi, listarCuentasApi, rechazarCuentaApi } from '../cuentas';
+import { darDeBajaCuentaApi, aprobarCuentaApi, crearCuentaApi, listarCuentasApi, rechazarCuentaApi } from '../cuentas';
 
 vi.mock('../client', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
@@ -26,6 +26,8 @@ describe('API de cuentas', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/api/cuentas', { params: { estado: 'pendiente' } });
     await aprobarCuentaApi(2, 3);
     expect(apiClient.patch).toHaveBeenCalledWith('/api/cuentas/2/aprobar', { rol_id: 3 });
+    await darDeBajaCuentaApi(2);
+    expect(apiClient.patch).toHaveBeenCalledWith('/api/cuentas/2/baja');
     await rechazarCuentaApi(2);
     expect(apiClient.patch).toHaveBeenCalledWith('/api/cuentas/2/rechazar');
   });

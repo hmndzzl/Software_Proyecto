@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import path from 'node:path';
+import { ESPACIOS_MEDIA_DIR } from '../services/espacioFoto.service';
 import express from 'express';
 
 const router = Router();
-const espaciosDir = path.resolve(__dirname, '../../media/espacios');
+const espaciosDir = ESPACIOS_MEDIA_DIR;
 
 // Solo se publica el directorio de fotografías optimizadas, sin acceso a los JPG originales.
 router.use('/espacios', (req, res, next) => {
-  if (!/^\/[a-z0-9-]+\.webp$/.test(req.path)) {
+  if (!/^\/(?:subidas\/)?[a-z0-9-]+\.webp$/.test(req.path)) {
     res.sendStatus(404);
     return;
   }

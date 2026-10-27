@@ -120,6 +120,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it.each([
       ['pendiente', 'CUENTA_PENDIENTE'],
       ['rechazada', 'CUENTA_RECHAZADA'],
+      ['baja', 'CUENTA_BAJA'],
     ])('debería rechazar con 403 una cuenta %s aunque la contraseña sea correcta', async (estado, codigo) => {
       req.body = { correo: 'test@test.com', password: 'password123' };
       (pool.execute as any).mockResolvedValue([[{ id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 4, estado_cuenta: estado }]]);
@@ -312,7 +313,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       expect((jwt.sign as any).mock.calls[0][0]).toEqual({ id: 1, rol_id: 2 });
     });
 
-    it.each(['rechazada', 'pendiente'])('retorna 401 y limpia la cookie si la cuenta está %s', async (estado) => {
+    it.each(['rechazada', 'pendiente', 'baja'])('retorna 401 y limpia la cookie si la cuenta está %s', async (estado) => {
       req.cookies = { refreshToken: 'valid-token' };
       (jwt.verify as any).mockReturnValue({ id: 1, rol_id: 2 });
       (pool.execute as any).mockResolvedValueOnce([[{ rol_id: 2, estado_cuenta: estado }]]);

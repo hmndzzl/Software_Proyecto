@@ -1,3 +1,5 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
@@ -65,14 +67,16 @@ describe('Auth Middleware - Pruebas Unitarias', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('debería llamar a next() y adjuntar el usuario si el token es válido', () => {
+    it('debería llamar a next() y adjuntar el usuario si el token es válido', async () => {
       req.headers!.authorization = 'Bearer token_valido';
       const mockPayload = { id: 1, rol_id: ROLES.ADMIN };
       (jwt.verify as any).mockReturnValue(mockPayload);
+      vi.mocked(obtenerPersonaSesion).mockResolvedValue({ ...mockPayload, estado_cuenta: 'activa' });
 
       authMiddleware(req as Request, res as Response, next);
 
       expect(jwt.verify).toHaveBeenCalledWith('token_valido', expect.any(String));
+      await vi.waitFor(() => expect(next).toHaveBeenCalled());
       expect(req.user).toEqual(mockPayload);
       expect(next).toHaveBeenCalled();
     });

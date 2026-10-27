@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
+import { getLoginError, registerClerkSession } from '../../auth/clerkSession';
 
 let requestInterceptor: any;
 let responseInterceptorSuccess: any;
@@ -65,6 +66,20 @@ describe('apiClient', () => {
     it('debería retornar res directo si hay éxito', () => {
       const res = { data: 'ok' };
       expect(responseInterceptorSuccess(res)).toBe(res);
+    });
+
+    it('cierra la sesión local y de Clerk cuando la cuenta fue dada de baja', async () => {
+      const signOut = vi.fn().mockResolvedValue(undefined);
+      registerClerkSession(vi.fn(), signOut);
+      localStorage.setItem('token', 'sesion-antigua');
+      localStorage.setItem('usuario', '{}');
+      const error = { response: { status: 403, data: { codigo: 'CUENTA_BAJA', mensaje: 'Tu cuenta fue dada de baja.' } }, config: {} };
+      await expect(responseInterceptorError(error)).rejects.toBe(error);
+      expect(localStorage.getItem('token')).toBeNull();
+      expect(signOut).toHaveBeenCalled();
+      expect(getLoginError()).toBe('Tu cuenta fue dada de baja.');
+      expect(window.location.href).toBe('/login');
+      expect(axios.post).not.toHaveBeenCalled();
     });
 
     it('debería rechazar si el error no es 401', async () => {

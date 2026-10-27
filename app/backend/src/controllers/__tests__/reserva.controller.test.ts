@@ -466,6 +466,18 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     });
 
+    it('impide aprobar una reserva cuyo espacio fue eliminado', async () => {
+      req.params = { id: '1' };
+      req.body = { estado_id: 2 };
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
+      (db.query as any).mockResolvedValueOnce([[{ id: 1, solicitante_id: 7, estado_reserva_id: 4, espacio_id: null }]]);
+      await cambiarEstadoReserva(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(mockConnection.rollback).toHaveBeenCalledOnce();
+      expect(mockConnection.commit).not.toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
     it('debería retornar 400 si hay choque de horarios al aprobar', async () => {
       req.params = { id: '1' };
       req.body = { estado_id: 2 }; // aprobar

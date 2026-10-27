@@ -23,6 +23,7 @@ services:
       - "3001:3001"
     volumes:
       - ./backend/src:/app/src
+      - espacios_imagenes:/app/media/espacios/subidas
     environment:
       - PORT=${PORT}
       - DB_HOST=${DB_HOST}
@@ -74,3 +75,4 @@ services:
 
 volumes:
   mariadb_data:
+  espacios_imagenes:

@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -7,12 +8,17 @@ import eventoRoutes from '../../routes/evento.routes';
 import { ROLES } from '../../config/roles';
 import { JWT_SECRET } from '../../config/env';
 
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
+
 vi.mock('../../config/db', () => ({ default: { execute: vi.fn() } }));
 const app = express();
 app.use(express.json());
 app.use('/api/eventos', eventoRoutes);
 const endpoint = '/api/eventos/8/publico';
-const token = (rol_id: number) => jwt.sign({ id: 1, rol_id }, JWT_SECRET);
+const token = (rol_id: number) => {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 1, rol_id, estado_cuenta: 'activa' });
+  return jwt.sign({ id: 1, rol_id }, JWT_SECRET);
+};
 
 beforeEach(() => {
   vi.resetAllMocks();

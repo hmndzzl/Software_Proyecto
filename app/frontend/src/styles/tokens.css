@@ -16,6 +16,13 @@
   --color-on-primary: #F3F1E9;
   --color-topbar: var(--color-rojo);
 
+  /* Visor de fotografías: superficie clara en ambos temas. */
+  --visor-fondo: #ECE7DE;
+  --visor-panel: #FAF8F3;
+  --visor-texto: #3A3530;
+  --visor-borde: #B6AA99;
+  --visor-acento: #9D2F38;
+
   /* ── Estados semánticos ── */
   --color-ok:      #2f7a4d;
   --color-okDk:    #246040;

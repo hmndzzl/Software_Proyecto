@@ -49,7 +49,7 @@ export const crearAusencia = async (req: Request, res: Response): Promise<void> 
         return 'rollback';
       }
       const [destinatarios] = await conn.execute<RowDataPacket[]>(
-        'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.COORDINADOR_MINISTROS, ROLES.SACERDOTE]
+        "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [ROLES.COORDINADOR_MINISTROS, ROLES.SACERDOTE]
       );
       if (!destinatarios.length) {
         res.status(HttpStatus.CONFLICT).json({ mensaje: 'No hay coordinadores de ministros ni sacerdotes registrados para recibir la notificación' });

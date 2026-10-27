@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -7,12 +8,15 @@ import { app } from '../../app';
 import { JWT_SECRET } from '../../config/env';
 import { ROLES } from '../../config/roles';
 
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
+
 vi.mock('../../config/db', () => ({ default: { execute: vi.fn() }, checkDbConnection: vi.fn() }));
 
 const rutaReservas = '/api/reportes/reservas?desde=2026-10-01&hasta=2026-10-31&formato=csv';
 const rutaTareas = '/api/reportes/tareas?desde=2026-10-05&hasta=2026-10-11&formato=csv';
 
 function token(rol_id: number, id = 7) {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id, rol_id, estado_cuenta: 'activa' });
   return `Bearer ${jwt.sign({ id, rol_id }, JWT_SECRET)}`;
 }
 

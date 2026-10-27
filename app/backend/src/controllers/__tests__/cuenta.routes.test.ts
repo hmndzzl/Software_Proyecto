@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -7,6 +8,8 @@ import cuentaRoutes from '../../routes/cuenta.routes';
 import { ROLES } from '../../config/roles';
 import { JWT_SECRET } from '../../config/env';
 
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
+
 vi.mock('../../config/db', () => ({ default: { execute: vi.fn(), getConnection: vi.fn(), query: vi.fn() } }));
 
 const app = express();
@@ -14,6 +17,7 @@ app.use(express.json());
 app.use('/api/cuentas', cuentaRoutes);
 
 function token(rol_id: number) {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 1, rol_id, estado_cuenta: 'activa' });
   return jwt.sign({ id: 1, rol_id }, JWT_SECRET);
 }
 
@@ -72,12 +76,12 @@ describe('RBAC en rutas de aprobación de cuentas', () => {
         .send({ rol_id: ROLES.COORDINADOR_GRUPOS });
 
       expect(res.status).toBe(200);
-      expect((pool.execute as any).mock.calls[0][1]).toEqual(['activa', ROLES.COORDINADOR_GRUPOS, 5, 'activa']);
+      expect((pool.execute as any).mock.calls[0][1]).toEqual(['activa', ROLES.COORDINADOR_GRUPOS, 5, 'pendiente', 'rechazada']);
     });
 
-    it('rechaza una cuenta (pendiente o activa)', async () => {
+    it('rechaza una cuenta pendiente', async () => {
       (pool.execute as any)
-        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' }]])
+        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'pendiente' }]])
         .mockResolvedValueOnce([{ affectedRows: 1 }])
         .mockResolvedValueOnce([{ insertId: 1 }])
         .mockResolvedValueOnce([{}]);

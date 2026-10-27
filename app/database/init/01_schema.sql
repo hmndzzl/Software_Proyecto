@@ -69,7 +69,7 @@ CREATE TABLE `persona` (
   `rol_id` int(11) NOT NULL,
   `disponible` tinyint(1) NOT NULL DEFAULT 1,
   `clerk_user_id` varchar(64) DEFAULT NULL,
-  `estado_cuenta` enum('pendiente','activa','rechazada') NOT NULL DEFAULT 'activa',
+  `estado_cuenta` enum('pendiente','activa','rechazada','baja') NOT NULL DEFAULT 'activa',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_persona_correo` (`correo`),
   UNIQUE KEY `uq_persona_clerk_user_id` (`clerk_user_id`),
@@ -281,7 +281,7 @@ CREATE TABLE IF NOT EXISTS reserva_decision (
 CREATE TABLE IF NOT EXISTS cuenta_decision (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   cuenta_id INT NOT NULL,
-  resultado ENUM('aprobada','rechazada') NOT NULL,
+  resultado ENUM('aprobada','rechazada','baja') NOT NULL,
   actor_id INT DEFAULT NULL,
   actor_nombre VARCHAR(100) NOT NULL,
   fecha_utc DATETIME(3) NOT NULL,

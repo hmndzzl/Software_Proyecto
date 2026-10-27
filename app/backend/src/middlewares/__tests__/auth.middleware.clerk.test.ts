@@ -1,3 +1,5 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
@@ -55,13 +57,15 @@ describe('Auth Middleware - Sesiones de Clerk', () => {
     expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Token inválido o expirado' });
   });
 
-  it('sigue aceptando el JWT propio aunque Clerk esté configurado', () => {
+  it('sigue aceptando el JWT propio aunque Clerk esté configurado', async () => {
+    vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 3, rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' });
     (isClerkEnabled as any).mockReturnValue(true);
     (jwt.verify as any).mockReturnValue({ id: 3, rol_id: ROLES.MINISTRO });
 
     authMiddleware(req as Request, res as Response, next);
 
     expect(verifyClerkSessionToken).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(next).toHaveBeenCalled());
     expect(req.user).toEqual({ id: 3, rol_id: ROLES.MINISTRO });
     expect(next).toHaveBeenCalled();
   });
@@ -104,6 +108,7 @@ describe('Auth Middleware - Sesiones de Clerk', () => {
   it.each([
     ['pendiente', 'CUENTA_PENDIENTE'],
     ['rechazada', 'CUENTA_RECHAZADA'],
+    ['baja', 'CUENTA_BAJA'],
   ])('retorna 403 y no adjunta usuario si la cuenta está %s', async (estado, codigo) => {
     (isClerkEnabled as any).mockReturnValue(true);
     (verifyClerkSessionToken as any).mockResolvedValue('user_123');

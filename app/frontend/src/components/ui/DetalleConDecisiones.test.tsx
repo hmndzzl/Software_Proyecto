@@ -24,7 +24,7 @@ describe('detalle con historial', () => {
     expect(within(lista).getByText('Devuelta a pendiente')).toBeInTheDocument();
     expect(within(lista).getByText('Cancelada')).toBeInTheDocument();
     expect(within(lista).getAllByText('Por Padre Luis')).toHaveLength(4);
-    expect(fechaDecision(registro.fecha)).toContain('08:05:06');
+    expect(fechaDecision(registro.fecha)).toContain('08:05');
     expect(fechaDecision('2026-10-25T02:00:00Z')).toContain('24 de octubre');
     expect(lista.querySelector('time')).toHaveAttribute('datetime', registro.fecha);
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));

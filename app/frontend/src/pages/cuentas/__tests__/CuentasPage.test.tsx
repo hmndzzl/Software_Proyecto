@@ -5,7 +5,7 @@ import CuentasPage from '../CuentasPage';
 import { ToastProvider } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { authValue } from '../../../test/authValue';
-import { aprobarCuentaApi, crearCuentaApi, listarCuentasApi, rechazarCuentaApi, type Cuenta } from '../../../api/cuentas';
+import { aprobarCuentaApi, darDeBajaCuentaApi, crearCuentaApi, listarCuentasApi, rechazarCuentaApi, type Cuenta } from '../../../api/cuentas';
 import { ROLES } from '../../../utils/roles';
 
 vi.mock('../../../context/AuthContext', () => ({ useAuth: vi.fn() }));
@@ -14,6 +14,7 @@ vi.mock('../../../api/cuentas', () => ({
   crearCuentaApi: vi.fn(),
   aprobarCuentaApi: vi.fn(),
   rechazarCuentaApi: vi.fn(),
+  darDeBajaCuentaApi: vi.fn(),
 }));
 
 const pendiente = { id: 12, nombre: 'Ana López', correo: 'ana@gmail.com', rol_id: ROLES.MINISTRO, estado_cuenta: 'pendiente' as const };
@@ -95,16 +96,16 @@ describe('CuentasPage', () => {
     expect(screen.queryByText('ana@gmail.com')).not.toBeInTheDocument();
   });
 
-  it('advierte que dejará de iniciar sesión al rechazar una cuenta activa', async () => {
+  it('advierte que dejará de iniciar sesión al eliminar una cuenta activa', async () => {
     const activa: Cuenta = { id: 15, nombre: 'Carlos Ruiz', correo: 'carlos@gmail.com', rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' };
     vi.mocked(listarCuentasApi).mockResolvedValue([activa]);
     render(<CuentasPage />, { wrapper: ToastProvider });
 
     await userEvent.click(await screen.findByRole('tab', { name: 'Activas' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
-    expect(screen.getByText(/Dejará de poder iniciar sesión y se le avisará por correo\./)).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Eliminar' }));
+    expect(screen.getByText(/Se conservarán sus tareas/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(screen.queryByRole('dialog', { name: 'Rechazar cuenta' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Eliminar cuenta' })).not.toBeInTheDocument();
   });
 
   it('el modal de rechazo se puede cerrar con la ×', async () => {
@@ -276,38 +277,38 @@ describe('CuentasPage', () => {
       await userEvent.click(screen.getByRole('tab', { name: 'Activas' }));
     };
 
-    it('lista las cuentas activas con su rol y solo ofrece rechazar', async () => {
+    it('lista las cuentas activas con su rol y solo ofrece eliminar', async () => {
       await abrirActivas([luis]);
 
       expect(await screen.findByText('Luis Pérez')).toBeInTheDocument();
       expect(screen.getByRole('cell', { name: 'Coord. de Ministros' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Eliminar' })).toBeInTheDocument();
     });
 
-    it('rechaza una cuenta activa tras confirmar, explicando que dejará de poder entrar', async () => {
-      vi.mocked(rechazarCuentaApi).mockResolvedValue();
+    it('elimina una cuenta activa tras confirmar, explicando que dejará de poder entrar', async () => {
+      vi.mocked(darDeBajaCuentaApi).mockResolvedValue();
       await abrirActivas([luis]);
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
-      expect(screen.getByText(/Dejará de poder iniciar sesión y se le avisará por correo/)).toBeInTheDocument();
-      expect(rechazarCuentaApi).not.toHaveBeenCalled();
+      await userEvent.click(await screen.findByRole('button', { name: 'Eliminar' }));
+      expect(screen.getByText(/Se conservarán sus tareas/)).toBeInTheDocument();
+      expect(darDeBajaCuentaApi).not.toHaveBeenCalled();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Eliminar cuenta' }));
 
-      await waitFor(() => expect(rechazarCuentaApi).toHaveBeenCalledWith(20));
-      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta rechazadaLuis Pérez ya no tiene acceso al sistema.');
+      await waitFor(() => expect(darDeBajaCuentaApi).toHaveBeenCalledWith(20));
+      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta dada de bajaLuis Pérez ya no tiene acceso al sistema.');
       expect(screen.queryByText('luis@parroquia.com')).not.toBeInTheDocument();
     });
 
-    it('no ofrece rechazar la propia cuenta', async () => {
+    it('no ofrece eliminar la propia cuenta', async () => {
       await abrirActivas([luis, { ...luis, id: 1, nombre: 'Aprobador', correo: 'a@parroquia.com' }]);
 
       await screen.findByText('Aprobador');
-      expect(screen.getAllByRole('button', { name: 'Rechazar' })).toHaveLength(1);
+      expect(screen.getAllByRole('button', { name: 'Eliminar' })).toHaveLength(1);
     });
 
-    it('el Sacerdote no puede rechazar a un Administrador, el Admin sí', async () => {
+    it('el Sacerdote no puede eliminar a un Administrador, el Admin sí', async () => {
       const admin = { ...luis, id: 30, nombre: 'Admin Dos', correo: 'admin2@parroquia.com', rol_id: ROLES.ADMIN };
 
       comoUsuario(ROLES.SACERDOTE);
@@ -315,15 +316,15 @@ describe('CuentasPage', () => {
       render(<CuentasPage />, { wrapper: ToastProvider });
       await userEvent.click(screen.getByRole('tab', { name: 'Activas' }));
       await screen.findByText('Admin Dos');
-      expect(screen.getAllByRole('button', { name: 'Rechazar' })).toHaveLength(1); // solo la de Luis
+      expect(screen.getAllByRole('button', { name: 'Eliminar' })).toHaveLength(1); // solo la de Luis
     });
 
-    it('un Admin puede rechazar a otro Administrador', async () => {
+    it('un Admin puede eliminar a otro Administrador', async () => {
       const admin = { ...luis, id: 30, nombre: 'Admin Dos', correo: 'admin2@parroquia.com', rol_id: ROLES.ADMIN };
       await abrirActivas([admin, luis]);
 
       await screen.findByText('Admin Dos');
-      expect(screen.getAllByRole('button', { name: 'Rechazar' })).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: 'Eliminar' })).toHaveLength(2);
     });
   });
 
@@ -371,4 +372,28 @@ describe('CuentasPage', () => {
 
     expect(await screen.findByText('Error al obtener las cuentas')).toBeInTheDocument();
   });
+  it('las bajas conservan su rol e historial sin ofrecer aprobar ni rechazar', async () => {
+    vi.mocked(listarCuentasApi).mockImplementation(async estado => estado === 'baja'
+      ? [{ ...pendiente, estado_cuenta: 'baja', rol_id: ROLES.COORDINADOR_MINISTROS }] : []);
+    render(<CuentasPage />, { wrapper: ToastProvider });
+    await userEvent.click(screen.getByRole('tab', { name: 'Dadas de baja' }));
+    await screen.findByText('Ana López');
+    expect(screen.getByRole('cell', { name: 'Coord. de Ministros' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ver detalle' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument();
+  });
+  it.each([new Error('Sin red'), { response: { data: { mensaje: 'La cuenta ya no está activa' } } }])('mantiene la cuenta y la confirmación cuando falla la baja', async error => {
+    vi.mocked(listarCuentasApi).mockResolvedValue([{ ...pendiente, estado_cuenta: 'activa' }]);
+    vi.mocked(darDeBajaCuentaApi).mockRejectedValue(error);
+    render(<CuentasPage />, { wrapper: ToastProvider });
+    await userEvent.click(screen.getByRole('tab', { name: 'Activas' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar cuenta' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar la cuenta');
+    expect(screen.getByRole('cell', { name: 'ana@gmail.com' })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: 'Eliminar cuenta' })).toBeVisible();
+  });
+
 });

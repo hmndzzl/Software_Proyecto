@@ -17,6 +17,8 @@ coverage/
 frontend/playwright-report/
 frontend/test-results/
 backend/test-results/
+frontend/reports/
+backend/reports/
 
 # Logs
 *.log

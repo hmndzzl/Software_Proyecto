@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -6,6 +7,8 @@ import router from '../../routes/reserva.routes';
 import { JWT_SECRET } from '../../config/env';
 import { ROLES } from '../../config/roles';
 import { crearReserva, editarReserva, obtenerMisReservas, obtenerReservas, obtenerReservaPorId, cambiarEstadoReserva, checkinReserva } from '../reserva.controller';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../reserva.controller', () => ({
   crearReserva: vi.fn((_req, res) => res.sendStatus(204)),
@@ -18,7 +21,10 @@ vi.mock('../reserva.controller', () => ({
 }));
 
 const app = express().use('/api/reservas', router);
-const token = (rol_id: number) => `Bearer ${jwt.sign({ id: 7, rol_id }, JWT_SECRET)}`;
+const token = (rol_id: number) => {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 7, rol_id, estado_cuenta: 'activa' });
+  return `Bearer ${jwt.sign({ id: 7, rol_id }, JWT_SECRET)}`;
+};
 
 beforeEach(() => vi.clearAllMocks());
 

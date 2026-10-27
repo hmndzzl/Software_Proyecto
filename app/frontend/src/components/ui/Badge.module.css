@@ -1,37 +1,35 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 12px;
-  border-radius: var(--radius-badge);
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--badge-fg) 22%, var(--color-line));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--badge-fg) 6%, var(--color-blanco));
+  color: var(--badge-fg);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 13.5px;
-  letter-spacing: .04em;
+  font-size: 12.5px;
+  line-height: 1.3;
+  letter-spacing: .025em;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.badge::before {
+  content: '';
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: currentColor;
   flex-shrink: 0;
 }
 
-.pendiente  { background: var(--estado-reserva-pendiente-bg); color: var(--estado-reserva-pendiente-fg); }
-.confirmada { background: var(--estado-reserva-confirmada-bg); color: var(--estado-reserva-confirmada-fg); }
-.rechazada  { background: var(--estado-reserva-rechazada-bg);  color: var(--estado-reserva-rechazada-fg);  }
-.cancelada  { background: var(--estado-reserva-cancelada-bg);  color: var(--estado-reserva-cancelada-fg);  }
-.info       { background: var(--color-infoBg); color: var(--color-info); }
-.neutral    { background: var(--color-cremaDk); color: var(--color-tierra); }
-.ok         { background: var(--color-okBg);   color: var(--color-ok);   }
-.bad        { background: var(--color-badBg);  color: var(--color-bad);  }
-
-.pendiente  .dot { background: var(--estado-reserva-pendiente-fg); }
-.confirmada .dot { background: var(--estado-reserva-confirmada-fg); }
-.rechazada  .dot { background: var(--estado-reserva-rechazada-fg); }
-.cancelada  .dot { background: var(--estado-reserva-cancelada-fg); }
-.info       .dot { background: var(--color-info); }
-.neutral    .dot { background: var(--color-tierra); }
-.ok         .dot { background: var(--color-ok); }
-.bad        .dot { background: var(--color-bad); }
+.pendiente  { --badge-fg: color-mix(in srgb, var(--estado-reserva-pendiente-fg) 85%, var(--color-carbon)); }
+.confirmada { --badge-fg: var(--estado-reserva-confirmada-fg); }
+.rechazada  { --badge-fg: var(--estado-reserva-rechazada-fg); }
+.cancelada  { --badge-fg: var(--estado-reserva-cancelada-fg); }
+.info       { --badge-fg: var(--color-info); }
+.neutral    { --badge-fg: var(--color-tierra); }
+.ok         { --badge-fg: var(--color-ok); }
+.bad        { --badge-fg: var(--color-bad); }

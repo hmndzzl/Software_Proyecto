@@ -425,6 +425,8 @@ describe('integración API y MariaDB', () => {
     const { JWT_SECRET } = await import('../../src/config/env');
     const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
     const segundo = jwt.sign({ id: 2, rol_id: 5 }, JWT_SECRET);
+    // Solicitud de prueba: rechazar solo aplica a cuentas pendientes.
+    await pool.query("UPDATE persona SET estado_cuenta = 'pendiente' WHERE id = 3");
     // No se inventan decisiones de las cuentas preexistentes.
     expect((await request(app).get('/api/cuentas/3/decisiones').auth(token, { type: 'bearer' }).expect(200)).body).toEqual([]);
     await request(app).patch('/api/cuentas/3/rechazar').auth(token, { type: 'bearer' }).expect(200);
@@ -472,7 +474,7 @@ describe('integración API y MariaDB', () => {
     const [avisosAntes] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
     await pool.query("CREATE TRIGGER fallo_historial_cuenta BEFORE INSERT ON cuenta_decision FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fallo de historial de prueba'");
     try {
-      await request(app).patch('/api/cuentas/4/rechazar').auth(token, { type: 'bearer' }).expect(500);
+      await request(app).patch('/api/cuentas/4/baja').auth(token, { type: 'bearer' }).expect(500);
       const [persona] = await pool.query<RowDataPacket[]>('SELECT estado_cuenta FROM persona WHERE id = 4');
       expect(persona[0].estado_cuenta).toBe('activa');
       const [avisosDespues] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
