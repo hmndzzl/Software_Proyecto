@@ -49,11 +49,10 @@ export const crearReserva = async (req: Request, res: Response) => {
   }
 
   const solicitante_id = req.user!.id;
+  let reservaCreada: number | undefined;
 
   try {
     const cantidad = validarCantidadEsperada(req.body.cantidad_personas) ?? null;
-    let reservaCreadaId = 0;
-    let confirmada = false;
     await withTransaction(async (conn) => {
       await validarCapacidad(conn, Number(espacio_id), cantidad);
       const [conflictos]: any = await conn.query(
@@ -85,17 +84,16 @@ export const crearReserva = async (req: Request, res: Response) => {
         [titulo, descripcion, solicitante_id, reservaId, publico === true ? 1 : 0]
       );
 
-      // Avisa a quienes aprueban reservas (Sacerdote/Admin) que hay una solicitud nueva esperando,
-      // salvo que el propio solicitante ya sea uno de ellos (no tiene sentido notificarse a sí mismo).
+      // Toda solicitud queda pendiente, incluso cuando la crea uno de los aprobadores.
       const [aprobadores]: any = await conn.query(
-        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
-        [ROLES.SACERDOTE, ROLES.ADMIN, solicitante_id]
+        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'`,
+        [ROLES.SACERDOTE, ROLES.ADMIN]
       );
 
       if (aprobadores.length > 0) {
-        const mensajeNotificacion = `Nueva solicitud de reserva para el ${fecha} (${formatHorario(hora_inicio, hora_fin)}) pendiente de tu aprobación.`;
+        const mensajeNotificacion = `Nueva solicitud de reserva #${reservaId}: «${titulo}», para el ${fecha} (${formatHorario(hora_inicio, hora_fin)}). Pendiente de tu aprobación en Reservas.`;
         const [notifResult]: any = await conn.query(
-          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, CURDATE(), 'individual', ?)`,
+          `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, DATE(UTC_TIMESTAMP() - INTERVAL 6 HOUR), 'individual', ?)`,
           [mensajeNotificacion, solicitante_id]
         );
         for (const aprobador of aprobadores) {
@@ -106,11 +104,15 @@ export const crearReserva = async (req: Request, res: Response) => {
         }
       }
 
-      reservaCreadaId = reservaId;
-      confirmada = true;
+      reservaCreada = reservaId;
       return 'commit';
     });
-    if (confirmada) res.status(HttpStatus.CREATED).json({ message: 'Solicitud de reserva y evento creados correctamente', reservaId: reservaCreadaId });
+    if (reservaCreada !== undefined) {
+      return res.status(HttpStatus.CREATED).json({
+        message: 'Solicitud de reserva y evento creados correctamente',
+        reservaId: reservaCreada,
+      });
+    }
   } catch (error) {
     if (error instanceof ErrorAforo) return res.status(error.status).json({ message: error.message });
     console.error('Error al crear reserva:', error);

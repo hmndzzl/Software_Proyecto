@@ -1,0 +1,66 @@
+{
+  "info": {
+    "name": "Sprint 10 - Aviso nueva reserva",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "tokenSolicitante",
+      "value": ""
+    },
+    {
+      "key": "tokenAprobador",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Crear solicitud",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservas",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenSolicitante}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fecha\": \"2099-11-20\",\n  \"hora_inicio\": \"14:00\",\n  \"hora_fin\": \"15:00\",\n  \"espacio_id\": 2,\n  \"titulo\": \"Reunión parroquial\",\n  \"descripcion\": \"Planificación mensual\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Consultar avisos del aprobador",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/notificaciones",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenAprobador}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
