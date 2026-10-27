@@ -7,6 +7,9 @@ import { HttpStatus } from '../utils/httpStatus';
 import { CHECKIN_ANTICIPACION_MIN } from '../config/constants';
 import { AHORA_GUATEMALA_SQL } from '../utils/horaGuatemala';
 
+import { withTransaction } from '../utils/withTransaction';
+import { guardarFotoEspacio, eliminarFotoEspacio, ErrorEspacio } from '../services/espacioFoto.service';
+
 interface EspacioRow extends RowDataPacket {
   id: number;
   nombre: string;
@@ -169,82 +172,70 @@ export const obtenerEspacioPorId = async (req: Request, res: Response) => {
   }
 };
 
+function validarDatosEspacio(body: Record<string, unknown>) {
+  if (typeof body.nombre !== 'string' || !body.nombre.trim()) {
+    throw new ErrorEspacio(400, 'El nombre del espacio es obligatorio');
+  }
+  const nombre = body.nombre.trim();
+  if (nombre.length > 100) throw new ErrorEspacio(400, 'El nombre no puede superar 100 caracteres');
+  const valor = body.capacidad;
+  const capacidad = valor === undefined || valor === null || valor === '' ? null :
+    (typeof valor === 'number' || (typeof valor === 'string' && /^\d+$/.test(valor)) ? Number(valor) : NaN);
+  if (capacidad !== null && (!Number.isSafeInteger(capacidad) || capacidad < 1 || capacidad > 2147483647)) {
+    throw new ErrorEspacio(400, 'La capacidad debe ser un número entero mayor que cero');
+  }
+  if (body.quitar_imagen !== undefined && ![true, false, 'true', 'false'].includes(body.quitar_imagen as boolean | string)) {
+    throw new ErrorEspacio(400, 'quitar_imagen debe ser un booleano');
+  }
+  return { nombre, capacidad, quitarImagen: body.quitar_imagen === true || body.quitar_imagen === 'true' };
+}
+
+function validarId(id: string) {
+  if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) throw new ErrorEspacio(400, 'El identificador del espacio no es válido');
+}
+
 export const crearEspacio = async (req: Request, res: Response) => {
+  let fotoNueva: string | null = null;
   try {
-    const { nombre, capacidad } = req.body;
-
-    if (!nombre) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'El nombre del espacio es obligatorio'
-      });
-    }
-
-    if (capacidad !== undefined && capacidad <= 0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'La capacidad debe ser mayor a 0'
-      });
-    }
-
+    const { nombre, capacidad, quitarImagen } = validarDatosEspacio(req.body);
+    if (req.file && quitarImagen) throw new ErrorEspacio(400, 'Elige subir o quitar la imagen');
+    if (req.file) fotoNueva = await guardarFotoEspacio(req.file);
     const [resultado] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO espacio (nombre, capacidad) VALUES (?, ?)',
-      [nombre, capacidad ?? null]
+      'INSERT INTO espacio (nombre, capacidad, foto_url) VALUES (?, ?, ?)', [nombre, capacidad, fotoNueva],
     );
-
-    return res.status(HttpStatus.CREATED).json({
-      message: 'Espacio creado exitosamente',
-      espacioId: resultado.insertId
-    });
+    return res.status(HttpStatus.CREATED).json({ message: 'Espacio creado exitosamente', espacioId: resultado.insertId });
   } catch (error) {
+    await eliminarFotoEspacio(fotoNueva);
+    if (error instanceof ErrorEspacio) return res.status(error.status).json({ message: error.message });
     console.error('Error al crear espacio:', error);
-
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      message: 'Error interno al crear el espacio'
-    });
+    return res.status(500).json({ message: 'Error interno al crear el espacio' });
   }
 };
 
 export const actualizarEspacio = async (req: Request, res: Response) => {
+  let fotoNueva: string | null = null;
+  let fotoAnterior: string | null = null;
   try {
-    const { id } = req.params;
-    const { nombre, capacidad } = req.body;
-
-    if (!nombre) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'El nombre del espacio es obligatorio'
-      });
-    }
-
-    if (capacidad !== undefined && capacidad <= 0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'La capacidad debe ser mayor a 0'
-      });
-    }
-
-    const [rows] = await pool.execute<EspacioRow[]>(
-      'SELECT id FROM espacio WHERE id = ?',
-      [id]
-    );
-
-    if (!rows || rows.length === 0) {
-      return res.status(HttpStatus.NOT_FOUND).json({
-        message: 'Espacio no encontrado'
-      });
-    }
-
-    await pool.execute(
-      'UPDATE espacio SET nombre = ?, capacidad = ? WHERE id = ?',
-      [nombre, capacidad ?? null, id]
-    );
-
-    return res.status(HttpStatus.OK).json({
-      message: 'Espacio actualizado exitosamente'
+    validarId(req.params.id);
+    const { nombre, capacidad, quitarImagen } = validarDatosEspacio(req.body);
+    if (req.file && quitarImagen) throw new ErrorEspacio(400, 'Elige subir o quitar la imagen');
+    if (req.file) fotoNueva = await guardarFotoEspacio(req.file);
+    await withTransaction(async conn => {
+      const [rows] = await conn.execute<EspacioRow[]>('SELECT * FROM espacio WHERE id = ? FOR UPDATE', [req.params.id]);
+      if (!rows.length) throw new ErrorEspacio(404, 'Espacio no encontrado');
+      const foto = quitarImagen ? null : fotoNueva ?? rows[0].foto_url;
+      await conn.execute('UPDATE espacio SET nombre = ?, capacidad = ?, foto_url = ? WHERE id = ?',
+        [nombre, capacidad, foto, req.params.id]);
+      if (quitarImagen || fotoNueva) fotoAnterior = rows[0].foto_url;
+      return 'commit';
     });
+    await eliminarFotoEspacio(fotoAnterior);
+    return res.status(200).json({ message: 'Espacio actualizado exitosamente' });
   } catch (error) {
+    await eliminarFotoEspacio(fotoNueva);
+    if (error instanceof ErrorEspacio) return res.status(error.status).json({ message: error.message });
     console.error('Error al actualizar espacio:', error);
-
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      message: 'Error interno al actualizar el espacio'
-    });
+    return res.status(500).json({ message: 'Error interno al actualizar el espacio' });
   }
 };
 

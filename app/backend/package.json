@@ -25,9 +25,11 @@
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.0",
+    "multer": "^2.5.0",
     "mysql2": "^3.24.5",
     "nodemailer": "^10.2.1",
     "pdfkit": "0.17.2",
+    "sharp": "^0.35.5",
     "write-excel-file": "4.1.1"
   },
   "devDependencies": {
@@ -37,6 +39,7 @@
     "@types/cors": "^2.8.0",
     "@types/express": "^4.17.0",
     "@types/jsonwebtoken": "^9.0.0",
+    "@types/multer": "^2.3.0",
     "@types/node": "^20.11.0",
     "@types/nodemailer": "^8.0.2",
     "@types/pdfkit": "^0.17.7",

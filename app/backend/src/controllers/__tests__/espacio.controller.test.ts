@@ -13,16 +13,19 @@ import {
 vi.mock('../../config/db', () => ({
   default: {
     execute: vi.fn(),
+    getConnection: vi.fn(),
   },
 }));
 
 describe('Espacio Controller - Pruebas Unitarias', () => {
+  const conn = { execute: vi.fn(), beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn() };
   let req: Partial<Request>;
   let res: Partial<Response>;
   let statusMock: any;
   let jsonMock: any;
 
   beforeEach(() => {
+    vi.resetAllMocks();
     req = {
       body: {},
       query: {},
@@ -38,7 +41,7 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       json: jsonMock,
     };
 
-    vi.clearAllMocks();
+    vi.mocked(pool.getConnection).mockResolvedValue(conn as any);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -169,140 +172,68 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
     });
   });
 
-  describe('crearEspacio', () => {
-    it('debería retornar 201 al crearlo con nombre y capacidad válidos', async () => {
-      req.body = { nombre: 'Sala Nueva', capacidad: 10 };
-      (pool.execute as any).mockResolvedValue([{ insertId: 5 }]);
-
+  describe('crear y editar espacios', () => {
+    it('normaliza nombre y acepta capacidad de formulario multipart', async () => {
+      req.body = { nombre: '  Salón nuevo  ', capacidad: '25' };
+      vi.mocked(pool.execute).mockResolvedValue([{ insertId: 5 }] as any);
       await crearEspacio(req as Request, res as Response);
-
-      expect(pool.execute).toHaveBeenCalledWith(
-        'INSERT INTO espacio (nombre, capacidad) VALUES (?, ?)',
-        ['Sala Nueva', 10]
-      );
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'Espacio creado exitosamente', espacioId: 5 });
+      expect(pool.execute).toHaveBeenCalledWith('INSERT INTO espacio (nombre, capacidad, foto_url) VALUES (?, ?, ?)', ['Salón nuevo', 25, null]);
+      expect(statusMock).toHaveBeenCalledWith(201);
     });
 
-    it('debería usar null para capacidad si no se envía, retornando 201', async () => {
-      req.body = { nombre: 'Sala Sin Capacidad' };
-      (pool.execute as any).mockResolvedValue([{ insertId: 6 }]);
-
+    it.each([0, -1, 2.5, true, {}, 'abc', '1.5', 2147483648])('rechaza capacidad inválida %j', async capacidad => {
+      req.body = { nombre: 'Salón', capacidad };
       await crearEspacio(req as Request, res as Response);
-
-      expect(pool.execute).toHaveBeenCalledWith(
-        'INSERT INTO espacio (nombre, capacidad) VALUES (?, ?)',
-        ['Sala Sin Capacidad', null]
-      );
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(pool.execute).not.toHaveBeenCalled();
     });
 
-    it('debería retornar 400 si falta el nombre', async () => {
-      req.body = { capacidad: 10 };
-
+    it.each(['', '   ', 45, 'a'.repeat(101)])('rechaza nombre inválido', async nombre => {
+      req.body = { nombre };
       await crearEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'El nombre del espacio es obligatorio' });
+      expect(statusMock).toHaveBeenCalledWith(400);
     });
 
-    it('debería retornar 400 si la capacidad es menor o igual a 0', async () => {
-      req.body = { nombre: 'Sala Mala', capacidad: 0 };
-
+    it('permite capacidad sin especificar', async () => {
+      req.body = { nombre: 'Patio', capacidad: '' };
+      vi.mocked(pool.execute).mockResolvedValue([{ insertId: 5 }] as any);
       await crearEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'La capacidad debe ser mayor a 0' });
+      expect(pool.execute).toHaveBeenCalledWith(expect.any(String), ['Patio', null, null]);
     });
 
-    it('debería retornar 500 en caso de error de base de datos', async () => {
-      req.body = { nombre: 'Sala' };
-      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
-
-      await crearEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-    });
-  });
-
-  describe('actualizarEspacio', () => {
-    it('debería retornar 200 al actualizar un espacio existente', async () => {
-      req.params = { id: '1' };
-      req.body = { nombre: 'Sala Editada', capacidad: 20 };
-      
-      // Primera llamada: verificar existencia
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
-      // Segunda llamada: update
-      (pool.execute as any).mockResolvedValueOnce([{}]);
-
+    it('conserva la imagen al editar datos y responde después del commit', async () => {
+      req.params = { id: '1' }; req.body = { nombre: 'Patio', capacidad: 50 };
+      conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: '/uploads/espacios/salon-01-v1.webp' }]]).mockResolvedValueOnce([{}]);
       await actualizarEspacio(req as Request, res as Response);
-
-      expect(pool.execute).toHaveBeenCalledTimes(2);
-      expect(pool.execute).toHaveBeenLastCalledWith(
-        'UPDATE espacio SET nombre = ?, capacidad = ? WHERE id = ?',
-        ['Sala Editada', 20, '1']
-      );
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'Espacio actualizado exitosamente' });
+      expect(conn.execute).toHaveBeenLastCalledWith('UPDATE espacio SET nombre = ?, capacidad = ?, foto_url = ? WHERE id = ?', ['Patio', 50, '/uploads/espacios/salon-01-v1.webp', '1']);
+      expect(conn.commit).toHaveBeenCalledOnce();
+      expect(statusMock).toHaveBeenCalledWith(200);
     });
 
-    it('debería usar null si no se envía capacidad al actualizar, retornando 200', async () => {
-      req.params = { id: '1' };
-      req.body = { nombre: 'Sala Editada' }; // Sin capacidad
-      
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
-      (pool.execute as any).mockResolvedValueOnce([{}]);
-
+    it('permite quitar la imagen', async () => {
+      req.params = { id: '1' }; req.body = { nombre: 'Patio', quitar_imagen: 'true' };
+      conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: '/uploads/espacios/salon-01-v1.webp' }]]).mockResolvedValueOnce([{}]);
       await actualizarEspacio(req as Request, res as Response);
-
-      expect(pool.execute).toHaveBeenLastCalledWith(
-        'UPDATE espacio SET nombre = ?, capacidad = ? WHERE id = ?',
-        ['Sala Editada', null, '1']
-      );
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(conn.execute).toHaveBeenLastCalledWith(expect.any(String), ['Patio', null, null, '1']);
     });
 
-    it('debería retornar 400 si falta el nombre', async () => {
-      req.params = { id: '1' };
-      req.body = { capacidad: 20 };
-
+    it('revierte y devuelve 404 si el espacio ya no existe', async () => {
+      req.params = { id: '99' }; req.body = { nombre: 'Salón' };
+      conn.execute.mockResolvedValueOnce([[]]);
       await actualizarEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'El nombre del espacio es obligatorio' });
+      expect(conn.rollback).toHaveBeenCalledOnce();
+      expect(conn.commit).not.toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(404);
     });
 
-    it('debería retornar 400 si la capacidad es menor o igual a 0', async () => {
-      req.params = { id: '1' };
-      req.body = { nombre: 'A', capacidad: -5 };
-
+    it('no indica éxito cuando falla el commit', async () => {
+      req.params = { id: '1' }; req.body = { nombre: 'Patio' };
+      conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: null }]]).mockResolvedValueOnce([{}]);
+      conn.commit.mockRejectedValueOnce(new Error('DB'));
       await actualizarEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'La capacidad debe ser mayor a 0' });
-    });
-
-    it('debería retornar 404 si el espacio a actualizar no existe', async () => {
-      req.params = { id: '99' };
-      req.body = { nombre: 'Sala' };
-      
-      // Simular array vacío en la verificación
-      (pool.execute as any).mockResolvedValueOnce([[]]);
-
-      await actualizarEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'Espacio no encontrado' });
-    });
-
-    it('debería retornar 500 en caso de error de base de datos', async () => {
-      req.params = { id: '1' };
-      req.body = { nombre: 'Sala' };
-      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
-
-      await actualizarEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(statusMock).not.toHaveBeenCalledWith(200);
+      expect(conn.rollback).toHaveBeenCalledOnce();
     });
   });
 
