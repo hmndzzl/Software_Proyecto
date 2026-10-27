@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardBody, CardHead } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import {
   actualizarContenidoLanding,
   obtenerContenidoLanding,
@@ -96,6 +97,11 @@ export default function ContenidoPublicoPage() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [confirmacionBorrador, setConfirmacionBorrador] = useState<{ descripcion: string; etiqueta: string; ejecutar: () => void | Promise<void> } | null>(null);
+
+  const pedirConfirmacion = (descripcion: string, etiqueta: string, ejecutar: () => void | Promise<void>) => {
+    setConfirmacionBorrador({ descripcion, etiqueta, ejecutar });
+  };
 
   const cargarContenido = useCallback(async () => {
     setCargando(true);
@@ -152,6 +158,13 @@ export default function ContenidoPublicoPage() {
     setMensaje('');
   };
 
+  const eliminarValor = (indice: number, titulo: string) => pedirConfirmacion(
+    `¿Eliminar el valor «${titulo || `Valor ${indice + 1}`}» del borrador?`, 'Eliminar valor',
+    () => actualizar((contenido) => ({
+      ...contenido, valores: contenido.valores.filter((_, posicion) => posicion !== indice),
+    })),
+  );
+
   if (cargando && !borrador) {
     return (
       <div className={styles.page} aria-busy="true">
@@ -177,7 +190,7 @@ export default function ContenidoPublicoPage() {
         kicker="Portal público"
         title="Contenido público"
         subtitle="Edita los textos, cifras, valores, horarios y datos de contacto que se publican en la landing."
-        actions={<Btn kind="ghost" onClick={() => void cargarContenido()} disabled={guardando}>Descartar cambios</Btn>}
+        actions={<Btn kind="ghost" onClick={() => pedirConfirmacion('¿Descartar todos los cambios que todavía no has publicado?', 'Descartar cambios', cargarContenido)} disabled={guardando}>Descartar cambios</Btn>}
       />
 
       <div className={styles.notice}>
@@ -190,7 +203,7 @@ export default function ContenidoPublicoPage() {
       <form className={styles.form} onSubmit={guardar} aria-busy={guardando}>
         <fieldset className={styles.fieldset} disabled={guardando}>
           <Card>
-            <CardHead title="Presentación principal" hint="Hero de la landing" />
+            <CardHead title="Presentación principal" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <CampoTexto id="lema" etiqueta="Lema" valor={borrador.lema} requerido maxLength={255}
@@ -204,7 +217,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Quiénes somos" hint="Historia, misión y servicio" />
+            <CardHead title="Quiénes somos" />
             <CardBody className={styles.cardBody}>
               <CampoTexto id="quienes-titulo" etiqueta="Título" valor={borrador.quienes_somos.titulo} requerido maxLength={255}
                 alCambiar={(titulo) => actualizar((contenido) => ({ ...contenido, quienes_somos: { ...contenido.quienes_somos, titulo } }))} />
@@ -222,7 +235,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Cifras de la comunidad" hint="Son datos editoriales; no modifican grupos ni espacios del sistema" />
+            <CardHead title="Cifras de la comunidad" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <div className={styles.field}>
@@ -240,7 +253,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Nuestros valores" hint="Las tarjetas se muestran en el orden indicado" />
+            <CardHead title="Nuestros valores" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <CampoTexto id="valores-titulo" etiqueta="Título de la sección" valor={borrador.valores_encabezado.titulo} requerido maxLength={255}
@@ -263,9 +276,7 @@ export default function ContenidoPublicoPage() {
                   <article className={styles.dynamicItem} key={`valor-${indice}`}>
                     <div className={styles.itemHeader}>
                       <h3>Valor {String(indice + 1).padStart(2, '0')}</h3>
-                      <Btn type="button" kind="bad" size="sm" onClick={() => actualizar((contenido) => ({
-                        ...contenido, valores: contenido.valores.filter((_, posicion) => posicion !== indice),
-                      }))}>Eliminar</Btn>
+                      <Btn type="button" kind="bad" size="sm" onClick={() => eliminarValor(indice, valor.titulo)}>Eliminar</Btn>
                     </div>
                     <div className={styles.grid}>
                       <CampoTexto id={`valor-titulo-${indice}`} etiqueta="Título" valor={valor.titulo} requerido maxLength={255}
@@ -281,7 +292,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Horarios" hint="Cada lista se reemplaza completa al guardarla" />
+            <CardHead title="Horarios" />
             <CardBody className={styles.cardBody}>
               <div className={styles.scheduleColumns}>
                 <section aria-labelledby="horarios-misa-titulo">
@@ -298,8 +309,9 @@ export default function ContenidoPublicoPage() {
                   <div className={styles.dynamicList}>
                     {borrador.horarios_misa.map((horario, indice) => (
                       <HorarioMisaEditor key={`misa-${indice}`} horario={horario} indice={indice}
+                        pedirConfirmacion={pedirConfirmacion}
                         alCambiar={(nuevoHorario) => actualizar((contenido) => ({ ...contenido, horarios_misa: contenido.horarios_misa.map((item, posicion) => posicion === indice ? nuevoHorario : item) }))}
-                        alEliminar={() => actualizar((contenido) => ({ ...contenido, horarios_misa: contenido.horarios_misa.filter((_, posicion) => posicion !== indice) }))} />
+                        alEliminar={() => pedirConfirmacion(`¿Eliminar el horario de misa ${indice + 1} del borrador?`, 'Eliminar horario', () => actualizar((contenido) => ({ ...contenido, horarios_misa: contenido.horarios_misa.filter((_, posicion) => posicion !== indice) })))} />
                     ))}
                     {!borrador.horarios_misa.length && <p className={styles.empty}>No hay horarios de misa publicados.</p>}
                   </div>
@@ -320,7 +332,7 @@ export default function ContenidoPublicoPage() {
                     {borrador.horarios_oficina.map((horario, indice) => (
                       <HorarioOficinaEditor key={`oficina-${indice}`} horario={horario} indice={indice}
                         alCambiar={(nuevoHorario) => actualizar((contenido) => ({ ...contenido, horarios_oficina: contenido.horarios_oficina.map((item, posicion) => posicion === indice ? nuevoHorario : item) }))}
-                        alEliminar={() => actualizar((contenido) => ({ ...contenido, horarios_oficina: contenido.horarios_oficina.filter((_, posicion) => posicion !== indice) }))} />
+                        alEliminar={() => pedirConfirmacion(`¿Eliminar el horario de oficina ${indice + 1} del borrador?`, 'Eliminar horario', () => actualizar((contenido) => ({ ...contenido, horarios_oficina: contenido.horarios_oficina.filter((_, posicion) => posicion !== indice) })))} />
                     ))}
                     {!borrador.horarios_oficina.length && <p className={styles.empty}>No hay horarios de oficina publicados.</p>}
                   </div>
@@ -330,7 +342,7 @@ export default function ContenidoPublicoPage() {
           </Card>
 
           <Card>
-            <CardHead title="Contacto" hint="Dirección, correo y teléfono pueden dejarse vacíos para ocultarlos" />
+            <CardHead title="Contacto" />
             <CardBody className={styles.cardBody}>
               <div className={styles.grid}>
                 <CampoTexto id="contacto-titulo" etiqueta="Título" valor={borrador.contacto.titulo} requerido maxLength={255}
@@ -351,6 +363,13 @@ export default function ContenidoPublicoPage() {
           <Btn type="submit" kind="primary" disabled={guardando}>{guardando ? 'Publicando…' : 'Guardar y publicar cambios'}</Btn>
         </div>
       </form>
+      <ConfirmDialog open={confirmacionBorrador !== null} title={confirmacionBorrador?.etiqueta ?? 'Confirmar acción'}
+        confirmLabel={confirmacionBorrador?.etiqueta ?? 'Confirmar'} description={confirmacionBorrador?.descripcion ?? ''}
+        onCancel={() => setConfirmacionBorrador(null)} onConfirm={async () => {
+          if (!confirmacionBorrador) return;
+          await confirmacionBorrador.ejecutar();
+          setConfirmacionBorrador(null);
+        }} />
     </div>
   );
 }
@@ -358,11 +377,12 @@ export default function ContenidoPublicoPage() {
 interface HorarioMisaEditorProps {
   horario: HorarioMisa;
   indice: number;
+  pedirConfirmacion: (descripcion: string, etiqueta: string, ejecutar: () => void | Promise<void>) => void;
   alCambiar: (horario: HorarioMisa) => void;
   alEliminar: () => void;
 }
 
-function HorarioMisaEditor({ horario, indice, alCambiar, alEliminar }: HorarioMisaEditorProps) {
+function HorarioMisaEditor({ horario, indice, pedirConfirmacion, alCambiar, alEliminar }: HorarioMisaEditorProps) {
   const actualizarHora = (posicion: number, hora: string) => alCambiar({
     ...horario,
     horas: horario.horas.map((actual, indiceHora) => indiceHora === posicion ? hora : actual),
@@ -386,7 +406,7 @@ function HorarioMisaEditor({ horario, indice, alCambiar, alEliminar }: HorarioMi
                 onChange={(event) => actualizarHora(indiceHora, event.target.value)} />
               <button type="button" className={styles.removeText} disabled={horario.horas.length === 1}
                 aria-label={`Eliminar hora ${indiceHora + 1} del horario de misa ${indice + 1}`}
-                onClick={() => alCambiar({ ...horario, horas: horario.horas.filter((_, posicion) => posicion !== indiceHora) })}>Quitar</button>
+                onClick={() => pedirConfirmacion(`¿Quitar la hora ${hora || indiceHora + 1} del horario de misa ${indice + 1}?`, 'Quitar hora', () => alCambiar({ ...horario, horas: horario.horas.filter((_, posicion) => posicion !== indiceHora) }))}>Quitar</button>
             </div>
           ))}
           <button type="button" className={styles.addText} disabled={horario.horas.length >= 24}

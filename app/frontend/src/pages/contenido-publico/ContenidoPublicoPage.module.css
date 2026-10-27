@@ -29,6 +29,7 @@
 .removeText { color: var(--color-bad); }
 .addText { align-self: flex-start; color: var(--color-rojo); }
 .removeText:disabled, .addText:disabled { cursor: not-allowed; opacity: .55; }
-.actions { align-self: flex-start; padding-bottom: 8px; }
+.actions { align-self: flex-start; max-width: 100%; flex-wrap: wrap; padding-bottom: 8px; }
+.actions > button { max-width: 100%; white-space: normal; height: auto; min-height: 44px; padding-block: 10px; }
 @media (max-width: 760px) { .grid, .scheduleColumns { grid-template-columns: 1fr; } .scheduleColumns { gap: 22px; } }
 @media (max-width: 520px) { .dynamicHeader, .itemHeader { flex-direction: column; } .dynamicHeader > button, .itemHeader > button { width: 100%; } .timeInput { max-width: none; } }

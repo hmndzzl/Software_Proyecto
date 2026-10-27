@@ -12,6 +12,8 @@ export interface Persona {
 
 export interface Evento {
   id: number;
+  titulo?: string;
+  estado_reserva_id?: number;
   publico?: 0 | 1 | boolean;
   descripcion: string;
   encargado_id: number;
@@ -91,6 +93,7 @@ export interface ReservaDisponible {
 }
 
 export interface Reserva {
+  cantidad_personas?: number | null;
   id: number;
   fecha: string;
   hora_inicio: string;
@@ -104,6 +107,8 @@ export interface Reserva {
   evento_publico?: 0 | 1 | boolean;
   evento_titulo: string | null;
   evento_descripcion: string | null;
+  checkin_en?: string | null;
+  en_uso?: boolean;
 }
 
 export interface AsignadoInfo {
@@ -115,6 +120,7 @@ export interface AsignadoInfo {
 
 export interface Tarea {
   id: number;
+  evento_id?: number | null;
   titulo: string;
   descripcion: string;
   fecha: string;
@@ -125,6 +131,7 @@ export interface Tarea {
 }
 
 export interface Ministro {
+  telefono?: string | null;
   id: number;
   nombre: string;
   correo: string;

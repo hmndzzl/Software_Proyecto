@@ -194,7 +194,7 @@ describe('Notificaciones Hooks', () => {
     });
 
     it('debería cancelar asistencia exitosamente', async () => {
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, asistencia_confirmada: true }] });
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, asistencia_confirmada: true }, { id: 2, asistencia_confirmada: false }] });
       vi.mocked(apiClient.put).mockResolvedValueOnce({});
       const { result } = renderHook(() => useNotificaciones());
       await waitFor(() => expect(result.current.cargando).toBe(false));
@@ -204,6 +204,7 @@ describe('Notificaciones Hooks', () => {
       });
       expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-asistencia');
       expect(result.current.notificaciones[0].asistencia_confirmada).toBe(false);
+      expect(result.current.notificaciones[1].asistencia_confirmada).toBe(false);
     });
 
     it('debería capturar el error sin interrumpir UI si falla cancelarAsistencia', async () => {
@@ -219,7 +220,7 @@ describe('Notificaciones Hooks', () => {
     });
 
     it('debería cancelar inasistencia exitosamente', async () => {
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, motivo_excusa: 'Motivo' }] });
+      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, motivo_excusa: 'Motivo' }, { id: 2, motivo_excusa: 'Otro' }] });
       vi.mocked(apiClient.put).mockResolvedValueOnce({});
       const { result } = renderHook(() => useNotificaciones());
       await waitFor(() => expect(result.current.cargando).toBe(false));
@@ -229,6 +230,7 @@ describe('Notificaciones Hooks', () => {
       });
       expect(apiClient.put).toHaveBeenCalledWith('/api/notificaciones/1/cancelar-inasistencia');
       expect(result.current.notificaciones[0].motivo_excusa).toBeNull();
+      expect(result.current.notificaciones[1].motivo_excusa).toBe('Otro');
     });
 
     it('debería capturar el error sin interrumpir UI si falla cancelarInasistencia', async () => {

@@ -27,7 +27,7 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .stat-n{font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1;color:var(--rojo)}
 .landing .stat-l{font-size:var(--text-small);color:var(--ink);margin-top:6px;letter-spacing:.03em}
 
-/* Placeholder de imagen (sustituye a <image-slot> del diseño) */
+/* Fotografía y estado de respaldo si el archivo no está disponible. */
 .landing .slot{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:14px;background:repeating-linear-gradient(135deg,rgba(139,90,45,.06) 0 12px,rgba(139,90,45,.11) 12px 24px);color:var(--muted);font-size:var(--text-label);font-style:italic}
 .landing .hero .slot{background:repeating-linear-gradient(135deg,rgba(139,90,45,.06) 0 12px,rgba(139,90,45,.11) 12px 24px);color:var(--muted)}
 .landing .slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -76,6 +76,7 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .field label{font-family:'Cinzel',serif;font-weight:700;font-size:var(--text-label);letter-spacing:.08em;color:var(--tierra-text);text-transform:uppercase}
 .landing .field input,.landing .field select,.landing .field textarea{height:52px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--blanco);font-family:'Noto Serif',serif;font-size:16px;color:var(--carbon);outline:none;transition:border-color .14s,box-shadow .14s;width:100%}
 .landing .field textarea{height:128px;padding:14px 16px;resize:vertical;line-height:1.55}
+.landing .field input::placeholder,.landing .field textarea::placeholder{color:var(--muted);opacity:1}
 .landing .field input:focus,.landing .field select:focus,.landing .field textarea:focus{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(157,47,56,.12)}
 .landing .telGroup{display:flex;gap:8px}
 .landing .telPrefix{height:52px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--crema-dk);color:var(--muted);font-family:ui-monospace,monospace;font-size:16px;display:flex;align-items:center;flex-shrink:0}

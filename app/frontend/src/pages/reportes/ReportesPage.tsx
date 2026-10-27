@@ -73,10 +73,7 @@ function FormularioReporte({ tipo }: { tipo: Tipo }) {
 
   return (
     <Card>
-      <CardHead
-        title={tipo === 'reservas' ? 'Reservas de salones' : 'Tareas y asignaciones'}
-        hint={tipo === 'reservas' ? 'Todas las reservas del periodo, con su estado actual.' : 'Una fila por asignación; incluye tareas sin asignar.'}
-      />
+      <CardHead title={tipo === 'reservas' ? 'Reservas de salones' : 'Tareas y asignaciones'} />
       <CardBody>
         <div className={styles.rangos}>
           <Btn kind="ghost" size="sm" onClick={() => seleccionarRango(rangoSemana())}>Esta semana</Btn>

@@ -2,25 +2,41 @@ import type { ReactNode, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTML
 import styles from './Field.module.css';
 
 /* ── Field wrapper ── */
-interface FieldProps {
-  label?: string;
+interface FieldContentProps {
   required?: boolean;
   hint?: string;
   children: ReactNode;
 }
 
-export function Field({ label, required, hint, children }: FieldProps) {
+type FieldProps = FieldContentProps & (
+  | { label: string; htmlFor: string }
+  | { label?: never; htmlFor?: never }
+);
+
+export function Field({ label, htmlFor, required, hint, children }: FieldProps) {
   return (
     <div className={styles.field}>
       {label && (
-        <span className={styles.label}>
+        <label className={styles.label} htmlFor={htmlFor}>
           {label}
-          {required && <span className={styles.required}>*</span>}
-        </span>
+          {required && <span className={styles.required} aria-hidden="true">*</span>}
+        </label>
       )}
       {children}
-      {hint && <span className={styles.hint}>{hint}</span>}
+      {hint && <span id={htmlFor ? `${htmlFor}-hint` : undefined} className={styles.hint}>{hint}</span>}
     </div>
+  );
+}
+
+export function FieldGroup({ label, required, children }: Omit<FieldContentProps, 'hint'> & { label: string }) {
+  return (
+    <fieldset className={`${styles.field} ${styles.group}`}>
+      <legend className={styles.label}>
+        {label}
+        {required && <span className={styles.required} aria-hidden="true">*</span>}
+      </legend>
+      {children}
+    </fieldset>
   );
 }
 

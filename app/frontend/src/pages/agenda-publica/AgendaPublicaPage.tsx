@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
-import { formatFecha, formatHora, partesFecha } from '../../utils/date';
+import { formatFecha, formatHorario, partesFecha } from '../../utils/date';
 import PublicPortalLayout from '../public-portal/PublicPortalLayout';
 import './AgendaPublicaPage.css';
 
@@ -66,7 +66,7 @@ export default function AgendaPublicaPage() {
 
   return (
     <PublicPortalLayout page="agenda-publica">
-      <main>
+      <main id="contenido-principal" tabIndex={-1}>
         <section className="agenda-hero" aria-labelledby="agenda-titulo">
           <div className="wrap">
             <p className="agenda-kicker">Comunidad en movimiento</p>
@@ -75,7 +75,7 @@ export default function AgendaPublicaPage() {
           </div>
         </section>
 
-        <section className="agenda-content wrap" aria-live="polite" aria-busy={cargando}>
+        <section className="agenda-content wrap" aria-label="Actividades públicas" aria-live="polite" aria-busy={cargando}>
           {cargando && (
             <div className="agenda-state" role="status">
               <span className="agenda-loader" aria-hidden="true" />
@@ -116,7 +116,7 @@ export default function AgendaPublicaPage() {
                       <dl className="agenda-details">
                         <div>
                           <dt><IconoReloj />Horario</dt>
-                          <dd>{formatHora(evento.hora_inicio)} – {formatHora(evento.hora_fin)}</dd>
+                          <dd>{formatHorario(evento.hora_inicio, evento.hora_fin)}</dd>
                         </div>
                         {evento.nombre_espacio && (
                           <div>

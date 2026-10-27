@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import router from '../../routes/reserva.routes';
 import { JWT_SECRET } from '../../config/env';
 import { ROLES } from '../../config/roles';
-import { crearReserva, editarReserva, obtenerMisReservas, obtenerReservas, obtenerReservaPorId, cambiarEstadoReserva } from '../reserva.controller';
+import { crearReserva, editarReserva, obtenerMisReservas, obtenerReservas, obtenerReservaPorId, cambiarEstadoReserva, checkinReserva } from '../reserva.controller';
 
 vi.mock('../reserva.controller', () => ({
   crearReserva: vi.fn((_req, res) => res.sendStatus(204)),
@@ -14,6 +14,7 @@ vi.mock('../reserva.controller', () => ({
   obtenerReservas: vi.fn((_req, res) => res.sendStatus(204)),
   obtenerReservaPorId: vi.fn((_req, res) => res.sendStatus(204)),
   cambiarEstadoReserva: vi.fn((_req, res) => res.sendStatus(204)),
+  checkinReserva: vi.fn((_req, res) => res.sendStatus(204)),
 }));
 
 const app = express().use('/api/reservas', router);
@@ -30,12 +31,14 @@ describe('acceso a reservas según rol', () => {
     await request(app).get('/api/reservas').set('Authorization', authorization).expect(403);
     await request(app).get('/api/reservas/7').set('Authorization', authorization).expect(403);
     await request(app).put('/api/reservas/7/estado').set('Authorization', authorization).expect(403);
+    await request(app).put('/api/reservas/7/checkin').set('Authorization', authorization).expect(403);
     expect(crearReserva).not.toHaveBeenCalled();
     expect(editarReserva).not.toHaveBeenCalled();
     expect(obtenerMisReservas).not.toHaveBeenCalled();
     expect(obtenerReservas).not.toHaveBeenCalled();
     expect(obtenerReservaPorId).not.toHaveBeenCalled();
     expect(cambiarEstadoReserva).not.toHaveBeenCalled();
+    expect(checkinReserva).not.toHaveBeenCalled();
   });
 
   it.each([ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN])(
@@ -47,6 +50,7 @@ describe('acceso a reservas según rol', () => {
       await request(app).get('/api/reservas').set('Authorization', authorization).expect(204);
       await request(app).get('/api/reservas/7').set('Authorization', authorization).expect(204);
       await request(app).put('/api/reservas/7/estado').set('Authorization', authorization).expect(204);
+      await request(app).put('/api/reservas/7/checkin').set('Authorization', authorization).expect(204);
     }
   );
 });

@@ -6,17 +6,20 @@ import apiClient from '../../../api/client';
 import { CardHead } from '../../../components/ui/Card';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
+import { formatFecha as fmt, formatHorario } from '../../../utils/date';
 import styles from './ListaEventos.module.css';
 
-type SortKey = 'id' | 'descripcion' | 'encargado' | 'fecha' | 'espacio';
+type SortKey = 'id' | 'descripcion' | 'encargado' | 'fecha' | 'espacio' | 'horario';
 
 const SORT_VALUE: Record<SortKey, (ev: Evento) => string | number> = {
   id: (ev) => ev.id,
+  horario: ev => `${ev.hora_inicio} ${ev.hora_fin}`,
   descripcion: (ev) => ev.descripcion.toLowerCase(),
   encargado: (ev) => (ev.nombre_encargado ?? '').toLowerCase(),
   fecha: (ev) => `${ev.fecha} ${ev.hora_inicio}`,
@@ -34,7 +37,11 @@ export default function ListaEventos({
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
 
-  const { sortKey, sortDir, toggleSort, sortedData: eventosOrdenados } = useSortableTable(eventos, SORT_VALUE);
+  const filtros = useTableFilters(eventos, {
+    search: ev => [ev.id, ev.descripcion, ev.nombre_encargado, ev.nombre_espacio], date: ev => ev.fecha,
+    selects: [{ key: 'espacio', label: 'Espacio', value: ev => ev.nombre_espacio ?? 'Sin espacio' }],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: eventosOrdenados } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const { tieneRol } = useAuth();
   const puedeEditar = tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
@@ -59,6 +66,7 @@ export default function ListaEventos({
   return (
     <div>
       <CardHead title="Lista de Eventos" hint={!loading && eventos.length > 0 ? `${eventos.length} eventos` : undefined} />
+      {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de eventos" />}
 
       {loading && <LoadingState label="Cargando eventos..." />}
       {error   && <ErrorState message={error} onRetry={fetchEventos} />}
@@ -76,7 +84,7 @@ export default function ListaEventos({
                 <SortableTh label="Descripción" sortKey="descripcion" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Encargado" sortKey="encargado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                <th>Horario</th>
+                <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 {puedeEditar && <th>Acciones</th>}
               </tr>
@@ -88,7 +96,7 @@ export default function ListaEventos({
                   <td>{ev.descripcion}</td>
                   <td>{ev.nombre_encargado}</td>
                   <td>{fmt(ev.fecha)}</td>
-                  <td>{fmtH(ev.hora_inicio)}–{fmtH(ev.hora_fin)}</td>
+                  <td>{formatHorario(ev.hora_inicio, ev.hora_fin)}</td>
                   <td>{ev.nombre_espacio ?? '—'}</td>
                   {puedeEditar && (
                     <td>

@@ -4,6 +4,11 @@ import pool from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
 import { ROLES } from '../config/roles';
 import { ESTADOS_CUENTA, esEstadoCuenta } from '../config/cuentas';
+import { enviarCorreoCuenta, EstadoCuentaCorreo } from '../services/email.service';
+
+import type { PoolConnection } from 'mysql2/promise';
+import { withTransaction } from '../utils/withTransaction';
+import { registrarDecision } from '../services/decisiones.service';
 
 const ROLES_VALIDOS: number[] = Object.values(ROLES);
 
@@ -56,20 +61,29 @@ export const aprobarCuenta = async (req: Request, res: Response): Promise<void> 
   }
 
   try {
-    // El estado va en el WHERE para que dos aprobaciones simultáneas no se pisen.
-    const [resultado] = await pool.execute<ResultSetHeader>(
-      'UPDATE persona SET estado_cuenta = ?, rol_id = ? WHERE id = ? AND estado_cuenta <> ?',
-      [ESTADOS_CUENTA.ACTIVA, rolId, id, ESTADOS_CUENTA.ACTIVA]
-    );
+    let aplicada = false;
+    await withTransaction(async conn => {
+      // El estado va en el WHERE para que dos aprobaciones simultáneas no se pisen.
+      const [resultado] = await conn.execute<ResultSetHeader>(
+        'UPDATE persona SET estado_cuenta = ?, rol_id = ? WHERE id = ? AND estado_cuenta <> ?',
+        [ESTADOS_CUENTA.ACTIVA, rolId, id, ESTADOS_CUENTA.ACTIVA]
+      );
 
-    if (resultado.affectedRows === 0) {
-      await responderCuentaYaActiva(id, res);
-      return;
+      if (resultado.affectedRows === 0) {
+        await responderCuentaYaActiva(conn, id, res);
+        return 'rollback';
+      }
+
+      await notificarCambioCuenta(conn, id, req.user!.id, 'Tu cuenta fue aprobada. Ya puedes iniciar sesión.');
+
+      await registrarDecision(conn, 'cuenta', id, 'aprobada', req.user!.id);
+      aplicada = true;
+      return 'commit';
+    });
+    if (aplicada) {
+      void enviarCorreoCambioCuenta(id, 'aprobada');
+      res.status(HttpStatus.OK).json({ mensaje: 'Cuenta aprobada' });
     }
-
-    await notificarCambioCuenta(id, req.user!.id, 'Tu cuenta fue aprobada. Ya puedes iniciar sesión.');
-
-    res.status(HttpStatus.OK).json({ mensaje: 'Cuenta aprobada' });
   } catch (error) {
     console.error('Error en aprobarCuenta:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al aprobar la cuenta' });
@@ -92,33 +106,45 @@ export const rechazarCuenta = async (req: Request, res: Response): Promise<void>
   }
 
   try {
-    const [cuentas] = await pool.execute<RowDataPacket[]>(
-      'SELECT rol_id, estado_cuenta FROM persona WHERE id = ?',
-      [id]
-    );
-    if (cuentas.length === 0) {
-      res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Cuenta no encontrada' });
-      return;
+    let aplicada = false;
+    let estabaActiva = false;
+    await withTransaction(async conn => {
+      const [cuentas] = await conn.execute<RowDataPacket[]>(
+        'SELECT rol_id, estado_cuenta FROM persona WHERE id = ? FOR UPDATE',
+        [id]
+      );
+      if (cuentas.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Cuenta no encontrada' });
+        return 'rollback';
+      }
+      if (cuentas[0].rol_id === ROLES.ADMIN && req.user!.rol_id !== ROLES.ADMIN) {
+        res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo un administrador puede rechazar la cuenta de otro administrador' });
+        return 'rollback';
+      }
+
+      // El estado va en el WHERE para que dos acciones simultáneas no se pisen.
+      const [resultado] = await conn.execute<ResultSetHeader>(
+        'UPDATE persona SET estado_cuenta = ? WHERE id = ? AND estado_cuenta IN (?, ?)',
+        [ESTADOS_CUENTA.RECHAZADA, id, ESTADOS_CUENTA.PENDIENTE, ESTADOS_CUENTA.ACTIVA]
+      );
+
+      if (resultado.affectedRows === 0) {
+        res.status(HttpStatus.CONFLICT).json({ mensaje: 'La cuenta ya está rechazada' });
+        return 'rollback';
+      }
+
+      await notificarCambioCuenta(conn, id, req.user!.id, 'Tu cuenta fue rechazada. Si crees que es un error, contacta al administrador parroquial.');
+
+      await registrarDecision(conn, 'cuenta', id, 'rechazada', req.user!.id);
+      aplicada = true;
+      estabaActiva = cuentas[0].estado_cuenta === ESTADOS_CUENTA.ACTIVA;
+      return 'commit';
+    });
+    if (aplicada) {
+      // Una cuenta que ya tenía acceso se desactiva; "no fue aprobada" solo aplica a una solicitud pendiente.
+      void enviarCorreoCambioCuenta(id, estabaActiva ? 'desactivada' : 'rechazada');
+      res.status(HttpStatus.OK).json({ mensaje: 'Cuenta rechazada' });
     }
-    if (cuentas[0].rol_id === ROLES.ADMIN && req.user!.rol_id !== ROLES.ADMIN) {
-      res.status(HttpStatus.FORBIDDEN).json({ mensaje: 'Solo un administrador puede rechazar la cuenta de otro administrador' });
-      return;
-    }
-
-    // El estado va en el WHERE para que dos acciones simultáneas no se pisen.
-    const [resultado] = await pool.execute<ResultSetHeader>(
-      'UPDATE persona SET estado_cuenta = ? WHERE id = ? AND estado_cuenta IN (?, ?)',
-      [ESTADOS_CUENTA.RECHAZADA, id, ESTADOS_CUENTA.PENDIENTE, ESTADOS_CUENTA.ACTIVA]
-    );
-
-    if (resultado.affectedRows === 0) {
-      res.status(HttpStatus.CONFLICT).json({ mensaje: 'La cuenta ya está rechazada' });
-      return;
-    }
-
-    await notificarCambioCuenta(id, req.user!.id, 'Tu cuenta fue rechazada. Si crees que es un error, contacta al administrador parroquial.');
-
-    res.status(HttpStatus.OK).json({ mensaje: 'Cuenta rechazada' });
   } catch (error) {
     console.error('Error en rechazarCuenta:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al rechazar la cuenta' });
@@ -126,8 +152,8 @@ export const rechazarCuenta = async (req: Request, res: Response): Promise<void>
 };
 
 // Distingue "no existe" (404) de "ya estaba activa" (409).
-async function responderCuentaYaActiva(id: number, res: Response): Promise<void> {
-  const [rows] = await pool.execute<RowDataPacket[]>('SELECT id FROM persona WHERE id = ?', [id]);
+async function responderCuentaYaActiva(conn: PoolConnection, id: number, res: Response): Promise<void> {
+  const [rows] = await conn.execute<RowDataPacket[]>('SELECT id FROM persona WHERE id = ?', [id]);
 
   if (rows.length === 0) {
     res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Cuenta no encontrada' });
@@ -136,15 +162,27 @@ async function responderCuentaYaActiva(id: number, res: Response): Promise<void>
   res.status(HttpStatus.CONFLICT).json({ mensaje: 'La cuenta ya está activa' });
 }
 
+// Avisa por correo: la persona aún no puede iniciar sesión, así que la notificación interna no la ve.
+// No se espera desde el controlador ni lanza: un fallo de SMTP no debe afectar la respuesta, el cambio ya está guardado.
+async function enviarCorreoCambioCuenta(personaId: number, estado: EstadoCuentaCorreo): Promise<void> {
+  try {
+    const [rows] = await pool.execute<RowDataPacket[]>('SELECT correo, nombre FROM persona WHERE id = ?', [personaId]);
+    if (rows.length === 0) return;
+    await enviarCorreoCuenta(rows[0].correo, rows[0].nombre, estado);
+  } catch (error) {
+    console.error('Error en enviarCorreoCambioCuenta:', error);
+  }
+}
+
 // Notifica a la persona cuya cuenta cambió de estado. Queda en su bandeja aunque
 // todavía no pueda iniciar sesión (p. ej. si estaba pendiente).
-async function notificarCambioCuenta(personaId: number, remitenteId: number, mensaje: string): Promise<void> {
+async function notificarCambioCuenta(conn: PoolConnection, personaId: number, remitenteId: number, mensaje: string): Promise<void> {
   const hoy = new Date().toISOString().split('T')[0];
-  const [notifResult] = await pool.execute<ResultSetHeader>(
+  const [notifResult] = await conn.execute<ResultSetHeader>(
     `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', ?)`,
     [mensaje, hoy, remitenteId]
   );
-  await pool.execute(
+  await conn.execute(
     'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
     [personaId, notifResult.insertId]
   );

@@ -1,85 +1,200 @@
 .page {
+  --calendario-acento: var(--color-rojo);
   display: flex;
   flex-direction: column;
   gap: var(--gap-card);
   width: 100%;
-}
-
-/* Header & Controls */
-.controlsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--color-blanco);
-  border: 1px solid var(--color-line);
-  padding: 16px 24px;
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-}
-
-.titleArea {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.kicker {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  color: var(--color-rojo);
-  text-transform: uppercase;
-}
-
-.rangeText {
-  font-family: var(--font-body);
-  font-size: 19px;
-  font-weight: 700;
+  min-width: 0;
+  font-size: 17px;
+  line-height: 1.5;
   color: var(--color-ink);
 }
 
-.btnGroup {
+:global(html[data-tema='oscuro']) .page {
+  --calendario-acento: var(--color-tierra);
+}
+
+/* Aviso de cuentas pendientes (Sacerdote/Admin) — mismo color que el badge
+   "Pendiente", para que se lea como la misma categoría de "requiere tu acción"
+   que ya usan las tarjetas de reserva pendiente, sin inventar un color nuevo. */
+.cuentasAviso {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.navBtn {
+  width: fit-content;
+  background: var(--estado-reserva-pendiente-bg);
+  color: var(--estado-reserva-pendiente-fg);
+  border: 1px solid var(--estado-reserva-pendiente-fg);
+  border-radius: var(--radius-btn);
+  padding: 10px 16px;
   font-family: var(--font-body);
   font-size: 14.5px;
   font-weight: 600;
-  color: var(--color-ink);
-  background: var(--color-crema);
-  border: 1px solid var(--color-line);
-  padding: 8px 16px;
-  border-radius: var(--radius-btn);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  text-decoration: none;
   transition: var(--transition);
 }
 
-.navBtn:hover {
+.cuentasAviso:hover {
+  text-decoration: underline;
+}
+
+/* ── Controles (filtros + navegación de período) ── */
+.controls {
+  background: var(--color-blanco);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.field label {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+}
+
+.field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-btn);
+  color: var(--color-ink);
+  background: var(--color-blanco);
+  font: inherit;
+}
+
+.field select:focus-visible {
+  border-color: var(--color-rojo);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(157, 47, 56, .12);
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-lineSoft);
+}
+
+.navigation > strong {
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Solo cursor, a propósito: "color/font: inherit" aquí (clase+etiqueta) le ganaría
+   por especificidad a los kinds de Btn ( .ok/.bad son una sola clase), dejando el
+   texto de Aprobar/Rechazar heredando el café oscuro del modal en vez del blanco
+   que les corresponde. El resto de botones propios del calendario que sí necesitan
+   heredar fuente/color lo piden explícito en su propio selector, más abajo. */
+.page button {
+  cursor: pointer;
+}
+
+.buttons button, .field button {
+  font: inherit;
+  color: inherit;
+  min-height: 44px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--color-line);
+  background: var(--color-crema);
+  border-radius: var(--radius-btn);
+  padding: 8px 16px;
+  transition: var(--transition);
+}
+
+.buttons button:hover, .field button:hover {
   background: var(--color-cremaDk);
   color: var(--color-rojo);
 }
 
-.todayBtn {
+.buttons .todayButton {
   background: var(--color-rojo);
-  color: var(--color-blanco);
+  color: var(--color-on-primary);
   border-color: var(--color-rojoDk);
   box-shadow: var(--shadow-btn-primary);
 }
 
-.todayBtn:hover {
+.buttons .todayButton:hover {
   background: var(--color-rojoDk);
-  color: var(--color-blanco);
+  color: var(--color-on-primary);
 }
 
-/* Calendar Grid */
-.grid {
+.buttons button[aria-pressed='true'] {
+  background: var(--color-rojo);
+  border-color: var(--color-rojoDk);
+  color: var(--color-on-primary);
+  font-weight: 700;
+}
+
+/* El rojo de acento del tema oscuro no alcanza contraste sobre texto crema. */
+:global(html[data-tema='oscuro']) .buttons .todayButton,
+:global(html[data-tema='oscuro']) .buttons button[aria-pressed='true'] {
+  background: var(--color-rojoDk);
+}
+
+.page button:focus-visible, .page select:focus-visible {
+  outline: 3px solid var(--color-rojo);
+  outline-offset: 2px;
+}
+
+.summary {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--calendario-acento);
+  margin: 0;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 14.5px;
+}
+
+@media (max-width: 650px) {
+  .controls { padding: 16px; }
+  .buttons { width: 100%; }
+  .buttons button { flex: 1 1 100px; justify-content: center; }
+}
+
+/* ── Vista semanal ── */
+.weekGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 12px;
@@ -87,45 +202,42 @@
 }
 
 @media (max-width: 1024px) {
-  .grid {
+  .weekGrid {
     grid-template-columns: 1fr;
-    gap: var(--gap-card);
   }
 }
 
-.dayColumn {
+.day {
   background: var(--color-blanco);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
-  min-height: 480px;
+  min-width: 0;
   overflow: hidden;
-  transition: var(--transition);
   position: relative;
 }
 
-/* Today glow */
-.todayColumn {
+.today {
   border: 1.5px solid var(--color-oro);
-  box-shadow: 0 4px 20px rgba(242,175,41,.15);
+  box-shadow: 0 4px 20px rgba(242, 175, 41, .15);
 }
 
-.todayColumn::before {
+.today::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 4px;
   background: var(--color-oro);
 }
 
-.dayHeader {
+.dayTitle {
+  font-size: 17px;
+  margin: 0;
   padding: 14px;
-  border-bottom: 1px solid var(--color-lineSoft);
   background: var(--color-crema);
+  border-bottom: 1px solid var(--color-lineSoft);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -133,64 +245,70 @@
   text-align: center;
 }
 
-.todayColumn .dayHeader {
+.today .dayTitle {
   background: var(--color-oroSoft);
 }
 
-.weekdayName {
+.todayLabel {
+  display: block;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .08em;
-  color: var(--color-muted);
   text-transform: uppercase;
-}
-
-.todayColumn .weekdayName {
   color: var(--color-warn);
 }
 
-.dayNum {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-ink);
-}
-
-.todayColumn .dayNum {
-  color: var(--color-carbon);
-}
-
-.tasksList {
+.dayContent {
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   flex-grow: 1;
-  background: rgba(243, 241, 233, 0.15);
+  background: rgba(243, 241, 233, .15);
 }
 
-/* Task card inside day */
-.taskCard {
+@media (max-width: 650px) {
+  .dayContent { padding: 16px; }
+}
+
+/* ── Tarjeta de compromiso (evento o tarea), compartida por semana/mes ── */
+.card {
+  width: 100%;
   background: var(--color-blanco);
   border: 1px solid var(--color-lineSoft);
+  border-left-width: 4px;
   border-radius: 8px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .02);
   transition: transform var(--transition), box-shadow var(--transition);
-  width: 100%;
   text-align: left;
   font: inherit;
   cursor: pointer;
+  overflow-wrap: anywhere;
 }
 
-.taskCard:hover {
+.card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(60,40,20,.08);
+  box-shadow: 0 4px 12px rgba(60, 40, 20, .08);
   border-color: var(--color-line);
+}
+
+.evento { border-left-color: var(--color-rojo); }
+.tarea { border-left-color: var(--color-tierra); }
+
+/* Horario + estado nunca comparten línea: evita que el badge (ancho fijo,
+   sin salto de línea) se encime con el rango horario ("10:00 – 11:00")
+   en columnas angostas de 1/7 del ancho de la semana. */
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
 }
 
 .timeRow {
@@ -198,46 +316,50 @@
   align-items: center;
   gap: 5px;
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--color-rojo);
   font-weight: 600;
+  min-width: 0;
 }
 
-.clockIcon {
+.timeRow span {
+  overflow-wrap: anywhere;
+}
+
+.timeRow svg {
   flex-shrink: 0;
 }
 
 .taskDesc {
   font-family: var(--font-body);
-  font-size: 14.5px;
+  font-size: 15.5px;
   font-weight: 600;
   color: var(--color-ink);
   line-height: 1.4;
-  word-break: break-word;
+  margin: 0;
 }
 
-.assigneeRow {
+.placeRow, .assigneeRow {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
 }
 
-.assignIcon {
+.placeRow svg, .assigneeRow svg {
   color: var(--color-muted);
   flex-shrink: 0;
 }
 
 .assignName {
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--color-tierra);
   font-weight: 600;
 }
 
 .unassignedBadge {
   font-family: var(--font-display);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: .05em;
   color: var(--color-muted);
@@ -246,60 +368,383 @@
   border-radius: var(--radius-badge);
   text-transform: uppercase;
   display: inline-block;
+  align-self: flex-start;
 }
 
-.emptyState {
+/* Tareas de un evento: resumen compacto, sin anidar otra tarjeta completa */
+.team {
+  list-style: none;
+  padding: 8px 0 0;
+  margin: 0;
+  border-top: 1px solid var(--color-lineSoft);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 32px 16px;
-  color: var(--color-muted);
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  font-style: italic;
-  text-align: center;
-}
-
-.msg {
-  font-family: var(--font-body);
-  font-size: 15.5px;
-  color: var(--color-muted);
-  font-style: italic;
-  padding: 30px;
-  text-align: center;
-  background: var(--color-blanco);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-}
-
-.msgError {
-  color: var(--color-bad);
-  font-style: normal;
-  font-weight: 600;
-}
-
-.modalAsignados {
-  display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
 }
 
-.modalAsignadoChip {
+.team li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.team li strong {
   font-family: var(--font-body);
-  font-size: 12.5px;
   font-weight: 600;
+  color: var(--color-ink);
+}
+
+.team li .teamHorario {
+  font-family: var(--font-mono);
+  color: var(--color-rojo);
+  font-size: 12.5px;
+}
+
+.team li .teamNombres {
   color: var(--color-tierra);
-  background: var(--color-crema);
-  border: 1px solid var(--color-line);
-  padding: 4px 10px;
+  font-weight: 600;
+  flex-basis: 100%;
+}
+
+.vinculadaTag {
+  align-self: flex-start;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+  background: var(--color-cremaDk);
+  padding: 2px 7px;
   border-radius: var(--radius-badge);
 }
 
-@media (max-width: 650px) {
-  .controlsRow { align-items: stretch; flex-direction: column; padding: 16px; }
-  .btnGroup { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .navBtn { justify-content: center; padding: 8px; font-size: 13px; }
-  .dayColumn { min-height: 0; }
+.empty {
+  margin: 0;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-style: italic;
+}
+
+/* ── Modal de detalle (DetalleCompromiso) ──
+   Cada bloque de información (fecha/hora, estado/lugar/encargado, acciones,
+   tareas asociadas, descripción) vive en su propia .detailSection con un
+   separador sutil arriba — evita que todo se lea como un único párrafo largo. */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.detail p, .detail h3 {
+  margin: 0;
+}
+
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-lineSoft);
+}
+
+.detailSection:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.detailSectionTitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+}
+
+.detailActions {
+  display: flex;
+  gap: 10px;
+}
+
+.serviceList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.serviceItem {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-blanco);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.serviceItem:hover, .serviceItem:focus-visible {
+  border-color: var(--color-oro);
+  background: var(--color-crema);
+}
+
+.serviceItem:disabled {
+  cursor: default;
+}
+
+.serviceItem:disabled:hover {
+  border-color: var(--color-line);
+  background: var(--color-blanco);
+}
+
+.serviceItem span {
+  display: block;
+  font-size: 14.5px;
+  color: var(--color-muted);
+}
+
+/* ── Vista mensual ──
+   Cada celda tiene alto fijo (no min-height) + overflow:hidden: ningún día
+   puede estirar su fila, el grid se mantiene uniforme sin importar cuánto
+   contenido tenga. Los días vacíos no repiten "Sin compromisos" — solo el
+   número; el silencio visual ya comunica que no hay nada. */
+.monthTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 6px;
+}
+
+.monthTable caption {
+  text-align: left;
+  padding: 0 0 14px;
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  color: var(--color-muted);
+}
+
+.monthTable th {
+  padding: 4px 2px 10px;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+  text-align: left;
+}
+
+.monthTable td {
+  vertical-align: top;
+  padding: 0;
+}
+
+/* Toda la celda (no solo el número) selecciona el día para el panel de abajo;
+   cada tarjeta dentro sigue abriendo su propio detalle al burbujear el clic. */
+.monthCell {
+  cursor: pointer;
+}
+
+.monthDay {
+  width: 100%;
+  height: 184px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-blanco);
+  text-align: left;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+/* El número ahora es su propio botón (abre el panel con TODOS los compromisos
+   del día) — ya no es el mismo clic que abrir el detalle de un compromiso. */
+.monthDayNumBtn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.monthDayNumBtn:hover {
+  background: var(--color-crema);
+}
+
+.monthDayNumBtn[aria-pressed='true'] {
+  background: var(--color-okBg);
+}
+
+.monthDayNum {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.monthDay:hover {
+  border-color: var(--color-oro);
+  box-shadow: 0 2px 8px rgba(60, 40, 20, .08);
+}
+
+/* Hoy: mismo tratamiento dorado que la vista semanal */
+.monthDayToday {
+  border-color: var(--color-oro);
+  background: var(--color-oroSoft);
+}
+
+.monthPreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Cada compromiso es su propio botón: un clic abre directamente su detalle,
+   sin pasar por "seleccionar el día" ni bajar al panel de más abajo.
+   Barra de color a la izquierda (no un punto, invisible a esta escala) — mismo
+   código que las tarjetas de la semana: rojo = evento, tierra = tarea.
+   Segunda línea (monthPreviewSub): quién sirve, o el estado si es un evento —
+   el dato que de verdad ayuda a decidir si hace falta entrar al detalle. */
+.monthPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+  padding: 3px 3px 3px 7px;
+  margin: 0;
+  border: none;
+  border-left: 3px solid var(--color-line);
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.monthPreview:hover {
+  background: var(--color-crema);
+}
+
+.monthPreviewEvento { border-left-color: var(--color-rojo); }
+.monthPreviewTarea  { border-left-color: var(--color-tierra); }
+
+.monthPreviewMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.monthPreviewHora {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.monthPreviewTitulo {
+  font-size: 15px;
+  color: var(--color-ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.monthPreviewSub {
+  font-size: 13px;
+  color: var(--color-tierra);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outsideMonth {
+  display: block;
+  padding: 10px;
+  color: var(--color-line);
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.monthDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
+  border-radius: var(--radius-card);
+}
+
+.monthDetails h2 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.monthAgenda {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .monthTable, .monthDetails {
+    display: none;
+  }
+  .monthAgenda {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .monthAgenda > h2 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
+/* ── Legacy (compatibilidad temporal, ver migración del calendario) ── */
+.detailLink {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--calendario-acento);
 }

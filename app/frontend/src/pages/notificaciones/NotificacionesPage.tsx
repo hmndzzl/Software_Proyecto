@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useId, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Btn from '../../components/ui/Btn';
+import SortableTh from '../../components/ui/SortableTh';
+import { useSortableTable } from '../../hooks/useSortableTable';
+import { normalizarBusqueda } from '../../hooks/useTableFilters';
 import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import LoadingState from '../../components/ui/LoadingState';
@@ -19,15 +23,26 @@ import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 import type { Notificacion } from '../../types';
 import styles from './NotificacionesPage.module.css';
-import { Field, InputUI } from '../../components/ui/Field';
+import { Field, InputUI, SelectUI } from '../../components/ui/Field';
 import { enRangoEnvio } from '../../modules/notificaciones/utils/fechaNotificacion';
 
 const ROLES_PUEDEN_ENVIAR = [ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS];
 type Vista = 'recibidas' | 'enviadas' | 'papelera';
 
+const SORT_COMUN = {
+  fecha: (n: { fecha: string; enviado_en?: string | null }) => Date.parse(n.enviado_en ?? n.fecha) || 0,
+  mensaje: (n: { mensaje: string }) => n.mensaje.toLowerCase(),
+  remitente: (n: { remitente_nombre: string | null }) => (n.remitente_nombre ?? 'Sistema').toLowerCase(),
+  tipo: (n: { tipo: string }) => n.tipo,
+};
+
 export default function NotificacionesPage() {
+  const fieldId = useId();
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [lectura, setLectura] = useState('');
   const rangoInvalido = Boolean(desde && hasta && desde > hasta);
   const {
     notificaciones,
@@ -51,6 +66,8 @@ export default function NotificacionesPage() {
 
   const [vista, setVista] = useState<Vista>('recibidas');
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false);
+  const [confirmandoVaciar, setConfirmandoVaciar] = useState(false);
+  const [accionNotificacion, setAccionNotificacion] = useState<{ id: number; tipo: 'eliminar' | 'cancelar-asistencia' | 'cancelar-inasistencia' } | null>(null);
   const [notifSeleccionadaExcusa, setNotifSeleccionadaExcusa] = useState<Notificacion | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const resaltarId = searchParams.get('resaltar') ? Number(searchParams.get('resaltar')) : null;
@@ -71,12 +88,29 @@ export default function NotificacionesPage() {
   }, [cargando, resaltarId]);
 
   const hayNoLeidas = notificaciones.some((n) => !n.leida);
-  const filtrar = <T extends { enviado_en?: string | null },>(lista: T[]) =>
-    lista.filter(n => !rangoInvalido && enRangoEnvio(n.enviado_en, desde, hasta));
-  const recibidasFiltradas = filtrar(notificaciones);
+  const filtrar = <T extends { enviado_en?: string | null; mensaje: string; tipo: string; remitente_nombre?: string | null; destinatarios_nombres?: string | null },>(lista: T[]) =>
+    lista.filter(n => {
+      const remitente = 'remitente_nombre' in n ? n.remitente_nombre ?? 'Sistema' : '';
+      const texto = normalizarBusqueda([n.mensaje, remitente, n.destinatarios_nombres].join(' '));
+      return !rangoInvalido && enRangoEnvio(n.enviado_en, desde, hasta)
+        && (!tipo || n.tipo === tipo)
+        && normalizarBusqueda(busqueda).split(/\s+/).every(termino => texto.includes(termino));
+    });
+  const recibidasFiltradas = filtrar(notificaciones).filter(n => !lectura || (n.leida ? 'leida' : 'no-leida') === lectura);
   const enviadasFiltradas = filtrar(enviadas);
   const papeleraFiltrada = filtrar(papelera);
-  const filtrando = Boolean(desde || hasta);
+  const filtrando = Boolean(desde || hasta || busqueda || tipo || (vista === 'recibidas' && lectura));
+  const sinResultados = busqueda || tipo || (vista === 'recibidas' && lectura)
+    ? 'No hay notificaciones que coincidan con los filtros.' : 'No hay notificaciones en el rango seleccionado.';
+  const recibidasSort = useSortableTable(recibidasFiltradas, { ...SORT_COMUN, estado: (n: Notificacion) => n.leida ? 'Leída' : 'No leída' });
+  const enviadasSort = useSortableTable(enviadasFiltradas, {
+    fecha: SORT_COMUN.fecha, mensaje: SORT_COMUN.mensaje, tipo: SORT_COMUN.tipo,
+    destinatarios: (n: (typeof enviadas)[number]) => (n.destinatarios_nombres ?? '').toLowerCase(),
+    lecturas: (n: (typeof enviadas)[number]) => Number(n.total_leidas),
+  });
+  const papeleraSort = useSortableTable(papeleraFiltrada, SORT_COMUN);
+  const totalVista = vista === 'recibidas' ? notificaciones.length : vista === 'enviadas' ? enviadas.length : papelera.length;
+  const totalFiltrado = vista === 'recibidas' ? recibidasFiltradas.length : vista === 'enviadas' ? enviadasFiltradas.length : papeleraFiltrada.length;
 
   const handleEnviada = async () => {
     setModalNuevaAbierto(false);
@@ -88,8 +122,8 @@ export default function NotificacionesPage() {
   };
 
   const handleVaciarPapelera = async () => {
-    if (!window.confirm('¿Seguro que deseas vaciar la papelera? Esta acción no se puede deshacer.')) return;
     await vaciar();
+    setConfirmandoVaciar(false);
   };
 
   // useNotificaciones y usePapelera mantienen listas independientes: al mover o
@@ -98,6 +132,19 @@ export default function NotificacionesPage() {
     await eliminar(id);
     refetchPapelera();
   };
+
+  const confirmarAccionNotificacion = async () => {
+    if (!accionNotificacion) return;
+    const { id, tipo } = accionNotificacion;
+    if (tipo === 'eliminar') await handleEliminar(id);
+    if (tipo === 'cancelar-asistencia') await cancelarAsistencia(id);
+    if (tipo === 'cancelar-inasistencia') await cancelarInasistencia(id);
+    setAccionNotificacion(null);
+  };
+
+  const notificacionAccion = accionNotificacion
+    ? notificaciones.find((notificacion) => notificacion.id === accionNotificacion.id)
+    : undefined;
 
   const handleRestaurar = async (id: number) => {
     await restaurar(id);
@@ -142,16 +189,30 @@ export default function NotificacionesPage() {
       <Card>
         <CardBody>
           <div className={styles.filtros}>
-            <Field label="Desde (fecha y hora)">
-              <InputUI aria-label="Desde (fecha y hora)" type="datetime-local" value={desde} onChange={e => setDesde(e.target.value)} />
+            <Field label="Buscar" htmlFor={`${fieldId}-buscar`}>
+              <InputUI id={`${fieldId}-buscar`} aria-label="Buscar" type="search" placeholder="Mensaje, remitente o destinatario…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </Field>
-            <Field label="Hasta (fecha y hora)">
-              <InputUI aria-label="Hasta (fecha y hora)" type="datetime-local" value={hasta} onChange={e => setHasta(e.target.value)} />
+            <Field label="Tipo" htmlFor={`${fieldId}-tipo`}>
+              <SelectUI id={`${fieldId}-tipo`} aria-label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)}>
+                <option value="">Todos</option><option value="global">Global</option><option value="grupo">Grupo</option><option value="individual">Individual</option>
+              </SelectUI>
             </Field>
-            <Btn kind="primary" onClick={() => { setDesde(''); setHasta(''); }} disabled={!filtrando}>Limpiar filtros</Btn>
+            {vista === 'recibidas' && <Field label="Estado de lectura" htmlFor={`${fieldId}-lectura`}>
+              <SelectUI id={`${fieldId}-lectura`} aria-label="Estado de lectura" value={lectura} onChange={e => setLectura(e.target.value)}>
+                <option value="">Todos</option><option value="leida">Leídas</option><option value="no-leida">No leídas</option>
+              </SelectUI>
+            </Field>}
+            <Field label="Desde (fecha y hora)" htmlFor={`${fieldId}-desde`}>
+              <InputUI id={`${fieldId}-desde`} aria-label="Desde (fecha y hora)" type="datetime-local" value={desde} onChange={e => setDesde(e.target.value)} />
+            </Field>
+            <Field label="Hasta (fecha y hora)" htmlFor={`${fieldId}-hasta`}>
+              <InputUI id={`${fieldId}-hasta`} aria-label="Hasta (fecha y hora)" type="datetime-local" value={hasta} onChange={e => setHasta(e.target.value)} />
+            </Field>
+            <Btn kind="primary" onClick={() => { setDesde(''); setHasta(''); setBusqueda(''); setTipo(''); setLectura(''); }} disabled={!filtrando}>Limpiar filtros</Btn>
           </div>
           <p className={styles.ayudaFiltro}>Horario de Guatemala. Puedes indicar uno o ambos límites. El minuto final está incluido.</p>
-          {filtrando && <p className={styles.ayudaFiltro}>Las notificaciones antiguas sin hora registrada no se incluyen en la búsqueda por rango.</p>}
+          {(desde || hasta) && <p className={styles.ayudaFiltro}>Las notificaciones antiguas sin hora registrada no se incluyen en la búsqueda por rango.</p>}
+          <p className={styles.ayudaFiltro} aria-live="polite">Mostrando {totalFiltrado} de {totalVista} registros.</p>
           {rangoInvalido && <p role="alert">La fecha y hora inicial no puede ser posterior a la final.</p>}
         </CardBody>
       </Card>
@@ -175,32 +236,32 @@ export default function NotificacionesPage() {
             ) : error ? (
               <ErrorState message={error} onRetry={refetch} />
             ) : recibidasFiltradas.length === 0 ? (
-              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "No tienes notificaciones."} />
+              <EmptyState message={filtrando ? sinResultados : "No tienes notificaciones."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha y hora de envío</th>
-                      <th>Mensaje</th>
-                      <th>Remitente</th>
-                      <th>Tipo</th>
-                      <th>Estado</th>
+                      <SortableTh label="Fecha y hora de envío" sortKey="fecha" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Mensaje" sortKey="mensaje" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Remitente" sortKey="remitente" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Tipo" sortKey="tipo" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
+                      <SortableTh label="Estado" sortKey="estado" activeKey={recibidasSort.sortKey} dir={recibidasSort.sortDir} onSort={recibidasSort.toggleSort} />
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recibidasFiltradas.map((n) => (
+                    {recibidasSort.sortedData.map((n) => (
                       <NotificacionRow
                         key={n.id}
                         notificacion={n}
                         onMarcarLeida={marcarLeida}
                         onMarcarNoLeida={marcarNoLeida}
                         onConfirmarAsistencia={confirmarAsistencia}
-                        onCancelarAsistencia={cancelarAsistencia}
-                        onCancelarInasistencia={cancelarInasistencia}
+                        onCancelarAsistencia={(id) => setAccionNotificacion({ id, tipo: 'cancelar-asistencia' })}
+                        onCancelarInasistencia={(id) => setAccionNotificacion({ id, tipo: 'cancelar-inasistencia' })}
                         onExcusarAsistencia={(notif) => setNotifSeleccionadaExcusa(notif)}
-                        onEliminar={handleEliminar}
+                        onEliminar={(id) => setAccionNotificacion({ id, tipo: 'eliminar' })}
                         resaltada={n.id === resaltarId}
                       />
                     ))}
@@ -224,7 +285,7 @@ export default function NotificacionesPage() {
             ) : errorEnviadas ? (
               <ErrorState message={errorEnviadas} onRetry={refetchEnviadas} />
             ) : enviadasFiltradas.length === 0 ? (
-              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "No has enviado notificaciones."} />
+              <EmptyState message={filtrando ? sinResultados : "No has enviado notificaciones."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table} style={{ tableLayout: 'fixed', minWidth: 700 }}>
@@ -237,15 +298,15 @@ export default function NotificacionesPage() {
                   </colgroup>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha y hora de envío</th>
-                      <th>Mensaje</th>
-                      <th>Destinatarios</th>
-                      <th>Tipo</th>
-                      <th>Lecturas</th>
+                      <SortableTh label="Fecha y hora de envío" sortKey="fecha" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Mensaje" sortKey="mensaje" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Destinatarios" sortKey="destinatarios" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Tipo" sortKey="tipo" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
+                      <SortableTh label="Lecturas" sortKey="lecturas" activeKey={enviadasSort.sortKey} dir={enviadasSort.sortDir} onSort={enviadasSort.toggleSort} />
                     </tr>
                   </thead>
                   <tbody>
-                    {enviadasFiltradas.map((n) => (
+                    {enviadasSort.sortedData.map((n) => (
                       <EnviadaRow key={n.id} notificacion={n} />
                     ))}
                   </tbody>
@@ -263,7 +324,7 @@ export default function NotificacionesPage() {
             hint={!cargandoPapelera && !errorPapelera ? `${papeleraFiltrada.length} notificaciones (se purgan a los 15 días)` : undefined}
             right={
               papelera.length > 0 ? (
-                <Btn kind="bad" size="sm" onClick={handleVaciarPapelera}>
+                <Btn kind="bad" size="sm" onClick={() => setConfirmandoVaciar(true)}>
                   Vaciar papelera
                 </Btn>
               ) : undefined
@@ -275,21 +336,21 @@ export default function NotificacionesPage() {
             ) : errorPapelera ? (
               <ErrorState message={errorPapelera} onRetry={refetchPapelera} />
             ) : papeleraFiltrada.length === 0 ? (
-              <EmptyState message={filtrando ? "No hay notificaciones en el rango seleccionado." : "La papelera está vacía."} />
+              <EmptyState message={filtrando ? sinResultados : "La papelera está vacía."} />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead className={styles.thead}>
                     <tr>
-                      <th>Fecha y hora de envío</th>
-                      <th>Mensaje</th>
-                      <th>Remitente</th>
-                      <th>Tipo</th>
+                      <SortableTh label="Fecha y hora de envío" sortKey="fecha" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
+                      <SortableTh label="Mensaje" sortKey="mensaje" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
+                      <SortableTh label="Remitente" sortKey="remitente" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
+                      <SortableTh label="Tipo" sortKey="tipo" activeKey={papeleraSort.sortKey} dir={papeleraSort.sortDir} onSort={papeleraSort.toggleSort} />
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {papeleraFiltrada.map((n) => (
+                    {papeleraSort.sortedData.map((n) => (
                       <PapeleraRow key={n.id} notificacion={n} onRestaurar={handleRestaurar} />
                     ))}
                   </tbody>
@@ -301,6 +362,18 @@ export default function NotificacionesPage() {
       )}
 
       {/* Modal para redactar nueva notificación */}
+      <ConfirmDialog open={confirmandoVaciar} title="Vaciar papelera" confirmLabel="Vaciar papelera"
+        description="¿Seguro que deseas vaciar la papelera? Esta acción no se puede deshacer."
+        onCancel={() => setConfirmandoVaciar(false)} onConfirm={handleVaciarPapelera} />
+      <ConfirmDialog open={accionNotificacion !== null}
+        title={accionNotificacion?.tipo === 'eliminar' ? 'Mover a papelera' : accionNotificacion?.tipo === 'cancelar-asistencia' ? 'Cancelar asistencia' : 'Quitar no asistencia'}
+        confirmLabel={accionNotificacion?.tipo === 'eliminar' ? 'Mover a papelera' : accionNotificacion?.tipo === 'cancelar-asistencia' ? 'Cancelar asistencia' : 'Quitar no asistencia'}
+        description={accionNotificacion?.tipo === 'eliminar'
+          ? `¿Mover esta notificación a la papelera?${notificacionAccion ? ` «${notificacionAccion.mensaje}»` : ''}`
+          : accionNotificacion?.tipo === 'cancelar-asistencia'
+            ? '¿Cancelar tu confirmación de asistencia? El coordinador ya no verá este turno como confirmado.'
+            : '¿Quitar el aviso de que no podrás asistir? Podrás volver a confirmar tu asistencia después.'}
+        onCancel={() => setAccionNotificacion(null)} onConfirm={confirmarAccionNotificacion} />
       <Modal
         open={modalNuevaAbierto}
         title="Nueva Notificación"

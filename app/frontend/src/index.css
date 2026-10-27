@@ -38,6 +38,42 @@ button, input, select, textarea {
   font-size: inherit;
 }
 
+/* Los campos no deben adoptar el ancho intrínseco de fechas u opciones largas. */
+input:not([type='checkbox']):not([type='radio']), select, textarea {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+input:is([type='date'], [type='time'], [type='datetime-local']) { inline-size: 100%; }
+input::-webkit-date-and-time-value { min-inline-size: 0; text-align: start; }
+select { text-overflow: ellipsis; }
+
+/* Mejora progresiva para el desplegable de Chrome; otros navegadores conservan el nativo. */
+@supports (appearance: base-select) {
+  @media (max-width: 900px) {
+    select:not([multiple]):not([size]), select:not([multiple]):not([size])::picker(select) {
+      appearance: base-select;
+    }
+    select:not([multiple]):not([size]) { overflow: hidden; background-image: none; }
+    select:not([multiple]):not([size])::picker(select) {
+      max-inline-size: calc(100vw - 24px);
+      min-inline-size: min(anchor-size(width), calc(100vw - 24px));
+      max-block-size: min(320px, 50dvh);
+      overflow: auto;
+      overscroll-behavior: contain;
+      border: 1px solid var(--color-line);
+      border-radius: var(--radius-input);
+      background: var(--color-blanco);
+      color: var(--color-carbon);
+      box-shadow: var(--shadow-card);
+    }
+    select:not([multiple]):not([size]) option {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      padding: 10px 12px;
+    }
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;

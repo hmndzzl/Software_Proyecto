@@ -1,323 +1,333 @@
-import { useState, useEffect } from 'react';
+import { useId, useState, useEffect, useRef } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import Btn from '../../../components/ui/Btn';
+import { CardHead, CardBody } from '../../../components/ui/Card';
+import Modal from '../../../components/ui/Modal';
+import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { normalizarBusqueda, useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES, rolTieneAcceso } from '../../../utils/roles';
-import { formatFecha, formatHora } from '../../../utils/date';
-import type { Ministro, Tarea } from '../../../types';
+import { formatFecha, formatHorario } from '../../../utils/date';
+import type { Ministro, Tarea, AsignadoInfo } from '../../../types';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaAsignaciones.module.css';
-import formStyles from '../../../styles/Form.module.css';
+import form from '../../../styles/Form.module.css';
+import EventoTareaSelect from './EventoTareaSelect';
+import SelectorMinistros from './SelectorMinistros';
 
-interface Asignacion {
-  tarea_id: number;
-  persona_id: number;
-  titulo_tarea: string;
-  descripcion_tarea: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  nombre_persona: string;
-}
-
-interface AlertaReasignacion {
+type Vista = 'detalle' | 'listado' | 'editar' | 'ministros' | 'eliminar' | 'quitar';
+interface AlertaAsignacion {
+  persona_id?: number;
   ministro_no_disponible?: boolean;
   tope_servicios_superado?: boolean;
   servicios_en_el_mes?: number;
   tope_servicios_mes?: number;
 }
-
-interface RespuestaReasignacion {
-  alerta?: AlertaReasignacion;
-}
-
-type MinistroOpcion = Ministro;
-
 type SortKey = 'tarea' | 'responsable' | 'fecha' | 'horario';
-
-const SORT_VALUE: Record<SortKey, (a: Asignacion) => string> = {
-  tarea: (a) => a.titulo_tarea.toLowerCase(),
-  responsable: (a) => a.nombre_persona.toLowerCase(),
-  fecha: (a) => `${a.fecha} ${a.hora_inicio}`,
-  horario: (a) => a.hora_inicio,
+const SORT_VALUE: Record<SortKey, (tarea: Tarea) => string> = {
+  tarea: tarea => tarea.titulo.toLowerCase(),
+  responsable: tarea => tarea.asignados.map(a => a.nombre).sort().join(', ').toLowerCase(),
+  fecha: tarea => `${tarea.fecha} ${tarea.hora_inicio}`,
+  horario: tarea => tarea.hora_inicio,
 };
+const POR_PAGINA = 10;
 
 export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey?: number; onCambio?: () => void }) {
+  const id = useId();
   const { usuario } = useAuth();
+  const toast = useToast();
   const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
   const puedeGestionar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+  const [ministros, setMinistros] = useState<Ministro[]>([]);
+  const [errorMinistros, setErrorMinistros] = useState(false);
+  const [cargandoMinistros, setCargandoMinistros] = useState(false);
+  const [revisionMinistros, setRevisionMinistros] = useState(0);
+  const [activaId, setActivaId] = useState<number | null>(null);
+  const [vista, setVista] = useState<Vista>('detalle');
+  const [ocupado, setOcupado] = useState(false);
+  const [porQuitar, setPorQuitar] = useState<AsignadoInfo | null>(null);
+  const [reemplazando, setReemplazando] = useState<number | null>(null);
+  const [nuevos, setNuevos] = useState<number[]>([]);
+  const [busquedaAsignados, setBusquedaAsignados] = useState('');
+  const [paginaListado, setPaginaListado] = useState(1);
+  const [edicion, setEdicion] = useState({ titulo: '', descripcion: '', fecha: '', hora_inicio: '', hora_fin: '', evento_id: null as number | null });
+  const [pagina, setPagina] = useState(1);
+  const contenido = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (activaId !== null) contenido.current?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled), button:not(:disabled)')?.focus();
+  }, [vista, activaId]);
+  const activa = tareas.find(t => t.id === activaId);
+  const asignadosVisibles = activa?.asignados.filter(a => normalizarBusqueda(a.nombre).includes(normalizarBusqueda(busquedaAsignados))) ?? [];
+  const paginasListado = Math.max(1, Math.ceil(asignadosVisibles.length / POR_PAGINA));
+  const paginaActualListado = Math.min(paginaListado, paginasListado);
+  const ministrosPagina = asignadosVisibles.slice((paginaActualListado - 1) * POR_PAGINA, paginaActualListado * POR_PAGINA);
+  const puedeGestionarMinistro = (personaId: number) => puedeGestionar && !cargandoMinistros && !errorMinistros
+    && (usuario?.rol_id !== ROLES.COORDINADOR_MINISTROS || ministros.some(m => m.id === personaId));
+  const puedeEditar = (tarea: Tarea) => puedeGestionar && (usuario?.rol_id !== ROLES.COORDINADOR_MINISTROS
+    || tarea.asignados.some(a => puedeGestionarMinistro(a.persona_id)));
 
-  const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
-  const [cargando, setCargando] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
-
-  const [ministros, setMinistros] = useState<MinistroOpcion[]>([]);
-  const [editandoKey, setEditandoKey] = useState<string | null>(null);
-  const [reasignando, setReasignando] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
-  const toast = useToast();
-
-  const [editandoTarea, setEditandoTarea] = useState<Asignacion | null>(null);
-  const [editTitulo, setEditTitulo] = useState('');
-  const [editDescripcion, setEditDescripcion] = useState('');
-  const [editFecha, setEditFecha] = useState('');
-  const [editHoraInicio, setEditHoraInicio] = useState('');
-  const [editHoraFin, setEditHoraFin] = useState('');
-  const [editLoading, setEditLoading] = useState(false);
-
-  const { sortKey, sortDir, toggleSort, sortedData: asignacionesOrdenadas } = useSortableTable(asignaciones, SORT_VALUE);
+  const filtros = useTableFilters(tareas, {
+    search: tarea => [tarea.id, tarea.titulo, tarea.descripcion, ...tarea.asignados.map(a => a.nombre)],
+    date: tarea => tarea.fecha,
+    selects: esMinistro ? [] : [
+      { key: 'ministro', label: 'Ministro', value: tarea => tarea.asignados.map(a => a.nombre) },
+      { key: 'asignacion', label: 'Asignación', value: tarea => tarea.asignados.length ? 'Con ministro' : 'Sin ministro' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData } = useSortableTable(filtros.filteredData, SORT_VALUE);
+  const claveFiltros = JSON.stringify([filtros.controls.query, filtros.controls.from, filtros.controls.to,
+    filtros.controls.selects.map(select => select.value), sortKey, sortDir]);
+  useEffect(() => { setPagina(1); }, [claveFiltros]);
+  const paginas = Math.max(1, Math.ceil(sortedData.length / POR_PAGINA));
+  const actual = Math.min(pagina, paginas);
+  const visibles = sortedData.slice((actual - 1) * POR_PAGINA, actual * POR_PAGINA);
 
   useEffect(() => {
     if (!puedeGestionar) return;
-    apiClient.get<Ministro[]>('/api/personas').then(res => setMinistros(res.data)).catch(() => {});
-  }, [puedeGestionar]);
+    let vigente = true;
+    setCargandoMinistros(true);
+    setErrorMinistros(false);
+    apiClient.get<Ministro[]>('/api/personas').then(res => { if (vigente) setMinistros(res.data); })
+      .catch(() => { if (vigente) { setMinistros([]); setErrorMinistros(true); } })
+      .finally(() => { if (vigente) setCargandoMinistros(false); });
+    return () => { vigente = false; };
+  }, [puedeGestionar, refreshKey, revisionMinistros]);
 
-  const cargarAsignaciones = () => {
-    setCargando(true);
-    setError('');
-    const params = esMinistro && usuario ? { persona_id: usuario.id } : undefined;
-    apiClient.get<Tarea[]>('/api/tareas', { params })
-      .then((res) => {
-        const asignacionesFormateadas: Asignacion[] = res.data.flatMap((tarea) =>
-          (tarea.asignados.length ? tarea.asignados : [{ persona_id: 0, nombre: 'Sin ministro asignado' }]).map((asignado) => ({
-            tarea_id: tarea.id,
-            persona_id: asignado.persona_id,
-            titulo_tarea: tarea.titulo,
-            descripcion_tarea: tarea.descripcion,
-            fecha: tarea.fecha.split('T')[0],
-            hora_inicio: tarea.hora_inicio,
-            hora_fin: tarea.hora_fin,
-            nombre_persona: asignado.nombre
-          }))
-        );
-        setAsignaciones(asignacionesFormateadas);
-        setCargando(false);
-      })
-      .catch(() => {
-        setError('Error al obtener los datos');
-        setCargando(false);
+  const cargar = async () => {
+    setCargando(true); setError('');
+    try {
+      const params = esMinistro && usuario ? { persona_id: usuario.id } : undefined;
+      const res = await apiClient.get<Tarea[]>('/api/tareas', { params });
+      setTareas(res.data);
+    } catch { setError('Error al obtener los datos'); }
+    finally { setCargando(false); }
+  };
+  useEffect(() => { void cargar(); }, [refreshKey, usuario?.id, esMinistro]);
+  const refrescar = () => { if (onCambio) onCambio(); else void cargar(); };
+  const abrir = (tarea: Tarea, destino: Vista = 'detalle') => {
+    setActivaId(tarea.id); setVista(destino); setReemplazando(null); setNuevos([]);
+    setBusquedaAsignados('');
+    setPaginaListado(1);
+    if (destino === 'editar') setEdicion({ titulo: tarea.titulo, descripcion: tarea.descripcion,
+      fecha: tarea.fecha.slice(0, 10), hora_inicio: tarea.hora_inicio.slice(0, 5), hora_fin: tarea.hora_fin.slice(0, 5), evento_id: tarea.evento_id ?? null });
+  };
+  const cerrar = () => { if (!ocupado) setActivaId(null); };
+  const guardarEdicion = async () => {
+    if (!activa || ocupado) return;
+    if (!edicion.titulo.trim() || !edicion.descripcion.trim() || !edicion.fecha || !edicion.hora_inicio || !edicion.hora_fin) {
+      toast.error('Faltan datos', 'Por favor completa todos los campos.'); return;
+    }
+    if (edicion.hora_inicio >= edicion.hora_fin) { toast.error('Horario inválido', 'La hora de inicio debe ser menor que la hora de fin.'); return; }
+    setOcupado(true);
+    try {
+      await apiClient.put(`/api/tareas/${activa.id}`, edicion);
+      setTareas(prev => prev.map(t => t.id === activa.id ? { ...t, ...edicion } : t));
+      toast.success('Tarea actualizada', `Los cambios en "${edicion.titulo}" se guardaron.`);
+      setVista('detalle'); refrescar();
+    } catch (err) { toast.error('No se pudo actualizar la tarea', getApiErrorMessage(err, 'Error al guardar los cambios.')); }
+    finally { setOcupado(false); }
+  };
+  const guardarMinistros = async () => {
+    if (!activa || ocupado || !nuevos.length) return;
+    setOcupado(true);
+    try {
+      const res = await apiClient.post<{ alertas?: AlertaAsignacion[] }>('/api/tareas/asignar', { tarea_id: activa.id, persona_ids: nuevos });
+      const avisos = (res.data.alertas ?? []).flatMap(alerta => {
+        const nombre = ministros.find(m => m.id === alerta.persona_id)?.nombre ?? 'Un ministro';
+        return [alerta.ministro_no_disponible && `${nombre} está marcado como no disponible.`,
+          alerta.tope_servicios_superado && `${nombre} tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes}).`].filter(Boolean);
       });
+      setNuevos([]); toast.success('Ministros agregados', avisos.length ? avisos.join(' ') : 'Las asignaciones se guardaron correctamente.'); refrescar();
+    } catch (err) { toast.error('No se pudo guardar la asignación', getApiErrorMessage(err, 'Error al asignar ministros.')); }
+    finally { setOcupado(false); }
   };
-
-  useEffect(() => {
-    cargarAsignaciones();
-  }, [refreshKey]);
-
-  const refrescar = () => {
-    if (onCambio) onCambio();
-    else cargarAsignaciones();
-  };
-
-  const eliminar = async (asignacion: Asignacion, soloMinistro: boolean) => {
-    if (eliminando) return;
-    const confirmacion = soloMinistro
-      ? `¿Quitar a ${asignacion.nombre_persona} de la tarea "${asignacion.titulo_tarea}"? La tarea y los demás ministros se conservarán.`
-      : `¿Eliminar la tarea "${asignacion.titulo_tarea}" por completo? Se borrarán todas sus asignaciones y solicitudes de cambio de turno. Esta acción no se puede deshacer.`;
-    if (!window.confirm(confirmacion)) return;
-    setEliminando(true);
+  const reasignar = async (personaActualId: number, personaNuevaId: number) => {
+    if (!activa || ocupado || personaActualId === personaNuevaId) return;
+    setOcupado(true);
     try {
-      if (soloMinistro) await apiClient.delete('/api/tareas/asignar', { data: { tarea_id: asignacion.tarea_id, persona_id: asignacion.persona_id } });
-      else await apiClient.delete(`/api/tareas/${asignacion.tarea_id}`);
-      toast.success(soloMinistro ? 'Asignación eliminada' : 'Tarea eliminada', soloMinistro ? 'El ministro fue retirado de esta tarea.' : 'La tarea se eliminó por completo.');
-      setEditandoKey(null);
-      refrescar();
-    } catch (error: unknown) {
-      toast.error('No se pudo completar la acción', getApiErrorMessage(error, 'Error al eliminar. Inténtalo nuevamente.'));
-    } finally { setEliminando(false); }
-  };
-
-  const reasignar = async (tareaId: number, personaActualId: number, personaNuevaId: number) => {
-    setReasignando(true);
-    try {
-      const res = await apiClient.put<RespuestaReasignacion>('/api/tareas/asignar', {
-        tarea_id: tareaId,
-        persona_actual_id: personaActualId,
-        persona_nueva_id: personaNuevaId,
+      const res = await apiClient.put<{ alerta?: AlertaAsignacion }>('/api/tareas/asignar', {
+        tarea_id: activa.id, persona_actual_id: personaActualId, persona_nueva_id: personaNuevaId,
       });
       const alerta = res.data.alerta;
-      const avisos: string[] = [];
-      if (alerta?.ministro_no_disponible) avisos.push('está marcado como no disponible');
-      if (alerta?.tope_servicios_superado) avisos.push(`tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes})`);
-      toast.success('Responsable actualizado', avisos.length > 0 ? `Atención: ${avisos.join(' y ')}.` : 'El cambio se guardó correctamente.');
-      setEditandoKey(null);
-      refrescar();
-    } catch (err: unknown) {
-      toast.error('No se pudo reasignar la tarea', getApiErrorMessage(err, 'Error al reasignar la tarea.'));
-    } finally {
-      setReasignando(false);
-    }
+      const avisos = [alerta?.ministro_no_disponible && 'Está marcado como no disponible.',
+        alerta?.tope_servicios_superado && `Tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes}).`].filter(Boolean);
+      toast.success('Responsable actualizado', avisos.length ? avisos.join(' ') : 'El cambio se guardó correctamente.');
+      setReemplazando(null); refrescar();
+    } catch (err) { toast.error('No se pudo reasignar la tarea', getApiErrorMessage(err, 'Error al reasignar la tarea.')); }
+    finally { setOcupado(false); }
   };
-
-  const abrirEdicionTarea = (asignacion: Asignacion) => {
-    setEditandoTarea(asignacion);
-    setEditTitulo(asignacion.titulo_tarea);
-    setEditDescripcion(asignacion.descripcion_tarea);
-    setEditFecha(asignacion.fecha);
-    setEditHoraInicio(asignacion.hora_inicio.substring(0, 5));
-    setEditHoraFin(asignacion.hora_fin.substring(0, 5));
-  };
-
-  const cerrarEdicionTarea = () => {
-    setEditandoTarea(null);
-  };
-
-  const guardarEdicionTarea = async () => {
-    if (!editandoTarea) return;
-    if (!editFecha || !editHoraInicio || !editHoraFin || !editTitulo || !editDescripcion) {
-      toast.error('Faltan datos', 'Por favor completa todos los campos.');
-      return;
-    }
-    if (editHoraInicio >= editHoraFin) {
-      toast.error('Horario inválido', 'La hora de inicio debe ser menor que la hora de fin.');
-      return;
-    }
-    setEditLoading(true);
+  const confirmarEliminacion = async () => {
+    if (!activa || ocupado || (vista === 'quitar' && !porQuitar)) return;
+    setOcupado(true);
     try {
-      await apiClient.put(`/api/tareas/${editandoTarea.tarea_id}`, {
-        fecha: editFecha,
-        hora_inicio: editHoraInicio,
-        hora_fin: editHoraFin,
-        titulo: editTitulo,
-        descripcion: editDescripcion,
-      });
-      toast.success('Tarea actualizada', `Los cambios en "${editTitulo}" se guardaron.`);
-      cerrarEdicionTarea();
+      if (vista === 'quitar') {
+        await apiClient.delete('/api/tareas/asignar', { data: { tarea_id: activa.id, persona_id: porQuitar!.persona_id } });
+        setVista('ministros'); setPorQuitar(null);
+        toast.success('Asignación eliminada', 'El ministro fue retirado de esta tarea.');
+      } else {
+        await apiClient.delete(`/api/tareas/${activa.id}`); setActivaId(null);
+        toast.success('Tarea eliminada', 'La tarea se eliminó por completo.');
+      }
       refrescar();
-    } catch (err: unknown) {
-      toast.error('No se pudo actualizar la tarea', getApiErrorMessage(err, 'Error al guardar los cambios.'));
-    } finally {
-      setEditLoading(false);
-    }
+    } catch (err) { toast.error('No se pudo completar la acción', getApiErrorMessage(err, 'Error al eliminar. Inténtalo nuevamente.')); }
+    finally { setOcupado(false); }
   };
+  const tarjetasMinistros = (asignados: AsignadoInfo[], previa = false) => <ul className={`${styles.personas} ${previa ? styles.vistaPrevia : ''}`} aria-label="Ministros de la tarea">
+    {asignados.map(a => <li key={a.persona_id} className={styles.persona}>
+      <span className={styles.avatar} aria-hidden="true">{a.nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(parte => parte[0]).join('')}</span>
+      <span>{a.nombre}</span>
+    </li>)}
+  </ul>;
+  const tituloModal = activa ? vista === 'listado' ? `Listado de ministros de ${activa.titulo}` : vista === 'editar' ? `Editar Tarea #${activa.id}` : vista === 'ministros' ? `Ministros de ${activa.titulo}`
+    : vista === 'eliminar' ? 'Eliminar tarea' : vista === 'quitar' ? 'Quitar ministro' : activa.titulo : '';
 
-  if (cargando) return <LoadingState label="Cargando asignaciones..." />;
-  if (error)    return <ErrorState message={error} onRetry={cargarAsignaciones} />;
-
-  return (
-    <div>
-      <h3 className={styles.seccionTitulo}>{esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'}</h3>
-
-      {editandoTarea && (
-        <div className={formStyles.modalOverlay}>
-          <div className={formStyles.modalCard}>
-            <h4 className={formStyles.modalTitle}>Editar Tarea #{editandoTarea.tarea_id}</h4>
-
-            <div className={formStyles.form}>
-              <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Título:</label>
-                <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
-              </div>
-
-              <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Descripción:</label>
-                <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
-              </div>
-
-              <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
-                <input type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
-              </div>
-
-              <div className={formStyles.fieldRow}>
-                <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
-                  <input type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
-                </div>
-                <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
-                  <input type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
-                </div>
-              </div>
-            </div>
-
-            <div className={formStyles.modalActions}>
-              <button className={formStyles.btnSecondary} onClick={cerrarEdicionTarea} disabled={editLoading}>
-                Cancelar
-              </button>
-              <button className="btn-primary" onClick={guardarEdicionTarea} disabled={editLoading}>
-                {editLoading ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {asignaciones.length === 0 ? (
-        <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
-      ) : (
-        <div className="table-container">
-          <table className="styled-table">
-            <thead>
-              <tr>
+  return <>
+    <CardHead title={esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'} />
+    <CardBody>
+      <TableFilters {...filtros.controls} label="Filtros de tareas" />
+      {cargando ? <LoadingState label="Cargando asignaciones..." /> : error ? <ErrorState message={error} onRetry={cargar} />
+        : !tareas.length ? <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
+        : <>
+          <div className={`table-container ${styles.tabla}`}>
+            <table className="styled-table">
+              <thead><tr>
                 <SortableTh label="Tarea" sortKey="tarea" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                {!esMinistro && <SortableTh label="Ministro Asignado" sortKey="responsable" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />}
+                {!esMinistro && <SortableTh label="Ministros asignados" sortKey="responsable" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />}
                 <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 {puedeGestionar && <th>Acciones</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {asignacionesOrdenadas.map((asignacion) => {
-                const key = `${asignacion.tarea_id}-${asignacion.persona_id}`;
-                return (
-                  <tr key={key}>
-                    <td>{asignacion.titulo_tarea}</td>
-                    {!esMinistro && (
-                      <td>
-                        {!asignacion.persona_id || !puedeGestionar ? asignacion.nombre_persona : editandoKey === key ? (
-                          <select
-                            className={styles.reasignarSelect}
-                            autoFocus
-                            defaultValue={asignacion.persona_id}
-                            disabled={reasignando}
-                            onChange={(e) => reasignar(asignacion.tarea_id, asignacion.persona_id, Number(e.target.value))}
-                            onBlur={() => setEditandoKey(null)}
-                          >
-                            {ministros.map((m) => (
-                              <option key={m.id} value={m.id}>{m.nombre}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <button
-                            type="button"
-                            className={styles.btnReasignar}
-                            onClick={() => setEditandoKey(key)}
-                            title="Cambiar responsable"
-                          >
-                            <strong>{asignacion.nombre_persona}</strong>
-                          </button>
-                        )}
-                      </td>
-                    )}
-                    <td>{formatFecha(asignacion.fecha)}</td>
-                    <td>{formatHora(asignacion.hora_inicio)} - {formatHora(asignacion.hora_fin)}</td>
-                    {puedeGestionar && (
-                      <td className={styles.acciones}>
-                        <Btn kind="ghost" size="sm" onClick={() => abrirEdicionTarea(asignacion)}>
-                          Editar
-                        </Btn>
-                        {asignacion.persona_id !== 0 && <Btn kind="ghost" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, true)}>
-                          Quitar ministro de esta tarea
-                        </Btn>}
-                        <Btn kind="bad" size="sm" disabled={eliminando || reasignando} onClick={() => eliminar(asignacion, false)}>
-                          Eliminar tarea
-                        </Btn>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
+              </tr></thead>
+              <tbody>{visibles.map(tarea => <tr key={tarea.id} className={styles.fila} onClick={event => {
+                if ((event.target as HTMLElement).closest('button, input, select, summary, details')) return;
+                event.currentTarget.querySelector<HTMLButtonElement>('[data-detalle]')?.focus(); abrir(tarea);
+              }}>
+                <td><button type="button" data-detalle className={styles.enlace} onClick={() => abrir(tarea)}>{tarea.titulo}</button></td>
+                {!esMinistro && <td>{!tarea.asignados.length ? 'Sin ministro asignado' : <>
+                  <span>{tarea.asignados.slice(0, 2).map(a => a.nombre).join(', ')}</span>
+                  {tarea.asignados.length > 2 && <>{' '}<button type="button" className={styles.enlace} onClick={() => abrir(tarea)}
+                    aria-label={`Ver los ${tarea.asignados.length} ministros de ${tarea.titulo}`}>+{tarea.asignados.length - 2} más</button></>}
+                </>}</td>}
+                <td>{formatFecha(tarea.fecha)}</td><td>{formatHorario(tarea.hora_inicio, tarea.hora_fin)}</td>
+                {puedeGestionar && <td><div className={styles.acciones}>
+                  {puedeEditar(tarea) && <Btn type="button" kind="ghost" size="sm" onClick={() => abrir(tarea, 'editar')}>Editar</Btn>}
+                  <Btn type="button" kind="ghost" size="sm" onClick={() => abrir(tarea, 'ministros')}>Gestionar ministros</Btn>
+                  {puedeEditar(tarea) && <details><summary>Más opciones</summary>
+                    <Btn type="button" kind="bad" size="sm" onClick={() => abrir(tarea, 'eliminar')}>Eliminar tarea</Btn>
+                  </details>}
+                </div></td>}
+              </tr>)}</tbody>
+            </table>
+          </div>
+          <nav className={styles.paginacion} aria-label="Paginación de tareas">
+            <Btn type="button" kind="ghost" size="sm" disabled={actual === 1} onClick={() => setPagina(actual - 1)}>Anterior</Btn>
+            <span aria-live="polite">Página {actual} de {paginas} · {sortedData.length} {sortedData.length === 1 ? 'tarea' : 'tareas'}</span>
+            <Btn type="button" kind="ghost" size="sm" disabled={actual === paginas} onClick={() => setPagina(actual + 1)}>Siguiente</Btn>
+          </nav>
+        </>}
+    </CardBody>
+    <Modal open={Boolean(activa)} title={tituloModal} onClose={cerrar} closeDisabled={ocupado}
+      width={vista === 'eliminar' || vista === 'quitar' ? 520 : 720}
+      describedBy={vista === 'eliminar' || vista === 'quitar' ? `${id}-confirmacion` : undefined}
+      initialFocusSelector={vista === 'eliminar' || vista === 'quitar' ? '[data-confirm-cancel]' : undefined}
+      onBack={vista !== 'detalle' ? () => { if (!ocupado) { setVista(vista === 'quitar' ? 'ministros' : 'detalle'); setReemplazando(null); } } : undefined}>
+      {activa && <div ref={contenido} className={styles.detalle}>
+        {vista === 'detalle' && <>
+          <dl className={styles.datos}>
+            <div><dt>Descripción</dt><dd>{activa.descripcion}</dd></div>
+            <div><dt>Fecha</dt><dd>{formatFecha(activa.fecha)}</dd></div>
+            <div><dt>Horario</dt><dd>{formatHorario(activa.hora_inicio, activa.hora_fin)}</dd></div>
+          </dl>
+          <h3>Ministros asignados ({activa.asignados.length})</h3>
+          {activa.asignados.length ? <>
+            {tarjetasMinistros(activa.asignados.slice(0, 6), true)}
+            {activa.asignados.length > 6 && <div className={styles.resumenListado}>
+              <span>Mostrando 6 de {activa.asignados.length} ministros.</span>
+              <Btn type="button" kind="ghost" onClick={() => { setBusquedaAsignados(''); setPaginaListado(1); setVista('listado'); }}>Ver listado completo ({activa.asignados.length})</Btn>
+            </div>}
+          </> : <p>Sin ministro asignado</p>}
+          {puedeGestionar && <div className={styles.accionesTarjeta}>
+            {puedeEditar(activa) && <Btn type="button" kind="ghost" onClick={() => abrir(activa, 'editar')}>Editar tarea</Btn>}
+            <Btn type="button" onClick={() => abrir(activa, 'ministros')}>Gestionar ministros</Btn>
+            {puedeEditar(activa) && <Btn type="button" kind="bad" onClick={() => setVista('eliminar')}>Eliminar tarea</Btn>}
+          </div>}
+        </>}
+        {vista === 'listado' && <>
+          <div className={form.field}>
+            <label htmlFor={`${id}-buscar-asignados`} className={form.label}>Buscar ministro asignado</label>
+            <input id={`${id}-buscar-asignados`} className={form.input} type="search" value={busquedaAsignados}
+              placeholder="Buscar por nombre…" onChange={event => { setBusquedaAsignados(event.target.value); setPaginaListado(1); }} />
+          </div>
+          <p className={styles.recuento} aria-live="polite">{asignadosVisibles.length} de {activa.asignados.length} ministros.</p>
+          {tarjetasMinistros(ministrosPagina)}
+          {!asignadosVisibles.length && <p role="status">No hay ministros asignados que coincidan con la búsqueda.</p>}
+          <nav className={styles.paginacion} aria-label="Paginación de ministros asignados">
+            <Btn type="button" kind="ghost" size="sm" disabled={paginaActualListado === 1} onClick={() => setPaginaListado(paginaActualListado - 1)}>Anterior</Btn>
+            <span aria-live="polite">Página {paginaActualListado} de {paginasListado}</span>
+            <Btn type="button" kind="ghost" size="sm" disabled={paginaActualListado === paginasListado} onClick={() => setPaginaListado(paginaActualListado + 1)}>Siguiente</Btn>
+          </nav>
+        </>}
+        {vista === 'editar' && <form className={form.form} onSubmit={event => { event.preventDefault(); void guardarEdicion(); }}>
+          <fieldset className={styles.campos} disabled={ocupado}>
+            <EventoTareaSelect value={edicion.evento_id} disabled={ocupado} onChange={(evento_id, evento) => setEdicion(prev => ({ ...prev, evento_id, ...(evento ? { fecha: evento.fecha.slice(0, 10) } : {}) }))} />
+            {(['titulo', 'descripcion', 'fecha', 'hora_inicio', 'hora_fin'] as const).map(campo => <div key={campo} className={form.field}>
+              <label htmlFor={`${id}-${campo}`} className={`${form.label} ${form.required}`}>{({ titulo: 'Título:', descripcion: 'Descripción:', fecha: 'Fecha:', hora_inicio: 'Hora de Inicio:', hora_fin: 'Hora de Fin:' })[campo]}</label>
+              <input id={`${id}-${campo}`} className={form.input} aria-required="true" type={campo === 'fecha' ? 'date' : campo.startsWith('hora_') ? 'time' : 'text'}
+                value={edicion[campo]} onChange={event => setEdicion(prev => ({ ...prev, [campo]: event.target.value }))} />
+            </div>)}
+            <div className={styles.acciones}>
+              <Btn type="button" kind="ghost" onClick={() => setVista('detalle')}>Cancelar</Btn>
+              <Btn type="submit">{ocupado ? 'Guardando...' : 'Guardar cambios'}</Btn>
+            </div>
+          </fieldset>
+        </form>}
+        {vista === 'ministros' && <>
+          {cargandoMinistros ? <LoadingState label="Cargando ministros..." /> : errorMinistros ? <ErrorState message="No se pudo cargar tu directorio de ministros." onRetry={() => setRevisionMinistros(n => n + 1)} /> : <>
+            {activa.asignados.length > 0 && <>
+              <div className={form.field}>
+                <label htmlFor={`${id}-buscar-gestion`} className={form.label}>Buscar ministro asignado</label>
+                <input id={`${id}-buscar-gestion`} className={form.input} type="search" value={busquedaAsignados}
+                  placeholder="Buscar por nombre…" onChange={event => { setBusquedaAsignados(event.target.value); setReemplazando(null); }} />
+              </div>
+              <p className={styles.recuento} aria-live="polite">Mostrando {asignadosVisibles.length} de {activa.asignados.length} ministros asignados.</p>
+              {!asignadosVisibles.length && <p>No hay ministros asignados que coincidan con la búsqueda.</p>}
+            </>}
+            <div className={styles.lista}><ul aria-label="Ministros para gestionar">{asignadosVisibles.map(a => <li key={a.persona_id} className={styles.miembro}>
+              <span>{a.nombre}</span>
+              {puedeGestionarMinistro(a.persona_id) && <div className={styles.acciones}>
+                {reemplazando === a.persona_id ? <div className={form.field}>
+                  <label htmlFor={`${id}-reemplazo`}>Responsable de {activa.titulo}</label>
+                  <select id={`${id}-reemplazo`} className={form.input} value={a.persona_id} disabled={ocupado} autoFocus
+                    onChange={event => void reasignar(a.persona_id, Number(event.target.value))}>
+                    {ministros.filter(m => m.id === a.persona_id || !activa.asignados.some(otro => otro.persona_id === m.id)).map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                  </select>
+                  <Btn type="button" kind="ghost" size="sm" disabled={ocupado} onClick={() => setReemplazando(null)}>Cancelar reemplazo</Btn>
+                </div> : <Btn type="button" kind="ghost" size="sm" disabled={ocupado} title="Cambiar responsable" onClick={() => setReemplazando(a.persona_id)}>Reemplazar</Btn>}
+                <Btn type="button" kind="ghost" size="sm" disabled={ocupado} aria-label={`Quitar a ${a.nombre}`}
+                  onClick={() => { setPorQuitar(a); setVista('quitar'); }}>Quitar</Btn>
+              </div>}
+            </li>)}</ul></div>
+            {!activa.asignados.length && <p>Sin ministro asignado. Puedes agregar ministros sin volver a crear la tarea.</p>}
+            <SelectorMinistros key={activa.id} ministros={ministros} seleccionados={nuevos} yaAsignados={activa.asignados.map(a => a.persona_id)} onChange={setNuevos} disabled={ocupado} />
+            <Btn type="button" disabled={ocupado || !nuevos.length} onClick={guardarMinistros}>{ocupado ? 'Guardando...' : 'Agregar seleccionados'}</Btn>
+          </>}
+        </>}
+        {(vista === 'eliminar' || vista === 'quitar') && <ConfirmDialogContent
+          descriptionId={`${id}-confirmacion`} busy={ocupado} onConfirm={confirmarEliminacion}
+          confirmLabel={vista === 'quitar' ? 'Quitar ministro' : 'Eliminar tarea'}
+          onCancel={() => setVista(vista === 'quitar' ? 'ministros' : 'detalle')}
+          description={vista === 'quitar' ? `¿Quitar a ${porQuitar?.nombre} de la tarea "${activa.titulo}"? La tarea y los demás ministros se conservarán.`
+            : `¿Eliminar la tarea "${activa.titulo}"? Se borrarán todas sus asignaciones y solicitudes de cambio de turno. Esta acción no se puede deshacer.`} />}
+      </div>}
+    </Modal>
+  </>;
 }

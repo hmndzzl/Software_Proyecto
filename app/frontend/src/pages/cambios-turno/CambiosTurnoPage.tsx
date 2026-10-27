@@ -17,7 +17,7 @@ export default function CambiosTurnoPage() {
       />
 
       <Card>
-        <CardHead title="Nueva Solicitud" />
+        <CardHead title="Solicitar Cambio de Turno" />
         <CardBody>
           <SolicitarCambioTurnoForm onSolicitudEnviada={() => setRefreshKey(k => k + 1)} />
         </CardBody>

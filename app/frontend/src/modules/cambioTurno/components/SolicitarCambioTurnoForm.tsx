@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
-import { formatFecha } from '../../../utils/date';
+import { formatFecha, formatHorario, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import EmptyState from '../../../components/ui/EmptyState';
 import type { Tarea, Ministro } from '../../../types';
@@ -24,7 +24,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
     if (!usuario) return;
 
     apiClient.get<Tarea[]>('/api/tareas', { params: { persona_id: usuario.id } })
-      .then(res => setMisTareas(res.data))
+      .then(res => setMisTareas(res.data.filter(t => esTareaFutura(t.fecha, t.hora_inicio))))
       .catch(() => {});
 
     apiClient.get<Pick<Ministro, 'id' | 'nombre'>[]>('/api/cambios-turno/destinatarios')
@@ -34,9 +34,16 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     if (!tareaId || !destinatarioId) {
       toast.error('Faltan datos', 'Selecciona la tarea y el ministro con quien quieres hacer el cambio.');
+      return;
+    }
+
+    const tareaSeleccionada = misTareas.find(t => t.id === Number(tareaId));
+    if (!tareaSeleccionada || !esTareaFutura(tareaSeleccionada.fecha, tareaSeleccionada.hora_inicio)) {
+      toast.error('Fecha inválida', 'No se puede solicitar un cambio de turno para una tarea cuya fecha ya pasó.');
       return;
     }
 
@@ -60,16 +67,18 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
 
   return (
     <div>
-      <h3 className={styles.sectionTitle}>Solicitar Cambio de Turno</h3>
+
 
       {misTareas.length === 0 ? (
         <EmptyState message="No tienes tareas asignadas actualmente para solicitar un cambio." />
       ) : (
         <form onSubmit={handleSubmit} className={styles.form}>
+          <p className={styles.fieldNote}>Primero elige tu tarea y después el ministro que recibirá la solicitud. El cambio no se completa hasta que lo acepte.</p>
           <div className={styles.field}>
             <label htmlFor="mi_tarea" className={`${styles.label} ${styles.required}`}>Mi Tarea:</label>
             <select
               id="mi_tarea"
+              disabled={loading}
               className={styles.input}
               value={tareaId}
               onChange={(e) => setTareaId(e.target.value)}
@@ -77,7 +86,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
               <option value="">-- Elige una de tus tareas --</option>
               {misTareas.map((tarea) => (
                 <option key={tarea.id} value={tarea.id}>
-                  {tarea.titulo} · {formatFecha(tarea.fecha)} · {tarea.hora_inicio.substring(0, 5)}-{tarea.hora_fin.substring(0, 5)}
+                  {tarea.titulo} · {formatFecha(tarea.fecha)} · {formatHorario(tarea.hora_inicio, tarea.hora_fin)}
                 </option>
               ))}
             </select>
@@ -87,6 +96,7 @@ export default function SolicitarCambioTurnoForm({ onSolicitudEnviada }: { onSol
             <label htmlFor="destinatario" className={`${styles.label} ${styles.required}`}>Cambiar con:</label>
             <select
               id="destinatario"
+              disabled={loading}
               className={styles.input}
               value={destinatarioId}
               onChange={(e) => setDestinatarioId(e.target.value)}

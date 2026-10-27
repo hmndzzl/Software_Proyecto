@@ -14,6 +14,7 @@ vi.mock('../../config/db', () => ({
   default: {
     execute: vi.fn(),
     getConnection: vi.fn(),
+    query: vi.fn(),
   },
 }));
 
@@ -50,6 +51,7 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
       release: vi.fn(),
     };
     (pool.getConnection as any).mockResolvedValue(mockConnection);
+    (pool.query as any) = vi.fn().mockResolvedValue([[{ hoy: '2026-09-01', horaActual: '08:00' }]]);
 
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -91,6 +93,28 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
       await solicitarCambioTurno(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 400 si la fecha de la tarea ya pasó', async () => {
+      req.body = { tarea_id: 5, destinatario_id: 2 };
+      const tareaPasada = { ...tareaBase, fecha: '2026-08-30' };
+      (pool.execute as any).mockResolvedValueOnce([[tareaPasada]]);
+
+      await solicitarCambioTurno(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'No se puede solicitar un cambio de turno para una tarea cuya fecha ya pasó' });
+    });
+
+    it('debería retornar 400 si la tarea es hoy pero la hora de inicio ya pasó', async () => {
+      req.body = { tarea_id: 5, destinatario_id: 2 };
+      const tareaHoyPasada = { ...tareaBase, fecha: '2026-09-01', hora_inicio: '07:30:00' };
+      (pool.execute as any).mockResolvedValueOnce([[tareaHoyPasada]]);
+
+      await solicitarCambioTurno(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'No se puede solicitar un cambio de turno para una tarea cuya fecha ya pasó' });
     });
 
     it('debería retornar 403 si el solicitante no está asignado a la tarea', async () => {
@@ -284,6 +308,30 @@ describe('CambioTurno Controller - Pruebas Unitarias (HU-23)', () => {
       await responderCambioTurno(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    });
+
+    it('debería retornar 400 al aceptar si la fecha de la tarea ya pasó', async () => {
+      req.body = { aceptar: true };
+      const tareaPasada = { ...tareaBase, fecha: '2026-08-30' };
+      (pool.execute as any).mockResolvedValueOnce([[cambioBase]]);
+      (pool.execute as any).mockResolvedValueOnce([[tareaPasada]]);
+
+      await responderCambioTurno(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'No se puede aceptar un cambio de turno para una tarea cuya fecha ya pasó' });
+    });
+
+    it('debería retornar 400 al aceptar si la tarea es hoy pero la hora de inicio ya pasó', async () => {
+      req.body = { aceptar: true };
+      const tareaHoyPasada = { ...tareaBase, fecha: '2026-09-01', hora_inicio: '07:30:00' };
+      (pool.execute as any).mockResolvedValueOnce([[cambioBase]]);
+      (pool.execute as any).mockResolvedValueOnce([[tareaHoyPasada]]);
+
+      await responderCambioTurno(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'No se puede aceptar un cambio de turno para una tarea cuya fecha ya pasó' });
     });
 
     it('debería rechazar la solicitud y notificar al solicitante en una transacción', async () => {

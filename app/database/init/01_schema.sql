@@ -38,6 +38,7 @@ CREATE TABLE `espacio` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `capacidad` int(11) DEFAULT NULL CHECK (`capacidad` > 0),
+  `foto_url` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -49,6 +50,9 @@ CREATE TABLE `tarea` (
   `hora_fin` time NOT NULL,
   `titulo` varchar(255) NOT NULL,
   `descripcion` text NOT NULL,
+  `evento_id` int(11) DEFAULT NULL,
+  KEY `idx_tarea_evento` (`evento_id`),
+  CONSTRAINT `fk_tarea_evento` FOREIGN KEY (`evento_id`) REFERENCES `evento` (`id`) ON DELETE SET NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -197,6 +201,8 @@ CREATE TABLE `reserva` (
   `espacio_id` int(11) DEFAULT NULL,
   `estado_reserva_id` int(11) NOT NULL,
   `solicitante_id` int(11) NOT NULL,
+  `checkin_en` datetime DEFAULT NULL,
+  `cantidad_personas` int(11) DEFAULT NULL CHECK (`cantidad_personas` > 0),
   PRIMARY KEY (`id`),
   KEY `fk_reserva_espacio_idx` (`espacio_id`),
   KEY `fk_reserva_estado_idx` (`estado_reserva_id`),
@@ -257,6 +263,31 @@ CREATE TABLE mensaje_contacto (
   creado_en timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT fk_contacto_notificacion FOREIGN KEY (notificacion_id) REFERENCES notificacion (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- No se reconstruyen decisiones anteriores: no se conoce su autor ni su fecha.
+CREATE TABLE IF NOT EXISTS reserva_decision (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  reserva_id INT NOT NULL,
+  resultado ENUM('aprobada','rechazada','pendiente','cancelada') NOT NULL,
+  actor_id INT DEFAULT NULL,
+  actor_nombre VARCHAR(100) NOT NULL,
+  fecha_utc DATETIME(3) NOT NULL,
+  KEY idx_reserva_decision (reserva_id, fecha_utc, id),
+  CONSTRAINT fk_decision_reserva FOREIGN KEY (reserva_id) REFERENCES reserva(id) ON DELETE CASCADE,
+  CONSTRAINT fk_reserva_decision_actor FOREIGN KEY (actor_id) REFERENCES persona(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE IF NOT EXISTS cuenta_decision (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  cuenta_id INT NOT NULL,
+  resultado ENUM('aprobada','rechazada') NOT NULL,
+  actor_id INT DEFAULT NULL,
+  actor_nombre VARCHAR(100) NOT NULL,
+  fecha_utc DATETIME(3) NOT NULL,
+  KEY idx_cuenta_decision (cuenta_id, fecha_utc, id),
+  CONSTRAINT fk_decision_cuenta FOREIGN KEY (cuenta_id) REFERENCES persona(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cuenta_decision_actor FOREIGN KEY (actor_id) REFERENCES persona(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

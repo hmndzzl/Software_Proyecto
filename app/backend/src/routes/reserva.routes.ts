@@ -5,10 +5,12 @@ import {
   obtenerReservas,
   obtenerMisReservas,
   obtenerReservaPorId,
-  cambiarEstadoReserva
+  cambiarEstadoReserva,
+  checkinReserva
 } from '../controllers/reserva.controller';
 import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
 import { ROLES } from '../config/roles';
+import { decisionesReserva } from '../controllers/decisiones.controller';
 
 const router = Router();
 const puedeGestionarReservas = requireRole(ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS);
@@ -17,11 +19,15 @@ router.post('/', authMiddleware, puedeGestionarReservas, crearReserva);
 router.get('/', authMiddleware, puedeGestionarReservas, obtenerReservas);
 router.get('/mis-reservas', authMiddleware, puedeGestionarReservas, obtenerMisReservas);
 router.get('/:id', authMiddleware, puedeGestionarReservas, obtenerReservaPorId);
+router.get('/:id/decisiones', authMiddleware, puedeGestionarReservas, decisionesReserva);
 
 router.put('/:id', authMiddleware, puedeGestionarReservas, editarReserva);
 // Endpoint para modificar el estado de la reserva: Admin/Sacerdote pueden aprobar/rechazar
 // cualquier reserva; un solicitante autorizado puede cancelar (estado_id=3) su propia
 // reserva Pendiente/Confirmada. Ownership y rol se validan dentro de cambiarEstadoReserva.
 router.put('/:id/estado', authMiddleware, puedeGestionarReservas, cambiarEstadoReserva);
+// HU-15: check-in real al escanear el QR de un espacio. Ownership (solicitante o
+// Admin/Sacerdote) y ventana horaria con tolerancia se validan dentro de checkinReserva.
+router.put('/:id/checkin', authMiddleware, puedeGestionarReservas, checkinReserva);
 
 export default router;

@@ -6,6 +6,7 @@ export interface Tarea {
   hora_fin: string;
   titulo: string;
   descripcion: string;
+  evento_id?: number | null;
 }
 
 export type TareaCreateInput = Omit<Tarea, 'id'>;

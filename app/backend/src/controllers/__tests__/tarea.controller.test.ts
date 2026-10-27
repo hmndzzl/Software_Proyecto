@@ -50,7 +50,10 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
 
     mockConnection = {
       beginTransaction: vi.fn(),
-      execute: vi.fn(),
+      execute: vi.fn(async (sql: string, params: unknown[]) => {
+        if (sql.startsWith('SELECT * FROM tarea')) return [[{ evento_id: null }]];
+        return pool.execute(sql, params as never);
+      }),
       commit: vi.fn(),
       rollback: vi.fn(),
       release: vi.fn(),
@@ -154,6 +157,44 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       await getTareas(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+
+    it('restringe a tareas de sus propios ministros cuando el actor es Coordinador de Ministros, incluso sin filtros', async () => {
+      req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
+      req.query = {};
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query, values] = (pool.execute as any).mock.calls[0];
+      expect(query).toContain('EXISTS');
+      expect(query).toContain('JOIN coordinador_ministro cm ON cm.ministro_id = at2.persona_id');
+      expect(query).toContain('cm.coordinador_id = ?');
+      expect(values).toEqual([7]);
+    });
+
+    it('combina el alcance de Coordinador de Ministros con otros filtros', async () => {
+      req.user = { id: 7, rol_id: ROLES.COORDINADOR_MINISTROS } as any;
+      req.query = { fecha_inicio: '2026-08-01' };
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query, values] = (pool.execute as any).mock.calls[0];
+      expect(query).toContain('t.fecha >= ?');
+      expect(query).toContain('EXISTS');
+      expect(values).toEqual(['2026-08-01', 7]);
+    });
+
+    it('no aplica el alcance de coordinador a otros roles', async () => {
+      req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
+      req.query = {};
+      (pool.execute as any).mockResolvedValue([[]]);
+
+      await getTareas(req as Request, res as Response);
+
+      const [query] = (pool.execute as any).mock.calls[0];
+      expect(query).not.toContain('EXISTS');
     });
   });
 
@@ -316,11 +357,34 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
     });
 
+    it('conserva la asociación cuando el cliente omite evento_id', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      req.body = { fecha: '2026-08-12', hora_inicio: '09:30', hora_fin: '10:00', titulo: 'Preparar', descripcion: 'Altar' };
+      mockConnection.execute.mockResolvedValueOnce([[{ evento_id: 8 }]])
+        .mockResolvedValueOnce([[{ fecha: '2026-08-12', estado_reserva_id: 2 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      await updateTarea(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ tarea: expect.objectContaining({ evento_id: 8 }) }));
+    });
+
+    it('retira la asociación explícitamente sin consultar el evento', async () => {
+      req.params = { id: '1' };
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      req.body = { fecha: '2026-08-12', hora_inicio: '09:30', hora_fin: '10:00', titulo: 'Preparar', descripcion: 'Altar', evento_id: null };
+      mockConnection.execute.mockResolvedValueOnce([[{ evento_id: 8 }]]).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      await updateTarea(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(mockConnection.execute).toHaveBeenCalledTimes(2);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ tarea: expect.objectContaining({ evento_id: null }) }));
+    });
+
     it('debería retornar 404 si la tarea no existe', async () => {
       req.params = { id: '99' };
       req.body = { fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00', titulo: 'T', descripcion: 'D' };
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 0 }]);
+      mockConnection.execute.mockResolvedValueOnce([[]]);
 
       await updateTarea(req as Request, res as Response);
 

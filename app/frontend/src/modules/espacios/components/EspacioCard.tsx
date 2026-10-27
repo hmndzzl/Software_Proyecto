@@ -1,11 +1,24 @@
 import styles from './EspacioCard.module.css';
 import Badge from '../../../components/ui/Badge';
+import EspacioFoto from './EspacioFoto';
+
+export interface ReservaCheckinDisponible {
+  id: number;
+  hora_inicio: string;
+  hora_fin: string;
+  solicitante_id: number;
+  solicitante_nombre: string;
+  checkin_en: string | null;
+}
 
 export interface Espacio {
   id: number;
   nombre: string;
   capacidad: number | null;
+  foto_url?: string | null;
   disponible?: boolean | 0 | 1;
+  en_uso?: boolean | 0 | 1;
+  reservas_checkin_disponible?: ReservaCheckinDisponible[];
 }
 
 interface EspacioCardProps {
@@ -15,13 +28,12 @@ interface EspacioCardProps {
 
 export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
   const estaOcupado = espacio.disponible === false || espacio.disponible === 0;
+  const enUso = espacio.en_uso === true || espacio.en_uso === 1;
 
   return (
     <div className={styles.card} onClick={() => onClick(espacio.id)}>
 
-      <div className={styles.photoSlot}>
-        [ foto · {espacio.nombre.toLowerCase()} ]
-      </div>
+      <EspacioFoto className={styles.photoSlot} nombre={espacio.nombre} fotoUrl={espacio.foto_url} />
 
       <div className={styles.body}>
         <p className={styles.tipo}>Espacio parroquial</p>
@@ -31,6 +43,7 @@ export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
           <Badge kind={estaOcupado ? 'bad' : 'ok'}>
             {estaOcupado ? 'Ocupado' : 'Disponible'}
           </Badge>
+          {enUso && <Badge kind="bad">En uso ahora</Badge>}
         </div>
 
         {espacio.capacidad != null && (

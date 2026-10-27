@@ -227,7 +227,9 @@ jobs:
 
       # playwright.config.ts levanta el servidor de Vite y genera el reporte HTML
       # (playwright-report/) y el JUnit (test-results/regression-junit.xml).
-      - name: Run Regression Tests
+      # Incluye accesibilidad-publica.spec.ts: axe audita el portal completo,
+      # con contraste, encabezados y landmarks, sin excluir los nodos que fallen.
+      - name: Run Regression and Public Accessibility Tests
         id: regression
         run: npm run test:regression 2>&1 | tee -a reports/ci.log
 
@@ -238,6 +240,7 @@ jobs:
         run: |
           {
             echo "## Frontend regresión (Playwright): resultado de CI"
+            echo "Incluye auditoría automatizada de accesibilidad del portal público (axe)."
             echo
             junit=test-results/regression-junit.xml
             if [ -f "$junit" ]; then

@@ -11,6 +11,7 @@
 }
 
 .panel {
+  max-width: 100%;
   background: var(--color-blanco);
   border-radius: var(--radius-card);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
@@ -23,28 +24,28 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 4px;
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--color-line);
   flex-shrink: 0;
 }
 
 .title {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
   color: var(--color-tierra);
   margin: 0;
 }
 
-.closeBtn {
+.backBtn, .closeBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -54,9 +55,14 @@
   flex-shrink: 0;
 }
 
-.closeBtn:hover {
+.backBtn:hover, .closeBtn:hover {
   background: var(--color-cremaDk);
   color: var(--color-carbon);
+}
+
+.backBtn:focus-visible, .closeBtn:focus-visible {
+  outline: 3px solid var(--color-rojo);
+  outline-offset: 2px;
 }
 
 .body {

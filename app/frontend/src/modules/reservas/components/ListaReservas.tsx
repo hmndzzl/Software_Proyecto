@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useId, useEffect, useRef, useState } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
 import { CardHead } from '../.././../components/ui/Card';
@@ -7,7 +7,12 @@ import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
 import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
+import Modal from '../../../components/ui/Modal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
@@ -18,11 +23,18 @@ import type { Espacio } from '../../espacios/components/EspacioCard';
 import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
+import AforoField, { errorAforo } from '../../../components/ui/AforoField';
+import DetalleReserva from './DetalleReserva';
 
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion' | 'aforo';
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
+  aforo: r => r.cantidad_personas ?? -1,
+  inicio: r => r.hora_inicio,
+  fin: r => r.hora_fin,
+  titulo: r => r.evento_titulo ?? '',
+  descripcion: r => r.evento_descripcion ?? '',
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
   estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
@@ -30,18 +42,23 @@ const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
+  const confirmacionId = useId();
+  const [estadoPorConfirmar, setEstadoPorConfirmar] = useState<{ reserva: Reserva; estado: number; accion: string } | null>(null);
+  const [confirmandoCancelacion, setConfirmandoCancelacion] = useState(false);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [editando, setEditando] = useState<Reserva | null>(null);
+  const [detalle, setDetalle] = useState<Reserva | null>(null);
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
   const [editHoraFin, setEditHoraFin] = useState('');
   const [editEspacioId, setEditEspacioId] = useState('');
   const [editTitulo, setEditTitulo] = useState('');
   const [editDescripcion, setEditDescripcion] = useState('');
+  const [editCantidad, setEditCantidad] = useState('');
   const [editMensaje, setEditMensaje] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [editPublico, setEditPublico] = useState(false);
@@ -52,7 +69,15 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );
 
-  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(reservas, SORT_VALUE);
+  const filtros = useTableFilters(reservas, {
+    search: r => [r.id, r.espacio_nombre, r.evento_titulo, r.evento_descripcion, r.solicitante_nombre],
+    date: r => r.fecha,
+    selects: [
+      { key: 'estado', label: 'Estado', value: r => etiquetaEstadoReserva(r.estado_reserva_id) || 'Desconocido' },
+      { key: 'espacio', label: 'Espacio', value: r => r.espacio_nombre ?? 'Sin espacio' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const fetchReservas = async () => {
     setLoading(true);
@@ -82,7 +107,14 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       fetchReservas();
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+      throw err;
     }
+  };
+
+  const confirmarCambioEstado = async () => {
+    if (!estadoPorConfirmar) return;
+    await cambiarEstado(estadoPorConfirmar.reserva.id, estadoPorConfirmar.estado);
+    setEstadoPorConfirmar(null);
   };
 
   const abrirEdicion = (r: Reserva) => {
@@ -93,23 +125,25 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setEditEspacioId(r.espacio_id ? String(r.espacio_id) : '');
     setEditTitulo(r.evento_titulo ?? '');
     setEditDescripcion(r.evento_descripcion ?? '');
+    setEditCantidad(r.cantidad_personas == null ? '' : String(r.cantidad_personas));
     setEditPublico(Boolean(r.evento_publico));
     datosPersistidos.current = JSON.stringify({
       fecha: r.fecha.split('T')[0], hora_inicio: r.hora_inicio.substring(0, 5),
       hora_fin: r.hora_fin.substring(0, 5), espacio_id: Number(r.espacio_id),
       titulo: r.evento_titulo ?? '', descripcion: r.evento_descripcion ?? '',
+      ...(r.cantidad_personas != null ? { cantidad_personas: r.cantidad_personas } : {}),
     });
     setEditMensaje('');
   };
 
   const cerrarEdicion = () => {
+    setConfirmandoCancelacion(false);
     setEditando(null);
     setEditMensaje('');
   };
 
   const cancelarReservaDesdeEdicion = async () => {
-    if (!editando) return;
-    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+    if (!editando || editLoading) return;
     setEditLoading(true);
     setEditMensaje('');
     try {
@@ -133,6 +167,10 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       setEditMensaje('La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
+    if (editCantidad || editando.cantidad_personas != null) {
+      const errorCantidad = errorAforo(editCantidad, espacios.find(e => String(e.id) === editEspacioId)?.capacidad);
+      if (errorCantidad) { setEditMensaje(errorCantidad); return; }
+    }
     setEditLoading(true);
     setEditMensaje('');
     let datosGuardados = false;
@@ -144,6 +182,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         espacio_id: Number(editEspacioId),
         titulo: editTitulo,
         descripcion: editDescripcion,
+        ...(editCantidad ? { cantidad_personas: Number(editCantidad) } : {}),
       };
       if (JSON.stringify(datos) !== datosPersistidos.current) {
         await apiClient.put(`/api/reservas/${editando.id}`, datos);
@@ -167,11 +206,20 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   return (
     <div>
       <CardHead title="Lista de Reservas" hint={!loading ? `${reservas.length} registradas` : undefined} />
+      {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
 
+      {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
       {editando && (
-        <div className={formStyles.modalOverlay}>
-          <div className={formStyles.modalCard}>
-            <h4 className={formStyles.modalTitle}>Editar Reserva #{editando.id}</h4>
+        <Modal open title={confirmandoCancelacion ? 'Cancelar reserva' : `Editar Reserva #${editando.id}`}
+          closeDisabled={editLoading} describedBy={confirmandoCancelacion ? confirmacionId : undefined}
+          initialFocusSelector={confirmandoCancelacion ? '[data-confirm-cancel]' : undefined}
+          onClose={() => { if (!editLoading) { if (confirmandoCancelacion) { setConfirmandoCancelacion(false); setEditMensaje(''); } else cerrarEdicion(); } }}>
+          {confirmandoCancelacion ? <>
+            <ConfirmDialogContent descriptionId={confirmacionId} confirmLabel="Cancelar reserva" busy={editLoading}
+              description="¿Estás seguro de que deseas cancelar esta reserva? Se liberará el espacio reservado."
+              onConfirm={cancelarReservaDesdeEdicion} onCancel={() => { setConfirmandoCancelacion(false); setEditMensaje(''); }} />
+            {editMensaje && <p role="alert" className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>}
+          </> : <>
 
             {editando.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
@@ -185,8 +233,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
             <fieldset className={formStyles.form} disabled={editLoading} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
-                <select className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
+                <label htmlFor="editar-reserva-espacio" className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
+                <select id="editar-reserva-espacio" className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
                   <option value="">-- Selecciona un espacio --</option>
                   {espacios.map(esp => (
                     <option key={esp.id} value={esp.id}>{esp.nombre}</option>
@@ -194,30 +242,30 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 </select>
               </div>
 
+              <AforoField value={editCantidad} onChange={setEditCantidad} capacidad={espacios.find(e => String(e.id) === editEspacioId)?.capacidad} required={editando.cantidad_personas != null} />
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
-                <input type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
+                <label htmlFor="editar-reserva-fecha" className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
+                <input id="editar-reserva-fecha" type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
               </div>
-
               <div className={formStyles.fieldRow}>
                 <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
-                  <input type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
+                  <label htmlFor="editar-reserva-inicio" className={`${formStyles.label} ${formStyles.required}`}>Hora de Inicio:</label>
+                  <input id="editar-reserva-inicio" type="time" className={formStyles.input} value={editHoraInicio} onChange={e => setEditHoraInicio(e.target.value)} />
                 </div>
                 <div className={formStyles.field}>
-                  <label className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
-                  <input type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
+                  <label htmlFor="editar-reserva-fin" className={`${formStyles.label} ${formStyles.required}`}>Hora de Fin:</label>
+                  <input id="editar-reserva-fin" type="time" className={formStyles.input} value={editHoraFin} onChange={e => setEditHoraFin(e.target.value)} />
                 </div>
               </div>
 
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Título del Evento:</label>
-                <input type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
+                <label htmlFor="editar-reserva-titulo" className={`${formStyles.label} ${formStyles.required}`}>Título del Evento:</label>
+                <input id="editar-reserva-titulo" type="text" className={formStyles.input} value={editTitulo} onChange={e => setEditTitulo(e.target.value)} />
               </div>
 
               <div className={formStyles.field}>
-                <label className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
-                <input type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
+                <label htmlFor="editar-reserva-descripcion" className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
+                <input id="editar-reserva-descripcion" type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
               </div>
               {esAdminOSacerdote && editando.evento_id && (
                 <div className={formStyles.field}>
@@ -235,7 +283,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <button
                   type="button"
                   className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
-                  onClick={cancelarReservaDesdeEdicion}
+                  onClick={() => { setEditMensaje(''); setConfirmandoCancelacion(true); }}
                   disabled={editLoading}
                 >
                   Cancelar Reserva
@@ -248,8 +296,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 {editLoading ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
-          </div>
-        </div>
+          </>}
+        </Modal>
       )}
 
       {loading && <LoadingState label="Cargando reservas..." />}
@@ -267,12 +315,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                <th>Hora Inicio</th>
-                <th>Hora Fin</th>
-                <th>Título del Evento</th>
-                <th>Descripción</th>
+                <SortableTh label="Hora Inicio" sortKey="inicio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Hora Fin" sortKey="fin" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Título del Evento" sortKey="titulo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Descripción" sortKey="descripcion" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Registrado por" sortKey="solicitante" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -290,19 +339,21 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                   <td>
                     <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                   </td>
+                  <td>{r.cantidad_personas ?? 'No registrado'}</td>
                   <td>
                     <div className={styles.acciones}>
+                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
                       {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                         <>
-                          <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA)}>
+                          <Btn kind="ok" size="sm" onClick={() => { void cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA).catch(() => {}); }}>
                             Aprobar
                           </Btn>
                           {usuario && r.solicitante_id === usuario.id ? (
-                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.CANCELADA)}>
+                            <Btn kind="bad" size="sm" onClick={() => setEstadoPorConfirmar({ reserva: r, estado: ESTADOS_RESERVA.CANCELADA, accion: 'cancelar' })}>
                               Cancelar
                             </Btn>
                           ) : (
-                            <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, ESTADOS_RESERVA.RECHAZADA)}>
+                            <Btn kind="bad" size="sm" onClick={() => setEstadoPorConfirmar({ reserva: r, estado: ESTADOS_RESERVA.RECHAZADA, accion: 'rechazar' })}>
                               Rechazar
                             </Btn>
                           )}
@@ -321,6 +372,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           </table>
         </div>
       )}
+      <ConfirmDialog open={estadoPorConfirmar !== null}
+        title={estadoPorConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
+        confirmLabel={estadoPorConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
+        description={estadoPorConfirmar?.accion === 'cancelar'
+          ? `¿Cancelar la reserva de ${estadoPorConfirmar.reserva.evento_titulo ?? estadoPorConfirmar.reserva.espacio_nombre} del ${formatFecha(estadoPorConfirmar.reserva.fecha)}? Se liberará el espacio reservado.`
+          : `¿Rechazar la solicitud de ${estadoPorConfirmar?.reserva.solicitante_nombre ?? 'esta persona'} para ${estadoPorConfirmar?.reserva.evento_titulo ?? estadoPorConfirmar?.reserva.espacio_nombre}?`}
+        onCancel={() => setEstadoPorConfirmar(null)} onConfirm={confirmarCambioEstado} />
     </div>
   );
 }

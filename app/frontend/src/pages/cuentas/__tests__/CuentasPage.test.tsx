@@ -95,6 +95,18 @@ describe('CuentasPage', () => {
     expect(screen.queryByText('ana@gmail.com')).not.toBeInTheDocument();
   });
 
+  it('advierte que dejará de iniciar sesión al rechazar una cuenta activa', async () => {
+    const activa: Cuenta = { id: 15, nombre: 'Carlos Ruiz', correo: 'carlos@gmail.com', rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' };
+    vi.mocked(listarCuentasApi).mockResolvedValue([activa]);
+    render(<CuentasPage />, { wrapper: ToastProvider });
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Activas' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByText(/Dejará de poder iniciar sesión y se le avisará por correo\./)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('dialog', { name: 'Rechazar cuenta' })).not.toBeInTheDocument();
+  });
+
   it('el modal de rechazo se puede cerrar con la ×', async () => {
     render(<CuentasPage />, { wrapper: ToastProvider });
 
@@ -113,6 +125,7 @@ describe('CuentasPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo rechazar la cuentaNo puedes rechazar tu propia cuenta');
+    expect(screen.getByRole('dialog', { name: 'Rechazar cuenta' })).toBeInTheDocument();
     expect(screen.getByText('ana@gmail.com')).toBeInTheDocument();
   });
 
@@ -163,7 +176,7 @@ describe('CuentasPage', () => {
       await userEvent.type(screen.getByLabelText('Contraseña inicial'), password);
     };
 
-    it('crea la cuenta con el rol elegido y avisa que ya puede iniciar sesión', async () => {
+    it('crea la cuenta con el rol elegido y avisa que queda pendiente de aprobación', async () => {
       vi.mocked(crearCuentaApi).mockResolvedValue({});
       render(<CuentasPage />, { wrapper: ToastProvider });
       await abrirFormulario();
@@ -178,11 +191,11 @@ describe('CuentasPage', () => {
         password: 'clave-segura',
         rol_id: ROLES.COORDINADOR_MINISTROS,
       }));
-      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta creadaLuis Pérez ya puede iniciar sesión como Coord. de Ministros con su correo y la contraseña inicial.');
+      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta creadaLuis Pérez quedó pendiente de aprobación. Al aprobarla como Coord. de Ministros se le avisará por correo.');
       expect(screen.queryByRole('button', { name: 'Crear cuenta' })).not.toBeInTheDocument();
-      // Se pasa a la pestaña Activas para que se vea la cuenta recién creada.
-      await waitFor(() => expect(listarCuentasApi).toHaveBeenLastCalledWith('activa'));
-      expect(screen.getByRole('tab', { name: 'Activas' })).toHaveAttribute('aria-selected', 'true');
+      // Se queda en la pestaña Pendientes, donde aparece la cuenta recién creada.
+      await waitFor(() => expect(listarCuentasApi).toHaveBeenLastCalledWith('pendiente'));
+      expect(screen.getByRole('tab', { name: 'Pendientes' })).toHaveAttribute('aria-selected', 'true');
     });
 
     it('avisa con una advertencia (no como éxito) si la cuenta se creó pero Clerk la rechazó', async () => {
@@ -197,7 +210,18 @@ describe('CuentasPage', () => {
       expect(aviso).toHaveTextContent('Cuenta creada con una advertencia');
       expect(aviso).toHaveTextContent('Luis Pérez quedó registrado como Ministro.');
       expect(aviso).toHaveTextContent('No se pudo crear el usuario en Clerk');
-      expect(aviso).not.toHaveTextContent('ya puede iniciar sesión como Ministro con su correo');
+      expect(aviso).not.toHaveTextContent('quedó pendiente de aprobación');
+    });
+
+    it('al crear una cuenta desde la pestaña activas cambia a la pestaña pendientes', async () => {
+      vi.mocked(crearCuentaApi).mockResolvedValue({});
+      render(<CuentasPage />, { wrapper: ToastProvider });
+      await userEvent.click(await screen.findByRole('tab', { name: 'Activas' }));
+      await abrirFormulario();
+      await llenar();
+      await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+      expect(await screen.findByRole('status')).toHaveTextContent('Cuenta creada');
+      expect(screen.getByRole('tab', { name: 'Pendientes' })).toHaveAttribute('aria-selected', 'true');
     });
 
     it('avisa si faltan el nombre o el correo, sin llamar al servidor', async () => {
@@ -256,7 +280,7 @@ describe('CuentasPage', () => {
       await abrirActivas([luis]);
 
       expect(await screen.findByText('Luis Pérez')).toBeInTheDocument();
-      expect(screen.getByText('Coord. de Ministros')).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Coord. de Ministros' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
     });
@@ -266,7 +290,7 @@ describe('CuentasPage', () => {
       await abrirActivas([luis]);
 
       await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
-      expect(screen.getByText(/ya no pertenece a la parroquia/)).toBeInTheDocument();
+      expect(screen.getByText(/Dejará de poder iniciar sesión y se le avisará por correo/)).toBeInTheDocument();
       expect(rechazarCuentaApi).not.toHaveBeenCalled();
 
       await userEvent.click(screen.getByRole('button', { name: 'Rechazar cuenta' }));

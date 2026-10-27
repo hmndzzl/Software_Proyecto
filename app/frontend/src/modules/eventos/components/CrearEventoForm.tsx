@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ReservaDisponible } from '../../../types';
 import apiClient from '../../../api/client';
-import { formatFecha as fmt, formatHora as fmtH } from '../../../utils/date';
+import { formatFecha as fmt, formatHorario } from '../../../utils/date';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
@@ -44,9 +44,11 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
       <h3 className={styles.sectionTitle}>Crear Nuevo Evento</h3>
 
       <form onSubmit={handleSubmit} className={styles.form}>
+        <p className={styles.fieldNote}>Completa la descripción y elige una reserva confirmada que aún no tenga evento. El encargado será el solicitante de esa reserva.</p>
         <div className={styles.field}>
-          <label className={styles.label}>Descripción:</label>
+          <label htmlFor="evento-descripcion" className={styles.label}>Descripción:</label>
           <input
+            id="evento-descripcion"
             type="text"
             className={styles.input}
             value={descripcion}
@@ -56,8 +58,9 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Reserva (confirmada, sin evento):</label>
+          <label htmlFor="evento-reserva" className={styles.label}>Reserva (confirmada, sin evento):</label>
           <select
+            id="evento-reserva"
             className={styles.input}
             value={reservaId}
             onChange={e => setReservaId(e.target.value)}
@@ -65,7 +68,7 @@ export default function CrearEventoForm({ onEventoCreado }: { onEventoCreado?: (
             <option value="">-- Elige una reserva --</option>
             {reservas.map(r => (
               <option key={r.id} value={r.id}>
-                {fmt(r.fecha)} · {fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)} · {r.nombre_espacio ?? 'Sin espacio'}
+                {fmt(r.fecha)} · {formatHorario(r.hora_inicio, r.hora_fin)} · {r.nombre_espacio ?? 'Sin espacio'}
               </option>
             ))}
           </select>

@@ -21,6 +21,7 @@ const admin = {
 };
 
 function respuestaGet(url: string) {
+  if (url === '/api/calendario') return { data: { eventos: [], tareas: [] } };
   if (/\/api\/espacios\/\d+$/.test(url)) {
     return {
       data: {

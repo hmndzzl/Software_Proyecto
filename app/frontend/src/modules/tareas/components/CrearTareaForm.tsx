@@ -7,16 +7,20 @@ import { getApiErrorMessage } from '../../../utils/apiError';
 import type { Ministro, Tarea } from '../../../types';
 import ErrorState from '../../../components/ui/ErrorState';
 import LoadingState from '../../../components/ui/LoadingState';
+import EventoTareaSelect from './EventoTareaSelect';
+import SelectorMinistros from './SelectorMinistros';
 
 const TOPE_SERVICIOS_MES = 8;
 
 export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshKey?: number; onTareaCreada?: () => void }) {
+  const [selectorRevision, setSelectorRevision] = useState(0);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [tareaId, setTareaId] = useState('');
+  const [eventoId, setEventoId] = useState<number | null>(null);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
@@ -77,10 +81,13 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
       else await apiClient.post('/api/tareas', {
         titulo: titulo.trim(), descripcion: descripcion.trim(), fecha,
         hora_inicio: horaInicio, hora_fin: horaFin, persona_ids: seleccionados,
+        evento_id: eventoId,
       });
       toast.success(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', 'Las asignaciones se guardaron correctamente.');
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
+      setSelectorRevision(value => value + 1);
+      setEventoId(null);
       onTareaCreada?.();
     } catch (error: unknown) {
       toast.error('No se pudo guardar la tarea', getApiErrorMessage(error, 'Error de red al intentar guardar la tarea.'));
@@ -101,6 +108,14 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </select>
         </div>
         {!tareaId && <>
+          <EventoTareaSelect value={eventoId} disabled={guardando} onChange={(id, evento) => {
+            setEventoId(id);
+            if (evento) {
+              setFecha(evento.fecha.slice(0, 10));
+              setHoraInicio(evento.hora_inicio.slice(0, 5));
+              setHoraFin(evento.hora_fin.slice(0, 5));
+            }
+          }} />
           <div className={styles.field}>
             <label htmlFor="titulo" className={styles.label}>Título:</label>
             <input id="titulo" className={styles.input} value={titulo} maxLength={255} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Lectura primera" />
@@ -125,15 +140,8 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </div>
         </>}
         {existente && <p>{existente.descripcion} · {dia} · {inicio}–{fin}</p>}
-        <fieldset className={local.ministros}>
-          <legend className={styles.label}>Ministros ({seleccionados.length} seleccionados)</legend>
-          {!ministros.length && <p>No hay ministros disponibles en tu directorio para asignar.</p>}
-          {ministros.map(ministro => <label key={ministro.id} className={local.option}>
-            <input type="checkbox" checked={seleccionados.includes(ministro.id) || yaAsignados.includes(ministro.id)} disabled={yaAsignados.includes(ministro.id)}
-              onChange={event => setSeleccionados(actual => event.target.checked ? [...actual, ministro.id] : actual.filter(id => id !== ministro.id))} />
-            <span>{ministro.nombre}{yaAsignados.includes(ministro.id) ? ' (ya asignado)' : ''}</span>
-          </label>)}
-        </fieldset>
+        <SelectorMinistros key={`${tareaId}-${selectorRevision}`} ministros={ministros}
+          seleccionados={seleccionados} yaAsignados={yaAsignados} onChange={setSeleccionados} disabled={guardando} />
         {avisos.map(({ ministro, conflictos, servicios }) => (
           (conflictos.length > 0 || !ministro.disponible || (dia && servicios > TOPE_SERVICIOS_MES)) &&
           <div key={ministro.id} className={styles.modalWarning}>

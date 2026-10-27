@@ -5,17 +5,21 @@ import { useToast } from '../../context/ToastContext';
 import { avisoCambioEstadoReserva, ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
+import EspacioFoto from '../../modules/espacios/components/EspacioFoto';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
 import { Card, CardHead } from '../../components/ui/Card';
 import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
+import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { ROLES, ROLES_RESERVAS } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
-import { partesFecha, formatHora as fmtH } from '../../utils/date';
+import { partesFecha, formatHora as fmtH, formatHorario } from '../../utils/date';
 import type { Reserva } from '../../types';
 import styles from './EspacioDetallePage.module.css';
 
@@ -27,8 +31,11 @@ export default function EspacioDetallePage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [qrAbierto, setQrAbierto] = useState(false);
+  const [checkinLoading, setCheckinLoading] = useState<number | null>(null);
+  const [detalleEnUsoAbierto, setDetalleEnUsoAbierto] = useState(false);
+  const [reservaPorRechazar, setReservaPorRechazar] = useState<Reserva | null>(null);
 
-  const { tieneRol } = useAuth();
+  const { tieneRol, usuario } = useAuth();
   const esAdminOSacerdote = tieneRol([ROLES.ADMIN, ROLES.SACERDOTE]);
   const puedeReservar = tieneRol(ROLES_RESERVAS);
 
@@ -56,6 +63,11 @@ export default function EspacioDetallePage() {
 
   const toast = useToast();
 
+  // Misma fuente que el calendario: a lo sumo una reserva confirmada cubre el
+  // instante actual (las confirmadas nunca se solapan), así que esto identifica
+  // de forma única quién está usando el salón ahora mismo, si alguien lo está.
+  const reservaEnUso = reservas.find(r => r.en_uso);
+
   const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
       await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
@@ -65,6 +77,23 @@ export default function EspacioDetallePage() {
       setReservas(res.data);
     } catch (err: unknown) {
       toast.error('No se pudo actualizar la reserva', getApiErrorMessage(err, 'Error al cambiar el estado de la reserva.', 'message'));
+      throw err;
+    }
+  };
+
+  // HU-15: check-in real al escanear el QR. "en_uso"/"reservas_checkin_disponible"
+  // ya vienen filtrados por rol desde el backend (propia reserva, o cualquiera si
+  // el actor es privilegiado) — aquí solo se presentan y se dispara la confirmación.
+  const confirmarCheckin = async (reservaId: number) => {
+    setCheckinLoading(reservaId);
+    try {
+      await apiClient.put(`/api/reservas/${reservaId}/checkin`, {});
+      toast.success('Check-in registrado', 'El salón ya aparece en uso mientras dure tu reserva.');
+      cargarEspacio();
+    } catch (err: unknown) {
+      toast.error('No se pudo hacer check-in', getApiErrorMessage(err, 'Error al hacer check-in de la reserva.', 'message'));
+    } finally {
+      setCheckinLoading(null);
     }
   };
 
@@ -96,11 +125,55 @@ export default function EspacioDetallePage() {
 
         {/* Panel izquierdo — info del espacio */}
         <div className={styles.infoPanel}>
-          <div className={styles.photoSlot}>[ foto · {espacio.nombre.toLowerCase()} ]</div>
+          <EspacioFoto className={styles.photoSlot} nombre={espacio.nombre} fotoUrl={espacio.foto_url} eager />
 
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
+
+          <div className={styles.estadoActualWrap}>
+            {reservaEnUso ? (
+              <button
+                type="button"
+                className={styles.estadoActualBtn}
+                onClick={() => setDetalleEnUsoAbierto(true)}
+                title="Ver quién lo está usando"
+              >
+                <Badge kind="bad">En uso ahora</Badge>
+              </button>
+            ) : (
+              <Badge kind="ok">Libre</Badge>
+            )}
+          </div>
+
+          {puedeReservar && (
+            <div className={styles.checkinWrap}>
+              {espacio.reservas_checkin_disponible && espacio.reservas_checkin_disponible.length > 0 ? (
+                espacio.reservas_checkin_disponible.map((r) => (
+                  <div key={r.id} className={styles.checkinItem}>
+                    <p className={styles.checkinInfo}>
+                      {r.solicitante_id === usuario?.id
+                        ? 'Se detectó una reserva a tu nombre'
+                        : <>Se detectó una reserva a nombre de <strong>{r.solicitante_nombre}</strong></>}
+                      {' '}hoy, {formatHorario(r.hora_inicio, r.hora_fin)}.
+                      {!r.checkin_en && ' ¿Deseas confirmar el check-in para usar este espacio?'}
+                    </p>
+                    {r.checkin_en ? (
+                      <span className={styles.checkinHecho}>
+                        Check-in hecho a las {fmtH(r.checkin_en.split(' ')[1] ?? '')}
+                      </span>
+                    ) : (
+                      <Btn kind="ok" size="sm" onClick={() => confirmarCheckin(r.id)} disabled={checkinLoading === r.id}>
+                        {checkinLoading === r.id ? 'Confirmando...' : 'Sí, confirmar check-in'}
+                      </Btn>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className={styles.checkinAviso}>No tienes una reserva en este horario.</p>
+              )}
+            </div>
+          )}
 
           <div className={styles.infoCards}>
             <div className={styles.infoCard}>
@@ -157,7 +230,7 @@ export default function EspacioDetallePage() {
                   <div className={styles.dateBlock}>
                     <span className={styles.dateMes}>{partesFecha(r.fecha).mesAbrev}</span>
                     <span className={styles.dateDay}>{partesFecha(r.fecha).dia}</span>
-                    <span className={styles.dateHora}>{fmtH(r.hora_inicio)}–{fmtH(r.hora_fin)}</span>
+                    <span className={styles.dateHora}>{formatHorario(r.hora_inicio, r.hora_fin)}</span>
                   </div>
 
                   {/* Info evento */}
@@ -175,8 +248,8 @@ export default function EspacioDetallePage() {
                     <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                       <div className={styles.reservaBotones}>
-                        <Btn kind="ok" size="sm" onClick={() => cambiarEstado(r.id, 2)}>Aprobar</Btn>
-                        <Btn kind="bad" size="sm" onClick={() => cambiarEstado(r.id, 3)}>Rechazar</Btn>
+                        <Btn kind="ok" size="sm" onClick={() => { void cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA).catch(() => {}); }}>Aprobar</Btn>
+                        <Btn kind="bad" size="sm" onClick={() => setReservaPorRechazar(r)}>Rechazar</Btn>
                       </div>
                     )}
                   </div>
@@ -191,11 +264,40 @@ export default function EspacioDetallePage() {
 
       <EspacioCalendarioReservas reservas={reservas} />
 
+      <ConfirmDialog open={reservaPorRechazar !== null} title="Rechazar reserva" confirmLabel="Rechazar reserva"
+        description={`¿Rechazar la solicitud de ${reservaPorRechazar?.solicitante_nombre ?? 'esta persona'} para ${reservaPorRechazar?.evento_titulo ?? espacio.nombre}?`}
+        onCancel={() => setReservaPorRechazar(null)}
+        onConfirm={async () => {
+          if (!reservaPorRechazar) return;
+          await cambiarEstado(reservaPorRechazar.id, ESTADOS_RESERVA.RECHAZADA);
+          setReservaPorRechazar(null);
+        }} />
+
       <EspacioQrModal
         open={qrAbierto}
         espacio={espacio}
         onClose={() => setQrAbierto(false)}
       />
+
+      {detalleEnUsoAbierto && reservaEnUso && (
+        <DetalleEventoModal
+          open
+          onClose={() => setDetalleEnUsoAbierto(false)}
+          titulo={reservaEnUso.evento_titulo || `Reserva #${reservaEnUso.id}`}
+          fecha={reservaEnUso.fecha}
+          horaInicio={reservaEnUso.hora_inicio}
+          horaFin={reservaEnUso.hora_fin}
+          descripcion={reservaEnUso.evento_descripcion}
+          extra={
+            <div className={styles.solicitanteEnUsoRow}>
+              <p>En uso por: {reservaEnUso.solicitante_nombre ?? 'Desconocido'}</p>
+              {reservaEnUso.checkin_en && (
+                <p>Check-in hecho a las {fmtH(reservaEnUso.checkin_en.split(' ')[1] ?? '')}</p>
+              )}
+            </div>
+          }
+        />
+      )}
     </div>
   );
 }

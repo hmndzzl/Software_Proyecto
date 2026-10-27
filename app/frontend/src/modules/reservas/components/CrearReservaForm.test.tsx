@@ -22,6 +22,7 @@ function mostrar(props: Parameters<typeof CrearReservaForm>[0] = {}) {
 async function completar() {
   await screen.findByRole('option', { name: /Salón Parroquial/ });
   fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+  fireEvent.change(screen.getByLabelText(/Cantidad de personas esperadas/), { target: { value: '50' } });
   fireEvent.change(screen.getByLabelText('Fecha:'), { target: { value: '2099-10-12' } });
   fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: '18:00' } });
   fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: '20:00' } });
@@ -34,6 +35,31 @@ afterEach(() => vi.useRealTimers());
 const enviar = () => fireEvent.click(screen.getByRole('button', { name: 'Solicitar Reserva' }));
 
 describe('CrearReservaForm', () => {
+  it('no muestra el enlace de ver detalle sin espacio seleccionado, y lo muestra al seleccionar uno', async () => {
+    mostrar();
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    expect(screen.queryByRole('link', { name: /Ver detalle del espacio/ })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+
+    const enlace = screen.getByRole('link', { name: /Ver detalle del espacio/ });
+    expect(enlace).toHaveAttribute('href', '/espacios/2');
+  });
+
+  it('avisa si excede la capacidad, acepta el límite y envía el aforo numérico', async () => {
+    mostrar();
+    await completar();
+    const campo = screen.getByLabelText(/Cantidad de personas esperadas/);
+    fireEvent.change(campo, { target: { value: '81' } });
+    enviar();
+    expect(await screen.findByRole('alert')).toHaveTextContent('supera la capacidad');
+    expect(apiClient.post).not.toHaveBeenCalled();
+    fireEvent.change(campo, { target: { value: '80' } });
+    enviar();
+    await screen.findByRole('status');
+    expect(apiClient.post).toHaveBeenCalledWith('/api/reservas', expect.objectContaining({ cantidad_personas: 80 }));
+    expect(campo).toHaveValue(null);
+  });
   it('permite al administrador crear con visibilidad pública y restablece la casilla', async () => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, rol_id: 5 }));
     mostrar();
@@ -64,7 +90,7 @@ describe('CrearReservaForm', () => {
     expect(aviso).toHaveTextContent('Solicitud enviada');
     expect(aviso).toHaveTextContent('Salón Parroquial');
     expect(aviso).toHaveTextContent('Ensayo del coro');
-    expect(aviso).toHaveTextContent('18:00 a 20:00');
+    expect(aviso).toHaveTextContent('18:00 – 20:00');
     expect(aviso).toHaveTextContent('pendiente de aprobación del sacerdote');
     expect(aviso).toHaveTextContent('Puedes revisar su estado en Mis Reservas.');
     expect(onReservaCreada).toHaveBeenCalledOnce();

@@ -3,10 +3,15 @@ import { Request, Response } from 'express';
 import pool from '../../config/db';
 import { HttpStatus } from '../../utils/httpStatus';
 import { ROLES } from '../../config/roles';
+import { enviarCorreoCuenta } from '../../services/email.service';
 import { listarCuentas, aprobarCuenta, rechazarCuenta } from '../cuenta.controller';
 
 vi.mock('../../config/db', () => ({
-  default: { execute: vi.fn() },
+  default: { execute: vi.fn(), getConnection: vi.fn() },
+}));
+
+vi.mock('../../services/email.service', () => ({
+  enviarCorreoCuenta: vi.fn().mockResolvedValue(true),
 }));
 
 describe('Cuenta Controller - aprobación de cuentas', () => {
@@ -17,6 +22,11 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(pool.execute).mockResolvedValue([{ affectedRows: 1 }] as never);
+    vi.mocked(pool.getConnection).mockResolvedValue({
+      execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
+    } as never);
+    vi.mocked(enviarCorreoCuenta).mockResolvedValue(true);
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
     res = { status: statusMock, json: jsonMock };
@@ -86,6 +96,33 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
         [12, 201]
       );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('envía el correo de aprobación a la persona', async () => {
+      req.body = { rol_id: ROLES.MINISTRO };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 204 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockResolvedValueOnce([[{ correo: 'ana@gmail.com', nombre: 'Ana' }]]); // SELECT destinatario
+
+      await aprobarCuenta(req as Request, res as Response);
+
+      await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('ana@gmail.com', 'Ana', 'aprobada'));
+    });
+
+    it('responde 200 aunque falle la consulta del destinatario para el correo', async () => {
+      req.body = { rol_id: ROLES.MINISTRO };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 205 }]);
+      (pool.execute as any).mockResolvedValueOnce([{}]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockRejectedValueOnce(new Error('BD caída'));
+
+      await aprobarCuenta(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(enviarCorreoCuenta).not.toHaveBeenCalled();
     });
 
     it('Sacerdote aprueba la cuenta con un rol que no es Admin', async () => {
@@ -193,6 +230,20 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
     });
 
+    it('envía el correo de rechazo a la persona', async () => {
+      cuenta(ROLES.MINISTRO, 'pendiente');
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 304 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockResolvedValueOnce([[{ correo: 'luis@gmail.com', nombre: 'Luis' }]]); // SELECT destinatario
+
+      await rechazarCuenta(req as Request, res as Response);
+
+      await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('luis@gmail.com', 'Luis', 'rechazada'));
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
     it('rechaza (desactiva) una cuenta que ya estaba activa', async () => {
       cuenta(ROLES.MINISTRO, 'activa');
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
@@ -203,6 +254,19 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Cuenta rechazada' });
+    });
+
+    it('envía el correo de desactivación (no el de rechazo) si la cuenta estaba activa', async () => {
+      cuenta(ROLES.MINISTRO, 'activa');
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 306 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockResolvedValueOnce([[{ correo: 'luis@gmail.com', nombre: 'Luis' }]]); // SELECT destinatario
+
+      await rechazarCuenta(req as Request, res as Response);
+
+      await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('luis@gmail.com', 'Luis', 'desactivada'));
     });
 
     it('no permite rechazar la propia cuenta (403)', async () => {

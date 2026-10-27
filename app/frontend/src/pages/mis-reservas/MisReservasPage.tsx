@@ -8,38 +8,55 @@ import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
 import ResumenEstadosReserva from '../../components/ui/ResumenEstadosReserva';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
+import TableFilters from '../../components/ui/TableFilters';
+import { useTableFilters } from '../../hooks/useTableFilters';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
-import { formatFecha, formatHora } from '../../utils/date';
+import { formatFecha, formatHorario } from '../../utils/date';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../utils/estadosReserva';
 import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
 import type { Reserva } from '../../types';
+import DetalleReserva from '../../modules/reservas/components/DetalleReserva';
 import styles from './MisReservasPage.module.css';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 type MiReserva = Reserva;
 
-type SortKey = 'id' | 'espacio' | 'fecha' | 'estado';
+type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'titulo' | 'evento' | 'horario' | 'aforo';
 
 const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
   id: (r) => r.id,
+  aforo: r => r.cantidad_personas ?? -1,
+  titulo: r => r.evento_titulo ?? 'Sin título',
+  evento: r => r.evento_descripcion ?? 'Sin evento',
+  horario: r => `${r.hora_inicio} ${r.hora_fin}`,
   espacio: (r) => (r.espacio_nombre ?? '').toLowerCase(),
   fecha: (r) => `${r.fecha} ${r.hora_inicio}`,
   estado: (r) => etiquetaEstadoReserva(r.estado_reserva_id),
 };
 
 export default function MisReservasPage() {
+  const [porCancelar, setPorCancelar] = useState<MiReserva | null>(null);
   const navigate = useNavigate();
   const { tieneRol } = useAuth();
   const puedeReservar = tieneRol(ROLES_RESERVAS);
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const [detalle, setDetalle] = useState<Reserva | null>(null);
 
-  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(reservas, SORT_VALUE);
+  const filtros = useTableFilters(reservas, {
+    search: r => [r.id, r.espacio_nombre, r.evento_titulo, r.evento_descripcion], date: r => r.fecha,
+    selects: [
+      { key: 'estado', label: 'Estado', value: r => etiquetaEstadoReserva(r.estado_reserva_id) || 'Desconocido' },
+      { key: 'espacio', label: 'Espacio', value: r => r.espacio_nombre ?? 'Sin espacio' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const cargarReservas = () => {
     setLoading(true);
@@ -57,11 +74,11 @@ export default function MisReservasPage() {
   const toast = useToast();
 
   const cancelarReserva = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
     try {
       await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
       const aviso = avisoCambioEstadoReserva(ESTADOS_RESERVA.CANCELADA);
       toast.success(aviso.titulo, aviso.mensaje);
+      setPorCancelar(null);
       cargarReservas();
     } catch (err: unknown) {
       toast.error('No se pudo cancelar la reserva', getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
@@ -81,6 +98,7 @@ export default function MisReservasPage() {
         )}
       />
 
+      {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
         <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />
@@ -93,6 +111,7 @@ export default function MisReservasPage() {
         />
 
         {loading && <LoadingState label="Cargando tus reservas..." />}
+        {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de mis reservas" />}
         {error   && <ErrorState message={error} onRetry={cargarReservas} />}
         {!loading && !error && reservas.length === 0 && (
           <>
@@ -113,12 +132,13 @@ export default function MisReservasPage() {
               <thead>
                 <tr>
                   <SortableTh label="#" sortKey="id" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                  <th>Título del Evento</th>
-                  <th>Evento</th>
+                  <SortableTh label="Título del Evento" sortKey="titulo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Evento" sortKey="evento" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Espacio" sortKey="espacio" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Fecha" sortKey="fecha" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                  <th>Horario</th>
+                  <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -130,13 +150,15 @@ export default function MisReservasPage() {
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
                     <td className={styles.mono}>{formatFecha(r.fecha)}</td>
-                    <td className={styles.horaCell}>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</td>
+                    <td className={styles.horaCell}>{formatHorario(r.hora_inicio, r.hora_fin)}</td>
                     <td>
                       <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
+                    <td>{r.cantidad_personas ?? 'No registrado'}</td>
                     <td>
+                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
                       {puedeCancelarReserva(r.estado_reserva_id) && (
-                        <Btn kind="bad" size="sm" onClick={() => cancelarReserva(r.id)}>Cancelar</Btn>
+                        <Btn kind="bad" size="sm" onClick={() => setPorCancelar(r)}>Cancelar</Btn>
                       )}
                     </td>
                   </tr>
@@ -146,6 +168,9 @@ export default function MisReservasPage() {
           </div>
         )}
       </Card>
+      <ConfirmDialog open={porCancelar !== null} title="Cancelar reserva" confirmLabel="Cancelar reserva"
+        description={porCancelar ? `¿Cancelar la reserva de ${porCancelar.evento_titulo ?? porCancelar.espacio_nombre} del ${formatFecha(porCancelar.fecha)}? Se liberará el espacio reservado.` : ''}
+        onCancel={() => setPorCancelar(null)} onConfirm={() => porCancelar ? cancelarReserva(porCancelar.id) : undefined} />
     </div>
   );
 }
