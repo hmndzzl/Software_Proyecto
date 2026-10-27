@@ -50,3 +50,24 @@ Las rutas de lectura siguen disponibles para usuarios autenticados. Las siguient
 En multipart se envía la capacidad como cadena decimal o vacía y el booleano como `true`/`false`; en JSON también se aceptan sus tipos nativos. La URL de foto la genera el servidor: no se admiten URLs arbitrarias del cliente.
 
 Errores: `400` datos o imagen inválidos, `401` sin autenticación, `403` sin permisos, `404` espacio inexistente, `409` reservas que requieren revisión o concurrencia, `413` archivo demasiado grande y `500` fallo interno. Cuando `409` contiene `reservas`, el cliente debe sustituir la lista mostrada y pedir nueva confirmación. Si no contiene lista, volver a consultar el impacto.
+
+
+## Verificación
+
+Desde la raíz del repositorio:
+
+```sh
+npm test --prefix app/backend
+npm test --prefix app/frontend
+npm run test:integration --prefix app/backend -- tests/integration/espacios.integration.test.ts
+npm run test:regression --prefix app/frontend -- espacios.spec.ts
+npm run build --prefix app/backend
+npm run build --prefix app/frontend
+npm run lint --prefix app/frontend
+```
+
+Las pruebas D2 de MariaDB usan un contenedor desechable con datos propios; no alteran la base de desarrollo. Cubren fotos reales, reemplazo y retiro, permisos, cancelación de pendientes y confirmadas, auditoría, avisos, conservación de reservas pasadas/eventos/tareas, ocultamiento del calendario y bloqueo de aprobación sin espacio. Los tests unitarios comprueban reversión y limpieza de archivos ante fallos. Playwright comprueba formularios, confirmación propia, paginación de 100 reservas y permisos en móvil (375 px) y escritorio (1280 px).
+
+Para revisar manualmente: entrar como Admin/Sacerdote, abrir **Espacios**, crear con foto y capacidad, editar y reemplazar/quitar la imagen; probar cancelar una eliminación y después confirmarla. En un espacio con reservas, verificar la lista de afectadas antes de cancelar todas. Confirmar que el historial se conserva y que el coordinador no ve controles de gestión. Reiniciar el backend y comprobar que una foto cargada sigue disponible.
+
+En esta entrega también se construyó la imagen de producción y se comprobó que el usuario `node` puede guardar una foto y recuperarla desde otro contenedor con el mismo volumen, conservando las fotos iniciales.
