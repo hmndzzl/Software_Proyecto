@@ -53,8 +53,6 @@ export const crearReserva = async (req: Request, res: Response) => {
 
   try {
     const cantidad = validarCantidadEsperada(req.body.cantidad_personas) ?? null;
-    let reservaCreadaId = 0;
-    let confirmada = false;
     await withTransaction(async (conn) => {
       await validarCapacidad(conn, Number(espacio_id), cantidad);
       const [conflictos]: any = await conn.query(
@@ -93,7 +91,7 @@ export const crearReserva = async (req: Request, res: Response) => {
       );
 
       if (aprobadores.length > 0) {
-        const mensajeNotificacion = `Nueva solicitud de reserva #${reservaId}: «${titulo}», para el ${fecha} (${formatoHorario(hora_inicio, hora_fin)}). Pendiente de tu aprobación en Reservas.`;
+        const mensajeNotificacion = `Nueva solicitud de reserva #${reservaId}: «${titulo}», para el ${fecha} (${formatHorario(hora_inicio, hora_fin)}). Pendiente de tu aprobación en Reservas.`;
         const [notifResult]: any = await conn.query(
           `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, DATE(UTC_TIMESTAMP() - INTERVAL 6 HOUR), 'individual', ?)`,
           [mensajeNotificacion, solicitante_id]
