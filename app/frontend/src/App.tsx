@@ -38,6 +38,7 @@ import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
 const ConfiguracionPage = lazy(() => import('./pages/configuracion/ConfiguracionPage'));
 const ContenidoPublicoPage = lazy(() => import('./pages/contenido-publico/ContenidoPublicoPage'));
 const ReportesPage = lazy(() => import('./pages/reportes/ReportesPage'));
+const MensajesContactoPage = lazy(() => import('./pages/mensajes-contacto/MensajesContactoPage'));
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -255,6 +256,15 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
               <ContenidoPublicoPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mensajes-contacto"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+              <MensajesContactoPage />
             </ProtectedRoute>
           }
         />
