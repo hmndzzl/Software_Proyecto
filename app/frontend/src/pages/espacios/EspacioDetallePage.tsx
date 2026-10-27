@@ -131,7 +131,7 @@ export default function EspacioDetallePage() {
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
-          <EspacioGestion espacio={espacio} onChanged={cargarEspacio} />
+          <EspacioGestion espacio={espacio} onChanged={cargarEspacio} onDeleted={() => navigate('/espacios')} />
 
           <div className={styles.estadoActualWrap}>
             {reservaEnUso ? (
