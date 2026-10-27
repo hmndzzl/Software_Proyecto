@@ -23,7 +23,7 @@ const espacios = [
 
 describe('integración de consulta de espacios', () => {
   beforeEach(() => { localStorage.clear(); vi.clearAllMocks(); vi.mocked(apiClient.get).mockResolvedValue({ data: espacios }); vi.mocked(apiClient.post).mockResolvedValue({ data: { espacioId: 4 } }); });
-  afterEach(() => localStorage.clear());
+  afterEach(() => { localStorage.clear(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
   it('lista disponibilidad, capacidad y navega al detalle', async () => {
     mostrar();
@@ -100,6 +100,59 @@ describe('integración de consulta de espacios', () => {
     expect(await screen.findByRole('heading', { name: 'Nuevo salón' })).toBeInTheDocument();
     expect(screen.getByLabelText('Fecha')).toHaveValue(completos ? '2099-11-01' : '');
     expect(apiClient.get).toHaveBeenLastCalledWith('/api/espacios', { params: completos ? { fecha: '2099-11-01', hora_inicio: '10:00', hora_fin: '11:00' } : undefined });
+  });
+
+  it('muestra fecha y hora de la consulta en Guatemala y cambia la referencia al filtrar', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ ...espacios[0], consultado_en: '2026-10-27T15:30:00Z' }] });
+    mostrar();
+    expect(await screen.findByText('27 de octubre de 2026 · 09:30')).toBeInTheDocument();
+    expect(screen.getByText(/Disponibilidad actual/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2099-11-01' } });
+    expect(screen.queryByText(/Disponibilidad actual/)).not.toBeInTheDocument();
+    expect(screen.getByText('Sin consultar')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Hora inicio'), { target: { value: '10:00' } });
+    fireEvent.change(screen.getByLabelText('Hora fin'), { target: { value: '11:00' } });
+    expect(await screen.findByText('1 de noviembre de 2099')).toBeInTheDocument();
+    expect(screen.getByText(/Disponibilidad para/)).toHaveTextContent('10:00 – 11:00');
+  });
+
+  it('actualiza cada minuto sin desmontar una edición abierta y conserva la consulta ante errores de red', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    saveSession('token-prueba', { id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: 5 });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ ...espacios[0], consultado_en: '2026-10-27T15:30:00Z' }] });
+    await act(async () => { mostrar(); });
+    fireEvent.click(screen.getByRole('button', { name: 'Editar espacio' }));
+    fireEvent.change(screen.getByLabelText(/Nombre del espacio/), { target: { value: 'Edición sin guardar' } });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [{ ...espacios[0], disponible: false, consultado_en: '2026-10-27T15:31:00Z' }] });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(screen.getByLabelText(/Nombre del espacio/)).toHaveValue('Edición sin guardar');
+    expect(screen.getByText('Ocupado')).toBeInTheDocument();
+    expect(screen.getByText('27 de octubre de 2026 · 09:31')).toBeInTheDocument();
+    vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(screen.getByLabelText(/Nombre del espacio/)).toHaveValue('Edición sin guardar');
+    expect(screen.getByText(/Última consulta/)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Se conserva la última consulta');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+    await act(async () => {});
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText(/Disponibilidad actual/)).toBeInTheDocument();
+  });
+
+  it('omite consultas con la pestaña oculta y actualiza al volver', async () => {
+    vi.useFakeTimers();
+    const visibilidad = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    await act(async () => { mostrar(); });
+    expect(apiClient.get).toHaveBeenCalledOnce();
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(apiClient.get).toHaveBeenCalledOnce();
+    visibilidad.mockReturnValue('visible');
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(apiClient.get).toHaveBeenCalledTimes(3);
   });
 
 });
