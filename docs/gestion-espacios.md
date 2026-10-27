@@ -35,3 +35,18 @@ La eliminación es física. Se consideran reservas que requieren confirmación l
 La operación cancela todas esas reservas, registra decisiones y notifica a los solicitantes distintos del actor. Conserva reservas, eventos, tareas y asignaciones para historial; el calendario oculta los eventos cancelados y sus tareas. Las reservas pasadas no se cancelan. Todas las reservas conservadas pierden el vínculo al espacio eliminado por el `ON DELETE SET NULL` existente.
 
 La comprobación se repite dentro de una transacción. Si cambia el conjunto de reservas desde que se mostró, se actualiza la advertencia y se exige confirmar de nuevo; no se cancelan reservas nuevas sin mostrarlas.
+
+## Contrato HTTP
+
+Las rutas de lectura siguen disponibles para usuarios autenticados. Las siguientes acciones requieren Admin o Sacerdote:
+
+| Método y ruta | Entrada / resultado |
+| --- | --- |
+| `POST /api/espacios` | JSON o multipart: `nombre`, `capacidad` opcional y archivo `imagen` opcional; devuelve `201` con `espacioId`. |
+| `PUT /api/espacios/:id` | Mismos campos; `quitar_imagen=true` elimina la foto. No se permite subir y quitar en la misma petición. |
+| `GET /api/espacios/:id/impacto-eliminacion` | Devuelve `{ reservas: [...] }` con id, fecha, horario, estado, solicitante y título del evento de las reservas afectadas. |
+| `DELETE /api/espacios/:id` | Sin confirmación masiva solo permite eliminar sin reservas afectadas. Para cancelarlas requiere JSON `{ cancelar_reservas: true, reserva_ids: [ids revisados] }`. |
+
+En multipart se envía la capacidad como cadena decimal o vacía y el booleano como `true`/`false`; en JSON también se aceptan sus tipos nativos. La URL de foto la genera el servidor: no se admiten URLs arbitrarias del cliente.
+
+Errores: `400` datos o imagen inválidos, `401` sin autenticación, `403` sin permisos, `404` espacio inexistente, `409` reservas que requieren revisión o concurrencia, `413` archivo demasiado grande y `500` fallo interno. Cuando `409` contiene `reservas`, el cliente debe sustituir la lista mostrada y pedir nueva confirmación. Si no contiene lista, volver a consultar el impacto.

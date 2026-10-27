@@ -4,6 +4,7 @@ import { HttpStatus } from '../../utils/httpStatus';
 import pool from '../../config/db';
 import {
   obtenerEspacios,
+  obtenerImpactoEliminacion,
   obtenerEspacioPorId,
   crearEspacio,
   actualizarEspacio,
@@ -238,41 +239,76 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
   });
 
   describe('eliminarEspacio', () => {
-    it('debería retornar 200 al eliminar un espacio existente', async () => {
-      req.params = { id: '1' };
-      
-      // Primera llamada: verificar existencia
-      (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
-      // Segunda llamada: delete
-      (pool.execute as any).mockResolvedValueOnce([{}]);
+    const reserva = { id: 7, fecha: '2099-01-01', hora_inicio: '10:00:00', hora_fin: '12:00:00', estado_reserva_id: 2, solicitante_id: 9 };
+    const espacio = { id: 1, nombre: 'Salón', foto_url: null };
+    beforeEach(() => { req.params = { id: '1' }; });
 
-      await eliminarEspacio(req as Request, res as Response);
-
-      expect(pool.execute).toHaveBeenCalledTimes(2);
-      expect(pool.execute).toHaveBeenLastCalledWith('DELETE FROM espacio WHERE id = ?', ['1']);
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'Espacio eliminado exitosamente' });
+    it('consulta el impacto sin modificar datos y usa hora de Guatemala', async () => {
+      vi.mocked(pool.execute).mockResolvedValueOnce([[espacio]] as any).mockResolvedValueOnce([[reserva]] as any);
+      await obtenerImpactoEliminacion(req as Request, res as Response);
+      expect(pool.execute).toHaveBeenLastCalledWith(expect.stringContaining("CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00')"), ['1', 1, 2]);
+      expect(jsonMock).toHaveBeenCalledWith({ reservas: [reserva] });
+      expect(conn.commit).not.toHaveBeenCalled();
     });
 
-    it('debería retornar 404 si el espacio a eliminar no existe', async () => {
-      req.params = { id: '99' };
-      
-      // Simular array vacío en la verificación
-      (pool.execute as any).mockResolvedValueOnce([[]]);
-
+    it('elimina sin reservas vigentes y confirma antes de responder', async () => {
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[]]).mockResolvedValueOnce([{}]);
       await eliminarEspacio(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
-      expect(jsonMock).toHaveBeenCalledWith({ message: 'Espacio no encontrado' });
+      expect(conn.execute).toHaveBeenNthCalledWith(1, expect.stringContaining('FOR UPDATE'), ['1']);
+      expect(conn.execute).toHaveBeenLastCalledWith('DELETE FROM espacio WHERE id = ?', ['1']);
+      expect(conn.commit).toHaveBeenCalledOnce();
+      expect(statusMock).toHaveBeenCalledWith(200);
     });
 
-    it('debería retornar 500 en caso de error de base de datos', async () => {
-      req.params = { id: '1' };
-      (pool.execute as any).mockRejectedValueOnce(new Error('DB Error'));
-
+    it('bloquea la eliminación y devuelve las reservas sin cancelarlas', async () => {
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[reserva]]);
       await eliminarEspacio(req as Request, res as Response);
+      expect(conn.execute).toHaveBeenCalledTimes(2);
+      expect(conn.rollback).toHaveBeenCalledOnce();
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ reservas: [reserva] }));
+    });
 
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    it('exige reconfirmar si aparecieron reservas nuevas', async () => {
+      req.body = { cancelar_reservas: true, reserva_ids: [7] };
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[reserva, { ...reserva, id: 8 }]]);
+      await eliminarEspacio(req as Request, res as Response);
+      expect(conn.execute).toHaveBeenCalledTimes(2);
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(conn.commit).not.toHaveBeenCalled();
+    });
+
+    it('cancela, registra auditoría y notifica antes de eliminar; conserva eventos y tareas', async () => {
+      req.body = { cancelar_reservas: true, reserva_ids: [7] };
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[reserva]])
+        .mockResolvedValue([{ affectedRows: 1, insertId: 20 }]);
+      await eliminarEspacio(req as Request, res as Response);
+      expect(conn.execute).toHaveBeenCalledWith('UPDATE reserva SET estado_reserva_id = ? WHERE id = ?', [4, 7]);
+      expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO reserva_decision'), [7, 'cancelada', 1]);
+      expect(conn.execute).toHaveBeenCalledWith('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [9, 20]);
+      expect(conn.execute).toHaveBeenLastCalledWith('DELETE FROM espacio WHERE id = ?', ['1']);
+      expect(conn.execute.mock.calls.some(([sql]) => /DELETE FROM (reserva|evento|tarea)\b/.test(sql))).toBe(false);
+      expect(conn.commit).toHaveBeenCalledOnce();
+      expect(statusMock).toHaveBeenCalledWith(200);
+    });
+
+    it('revierte toda la operación si falla una notificación', async () => {
+      req.body = { cancelar_reservas: true, reserva_ids: [7] };
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[reserva]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]).mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockRejectedValueOnce(new Error('notificación'));
+      await eliminarEspacio(req as Request, res as Response);
+      expect(conn.rollback).toHaveBeenCalledOnce();
+      expect(conn.commit).not.toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(conn.execute.mock.calls.some(([sql]) => sql.includes('DELETE FROM espacio'))).toBe(false);
+    });
+
+    it('devuelve 404 si ya fue eliminado', async () => {
+      conn.execute.mockResolvedValueOnce([[]]);
+      await eliminarEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(conn.rollback).toHaveBeenCalledOnce();
     });
   });
 });

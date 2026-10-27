@@ -1,4 +1,7 @@
 import { Request, Response } from 'express';
+import type { PoolConnection } from 'mysql2/promise';
+import { registrarDecision } from '../services/decisiones.service';
+import { formatHorario } from '../utils/formatoHorario';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import pool from '../config/db';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
@@ -239,34 +242,90 @@ export const actualizarEspacio = async (req: Request, res: Response) => {
   }
 };
 
-export const eliminarEspacio = async (req: Request, res: Response) => {
+interface ReservaEliminacion extends RowDataPacket {
+  id: number;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  estado_reserva_id: number;
+  solicitante_id: number;
+  solicitante_nombre: string;
+  titulo: string | null;
+}
+
+async function reservasVigentes(executor: Pick<PoolConnection, 'execute'>, id: string, bloquear = false) {
+  const [reservas] = await executor.execute<ReservaEliminacion[]>(
+    `SELECT r.id, r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id, r.solicitante_id,
+            (SELECT p.nombre FROM persona p WHERE p.id = r.solicitante_id) AS solicitante_nombre,
+            (SELECT e.titulo FROM evento e WHERE e.reserva_id = r.id LIMIT 1) AS titulo
+     FROM reserva r WHERE r.espacio_id = ? AND r.estado_reserva_id IN (?, ?)
+       AND TIMESTAMP(r.fecha, r.hora_fin) >= ${AHORA_GUATEMALA_SQL}
+     ORDER BY r.fecha, r.hora_inicio, r.id ${bloquear ? 'FOR UPDATE' : ''}`,
+    [id, ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA],
+  );
+  return reservas;
+}
+
+export const obtenerImpactoEliminacion = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
-    const [rows] = await pool.execute<EspacioRow[]>(
-      'SELECT id FROM espacio WHERE id = ?',
-      [id]
-    );
-
-    if (!rows || rows.length === 0) {
-      return res.status(HttpStatus.NOT_FOUND).json({
-        message: 'Espacio no encontrado'
-      });
-    }
-
-    await pool.execute(
-      'DELETE FROM espacio WHERE id = ?',
-      [id]
-    );
-
-    return res.status(HttpStatus.OK).json({
-      message: 'Espacio eliminado exitosamente'
-    });
+    validarId(req.params.id);
+    const [espacios] = await pool.execute<EspacioRow[]>('SELECT id FROM espacio WHERE id = ?', [req.params.id]);
+    if (!espacios.length) return res.status(404).json({ message: 'Espacio no encontrado' });
+    return res.status(200).json({ reservas: await reservasVigentes(pool, req.params.id) });
   } catch (error) {
-    console.error('Error al eliminar espacio:', error);
+    if (error instanceof ErrorEspacio) return res.status(error.status).json({ message: error.message });
+    console.error('Error al consultar eliminación de espacio:', error);
+    return res.status(500).json({ message: 'No se pudieron consultar las reservas del espacio' });
+  }
+};
 
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      message: 'Error interno al eliminar el espacio'
+export const eliminarEspacio = async (req: Request, res: Response) => {
+  let fotoAnterior: string | null = null;
+  try {
+    validarId(req.params.id);
+    const { cancelar_reservas: cancelar, reserva_ids: ids } = req.body ?? {};
+    if (cancelar !== undefined && typeof cancelar !== 'boolean') throw new ErrorEspacio(400, 'cancelar_reservas debe ser booleano');
+    if (cancelar && (!Array.isArray(ids) || ids.some(id => !Number.isSafeInteger(id) || id < 1) || new Set(ids).size !== ids.length)) {
+      throw new ErrorEspacio(400, 'Debes confirmar las reservas mostradas antes de cancelar');
+    }
+    let conflicto: ReservaEliminacion[] | null = null;
+    await withTransaction(async conn => {
+      // El bloqueo exclusivo del espacio impide nuevas referencias FK mientras se elimina.
+      const [espacios] = await conn.execute<EspacioRow[]>('SELECT * FROM espacio WHERE id = ? FOR UPDATE', [req.params.id]);
+      if (!espacios.length) throw new ErrorEspacio(404, 'Espacio no encontrado');
+      const reservas = await reservasVigentes(conn, req.params.id, true);
+      const mismosIds = Array.isArray(ids) && ids.length === reservas.length && reservas.every(r => ids.includes(r.id));
+      if ((reservas.length && !cancelar) || (cancelar && !mismosIds)) {
+        conflicto = reservas;
+        return 'rollback';
+      }
+      for (const reserva of reservas) {
+        await conn.execute('UPDATE reserva SET estado_reserva_id = ? WHERE id = ?', [ESTADOS_RESERVA.CANCELADA, reserva.id]);
+        await registrarDecision(conn, 'reserva', reserva.id, 'cancelada', req.user!.id);
+        if (reserva.solicitante_id != null && reserva.solicitante_id !== req.user!.id) {
+          const mensaje = `Tu reserva del ${reserva.fecha} (${formatHorario(reserva.hora_inicio, reserva.hora_fin)}) fue cancelada porque se eliminó el espacio «${espacios[0].nombre}».`;
+          const [notif] = await conn.execute<ResultSetHeader>(
+            `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, DATE(${AHORA_GUATEMALA_SQL}), 'individual', ?)`,
+            [mensaje, req.user!.id],
+          );
+          await conn.execute('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [reserva.solicitante_id, notif.insertId]);
+        }
+      }
+      await conn.execute('DELETE FROM espacio WHERE id = ?', [req.params.id]);
+      fotoAnterior = espacios[0].foto_url;
+      return 'commit';
     });
+    if (conflicto !== null) return res.status(409).json({
+      message: 'Revisa las reservas actuales y futuras antes de confirmar la eliminación', reservas: conflicto,
+    });
+    await eliminarFotoEspacio(fotoAnterior);
+    return res.status(200).json({ message: 'Espacio eliminado exitosamente' });
+  } catch (error) {
+    if (error instanceof ErrorEspacio) return res.status(error.status).json({ message: error.message });
+    if (['ER_LOCK_DEADLOCK', 'ER_LOCK_WAIT_TIMEOUT'].includes((error as { code?: string }).code ?? '')) {
+      return res.status(409).json({ message: 'Las reservas están cambiando. Vuelve a consultar antes de eliminar el espacio' });
+    }
+    console.error('Error al eliminar espacio:', error);
+    return res.status(500).json({ message: 'Error interno al eliminar el espacio' });
   }
 };

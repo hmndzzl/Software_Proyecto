@@ -8,6 +8,7 @@ import { ROLES } from '../../config/roles';
 import { crearEspacio } from '../espacio.controller';
 
 vi.mock('../espacio.controller', () => ({
+  obtenerImpactoEliminacion: vi.fn((_req, res) => res.sendStatus(204)),
   obtenerEspacios: vi.fn((_req, res) => res.sendStatus(204)),
   obtenerEspacioPorId: vi.fn((_req, res) => res.sendStatus(204)),
   crearEspacio: vi.fn((_req, res) => res.sendStatus(204)),
@@ -26,12 +27,14 @@ describe('gestión de espacios por rol y carga de imágenes', () => {
     for (const metodo of ['post', 'put', 'delete'] as const) {
       await request(app)[metodo](`/api/espacios${metodo === 'post' ? '' : '/1'}`).set('Authorization', token(rol)).expect(403);
     }
+    await request(app).get('/api/espacios/1/impacto-eliminacion').set('Authorization', token(rol)).expect(403);
     expect(crearEspacio).not.toHaveBeenCalled();
   });
   it.each([ROLES.ADMIN, ROLES.SACERDOTE])('permite gestión al rol %s y mantiene JSON', async rol => {
     await request(app).post('/api/espacios').set('Authorization', token(rol)).send({ nombre: 'Patio' }).expect(204);
     await request(app).put('/api/espacios/1').set('Authorization', token(rol)).send({ nombre: 'Patio' }).expect(204);
     await request(app).delete('/api/espacios/1').set('Authorization', token(rol)).expect(204);
+    await request(app).get('/api/espacios/1/impacto-eliminacion').set('Authorization', token(rol)).expect(204);
   });
   it('rechaza SVG y cargas mayores a 10 MB antes del controlador', async () => {
     await request(app).post('/api/espacios').set('Authorization', token(ROLES.ADMIN))

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   obtenerEspacios,
+  obtenerImpactoEliminacion,
   obtenerEspacioPorId,
   crearEspacio,
   actualizarEspacio,
@@ -15,6 +16,7 @@ const router = Router();
 
 // Cualquier usuario autenticado puede ver los espacios (UML: "Visualizar salones y disponibilidad")
 router.get('/', authMiddleware, obtenerEspacios);
+router.get('/:id/impacto-eliminacion', authMiddleware, requireRole(ROLES.SACERDOTE, ROLES.ADMIN), obtenerImpactoEliminacion);
 router.get('/:id', authMiddleware, obtenerEspacioPorId);
 
 // Solo Sacerdote y Admin gestionan los espacios
