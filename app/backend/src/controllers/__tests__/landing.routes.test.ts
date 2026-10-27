@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -5,6 +6,8 @@ import pool from '../../config/db';
 import { app } from '../../app';
 import { JWT_SECRET } from '../../config/env';
 import { ROLES } from '../../config/roles';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../../config/db', () => ({ default: { execute: vi.fn(), getConnection: vi.fn() }, checkDbConnection: vi.fn() }));
 const contenido = {
@@ -17,7 +20,10 @@ const contenido = {
   texto_pie: 'Parroquia',
 };
 const conn = { execute: vi.fn(), beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn() };
-const token = (rol_id: number) => jwt.sign({ id: 1, rol_id }, JWT_SECRET);
+const token = (rol_id: number) => {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 1, rol_id, estado_cuenta: 'activa' });
+  return jwt.sign({ id: 1, rol_id }, JWT_SECRET);
+};
 
 beforeEach(() => {
   vi.resetAllMocks();

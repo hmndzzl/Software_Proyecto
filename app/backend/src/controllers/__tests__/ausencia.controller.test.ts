@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -5,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/db';
 import ausenciaRoutes from '../../routes/ausencia.routes';
 import { JWT_SECRET } from '../../config/env';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../../config/db', () => ({ default: { getConnection: vi.fn() } }));
 const app = express();
@@ -16,6 +19,7 @@ const conn = {
   beginTransaction: vi.fn(), execute: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
 };
 function enviar(payload: object = body, id = 9, rol_id = 4) {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id, rol_id, estado_cuenta: 'activa' });
   const token = jwt.sign({ id, rol_id }, JWT_SECRET);
   return request(app).post('/api/ausencias').set('Authorization', `Bearer ${token}`).send(payload);
 }
