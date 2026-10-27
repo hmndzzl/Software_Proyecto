@@ -1,0 +1,29 @@
+.trigger { display: block; position: relative; width: 100%; height: 100%; max-width: 100%; padding: 0; border: 0; margin: 0; background: transparent; cursor: zoom-in; line-height: 0; }
+.trigger:focus-visible { outline: 3px solid var(--color-oro); outline-offset: -4px; }
+
+/* El visor conserva una superficie marfil clara, también en tema oscuro. */
+.dialog { color-scheme: light; position: fixed; inset: 0; width: min(1100px, calc(100vw - 48px)); height: fit-content; max-width: none; max-height: min(800px, calc(100vh - 48px)); max-height: min(800px, calc(100dvh - 48px)); margin: auto; padding: clamp(12px, 2vw, 24px); border: 1px solid var(--visor-borde); border-radius: var(--radius-card); color: var(--visor-texto); background: var(--visor-panel); box-shadow: 0 20px 64px rgba(58, 53, 48, .2); overflow: hidden; }
+.dialog[open] { display: flex; flex-direction: column; gap: 12px; animation: aparecer 200ms ease-out both; }
+.dialog::backdrop { background: color-mix(in srgb, var(--visor-fondo) 88%, transparent); backdrop-filter: blur(6px); animation: fondo-entrar 200ms ease-out both; }
+.dialog.cerrando { animation: salir 160ms ease-in both; }
+.dialog.cerrando::backdrop { animation: fondo-salir 160ms ease-in both; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.header h2 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin: 0; color: var(--visor-texto); }
+.toolbar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.control { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; background: transparent; border: 1px solid var(--visor-borde); border-radius: var(--radius-btn); color: var(--visor-texto); font-family: var(--font-body); font-size: 14px; cursor: pointer; }
+.control:hover:not(:disabled) { background: #fff9; }
+.control:disabled { opacity: .45; cursor: default; }
+.control:focus-visible, .viewport:focus-visible { outline: 2px solid var(--visor-acento); outline-offset: 3px; }
+.zoom { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; font-size: 14px; }
+.viewport { flex: 0 1 auto; contain: size; width: 100%; aspect-ratio: 16 / 10; min-height: 0; overflow: auto; overscroll-behavior: contain; border-radius: var(--radius-btn); }
+.canvas { min-width: 100%; min-height: 100%; display: grid; place-items: center; position: relative; }
+.ampliada { display: block; max-width: none; max-height: none; object-fit: contain; user-select: none; }
+.mensaje { position: absolute; text-align: center; padding: 16px; }
+.caption { margin: 0; text-align: center; font-family: var(--font-body); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes salir { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.98); } }
+@keyframes fondo-entrar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fondo-salir { from { opacity: 1; } to { opacity: 0; } }
+@media (max-width: 600px) { .dialog { width: calc(100vw - 16px); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); padding: 12px; } }
+@media (prefers-reduced-motion: reduce) { .dialog[open], .dialog.cerrando, .dialog::backdrop, .dialog.cerrando::backdrop { animation: none; } }
