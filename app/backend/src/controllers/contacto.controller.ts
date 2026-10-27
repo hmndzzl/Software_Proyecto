@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import pool from '../config/db';
 import { ROLES } from '../config/roles';
 import { HttpStatus } from '../utils/httpStatus';
 import { ContactoCreado } from '../types/contacto.types';
@@ -16,6 +17,19 @@ function textoRequerido(value: unknown, maxLength: number): string | null {
   if (!limpio || limpio.length > maxLength) return null;
   return limpio;
 }
+
+// Historial de mensajes de contacto para la bandeja de Sacerdote/Admin (el acceso lo restringe la ruta).
+export const listarContactos = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const [filas] = await pool.execute<RowDataPacket[]>(
+      'SELECT id, nombre, correo, telefono, motivo, mensaje, fecha, creado_en FROM mensaje_contacto ORDER BY creado_en DESC, id DESC'
+    );
+    res.json(filas);
+  } catch (error) {
+    console.error('Error en listarContactos:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al obtener los mensajes de contacto' });
+  }
+};
 
 // HU-32: formulario público de contacto de la landing page (sin autenticación).
 export const crearContacto = async (req: Request, res: Response): Promise<void> => {
