@@ -309,3 +309,33 @@ describe('integración de tareas, asignaciones y permisos', () => {
     expect(screen.queryByTitle('Cambiar responsable')).not.toBeInTheDocument();
   });
 });
+
+
+describe('avisos de ausencia por fecha y hora', () => {
+  beforeEach(() => { vi.clearAllMocks(); prepararApi(); });
+  it('advierte antes y después de guardar sin bloquear y respeta el fin del periodo', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? personas : url.endsWith('/disponibilidad/periodos')
+      ? [{ id: 1, desde: '2099-11-01T14:00', hasta: '2099-11-01T15:00', origen: 'disponibilidad' },
+         { id: 2, desde: '2099-11-01T00:00', hasta: '2099-11-02T00:00', origen: 'ausencia' }]
+      : url === '/api/eventos' ? [] : tareas }));
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { alertas: [{ persona_id: 10, ministro_no_disponible: true, ausencia_reportada: true }] } });
+    mostrar(); await completarCreacion();
+    await screen.findByText('Tiene un periodo no disponible en este horario.');
+    expect(screen.getByText('Tiene una ausencia reportada en esta fecha.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: '15:00' } });
+    fireEvent.change(screen.getByLabelText('Hora de Fin:'), { target: { value: '16:00' } });
+    expect(screen.queryByText('Tiene un periodo no disponible en este horario.')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Tiene una ausencia reportada en la fecha de la tarea.');
+  });
+  it('avisa si no puede comprobar periodos y conserva la comprobación del servidor', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async url => {
+      if (url.endsWith('/disponibilidad/periodos')) throw new Error('red');
+      return { data: url === '/api/personas' ? personas : url === '/api/eventos' ? [] : tareas };
+    });
+    mostrar(); await completarCreacion();
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron consultar los periodos.');
+    await userEvent.click(screen.getByRole('button', { name: 'Crear y asignar tarea' }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalled());
+  });
+});

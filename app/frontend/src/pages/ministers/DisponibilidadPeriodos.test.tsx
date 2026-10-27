@@ -13,7 +13,7 @@ beforeEach(() => {
 const completar = (desde = periodo.desde, hasta = periodo.hasta) => {
   fireEvent.change(screen.getByLabelText('No disponible desde'), { target: { value: desde } });
   fireEvent.change(screen.getByLabelText('Disponible nuevamente el'), { target: { value: hasta } });
-  fireEvent.click(screen.getByRole('button', { name: 'Agregar periodo no disponible' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Agregar periodo' }));
 };
 it('registra y retira rangos sin cambiar la disponibilidad general', async () => {
   abrir(); await screen.findByText('No hay periodos registrados.'); completar();

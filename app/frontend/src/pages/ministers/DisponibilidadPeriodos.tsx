@@ -7,6 +7,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import { getApiErrorMessage } from '../../utils/apiError';
 import type { Ministro } from '../../types';
 import styles from '../../styles/Form.module.css';
+import local from './DisponibilidadPeriodos.module.css';
 
 import type { PeriodoDisponibilidad } from '../../api/disponibilidad';
 export const textoFechaHora = (value: string) => {
@@ -19,13 +20,14 @@ export default function DisponibilidadPeriodos({ ministro, onClose }: { ministro
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
   const [cargando, setCargando] = useState(true);
+  const [cargado, setCargado] = useState(false);
   const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [intento, setIntento] = useState(0);
   const url = `/api/personas/${ministro.id}/disponibilidad/periodos`;
   useEffect(() => {
     let vigente = true;
-    apiClient.get<PeriodoDisponibilidad[]>(url).then(res => { if (vigente) { setPeriodos(res.data); setError(''); } })
+    apiClient.get<PeriodoDisponibilidad[]>(url).then(res => { if (vigente) { setPeriodos(res.data); setError(''); setCargado(true); } })
       .catch(() => { if (vigente) setError('No se pudieron cargar los periodos.'); })
       .finally(() => { if (vigente) setCargando(false); });
     return () => { vigente = false; };
@@ -51,22 +53,27 @@ export default function DisponibilidadPeriodos({ ministro, onClose }: { ministro
     finally { setOcupado(false); }
   };
   return <Modal open title={`Disponibilidad de ${ministro.nombre}`} onClose={onClose} closeDisabled={ocupado}>
-    <p>Periodos no disponibles, en horario de Guatemala. Al terminar un periodo deja de afectar las asignaciones. La disponibilidad general se conserva.</p>
+    <p className={local.intro}>Registra los periodos en que este ministro no podrá servir. Horario de Guatemala.</p>
+    {!ministro.disponible && <p className={styles.modalWarning}>La disponibilidad general está desactivada. Al finalizar un periodo seguirá figurando como no disponible hasta que la actives.</p>}
     {cargando && <LoadingState label="Cargando periodos..." />}
     {error && <ErrorState message={error} onRetry={() => { setCargando(true); setIntento(i => i + 1); }} />}
-    {!cargando && <>
+    {!cargando && cargado && <>
       {!periodos.length && <p>No hay periodos registrados.</p>}
-      <ul>{periodos.map(p => <li key={`${p.origen}-${p.id}`}>
+      <ul className={local.lista}>{periodos.map(p => <li key={`${p.origen}-${p.id}`}>
         <p>Desde {textoFechaHora(p.desde)}. Disponible nuevamente el {textoFechaHora(p.hasta)}.</p>
         {p.origen === 'ausencia' ? <span>Ausencia reportada · incluye todos los días indicados en el reporte</span>
           : <Btn type="button" kind="ghost" size="sm" disabled={ocupado} onClick={() => eliminar(p.id)} aria-label={`Quitar periodo del ${textoFechaHora(p.desde)}`}>Quitar periodo</Btn>}
       </li>)}</ul>
       <form onSubmit={guardar} className={styles.form}>
-        <label htmlFor="periodo-desde">No disponible desde</label>
+        <div className={styles.field}>
+        <label htmlFor="periodo-desde" className={styles.label}>No disponible desde</label>
         <input id="periodo-desde" className={styles.input} type="datetime-local" required value={desde} onChange={e => setDesde(e.target.value)} disabled={ocupado} />
-        <label htmlFor="periodo-hasta">Disponible nuevamente el</label>
+        </div>
+        <div className={styles.field}>
+        <label htmlFor="periodo-hasta" className={styles.label}>Disponible nuevamente el</label>
         <input id="periodo-hasta" className={styles.input} type="datetime-local" required value={hasta} onChange={e => setHasta(e.target.value)} disabled={ocupado} />
-        <Btn kind="primary" type="submit" disabled={ocupado}>{ocupado ? 'Guardando...' : 'Agregar periodo no disponible'}</Btn>
+        </div>
+        <Btn kind="primary" type="submit" disabled={ocupado}>{ocupado ? 'Guardando...' : 'Agregar periodo'}</Btn>
       </form>
     </>}
   </Modal>;
