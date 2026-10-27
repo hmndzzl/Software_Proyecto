@@ -140,6 +140,17 @@ test('el encabezado usa CardHead y permite seleccionar entre 100 ministros sin d
       expect(medidas.total).toBeGreaterThan(medidas.altura);
       await lista.getByRole('checkbox', { name: 'Ministro 40' }).check();
       await expect(lista.getByRole('checkbox', { name: 'Ministro 40' })).toBeChecked();
+      const foco = await lista.getByRole('checkbox', { name: 'Ministro 40' }).evaluate(input => {
+        const opcion = input.closest('label')!;
+        const panel = opcion.parentElement!;
+        const borde = opcion.getBoundingClientRect();
+        const area = panel.getBoundingClientRect();
+        const css = getComputedStyle(opcion);
+        const espacio = parseFloat(css.outlineWidth) + parseFloat(css.outlineOffset);
+        return { izquierda: borde.left - espacio - area.left, derecha: area.right - borde.right - espacio };
+      });
+      expect(foco.izquierda).toBeGreaterThanOrEqual(0);
+      expect(foco.derecha).toBeGreaterThanOrEqual(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
   }

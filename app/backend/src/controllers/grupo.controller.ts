@@ -57,7 +57,7 @@ export const createGrupo = async (req: Request, res: Response): Promise<void> =>
   try {
     // Verificar que el coordinador existe
     const [personas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE id = ?',
+      "SELECT id FROM persona WHERE id = ? AND estado_cuenta = 'activa'",
       [coordinador_id]
     );
 
@@ -108,7 +108,7 @@ export const updateGrupo = async (req: Request, res: Response): Promise<void> =>
   try {
     // verifica que el coordinador existe
     const [personas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE id = ?',
+      "SELECT id FROM persona WHERE id = ? AND estado_cuenta = 'activa'",
       [coordinador_id]
     );
 

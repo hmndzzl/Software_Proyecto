@@ -198,7 +198,7 @@ export const editarReserva = async (req: Request, res: Response) => {
       // La edición resetea la reserva a Pendiente: los aprobadores necesitan saber que
       // hay (de nuevo) algo esperando su decisión, igual que al crear una solicitud nueva.
       const [aprobadores]: any = await conn.query(
-        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND id != ?`,
+        `SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa' AND id != ?`,
         [ROLES.SACERDOTE, ROLES.ADMIN, req.user!.id]
       );
 

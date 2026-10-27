@@ -1,6 +1,6 @@
 import apiClient from './client';
 
-export type EstadoCuenta = 'pendiente' | 'activa' | 'rechazada';
+export type EstadoCuenta = 'pendiente' | 'activa' | 'rechazada' | 'baja';
 
 export interface Cuenta {
   id: number;
@@ -35,4 +35,8 @@ export async function aprobarCuentaApi(id: number, rolId: number): Promise<void>
 
 export async function rechazarCuentaApi(id: number): Promise<void> {
   await apiClient.patch(`/api/cuentas/${id}/rechazar`);
+}
+
+export async function darDeBajaCuentaApi(id: number): Promise<void> {
+  await apiClient.patch(`/api/cuentas/${id}/baja`);
 }

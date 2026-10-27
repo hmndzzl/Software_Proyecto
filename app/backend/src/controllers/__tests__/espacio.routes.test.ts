@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -6,6 +7,8 @@ import router from '../../routes/espacio.routes';
 import { JWT_SECRET } from '../../config/env';
 import { ROLES } from '../../config/roles';
 import { crearEspacio } from '../espacio.controller';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../espacio.controller', () => ({
   obtenerImpactoEliminacion: vi.fn((_req, res) => res.sendStatus(204)),
@@ -16,7 +19,10 @@ vi.mock('../espacio.controller', () => ({
   eliminarEspacio: vi.fn((_req, res) => res.sendStatus(204)),
 }));
 const app = express().use(express.json()).use('/api/espacios', router);
-const token = (rol_id: number) => `Bearer ${jwt.sign({ id: 7, rol_id }, JWT_SECRET)}`;
+const token = (rol_id: number) => {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 7, rol_id, estado_cuenta: 'activa' });
+  return `Bearer ${jwt.sign({ id: 7, rol_id }, JWT_SECRET)}`;
+};
 beforeEach(() => vi.clearAllMocks());
 
 describe('gestión de espacios por rol y carga de imágenes', () => {

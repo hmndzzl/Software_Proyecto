@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
-import { CLERK_ENABLED, getClerkToken } from '../auth/clerkSession';
+import { CLERK_ENABLED, getClerkToken, setLoginError, signOutClerk } from '../auth/clerkSession';
 import { clearSession, readToken, saveToken } from '../auth/sessionStore';
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -43,6 +43,13 @@ apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
+    if (error.response?.status === 403 && error.response.data?.codigo === 'CUENTA_BAJA') {
+      setLoginError(error.response.data.mensaje);
+      clearSession();
+      await signOutClerk();
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
 
     // Los tokens de Clerk no pasan por /refresh: Clerk los renueva por su cuenta.
     if (error.response?.status !== 401 || original._retry || original._clerk) {

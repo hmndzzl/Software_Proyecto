@@ -68,6 +68,8 @@
   max-height: 288px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Reserva espacio para el contorno y su separación dentro del área desplazable. */
+  padding: 4px;
   margin-top: 8px;
 }
 

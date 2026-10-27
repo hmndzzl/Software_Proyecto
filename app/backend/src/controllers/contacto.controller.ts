@@ -50,7 +50,7 @@ export const crearContacto = async (req: Request, res: Response): Promise<void> 
 
     await withTransaction(async (conn) => {
       const [destinatarios] = await conn.execute<RowDataPacket[]>(
-        'SELECT id FROM persona WHERE rol_id IN (?, ?)', [ROLES.SACERDOTE, ROLES.ADMIN]
+        "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [ROLES.SACERDOTE, ROLES.ADMIN]
       );
       if (!destinatarios.length) return 'rollback';
 

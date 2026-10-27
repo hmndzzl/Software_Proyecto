@@ -368,7 +368,7 @@ export const getDestinatarios = async (req: Request, res: Response): Promise<voi
          FROM persona p
          INNER JOIN coordinador_ministro cm ON cm.ministro_id = p.id
          INNER JOIN rol r ON r.id = p.rol_id
-         WHERE cm.coordinador_id = ?
+         WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'
          ORDER BY p.nombre ASC`,
         [userId]
       );
@@ -442,7 +442,8 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
         // CoordMinistros: validar que todos los destinatarios sean sus ministros
         if (rolId === ROLES.COORDINADOR_MINISTROS) {
           const [mis] = await conn.execute<RowDataPacket[]>(
-            `SELECT ministro_id FROM coordinador_ministro WHERE coordinador_id = ?`,
+            `SELECT cm.ministro_id FROM coordinador_ministro cm JOIN persona p ON p.id = cm.ministro_id
+             WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'`,
             [remitenteId]
           );
           const misIds = (mis as RowDataPacket[]).map((r) => r.ministro_id as number);
@@ -453,7 +454,14 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
           }
         }
 
-        ids = destinatarios;
+        ids = [...new Set(destinatarios)];
+        const [activas] = await conn.execute<RowDataPacket[]>(
+          `SELECT id FROM persona WHERE id IN (${ids.map(() => '?').join(',')}) AND estado_cuenta = 'activa' FOR UPDATE`, ids,
+        );
+        if (activas.length !== ids.length) {
+          res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Solo puedes enviar notificaciones a cuentas activas' });
+          return 'rollback';
+        }
       }
 
       for (const personaId of ids) {
