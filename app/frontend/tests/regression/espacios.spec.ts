@@ -46,6 +46,12 @@ for (const width of [375, 1280]) {
     await page.getByRole('button', { name: 'Editar espacio', exact: true }).click();
     const editar = page.getByRole('dialog', { name: 'Editar espacio', exact: true });
     await expect(editar).toBeVisible();
+    const eliminarPos = (await editar.getByRole('button', { name: 'Eliminar espacio', exact: true }).boundingBox())!;
+    const cancelarPos = (await editar.getByRole('button', { name: 'Cancelar', exact: true }).boundingBox())!;
+    const guardarPos = (await editar.getByRole('button', { name: 'Guardar cambios', exact: true }).boundingBox())!;
+    expect(Math.abs(cancelarPos.y - guardarPos.y)).toBeLessThan(2);
+    if (width > 600) expect(Math.abs(eliminarPos.y - guardarPos.y)).toBeLessThan(2);
+    else expect(eliminarPos.y).toBeGreaterThanOrEqual(guardarPos.y + guardarPos.height);
     expect(await editar.evaluate(el => el.closest('[class*="card"]') === null)).toBe(true);
     const limites = (await editar.boundingBox())!;
     expect(limites.x).toBeGreaterThanOrEqual(0); expect(limites.x + limites.width).toBeLessThanOrEqual(width);

@@ -69,7 +69,7 @@ export default function EspacioFormModal({ espacio, open = true, onDelete, onClo
     } finally { lock.current = false; setGuardando(false); }
   };
 
-  return <Modal open={open} title={espacio ? 'Editar espacio' : 'Crear espacio'} onClose={onClose} closeDisabled={guardando} initialFocusSelector="input">
+  return <Modal open={open} width={640} title={espacio ? 'Editar espacio' : 'Crear espacio'} onClose={onClose} closeDisabled={guardando} initialFocusSelector="input">
     <form className={styles.form} onSubmit={guardar} aria-busy={guardando}>
       <Field label="Nombre del espacio" htmlFor={`${id}-nombre`} required>
         <InputUI id={`${id}-nombre`} value={nombre} onChange={e => setNombre(e.target.value)} maxLength={100} required disabled={guardando} placeholder="Ej. Salón parroquial" />
@@ -100,8 +100,8 @@ export default function EspacioFormModal({ espacio, open = true, onDelete, onClo
       </div>}
       {error && <p className={styles.error} role="alert">{error}</p>}
       <div className={styles.formFooter}>
-        {espacio && onDelete && <Btn type="button" kind="bad" disabled={guardando} onClick={onDelete}>Eliminar espacio</Btn>}
-        <div className={styles.actions}>
+        {espacio && onDelete && <Btn type="button" kind="ghost" className={styles.deleteAction} disabled={guardando} onClick={onDelete}>Eliminar espacio</Btn>}
+        <div className={styles.saveActions}>
           <Btn type="button" kind="ghost" disabled={guardando} onClick={onClose}>Cancelar</Btn>
           <Btn type="submit" disabled={guardando}>{guardando ? 'Guardando…' : espacio ? 'Guardar cambios' : 'Crear espacio'}</Btn>
         </div>
