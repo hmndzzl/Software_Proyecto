@@ -10,7 +10,7 @@ const idValido = (id: string) => /^[1-9]\d*$/.test(id) && Number.isSafeInteger(N
 export async function listarCoordinadores(_req: Request, res: Response): Promise<void> {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, nombre, estado_cuenta FROM persona WHERE rol_id = ? ORDER BY nombre, id',
+      "SELECT id, nombre, estado_cuenta FROM persona WHERE rol_id = ? AND estado_cuenta = 'activa' ORDER BY nombre, id",
       [ROLES.COORDINADOR_MINISTROS],
     );
     res.status(HttpStatus.OK).json(rows);
@@ -27,18 +27,18 @@ export async function listarMinistrosAsignados(req: Request, res: Response): Pro
   }
   try {
     const [coordinadores] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM persona WHERE id = ? AND rol_id = ?',
+      "SELECT id FROM persona WHERE id = ? AND rol_id = ? AND estado_cuenta = 'activa'",
       [Number(req.params.coordinadorId), ROLES.COORDINADOR_MINISTROS],
     );
     if (!coordinadores.length) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Coordinador de ministros no encontrado' });
       return;
     }
-    // Incluye relaciones de cuentas no activas para poder retirarlas desde la pantalla.
+    // Las relaciones se conservan, pero el directorio solo muestra cuentas activas.
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT p.id, p.nombre, p.correo, p.estado_cuenta
        FROM coordinador_ministro cm JOIN persona p ON p.id = cm.ministro_id
-       WHERE cm.coordinador_id = ? ORDER BY p.nombre, p.id`,
+       WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa' ORDER BY p.nombre, p.id`,
       [Number(req.params.coordinadorId)],
     );
     res.status(HttpStatus.OK).json(rows);

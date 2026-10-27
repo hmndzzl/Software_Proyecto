@@ -614,6 +614,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       
       mockConnection.execute.mockResolvedValueOnce([{ insertId: 10 }]); // insert notif
       mockConnection.execute.mockResolvedValueOnce([[{ ministro_id: 1 }]]); // es válido
+      mockConnection.execute.mockResolvedValueOnce([[{ id: 1 }]]); // destinatario activo
       mockConnection.execute.mockResolvedValue([{}]); // insert persona_notificacion
 
       await createNotificacion(req as Request, res as Response);
@@ -627,6 +628,7 @@ describe('Notificacion Controller - Pruebas Unitarias', () => {
       req.body = { mensaje: 'Indiv', tipo: 'individual', destinatarios: [1] };
       
       mockConnection.execute.mockResolvedValueOnce([{ insertId: 10 }]); // insert notif
+      mockConnection.execute.mockResolvedValueOnce([[{ id: 1 }]]);
       mockConnection.execute.mockResolvedValue([{}]); // insert persona_notificacion
 
       await createNotificacion(req as Request, res as Response);

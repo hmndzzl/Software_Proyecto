@@ -70,7 +70,7 @@ describe('POST /api/contacto (HU-32)', () => {
     const res = await enviar();
     expect(res.status).toBe(201);
     expect(res.body.contacto).toEqual({ ...body, id: 7, fecha: expect.any(String), notificacion_id: 30 });
-    expect(conn.execute).toHaveBeenNthCalledWith(1, 'SELECT id FROM persona WHERE rol_id IN (?, ?)', [1, 5]);
+    expect(conn.execute).toHaveBeenNthCalledWith(1, "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [1, 5]);
     for (const id of [1, 5]) {
       expect(conn.execute).toHaveBeenCalledWith(
         'INSERT INTO persona_notificacion (persona_id, notificacion_id, leida) VALUES (?, ?, 0)', [id, 30]);

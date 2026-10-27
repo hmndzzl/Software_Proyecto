@@ -39,7 +39,7 @@ describe('POST /api/ausencias (HU-31)', () => {
     const res = await enviar({ ...body, nombre: 'Nombre falsificado', correo: 'falso@example.com' });
     expect(res.status).toBe(201);
     expect(res.body.ausencia).toEqual({ ...body, id: 21, ministro, notificacion_id: 80 });
-    expect(conn.execute).toHaveBeenNthCalledWith(2, 'SELECT id FROM persona WHERE rol_id IN (?, ?)', [2, 1]);
+    expect(conn.execute).toHaveBeenNthCalledWith(2, "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [2, 1]);
     for (const id of [6, 7, 13]) {
       expect(conn.execute).toHaveBeenCalledWith(
         'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [id, 80]);
@@ -106,7 +106,7 @@ describe('POST /api/ausencias (HU-31)', () => {
     expect(conn.execute).toHaveBeenNthCalledWith(1,
       'SELECT id, nombre, correo FROM persona WHERE id = ? AND rol_id = ?', [9, 5]);
     expect(conn.execute).toHaveBeenNthCalledWith(2,
-      'SELECT id FROM persona WHERE rol_id IN (?, ?)', [2, 1]);
+      "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [2, 1]);
   });
 
   it('el admin tampoco puede suplantar otra identidad', async () => {

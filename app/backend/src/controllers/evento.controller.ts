@@ -139,7 +139,7 @@ export const updateEvento = async (req: Request, res: Response): Promise<void> =
       }
 
       const [personas] = await pool.execute<RowDataPacket[]>(
-        'SELECT id FROM persona WHERE id = ?',
+        "SELECT id FROM persona WHERE id = ? AND estado_cuenta = 'activa'",
         [encargadoId]
       );
 
