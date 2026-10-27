@@ -77,8 +77,15 @@ export default function EspacioFormModal({ espacio, onClose, onSaved }: Props) {
           onChange={e => setCapacidad(e.target.value)} disabled={guardando} placeholder="Ej. 50" aria-describedby={`${id}-capacidad-hint`} />
       </Field>
       <Field label="Imagen del espacio" htmlFor={`${id}-imagen`} hint="Opcional. JPEG, PNG o WebP, hasta 10 MB. Solo fotografías sin animación.">
-        <InputUI id={`${id}-imagen`} type="file" accept="image/jpeg,image/png,image/webp" disabled={guardando}
-          onChange={e => { archivoInput.current = e.target; seleccionar(e.target.files?.[0] ?? null); }} aria-describedby={`${id}-imagen-hint`} />
+        <div className={styles.filePicker}>
+          <input ref={archivoInput} id={`${id}-imagen`} className={styles.fileInput} tabIndex={-1} type="file"
+            accept="image/jpeg,image/png,image/webp" disabled={guardando}
+            onChange={e => seleccionar(e.target.files?.[0] ?? null)} aria-describedby={`${id}-imagen-hint`} />
+          <Btn type="button" kind="ghost" disabled={guardando} aria-controls={`${id}-imagen`} onClick={() => archivoInput.current?.click()}>
+            {imagen ? 'Cambiar imagen' : 'Seleccionar imagen'}
+          </Btn>
+          <span className={styles.fileName} aria-live="polite">{imagen?.name ?? 'Ninguna imagen seleccionada'}</span>
+        </div>
       </Field>
       {preview ? <img className={styles.preview} src={preview} alt="Vista previa de la imagen seleccionada" /> :
         espacio?.foto_url && !quitarImagen ? <EspacioFoto className={styles.preview} nombre={espacio.nombre} fotoUrl={espacio.foto_url} /> : null}

@@ -6,6 +6,8 @@ El nombre es obligatorio, se recorta y admite hasta 100 caracteres. La capacidad
 
 ## Fotografías
 
+El formulario usa el botón **Seleccionar imagen**, con el estilo compartido de la plataforma, y muestra el nombre del archivo y su vista previa. Se puede cambiar la selección antes de guardar.
+
 Se recibe una sola imagen JPEG, PNG o WebP de hasta 10 MiB y 40 megapíxeles, sin animación. Se comprueban extensión, MIME y contenido decodificado. El backend orienta la foto, la reduce sin ampliarla a un máximo de 1600 × 1200 píxeles y genera WebP con calidad 82, sin metadatos EXIF. No conserva ni publica el original.
 
 Cada carga tiene un UUID nuevo y se publica en `/uploads/espacios/subidas/<uuid>.webp`, con caché inmutable de 30 días. La base almacena únicamente esta ruta en `espacio.foto_url`. Las fotos iniciales permanecen en `/uploads/espacios/salon-XX-v1.webp`; ver [imágenes de fase 1](imagenes-fase1.md) y su advertencia sobre la asignación provisional.

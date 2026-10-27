@@ -35,8 +35,11 @@ for (const width of [375, 1280]) {
     const crear = page.getByRole('dialog', { name: 'Crear espacio', exact: true });
     await expect(crear.getByLabel('Nombre del espacio')).toBeFocused();
     await crear.getByLabel('Nombre del espacio').fill('Otro salón');
-    await crear.getByLabel('Capacidad', { exact: true }).fill('20');
-    await crear.getByLabel('Imagen del espacio').setInputFiles({ name: 'salon.png', mimeType: 'image/png', buffer: Buffer.from('foto simulada para interfaz') });
+    await crear.getByLabel(/Capacidad/).fill('20');
+    const selector = page.waitForEvent('filechooser');
+    await crear.getByRole('button', { name: 'Seleccionar imagen', exact: true }).click();
+    await (await selector).setFiles({ name: 'salon.png', mimeType: 'image/png', buffer: Buffer.from('foto simulada para interfaz') });
+    await expect(crear.getByText('salon.png', { exact: true })).toBeVisible();
     await expect(crear.getByAltText('Vista previa de la imagen seleccionada')).toBeVisible();
     await crear.getByRole('button', { name: 'Cancelar', exact: true }).click();
     expect(estado.peticiones).toEqual([]);
@@ -82,7 +85,7 @@ test('crear refresca el listado aunque la disponibilidad esté a medio completar
   await page.getByRole('button', { name: 'Crear espacio', exact: true }).click();
   const dialogo = page.getByRole('dialog', { name: 'Crear espacio', exact: true });
   await dialogo.getByLabel('Nombre del espacio').fill('Nuevo salón');
-  await dialogo.getByLabel('Capacidad', { exact: true }).fill('20');
+  await dialogo.getByLabel(/Capacidad/).fill('20');
   await dialogo.getByRole('button', { name: 'Crear espacio', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Nuevo salón', exact: true })).toBeVisible();
   await expect(page.getByLabel('Fecha', { exact: true })).toHaveValue('');
