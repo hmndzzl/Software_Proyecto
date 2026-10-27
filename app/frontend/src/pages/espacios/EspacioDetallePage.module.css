@@ -102,9 +102,15 @@
 }
 
 /* HU-15: estado actual del salón — siempre visible, Libre (verde) / En uso (rojo) */
-.estadoActualWrap {
-  margin-bottom: 14px;
+.accionesEstado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap-sm);
+  margin-bottom: var(--gap-sm);
 }
+
+.estadoActualWrap { display: flex; align-items: center; }
 
 .estadoActualBtn {
   background: none;

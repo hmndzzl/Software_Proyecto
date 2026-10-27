@@ -131,21 +131,23 @@ export default function EspacioDetallePage() {
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
-          <EspacioGestion espacio={espacio} onChanged={cargarEspacio} onDeleted={() => navigate('/espacios')} />
+          <div className={styles.accionesEstado}>
+            <EspacioGestion espacio={espacio} onChanged={cargarEspacio} onDeleted={() => navigate('/espacios')} />
 
-          <div className={styles.estadoActualWrap}>
-            {reservaEnUso ? (
-              <button
-                type="button"
-                className={styles.estadoActualBtn}
-                onClick={() => setDetalleEnUsoAbierto(true)}
-                title="Ver quién lo está usando"
-              >
-                <Badge kind="bad">En uso ahora</Badge>
-              </button>
-            ) : (
-              <Badge kind="ok">Libre</Badge>
-            )}
+            <div className={styles.estadoActualWrap}>
+              {reservaEnUso ? (
+                <button
+                  type="button"
+                  className={styles.estadoActualBtn}
+                  onClick={() => setDetalleEnUsoAbierto(true)}
+                  title="Ver quién lo está usando"
+                >
+                  <Badge kind="bad">En uso ahora</Badge>
+                </button>
+              ) : (
+                <Badge kind="ok">Libre</Badge>
+              )}
+            </div>
           </div>
 
           {puedeReservar && (
