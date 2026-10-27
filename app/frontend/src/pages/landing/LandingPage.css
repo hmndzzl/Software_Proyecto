@@ -125,3 +125,5 @@ html:has(.landing){scroll-behavior:smooth}
   html:has(.landing){scroll-behavior:auto}
   .landing .btn,.landing .vcard{transition:none}
 }
+
+.landing .slot > button { position: absolute; inset: 0; }

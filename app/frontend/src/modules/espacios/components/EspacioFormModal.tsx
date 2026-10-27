@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import apiClient from '../../../api/client';
+import ImagenAmpliable from '../../../components/ui/ImagenAmpliable';
 import Modal from '../../../components/ui/Modal';
 import Btn from '../../../components/ui/Btn';
 import { Field, InputUI } from '../../../components/ui/Field';
@@ -89,7 +90,7 @@ export default function EspacioFormModal({ espacio, open = true, onDelete, onClo
           <span className={styles.fileName} aria-live="polite">{imagen?.name ?? 'Ninguna imagen seleccionada'}</span>
         </div>
       </Field>
-      {preview ? <img className={styles.preview} src={preview} alt="Vista previa de la imagen seleccionada" /> :
+      {preview ? <ImagenAmpliable className={styles.previewImage} triggerClassName={styles.preview} src={preview} alt="Vista previa de la imagen seleccionada" /> :
         espacio?.foto_url && !quitarImagen ? <EspacioFoto className={styles.preview} nombre={espacio.nombre} fotoUrl={espacio.foto_url} /> : null}
       {(imagen || espacio?.foto_url) && <div className={styles.actions}>
         <Btn type="button" kind="ghost" size="sm" disabled={guardando} onClick={() => {

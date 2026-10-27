@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ImagenAmpliable from '../../../components/ui/ImagenAmpliable';
 import styles from './EspacioFoto.module.css';
 
 interface Props {
@@ -15,7 +16,7 @@ export default function EspacioFoto({ nombre, fotoUrl, className, eager = false 
   return (
     <div className={className}>
       {urlValida && urlFallida !== urlValida ? (
-        <img className={styles.foto} src={urlValida} alt={`Fotografía de ${nombre}`}
+        <ImagenAmpliable className={styles.foto} src={urlValida} alt={`Fotografía de ${nombre}`}
           loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setUrlFallida(urlValida)} />
       ) : (
         <div className={styles.placeholder}>
