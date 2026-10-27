@@ -45,11 +45,15 @@ it.each([1, 5])('el rol %s crea evento y reserva, cierra el modal y refresca el 
   expect(screen.getByRole('status')).toHaveTextContent('Puedes aprobar la reserva desde la pantalla Reservas.');
   expect(vi.mocked(apiClient.get).mock.calls.filter(([url]) => url === '/api/eventos')).toHaveLength(2);
 });
-it.each([2, 3, 4])('el rol %s conserva la consulta sin ofrecer creación', async rol_id => {
+it.each([2, 3, 4])('el rol %s recibe el acceso de creación correspondiente', async rol_id => {
   vi.mocked(useAuth).mockReturnValue(authValue({ id: 7, nombre: 'Consulta', correo: 'c@test.com', rol_id }));
   mostrar();
   await screen.findByText('No hay eventos registrados.');
-  expect(screen.queryByRole('button', { name: 'Nuevo evento' })).not.toBeInTheDocument();
+  if (rol_id === 4) {
+    expect(screen.queryByRole('button', { name: 'Nuevo evento' })).not.toBeInTheDocument();
+  } else {
+    expect(screen.getByRole('button', { name: 'Nuevo evento' })).toBeVisible();
+  }
 });
 it('cancelar conserva el listado sin enviar peticiones', async () => {
   mostrar();

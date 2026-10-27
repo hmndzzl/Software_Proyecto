@@ -19,6 +19,7 @@ export default function EventosPage() {
 
   const { tieneRol } = useAuth();
   const puedeEditar = tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]);
+  const puedeCrear = tieneRol([ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS]);
 
   const handleChanged = () => {
     setRefreshKey(k => k + 1);
@@ -32,7 +33,7 @@ export default function EventosPage() {
         kicker="Calendario Pastoral"
         title="Gestión de Eventos"
         subtitle="Calendario completo de eventos y actividades litúrgicas de la parroquia."
-        actions={puedeEditar ? <Btn onClick={() => { setEventoSeleccionado(null); setCreando(true); }}>Nuevo evento</Btn> : undefined}
+        actions={puedeCrear ? <Btn onClick={() => { setEventoSeleccionado(null); setCreando(true); }}>Nuevo evento</Btn> : undefined}
       />
 
       {creando && <Modal open title="Crear evento" width={720} closeDisabled={guardando}
