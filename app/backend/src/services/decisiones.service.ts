@@ -2,7 +2,7 @@ import type { PoolConnection } from 'mysql2/promise';
 import type { ResultSetHeader } from 'mysql2';
 
 export type TipoDecision = 'reserva' | 'cuenta';
-export type ResultadoDecision = 'aprobada' | 'rechazada' | 'pendiente' | 'cancelada';
+export type ResultadoDecision = 'aprobada' | 'rechazada' | 'pendiente' | 'cancelada' | 'baja';
 
 /** Se ejecuta en la misma transacción del cambio, nunca con autor o fecha del cliente. */
 export async function registrarDecision(conn: PoolConnection, tipo: TipoDecision, id: number, resultado: ResultadoDecision, actorId: number) {

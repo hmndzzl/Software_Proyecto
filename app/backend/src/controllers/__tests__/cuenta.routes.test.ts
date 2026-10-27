@@ -72,12 +72,12 @@ describe('RBAC en rutas de aprobación de cuentas', () => {
         .send({ rol_id: ROLES.COORDINADOR_GRUPOS });
 
       expect(res.status).toBe(200);
-      expect((pool.execute as any).mock.calls[0][1]).toEqual(['activa', ROLES.COORDINADOR_GRUPOS, 5, 'activa']);
+      expect((pool.execute as any).mock.calls[0][1]).toEqual(['activa', ROLES.COORDINADOR_GRUPOS, 5, 'pendiente', 'rechazada']);
     });
 
-    it('rechaza una cuenta (pendiente o activa)', async () => {
+    it('rechaza una cuenta pendiente', async () => {
       (pool.execute as any)
-        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' }]])
+        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'pendiente' }]])
         .mockResolvedValueOnce([{ affectedRows: 1 }])
         .mockResolvedValueOnce([{ insertId: 1 }])
         .mockResolvedValueOnce([{}]);
