@@ -1,0 +1,75 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
+}
+
+.nombre {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-carbon);
+  font-size: 14.5px;
+}
+
+.correo {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.resumen {
+  max-width: 320px;
+  color: var(--color-muted);
+}
+
+.motivoBadge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--color-cremaDk);
+  color: var(--color-tierra);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px 24px;
+  margin: 0 0 16px;
+}
+
+.campos dt {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.campos dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--color-tierra);
+  margin: 0 0 8px;
+}
+
+.cuerpo {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
