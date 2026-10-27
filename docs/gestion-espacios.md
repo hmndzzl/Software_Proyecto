@@ -62,7 +62,7 @@ Desde la raíz del repositorio:
 npm test --prefix app/backend
 npm test --prefix app/frontend
 npm run test:integration --prefix app/backend -- tests/integration/espacios.integration.test.ts
-npm run test:regression --prefix app/frontend -- espacios.spec.ts
+npm run test:regression --prefix app/frontend -- espacios.spec.ts espacios-diseno.spec.ts responsive.spec.ts
 npm run build --prefix app/backend
 npm run build --prefix app/frontend
 npm run lint --prefix app/frontend
@@ -73,3 +73,16 @@ Las pruebas D2 de MariaDB usan un contenedor desechable con datos propios; no al
 Para revisar manualmente: entrar como Admin/Sacerdote, abrir **Espacios**, crear con foto y capacidad, editar y reemplazar/quitar la imagen; probar cancelar una eliminación y después confirmarla. En un espacio con reservas, verificar la lista de afectadas antes de cancelar todas. Confirmar que el historial se conserva y que el coordinador no ve controles de gestión. Reiniciar el backend y comprobar que una foto cargada sigue disponible.
 
 En esta entrega también se construyó la imagen de producción y se comprobó que el usuario `node` puede guardar una foto y recuperarla desde otro contenedor con el mismo volumen, conservando las fotos iniciales.
+
+
+## Disponibilidad y referencia temporal
+
+`GET /api/espacios` sin filtros calcula `disponible` para el instante actual de Guatemala: una reserva confirmada bloquea desde su inicio inclusive hasta su fin exclusivo, aunque todavía no tenga check-in. `en_uso` exige además un check-in. Las reservas pendientes/canceladas y las de otro día no bloquean el instante actual. Con fecha y horario completos se consulta el solapamiento en ese intervalo.
+
+El listado incluye `consultado_en` (ISO UTC generado por el servidor en la misma consulta); la interfaz muestra esa referencia en hora de Guatemala encima de las tarjetas. Al filtrar se muestra la fecha y el horario seleccionados. Los filtros incompletos o inválidos muestran **Sin consultar**, sin asumir disponibilidad.
+
+La vista actualiza cada minuto mientras está visible, al volver a la pestaña y al pulsar **Actualizar**. La actualización en segundo plano conserva el listado y las ediciones abiertas. Si falla, mantiene los datos con la indicación **Última consulta** y permite reintentar.
+
+El diseño institucional cálido del listado usa fondo marfil, nombre burdeos con acento dorado y acciones discretas. Conserva fotografía, nombre completo, estado, capacidad y acciones visibles. Las fotos tienen relación 16:10 y las tarjetas usan una cuadrícula adaptable con mínimo de 290 px cuando hay espacio; en móvil se ajustan al ancho disponible. El detalle separa gestión y estado mediante `--gap-sm`, sin márgenes específicos para una pantalla.
+
+El contenedor principal conserva la altura natural del contenido para que el padding inferior del tema quede después de la última fila y sea alcanzable al desplazar. Las pruebas de diseño verifican ese margen y la separación entre edición y estado en el detalle a 375 × 844 y 1440 × 1000. También comprueban contraste de tarjetas y barra temporal en ambos temas, navegación por teclado y movimiento reducido. Las capturas se generan en `app/frontend/test-results/`; la revisión de esta entrega dejó el registro local `diseno-espacios-evidencia/evidencia.json` junto con ocho capturas.
