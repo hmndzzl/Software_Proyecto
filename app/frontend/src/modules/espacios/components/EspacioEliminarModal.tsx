@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import apiClient from '../../../api/client';
 import Modal from '../../../components/ui/Modal';
 import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
@@ -24,6 +24,7 @@ const POR_PAGINA = 5;
 
 export default function EspacioEliminarModal({ espacio, onClose, onDeleted }: Props) {
   const lock = useRef(false);
+  const descripcionId = useId();
   const [reservas, setReservas] = useState<ReservaImpacto[]>([]);
   const [pagina, setPagina] = useState(1);
   const [intento, setIntento] = useState(0);
@@ -62,9 +63,9 @@ export default function EspacioEliminarModal({ espacio, onClose, onDeleted }: Pr
   };
 
   const paginas = Math.max(1, Math.ceil(reservas.length / POR_PAGINA));
-  return <Modal open title="Eliminar espacio" onClose={onClose} closeDisabled={eliminando} width={720} initialFocusSelector="[data-confirm-cancel]">
+  return <Modal open title="Eliminar espacio" onClose={onClose} closeDisabled={eliminando} width={720} describedBy={listo ? descripcionId : undefined} initialFocusSelector="[data-confirm-cancel]">
     {cargando && <LoadingState label="Consultando reservas del espacio…" />}
-    {listo && <ConfirmDialogContent busy={eliminando} busyLabel="Eliminando…" onConfirm={eliminar} onCancel={onClose}
+    {listo && <ConfirmDialogContent descriptionId={descripcionId} busy={eliminando} busyLabel="Eliminando…" onConfirm={eliminar} onCancel={onClose}
       confirmLabel={reservas.length ? 'Cancelar reservas y eliminar espacio' : 'Eliminar espacio'}
       description={<>
         <p>Se eliminará permanentemente el espacio <strong>{espacio.nombre}</strong> y su fotografía cargada.</p>
