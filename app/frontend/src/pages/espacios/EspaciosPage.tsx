@@ -24,7 +24,13 @@ export default function EspaciosPage() {
   const [retryTick, setRetryTick] = useState(0);
   const navigate = useNavigate();
 
-  const cargarEspacios = () => setRetryTick(t => t + 1);
+  const cargarEspacios = () => {
+    // Un formulario guardado también debe refrescar el listado si los filtros estaban a medio completar.
+    if ((fecha || horaInicio || horaFin) && !(fecha && horaInicio && horaFin && horaInicio < horaFin)) {
+      setFecha(''); setHoraInicio(''); setHoraFin('');
+    }
+    setRetryTick(t => t + 1);
+  };
 
   useEffect(() => {
     const filtros = { fecha, hora_inicio: horaInicio, hora_fin: horaFin };

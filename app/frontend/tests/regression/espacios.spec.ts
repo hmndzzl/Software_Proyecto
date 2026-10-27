@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function preparar(page: Page, rol = 5) {
-  const estado = { nombre: 'Salón parroquial', eliminado: false, peticiones: [] as string[] };
+  const estado = { nombre: 'Salón parroquial', eliminado: false, creado: false, peticiones: [] as string[] };
   await page.addInitScript(rol_id => {
     localStorage.setItem('token', 'jwt-de-regresion');
     localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Cuenta de prueba', correo: 'prueba@test.com', rol_id }));
@@ -11,13 +11,14 @@ async function preparar(page: Page, rol = 5) {
     const ruta = new URL(req.url()).pathname;
     if (req.method() !== 'GET') {
       estado.peticiones.push(`${req.method()} ${ruta}`);
+      if (req.method() === 'POST') estado.creado = true;
       if (req.method() === 'DELETE') estado.eliminado = true;
       if (req.method() === 'PUT') estado.nombre = 'Salón editado';
       await route.fulfill({ json: {} }); return;
     }
     const espacio = { id: 7, nombre: estado.nombre, capacidad: 40 };
     const reservas = Array.from({ length: 100 }, (_, i) => ({ id: i + 1, titulo: `Actividad ${i + 1}`, solicitante_nombre: `Solicitante ${i + 1}`, fecha: '2099-11-01', hora_inicio: '10:00', hora_fin: '11:00', estado_reserva_id: 2 }));
-    await route.fulfill({ json: ruta === '/api/espacios' ? estado.eliminado ? [] : [espacio]
+    await route.fulfill({ json: ruta === '/api/espacios' ? estado.eliminado ? [] : [espacio, ...(estado.creado ? [{ id: 8, nombre: 'Nuevo salón', capacidad: 20 }] : [])]
       : ruta === '/api/espacios/7' ? espacio : ruta.endsWith('/impacto-eliminacion') ? { reservas } : [] });
   });
   return estado;
@@ -70,4 +71,19 @@ test('los coordinadores consultan espacios sin controles de gestión', async ({ 
   await expect(page.getByRole('button', { name: 'Crear espacio', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Editar espacio', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Eliminar espacio', exact: true })).toHaveCount(0);
+});
+
+
+test('crear refresca el listado aunque la disponibilidad esté a medio completar', async ({ page }) => {
+  const estado = await preparar(page);
+  await page.goto('/espacios');
+  await page.getByLabel('Fecha', { exact: true }).fill('2099-11-01');
+  await expect(page.getByText('Completa fecha, hora inicio y hora fin para consultar disponibilidad.')).toBeVisible();
+  await page.getByRole('button', { name: 'Crear espacio', exact: true }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Crear espacio', exact: true });
+  await dialogo.getByLabel('Nombre del espacio').fill('Nuevo salón');
+  await dialogo.getByRole('button', { name: 'Crear espacio', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Nuevo salón', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Fecha', { exact: true })).toHaveValue('');
+  expect(estado.peticiones).toEqual(['POST /api/espacios']);
 });
