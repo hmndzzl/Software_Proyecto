@@ -69,3 +69,15 @@ it('incluye ausencias reportadas y alerta en asignación individual, múltiple y
   expect(agregada.body.alertas[0].ausencia_reportada).toBe(true);
   expect((await crearTarea('2099-12-16', '00:00', '01:00').expect(201)).body.alertas[0].ministro_no_disponible).toBe(false);
 });
+
+it('el directorio refleja los periodos y ausencias de hoy conservando el interruptor general', async () => {
+  const [fechas] = await entorno.pool.query<any[]>("SELECT DATE_FORMAT(UTC_TIMESTAMP() - INTERVAL 6 HOUR, '%Y-%m-%d') AS hoy, DATE_FORMAT(UTC_TIMESTAMP() - INTERVAL 6 HOUR + INTERVAL 1 DAY, '%Y-%m-%d') AS manana");
+  const { hoy, manana } = fechas[0];
+  const directorio = async (token = admin) => (await request(entorno.app).get('/api/personas').auth(token, { type: 'bearer' }).expect(200)).body.find((p: { id: number }) => p.id === 9);
+  const creado = await request(entorno.app).post(url).auth(admin, { type: 'bearer' }).send({ desde: hoy + 'T00:00', hasta: manana + 'T00:00' }).expect(201);
+  for (const token of [admin, coord]) expect(await directorio(token)).toMatchObject({ disponible: 1, periodo_activo: 1, ausencia_activa: 0 });
+  await request(entorno.app).delete(url + '/' + creado.body.id).auth(admin, { type: 'bearer' }).expect(204);
+  expect(await directorio()).toMatchObject({ disponible: 1, periodo_activo: 0 });
+  await request(entorno.app).post('/api/ausencias').auth(ministro, { type: 'bearer' }).send({ ministro_id: 9, fecha_inicio: hoy, fecha_fin: hoy, titulo: 'Ausencia de hoy', justificacion: 'Prueba aislada' }).expect(201);
+  expect(await directorio()).toMatchObject({ disponible: 1, periodo_activo: 0, ausencia_activa: 1 });
+});

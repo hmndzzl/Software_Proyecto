@@ -19,3 +19,11 @@ export function alertaDisponibilidad(p: RowDataPacket | { disponible?: boolean |
     ausencia_reportada: Boolean(p.ausencia_reportada),
   };
 }
+
+// El directorio muestra el estado actual; las tareas usan su propio horario.
+export const DISPONIBILIDAD_ACTUAL_SQL = `
+  EXISTS (SELECT 1 FROM disponibilidad_periodo d WHERE d.ministro_id = p.id
+    AND d.desde <= UTC_TIMESTAMP() - INTERVAL 6 HOUR AND d.hasta > UTC_TIMESTAMP() - INTERVAL 6 HOUR) AS periodo_activo,
+  EXISTS (SELECT 1 FROM periodo_ausencia a WHERE a.ministro_id = p.id
+    AND a.fecha_inicio <= DATE(UTC_TIMESTAMP() - INTERVAL 6 HOUR)
+    AND a.fecha_fin >= DATE(UTC_TIMESTAMP() - INTERVAL 6 HOUR)) AS ausencia_activa`;

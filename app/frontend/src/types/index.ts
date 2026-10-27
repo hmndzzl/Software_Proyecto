@@ -131,6 +131,8 @@ export interface Tarea {
 }
 
 export interface Ministro {
+  periodo_activo?: boolean | number;
+  ausencia_activa?: boolean | number;
   telefono?: string | null;
   id: number;
   nombre: string;

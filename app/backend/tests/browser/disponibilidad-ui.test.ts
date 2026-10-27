@@ -77,9 +77,21 @@ it('guarda y recarga periodos desde el directorio, advierte al asignar y permite
     expect(creada.status()).toBe(201);
     expect((await creada.json()).alertas[0].periodo_no_disponible).toBe(true);
     await browserExpect(page.getByRole('status').filter({ hasText: 'Tarea creada y asignada' })).toContainText('Tiene un periodo no disponible');
+    await page.getByRole('button', { name: 'Cerrar aviso' }).click();
+    await browserExpect(page.getByRole('alert')).toContainText('Tiene un periodo no disponible');
     await page.goto(`${baseUrl}/ministros`);
     await fila.getByRole('button', { name: 'Periodos no disponibles' }).click();
     await page.getByRole('button', { name: /Quitar periodo del/ }).click();
     await browserExpect(page.getByText('No hay periodos registrados.')).toBeVisible();
+    const hoy = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
+    const manana = new Date(Date.now() - 6 * 3600_000 + 86400_000).toISOString().slice(0, 10);
+    await page.getByLabel('No disponible desde').fill(hoy + 'T00:00');
+    await page.getByLabel('Disponible nuevamente el').fill(manana + 'T00:00');
+    await page.getByRole('button', { name: 'Agregar periodo' }).click();
+    await browserExpect(page.getByRole('button', { name: /Quitar periodo del/ })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await browserExpect(fila.getByText('No disponible', { exact: true })).toBeVisible();
+    await browserExpect(fila.getByText('Disponible', { exact: true })).toHaveCount(0);
+
   } finally { await browser.close(); }
 }, 60_000);

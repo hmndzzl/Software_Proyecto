@@ -34,12 +34,14 @@ function getInitials(nombre: string): string {
 
 type SortKey = 'nombre' | 'correo' | 'telefono' | 'rol' | 'disponibilidad';
 
+const disponibleAhora = (m: Ministro) => m.disponible && !m.periodo_activo && !m.ausencia_activa;
+
 const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
   nombre: (m) => m.nombre.toLowerCase(),
   correo: (m) => m.correo.toLowerCase(),
   telefono: m => m.telefono ?? '',
   rol: (m) => ROL_LABEL[m.rol_id ?? 4] ?? '',
-  disponibilidad: (m) => (m.disponible ? 1 : 0),
+  disponibilidad: (m) => (disponibleAhora(m) ? 1 : 0),
 };
 
 export default function MinistrosPage() {
@@ -54,7 +56,7 @@ export default function MinistrosPage() {
   const filtros = useTableFilters(ministros, {
     search: m => [m.nombre, m.correo, m.telefono, ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'],
     selects: [
-      { key: 'disponibilidad', label: 'Disponibilidad', value: m => m.disponible ? 'Disponible' : 'No disponible' },
+      { key: 'disponibilidad', label: 'Disponibilidad', value: m => disponibleAhora(m) ? 'Disponible' : 'No disponible' },
       { key: 'rol', label: 'Rol', value: m => ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro' },
     ],
   });
@@ -146,9 +148,10 @@ export default function MinistrosPage() {
                     </td>
                     <td>
                       <div className={styles.dispoCell}>
-                        <Badge kind={m.disponible ? 'confirmada' : 'bad'}>
-                          {m.disponible ? 'Disponible' : 'No disponible'}
+                        <Badge kind={disponibleAhora(m) ? 'confirmada' : 'bad'}>
+                          {disponibleAhora(m) ? 'Disponible' : 'No disponible'}
                         </Badge>
+                        {Boolean(m.periodo_activo || m.ausencia_activa) && <span>Ausencia o periodo activo</span>}
                         {puedeGestionar && (<>
                           <Btn kind="primary" size="sm" onClick={() => setMinistroPeriodos(m)}>Periodos no disponibles</Btn>
                           <Btn
@@ -169,7 +172,7 @@ export default function MinistrosPage() {
           </div>
         )}
       </Card>
-      {ministroPeriodos && <DisponibilidadPeriodos ministro={ministroPeriodos} onClose={() => setMinistroPeriodos(null)} />}
+      {ministroPeriodos && <DisponibilidadPeriodos ministro={ministroPeriodos} onClose={() => { setMinistroPeriodos(null); cargarMinistros(); }} />}
     </div>
   );
 }

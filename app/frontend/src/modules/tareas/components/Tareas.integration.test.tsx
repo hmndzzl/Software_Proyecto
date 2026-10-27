@@ -352,4 +352,7 @@ it('muestra la advertencia definitiva de periodo y tope devuelta por el servidor
   expect(aviso).toHaveTextContent('Tiene un periodo no disponible que coincide con el horario de la tarea.');
   expect(aviso).toHaveTextContent('supera el tope mensual (9/8)');
   expect(aviso).toHaveTextContent('Ministro: Está marcado como no disponible.');
+  expect(screen.getByRole('alert')).toHaveTextContent('Asignación guardada con advertencias');
+  await userEvent.click(screen.getByRole('button', { name: /Cerrar aviso/ }));
+  expect(screen.getByRole('alert')).toHaveTextContent('Tiene un periodo no disponible');
 });

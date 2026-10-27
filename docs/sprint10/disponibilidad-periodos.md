@@ -30,8 +30,8 @@ Aplicar `app/database/migrations/20261026_disponibilidad_periodo.sql` en cada ba
 
 - Migración aplicada en la base local, sin borrar volúmenes ni datos. La prueba aislada también comprueba que ejecutarla dos veces conserva los periodos.
 - Backend: compilación y 820 pruebas unitarias aprobadas.
-- Frontend: compilación, lint y 741 pruebas aprobadas; cobertura de ramas 95,03%, cumpliendo el mínimo de 95%.
-- Integración de esta tarea: 8 pruebas con MariaDB aprobadas (permisos, persistencia, eliminación, límites de solapamiento y ausencias existentes).
+- Frontend: compilación, lint y 742 pruebas aprobadas; cobertura de ramas 95,03%, cumpliendo el mínimo de 95%.
+- Integración de esta tarea: 9 pruebas con MariaDB aprobadas (permisos, persistencia, eliminación, límites de solapamiento y ausencias existentes).
 - Navegador + API + MariaDB: creación desde el directorio, recarga, advertencia antes/después de asignar y eliminación aprobadas. Diseño revisado a 1440 y 390 píxeles; el botón móvil no recorta su texto.
 - API local: consulta autorizada 200 y sin sesión 401; frontend disponible en http://localhost:5173. Backend y frontend locales actualizados.
 - Integración general: 37/38 pruebas aprobadas. El fallo existente de historial de cuentas/reservas compara la hora de Windows con la de MariaDB con tolerancia de 10 segundos; se verificó un desfase de aproximadamente 12 segundos del reloj de Docker. No se modificó esa prueba ni se relajó su validación.
@@ -43,3 +43,9 @@ Importar `docs/sprint10/disponibilidad-periodos.postman.json`, configurar `token
 ## Publicación
 
 Rama local, sin push ni PR. Aplicar la migración también en las bases de los demás entornos antes de actualizar el backend.
+
+## Revisión de visibilidad de alertas
+
+El estado del directorio considera también los periodos y ausencias activos en horario de Guatemala, sin modificar el interruptor general. Al cerrar el editor se actualiza el listado. Un periodo futuro no cambia el estado actual, pero sí advierte para tareas de esas fechas.
+
+Las advertencias posteriores a crear, agregar ministros o reasignar se muestran en amarillo y quedan además visibles en la pantalla; ya no dependen únicamente del aviso temporal. La asignación sigue siendo permitida.

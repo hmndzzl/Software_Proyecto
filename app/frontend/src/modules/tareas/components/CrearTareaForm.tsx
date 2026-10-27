@@ -30,6 +30,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
   const [intento, setIntento] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const toast = useToast();
+  const [advertenciaGuardada, setAdvertenciaGuardada] = useState('');
   const [periodos, setPeriodos] = useState<Record<number, PeriodoDisponibilidad[]>>({});
   const [errorPeriodos, setErrorPeriodos] = useState(false);
   const [consultandoPeriodos, setConsultandoPeriodos] = useState(false);
@@ -104,7 +105,9 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
         return [a.ministro_no_disponible && `${nombre}: ${motivoIndisponibilidad(a)}`,
           a.tope_servicios_superado && `${nombre}: supera el tope mensual (${a.servicios_en_el_mes}/${a.tope_servicios_mes}).`].filter(Boolean);
       });
-      toast.success(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', advertencias.length ? advertencias.join(' ') : 'Las asignaciones se guardaron correctamente.');
+      setAdvertenciaGuardada(advertencias.join(' '));
+      const notificar = advertencias.length ? toast.warning : toast.success;
+      notificar(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', advertencias.length ? advertencias.join(' ') : 'Las asignaciones se guardaron correctamente.');
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
       setSelectorRevision(value => value + 1);
@@ -120,6 +123,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
+      {advertenciaGuardada && <div role="alert" className={styles.modalWarning}><strong>Asignación guardada con advertencias</strong><p>{advertenciaGuardada}</p></div>}
       <fieldset className={local.fields} disabled={guardando}>
         <div className={styles.field}>
           <label htmlFor="tarea" className={styles.label}>Tarea</label>

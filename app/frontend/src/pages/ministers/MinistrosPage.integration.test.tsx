@@ -101,3 +101,16 @@ it('abre y cierra los periodos del ministro seleccionado desde el directorio', a
   fireEvent.keyDown(document, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
+
+it('muestra no disponible si hay un periodo o una ausencia activa aunque el interruptor siga encendido', async () => {
+  vi.mocked(useAuth).mockReturnValue(authValue({ id: 20, nombre: 'Coordinador', correo: 'coord@test.com', rol_id: ROLES.COORDINADOR_MINISTROS }));
+  vi.mocked(apiClient.get).mockResolvedValue({ data: [
+    { ...ministros[0], periodo_activo: 1 }, { ...ministros[2], ausencia_activa: 1 },
+  ] });
+  render(<MinistrosPage />, { wrapper });
+  const ana = (await screen.findByText('Ana María López')).closest('tr')!;
+  expect(within(ana).getByText('No disponible')).toBeInTheDocument();
+  expect(within(ana).queryByText('Disponible')).not.toBeInTheDocument();
+  const carla = screen.getByText('Carla').closest('tr')!;
+  expect(within(carla).getByText('No disponible')).toBeInTheDocument();
+});
