@@ -16,7 +16,9 @@ La parroquia aún no identificó qué foto corresponde a cada espacio. Por indic
 | Patio Central | `Salon 6.jpg` | `salon-06-v1.webp` |
 | Capilla Lateral | `Salon 7.jpg` | `salon-07-v1.webp` |
 
-Si alguna asignación cambia, generar otro archivo con nombre versionado (`-v2.webp`), actualizar `foto_url` del espacio afectado y desplegar frontend/backend según corresponda. No sobrescribir un archivo `-v1.webp`: se entrega con caché `immutable` durante 30 días.
+Las fotografías de espacios ahora también se pueden cargar o reemplazar desde la interfaz por Admin/Sacerdote; ver [gestión de espacios](gestion-espacios.md). Las nuevas cargas se publican en `/uploads/espacios/subidas/` y se conservan en un volumen Docker. Las fotos originales de esta fase siguen incluidas en la imagen del backend.
+
+Para actualizar manualmente un recurso incluido en el despliegue, generar otro archivo con nombre versionado (`-v2.webp`), actualizar `foto_url` del espacio afectado y desplegar frontend/backend según corresponda. No sobrescribir un archivo `-v1.webp`: se entrega con caché `immutable` durante 30 días.
 
 ## Fotografías de la landing
 
