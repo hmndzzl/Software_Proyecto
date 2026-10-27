@@ -8,6 +8,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  cursor: pointer;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 

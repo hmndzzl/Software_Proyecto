@@ -35,7 +35,7 @@ export default function EspacioCard({ espacio, onClick, onChanged }: EspacioCard
   const enUso = espacio.en_uso === true || espacio.en_uso === 1;
 
   return (
-    <article className={styles.card} aria-label={espacio.nombre}>
+    <article className={styles.card} aria-label={espacio.nombre} onClick={() => onClick(espacio.id)}>
 
       <EspacioFoto className={styles.photoSlot} nombre={espacio.nombre} fotoUrl={espacio.foto_url} />
 
@@ -62,7 +62,7 @@ export default function EspacioCard({ espacio, onClick, onChanged }: EspacioCard
       </div>
 
       <div className={styles.footer}>
-        <button type="button" className={styles.detalle} onClick={() => onClick(espacio.id)}>
+        <button type="button" className={styles.detalle} onClick={event => { event.stopPropagation(); onClick(espacio.id); }}>
           Ver detalle
           <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M13 6l6 6-6 6" />

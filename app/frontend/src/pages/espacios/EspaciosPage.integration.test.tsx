@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -153,6 +153,20 @@ describe('integración de consulta de espacios', () => {
     expect(apiClient.get).toHaveBeenCalledTimes(2);
     await act(async () => { window.dispatchEvent(new Event('focus')); });
     expect(apiClient.get).toHaveBeenCalledTimes(3);
+  });
+
+  it.each(['nombre', 'capacidad'])('abre el detalle al pulsar el %s de una tarjeta', async zona => {
+    mostrar(); await screen.findByText('Salón');
+    await userEvent.click(zona === 'nombre' ? screen.getByRole('heading', { name: 'Salón' }) : screen.getByText('80 personas'));
+    expect(await screen.findByText('Destino /espacios/1')).toBeInTheDocument();
+  });
+
+  it('editar dentro de una tarjeta abre el formulario sin navegar al detalle', async () => {
+    saveSession('token-prueba', { id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: 5 });
+    mostrar(); await screen.findByText('Salón');
+    await userEvent.click(within(screen.getByRole('article', { name: 'Salón' })).getByRole('button', { name: 'Editar espacio' }));
+    expect(screen.getByRole('dialog', { name: 'Editar espacio' })).toBeInTheDocument();
+    expect(screen.queryByText('Destino /espacios/1')).not.toBeInTheDocument();
   });
 
 });
