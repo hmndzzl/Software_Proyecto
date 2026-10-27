@@ -17,6 +17,7 @@ export interface Espacio {
   nombre: string;
   capacidad: number | null;
   foto_url?: string | null;
+  consultado_en?: string;
   disponible?: boolean | 0 | 1;
   en_uso?: boolean | 0 | 1;
   reservas_checkin_disponible?: ReservaCheckinDisponible[];
@@ -29,28 +30,25 @@ interface EspacioCardProps {
 }
 
 export default function EspacioCard({ espacio, onClick, onChanged }: EspacioCardProps) {
+  const consultado = espacio.disponible === true || espacio.disponible === false || espacio.disponible === 0 || espacio.disponible === 1;
   const estaOcupado = espacio.disponible === false || espacio.disponible === 0;
   const enUso = espacio.en_uso === true || espacio.en_uso === 1;
 
   return (
-    <div className={styles.card} onClick={() => onClick(espacio.id)}>
+    <article className={styles.card} aria-label={espacio.nombre}>
 
       <EspacioFoto className={styles.photoSlot} nombre={espacio.nombre} fotoUrl={espacio.foto_url} />
 
       <div className={styles.body}>
-        <p className={styles.tipo}>Espacio parroquial</p>
         <h3 className={styles.nombre}>{espacio.nombre}</h3>
 
-        <div className={styles.badgeWrap}>
-          <Badge kind={estaOcupado ? 'bad' : 'ok'}>
-            {estaOcupado ? 'Ocupado' : 'Disponible'}
+        <div className={styles.metadata}>
+          <Badge kind={consultado ? estaOcupado ? 'bad' : 'ok' : 'neutral'}>
+            {consultado ? estaOcupado ? 'Ocupado' : 'Disponible' : 'Sin consultar'}
           </Badge>
-          {enUso && <Badge kind="bad">En uso ahora</Badge>}
-        </div>
-
-        {espacio.capacidad != null && (
-          <div className={styles.capacidad}>
-            <span className={styles.capacidadIcon}>
+          {enUso && consultado && <Badge kind="bad">En uso ahora</Badge>}
+          <span className={styles.capacidad}>
+            <span className={styles.capacidadIcon} aria-hidden="true">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
@@ -58,15 +56,20 @@ export default function EspacioCard({ espacio, onClick, onChanged }: EspacioCard
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
             </span>
-            {espacio.capacidad} personas
-          </div>
-        )}
+            {espacio.capacidad != null ? `${espacio.capacidad} personas` : 'Capacidad sin definir'}
+          </span>
+        </div>
       </div>
 
-      <div className={styles.management}><EspacioGestion espacio={espacio} onChanged={onChanged} /></div>
-      <button className={styles.btnDetalle} onClick={e => { e.stopPropagation(); onClick(espacio.id); }}>
-        Ver Detalle
-      </button>
-    </div>
+      <div className={styles.footer}>
+        <button type="button" className={styles.detalle} onClick={() => onClick(espacio.id)}>
+          Ver detalle
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+        <EspacioGestion espacio={espacio} onChanged={onChanged} compact />
+      </div>
+    </article>
   );
 }

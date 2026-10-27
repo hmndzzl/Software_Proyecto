@@ -1,107 +1,45 @@
 .card {
-  background: var(--color-blanco);
+  --espacio-tinta: color-mix(in srgb, var(--color-rojo) 75%, var(--color-carbon));
+  background: color-mix(in srgb, var(--color-crema) 40%, var(--color-blanco));
   border-radius: var(--radius-card);
   border: 1px solid var(--color-line);
   box-shadow: var(--shadow-card);
   overflow: hidden;
-  cursor: pointer;
-  transition: box-shadow var(--transition), transform var(--transition);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.card:hover {
-  box-shadow: 0 8px 24px rgba(60,40,20,.1);
-  transform: translateY(-3px);
+.card:hover, .card:focus-within {
+  border-color: var(--color-tierra);
+  box-shadow: 0 4px 18px rgba(60, 40, 20, .07);
 }
 
 .photoSlot {
-  height: 150px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--color-cremaDk) 0 12px,
-    var(--color-crema) 12px 24px
-  );
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--color-cremaDk);
   border-bottom: 1px solid var(--color-line);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: .08em;
-  color: var(--color-muted);
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-ink);
   flex-shrink: 0;
 }
 
-.body {
-  padding: 16px 18px 18px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.tipo {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .2em;
-  color: var(--color-tierra);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.nombre {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  color: var(--color-rojo);
-  margin: 0 0 8px 0;
-  line-height: 1.2;
-}
-
-.badgeWrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.capacidad {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--color-carbon);
-  margin-top: auto;
-  padding-top: 10px;
-}
-
+.body { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.nombre { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--espacio-tinta); margin: 0; position: relative; padding-inline-start: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+.nombre::before { content: ''; position: absolute; inset-inline-start: 0; top: .2em; width: 3px; height: 1em; border-radius: 2px; background: var(--color-oro); }
+.metadata { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.capacidad { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body); font-size: 13px; color: var(--color-ink); }
 .capacidadIcon { color: var(--color-tierra); display: inline-flex; }
+.footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px; border-top: 1px solid var(--color-lineSoft); }
+.footer button { min-height: 44px; }
+.detalle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: 0; border-radius: var(--radius-btn); background: transparent; color: var(--espacio-tinta); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; }
+.detalle:hover { text-decoration: underline; text-underline-offset: 4px; }
+.detalle:focus-visible { outline: 2px solid var(--espacio-tinta); outline-offset: 4px; }
 
-.btnDetalle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  margin: 12px 18px 16px;
-  border-radius: var(--radius-btn);
-  border: none;
-  background: var(--color-oro);
-  color: #3d2a05;
-  font-family: var(--font-display);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: var(--shadow-btn-gold);
-  transition: background-color var(--transition);
-}
-
-.btnDetalle:hover { background: #d99e24; }
-
-.management { padding: 0 18px; }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }

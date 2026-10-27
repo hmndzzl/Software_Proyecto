@@ -23,3 +23,5 @@
   .saveActions button { min-width: 0; padding-inline: 10px; white-space: normal; line-height: 1.2; }
   .deleteAction { width: 100%; }
 }
+
+.compactAction { color: var(--color-muted); border-color: transparent; padding-inline: 8px; }

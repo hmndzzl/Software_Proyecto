@@ -33,7 +33,7 @@ describe('integración de consulta de espacios', () => {
     expect(screen.getByText('80 personas')).toBeInTheDocument();
     expect(screen.getAllByText('Ocupado')).toHaveLength(2);
     expect(screen.getByText('En uso ahora')).toBeInTheDocument();
-    await userEvent.click(screen.getAllByRole('button', { name: 'Ver Detalle' })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Ver detalle' })[0]);
     expect(await screen.findByText('Destino /espacios/1')).toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe('integración de consulta de espacios', () => {
     mostrar();
     const foto = await screen.findByRole('img', { name: 'Fotografía de Salón' });
     fireEvent.error(foto);
-    expect(screen.getByText('[ foto · salón ]')).toBeInTheDocument();
+    expect(screen.getAllByText('Fotografía no disponible')[0]).toBeInTheDocument();
   });
 
   it('exige los tres filtros y valida el orden horario', async () => {
