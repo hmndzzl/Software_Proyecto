@@ -1,3 +1,4 @@
+import { motivoIndisponibilidad } from '../../../api/disponibilidad';
 import { useId, useState, useEffect, useRef } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
@@ -26,6 +27,8 @@ type Vista = 'detalle' | 'listado' | 'editar' | 'ministros' | 'eliminar' | 'quit
 interface AlertaAsignacion {
   persona_id?: number;
   ministro_no_disponible?: boolean;
+  periodo_no_disponible?: boolean;
+  ausencia_reportada?: boolean;
   tope_servicios_superado?: boolean;
   servicios_en_el_mes?: number;
   tope_servicios_mes?: number;
@@ -144,7 +147,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
       const res = await apiClient.post<{ alertas?: AlertaAsignacion[] }>('/api/tareas/asignar', { tarea_id: activa.id, persona_ids: nuevos });
       const avisos = (res.data.alertas ?? []).flatMap(alerta => {
         const nombre = ministros.find(m => m.id === alerta.persona_id)?.nombre ?? 'Un ministro';
-        return [alerta.ministro_no_disponible && `${nombre} está marcado como no disponible.`,
+        return [alerta.ministro_no_disponible && `${nombre} ${motivoIndisponibilidad(alerta).replace(/^./, letra => letra.toLowerCase())}`,
           alerta.tope_servicios_superado && `${nombre} tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes}).`].filter(Boolean);
       });
       setNuevos([]); toast.success('Ministros agregados', avisos.length ? avisos.join(' ') : 'Las asignaciones se guardaron correctamente.'); refrescar();
@@ -159,7 +162,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
         tarea_id: activa.id, persona_actual_id: personaActualId, persona_nueva_id: personaNuevaId,
       });
       const alerta = res.data.alerta;
-      const avisos = [alerta?.ministro_no_disponible && 'Está marcado como no disponible.',
+      const avisos = [alerta?.ministro_no_disponible && motivoIndisponibilidad(alerta),
         alerta?.tope_servicios_superado && `Tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes}).`].filter(Boolean);
       toast.success('Responsable actualizado', avisos.length ? avisos.join(' ') : 'El cambio se guardó correctamente.');
       setReemplazando(null); refrescar();

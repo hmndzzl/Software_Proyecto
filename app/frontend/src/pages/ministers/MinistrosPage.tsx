@@ -1,3 +1,4 @@
+import DisponibilidadPeriodos from './DisponibilidadPeriodos';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
@@ -43,6 +44,7 @@ const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
 
 export default function MinistrosPage() {
   const navigate = useNavigate();
+  const [ministroPeriodos, setMinistroPeriodos] = useState<Ministro | null>(null);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -147,7 +149,8 @@ export default function MinistrosPage() {
                         <Badge kind={m.disponible ? 'confirmada' : 'bad'}>
                           {m.disponible ? 'Disponible' : 'No disponible'}
                         </Badge>
-                        {puedeGestionar && (
+                        {puedeGestionar && (<>
+                          <Btn kind="primary" size="sm" onClick={() => setMinistroPeriodos(m)}>Periodos no disponibles</Btn>
                           <Btn
                             kind="ghost"
                             size="sm"
@@ -155,7 +158,7 @@ export default function MinistrosPage() {
                             onClick={() => toggleDisponibilidad(m)}
                           >
                             {m.disponible ? 'Marcar no disponible' : 'Marcar disponible'}
-                          </Btn>
+                          </Btn></>
                         )}
                       </div>
                     </td>
@@ -166,6 +169,7 @@ export default function MinistrosPage() {
           </div>
         )}
       </Card>
+      {ministroPeriodos && <DisponibilidadPeriodos ministro={ministroPeriodos} onClose={() => setMinistroPeriodos(null)} />}
     </div>
   );
 }

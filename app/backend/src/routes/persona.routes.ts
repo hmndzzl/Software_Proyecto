@@ -1,3 +1,4 @@
+import { gestionarPeriodo } from '../controllers/disponibilidadPeriodo.controller';
 import { Router } from 'express';
 import {
   getMinistros,
@@ -32,5 +33,9 @@ router.get('/:id', (req, res, next) => {
 router.put('/:id', editarPerfil);
 // requireRole(COORDINADOR_MINISTROS) también permite Sacerdote/Admin por jerarquía (ver auth.middleware)
 router.patch('/:id/disponibilidad', requireRole(ROLES.COORDINADOR_MINISTROS), actualizarDisponibilidad);
+
+router.get('/:id/disponibilidad/periodos', requireRole(ROLES.COORDINADOR_MINISTROS), gestionarPeriodo);
+router.post('/:id/disponibilidad/periodos', requireRole(ROLES.COORDINADOR_MINISTROS), gestionarPeriodo);
+router.delete('/:id/disponibilidad/periodos/:periodoId', requireRole(ROLES.COORDINADOR_MINISTROS), gestionarPeriodo);
 
 export default router;

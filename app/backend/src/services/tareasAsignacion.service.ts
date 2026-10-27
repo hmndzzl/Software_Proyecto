@@ -1,3 +1,4 @@
+import { DISPONIBILIDAD_TAREA_SQL, parametrosDisponibilidad, alertaDisponibilidad } from './disponibilidad.service';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { validarEventoTarea } from './tareaEvento.service';
 import { validarMinistrosPropios } from './alcanceMinistros.service';
@@ -24,7 +25,7 @@ export async function guardarTareaConMinistros(
   usuario: { id: number; rol_id: number },
 ) {
   let tarea!: Tarea;
-  const alertas: { persona_id: number; ministro_no_disponible: boolean; tope_servicios_superado: boolean; servicios_en_el_mes: number; tope_servicios_mes: number }[] = [];
+  const alertas: { periodo_no_disponible: boolean; ausencia_reportada: boolean; persona_id: number; ministro_no_disponible: boolean; tope_servicios_superado: boolean; servicios_en_el_mes: number; tope_servicios_mes: number }[] = [];
   await withTransaction(async conn => {
     if (typeof entrada === 'number') {
       const [rows] = await conn.execute<RowDataPacket[]>('SELECT * FROM tarea WHERE id = ? FOR UPDATE', [entrada]);
@@ -39,8 +40,8 @@ export async function guardarTareaConMinistros(
     // Serializa las asignaciones múltiples del mismo ministro y respeta el directorio activo.
     const placeholders = ids.map(() => '?').join(', ');
     const [ministros] = await conn.execute<RowDataPacket[]>(
-      `SELECT id, nombre, disponible FROM persona WHERE id IN (${placeholders}) AND rol_id = ? AND estado_cuenta = 'activa' ORDER BY id FOR UPDATE`,
-      [...ids, ROLES.MINISTRO],
+      `SELECT p.id, p.nombre, p.disponible, ${DISPONIBILIDAD_TAREA_SQL} FROM persona p WHERE p.id IN (${placeholders}) AND p.rol_id = ? AND p.estado_cuenta = 'activa' ORDER BY id FOR UPDATE`,
+      [...parametrosDisponibilidad(tarea), ...ids, ROLES.MINISTRO],
     );
     if (ministros.length !== ids.length) throw new ErrorAsignacion(404, 'Uno o más ministros ya no están disponibles en el directorio');
     await validarMinistrosPropios(conn, usuario, ids);
@@ -77,7 +78,7 @@ export async function guardarTareaConMinistros(
         [ministro.id, tarea.fecha, tarea.fecha],
       );
       const total = Number(conteo[0].total);
-      alertas.push({ persona_id: ministro.id, ministro_no_disponible: !ministro.disponible,
+      alertas.push({ persona_id: ministro.id, ...alertaDisponibilidad(ministro),
         tope_servicios_superado: total > TOPE_SERVICIOS_MES, servicios_en_el_mes: total, tope_servicios_mes: TOPE_SERVICIOS_MES });
     }
     return 'commit';

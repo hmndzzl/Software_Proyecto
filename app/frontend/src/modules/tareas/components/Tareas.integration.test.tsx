@@ -28,7 +28,7 @@ const tareas = Array.from({ length: 9 }, (_, indice) => ({
 
 function prepararApi() {
   vi.mocked(apiClient.get).mockImplementation(async (url) => ({
-    data: url === '/api/personas' ? personas : url === '/api/eventos' ? [] : tareas,
+    data: url === '/api/personas' ? personas : url === '/api/eventos' || url.endsWith('/disponibilidad/periodos') ? [] : tareas,
   }));
   vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
   vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
