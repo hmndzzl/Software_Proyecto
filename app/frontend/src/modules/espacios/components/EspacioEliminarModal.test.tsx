@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EspacioEliminarModal from './EspacioEliminarModal';
@@ -37,6 +37,8 @@ describe('confirmación de eliminación de espacios', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
     expect(screen.getByText('Actividad 6')).toBeInTheDocument();
     expect(screen.getByText('Página 2 de 20')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Anterior' }));
+    expect(screen.getByText('Página 1 de 20')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar reservas y eliminar espacio' }));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/espacios/7', { data: { cancelar_reservas: true, reserva_ids: reservas.map(r => r.id) } });
   });
@@ -62,4 +64,37 @@ describe('confirmación de eliminación de espacios', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Volver a consultar reservas' }));
     expect(await screen.findByRole('button', { name: 'Eliminar espacio' })).toBeInTheDocument();
   });
+  it('obliga a consultar otra vez tras un conflicto sin lista y permite cancelar', async () => {
+    vi.mocked(apiClient.delete).mockRejectedValueOnce({ response: { status: 409, data: { message: 'Las reservas están cambiando' } } });
+    const cerrar = vi.fn();
+    render(<EspacioEliminarModal espacio={espacio} onClose={cerrar} onDeleted={vi.fn()} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Eliminar espacio' }));
+    expect(await screen.findByRole('button', { name: 'Volver a consultar reservas' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Eliminar espacio' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(cerrar).toHaveBeenCalledOnce();
+  });
+  it('un error de eliminación conserva la lista y permite reintentar sin cerrar', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { reservas: [{ ...reserva(1), titulo: null }] } });
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    const eliminado = vi.fn();
+    render(<EspacioEliminarModal espacio={espacio} onClose={vi.fn()} onDeleted={eliminado} />);
+    expect(await screen.findByText('Reserva #1')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar reservas y eliminar espacio' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar');
+    expect(eliminado).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar reservas y eliminar espacio' }));
+    await waitFor(() => expect(eliminado).toHaveBeenCalledOnce());
+  });
+  it.each([false, true])('ignora la respuesta de impacto después de cerrar, error=%s', async falla => {
+    let resolver!: (value: { data: { reservas: never[] } }) => void;
+    let rechazar!: (reason: Error) => void;
+    vi.mocked(apiClient.get).mockImplementationOnce(() => new Promise((resolve, reject) => { resolver = resolve; rechazar = reject; }));
+    const vista = render(<EspacioEliminarModal espacio={espacio} onClose={vi.fn()} onDeleted={vi.fn()} />);
+    vista.unmount();
+    await act(async () => { if (falla) rechazar(new Error('red')); else resolver({ data: { reservas: [] } }); });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(apiClient.delete).not.toHaveBeenCalled();
+  });
+
 });
