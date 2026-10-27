@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/httpStatus';
 import pool from '../../config/db';
+import { guardarFotoEspacio, eliminarFotoEspacio } from '../../services/espacioFoto.service';
+
+vi.mock('../../services/espacioFoto.service', async importOriginal => ({
+  ...await importOriginal<typeof import('../../services/espacioFoto.service')>(),
+  guardarFotoEspacio: vi.fn(), eliminarFotoEspacio: vi.fn(),
+}));
 import {
   obtenerEspacios,
   obtenerImpactoEliminacion,
@@ -225,6 +231,26 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       expect(conn.rollback).toHaveBeenCalledOnce();
       expect(conn.commit).not.toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(404);
+    });
+
+    it('limpia la nueva imagen si falla la creación en base de datos', async () => {
+      req.body = { nombre: 'Salón' }; req.file = {} as Express.Multer.File;
+      vi.mocked(guardarFotoEspacio).mockResolvedValue('/uploads/espacios/subidas/nueva.webp');
+      vi.mocked(pool.execute).mockRejectedValue(new Error('DB'));
+      await crearEspacio(req as Request, res as Response);
+      expect(eliminarFotoEspacio).toHaveBeenCalledWith('/uploads/espacios/subidas/nueva.webp');
+      expect(statusMock).toHaveBeenCalledWith(500);
+    });
+
+    it('un reemplazo fallido limpia la nueva imagen y conserva la anterior', async () => {
+      req.params = { id: '1' }; req.body = { nombre: 'Salón' }; req.file = {} as Express.Multer.File;
+      vi.mocked(guardarFotoEspacio).mockResolvedValue('/uploads/espacios/subidas/nueva.webp');
+      conn.execute.mockResolvedValueOnce([[{ id: 1, foto_url: '/uploads/espacios/subidas/anterior.webp' }]]).mockResolvedValueOnce([{}]);
+      conn.commit.mockRejectedValueOnce(new Error('DB'));
+      await actualizarEspacio(req as Request, res as Response);
+      expect(eliminarFotoEspacio).toHaveBeenCalledWith('/uploads/espacios/subidas/nueva.webp');
+      expect(eliminarFotoEspacio).not.toHaveBeenCalledWith('/uploads/espacios/subidas/anterior.webp');
+      expect(conn.rollback).toHaveBeenCalledOnce();
     });
 
     it('no indica éxito cuando falla el commit', async () => {
