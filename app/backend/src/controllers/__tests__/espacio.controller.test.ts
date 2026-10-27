@@ -62,14 +62,14 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
 
     it('debería retornar todos los espacios si no se envía ningún parámetro', async () => {
       req.query = {};
-      const mockEspacios = [{ id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', en_uso: 0 }];
+      const mockEspacios = [{ id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', en_uso: 0, disponible: 1, consultado_en: '2026-10-27T02:00:00Z' }];
       (pool.execute as any).mockResolvedValue([mockEspacios]);
 
       await obtenerEspacios(req as Request, res as Response);
 
-      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('FROM espacio e'), [2]);
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('FROM espacio e'), [2, 2]);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', en_uso: false }]);
+      expect(jsonMock).toHaveBeenCalledWith([{ id: 1, nombre: 'Sala A', foto_url: '/uploads/espacios/salon-01-v1.webp', en_uso: false, disponible: true, consultado_en: '2026-10-27T02:00:00Z' }]);
     });
 
     it('debería retornar 400 si hora_inicio >= hora_fin', async () => {

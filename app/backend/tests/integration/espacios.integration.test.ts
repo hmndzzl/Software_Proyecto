@@ -88,6 +88,24 @@ describe('D2 con MariaDB real', () => {
     expect(calendario.body.tareas.some((t: { titulo: string }) => t.titulo === 'D2 tarea')).toBe(false);
   });
 
+  it('calcula disponibilidad actual sin filtros y distingue reserva confirmada de presencia real', async () => {
+    const consultar = async () => (await request(entorno.app).get('/api/espacios').auth(admin, { type: 'bearer' }).expect(200))
+      .body.find((e: { id: number }) => e.id === espacioId);
+    expect(await consultar()).toMatchObject({ disponible: true, en_uso: false, consultado_en: expect.stringMatching(/Z$/) });
+    const [insertado] = await entorno.pool.query<any>(
+      `INSERT INTO reserva (fecha, hora_inicio, hora_fin, espacio_id, estado_reserva_id, solicitante_id)
+       VALUES (DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00')), '00:00:00', '23:59:59', ?, 1, 7)`, [espacioId]);
+    expect((await consultar()).disponible).toBe(true);
+    await entorno.pool.query('UPDATE reserva SET estado_reserva_id = 2 WHERE id = ?', [insertado.insertId]);
+    expect(await consultar()).toMatchObject({ disponible: false, en_uso: false });
+    await entorno.pool.query('UPDATE reserva SET checkin_en = UTC_TIMESTAMP() WHERE id = ?', [insertado.insertId]);
+    expect(await consultar()).toMatchObject({ disponible: false, en_uso: true });
+    await entorno.pool.query('UPDATE reserva SET estado_reserva_id = 4 WHERE id = ?', [insertado.insertId]);
+    expect(await consultar()).toMatchObject({ disponible: true, en_uso: false });
+    await entorno.pool.query("UPDATE reserva SET estado_reserva_id = 2, fecha = DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00')) + INTERVAL 1 DAY WHERE id = ?", [insertado.insertId]);
+    expect(await consultar()).toMatchObject({ disponible: true, en_uso: false });
+  });
+
   it('mantiene permisos en servidor y elimina sin reservas desde Sacerdote', async () => {
     await request(entorno.app).post('/api/espacios').auth(coord, { type: 'bearer' }).send({ nombre: 'No autorizado' }).expect(403);
     await request(entorno.app).get(`/api/espacios/${espacioId}/impacto-eliminacion`).auth(coord, { type: 'bearer' }).expect(403);

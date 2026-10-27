@@ -18,6 +18,7 @@ interface EspacioRow extends RowDataPacket {
   nombre: string;
   capacidad: number | null;
   foto_url: string | null;
+  consultado_en?: string;
   disponible?: 0 | 1;
   en_uso?: 0 | 1;
 }
@@ -61,15 +62,23 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
       });
     }
 
-    // comportamiento actual si no vienen params, mas el estado "en uso" (HU-15)
+    // Sin filtros, la disponibilidad corresponde al instante actual en Guatemala.
     if (!tieneTodosLosParametros) {
       const [espacios] = await pool.execute<EspacioRow[]>(
-        `SELECT e.*, ${EN_USO_SQL} FROM espacio e ORDER BY e.nombre ASC`,
-        [ESTADOS_RESERVA.CONFIRMADA]
+        `SELECT e.*,
+                NOT EXISTS (
+                  SELECT 1 FROM reserva r WHERE r.espacio_id = e.id AND r.estado_reserva_id = ?
+                    AND r.fecha = DATE(${AHORA_GUATEMALA_SQL})
+                    AND r.hora_inicio <= TIME(${AHORA_GUATEMALA_SQL})
+                    AND r.hora_fin > TIME(${AHORA_GUATEMALA_SQL})
+                ) AS disponible,
+                DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ') AS consultado_en,
+                ${EN_USO_SQL} FROM espacio e ORDER BY e.nombre ASC`,
+        [ESTADOS_RESERVA.CONFIRMADA, ESTADOS_RESERVA.CONFIRMADA]
       );
 
       return res.status(HttpStatus.OK).json(
-        espacios.map((espacio) => ({ ...espacio, en_uso: Boolean(espacio.en_uso) }))
+        espacios.map((espacio) => ({ ...espacio, disponible: Boolean(espacio.disponible), en_uso: Boolean(espacio.en_uso) }))
       );
     }
 
@@ -85,6 +94,7 @@ export const obtenerEspacios = async (req: Request, res: Response) => {
          e.nombre,
          e.capacidad,
          e.foto_url,
+         DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%H:%i:%sZ') AS consultado_en,
          CASE
            WHEN EXISTS (
              SELECT 1
