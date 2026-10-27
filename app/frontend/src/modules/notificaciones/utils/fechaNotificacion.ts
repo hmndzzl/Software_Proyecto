@@ -1,11 +1,8 @@
-import { formatFecha } from '../../../utils/date';
+import { formatFecha, formatFechaHora } from '../../../utils/date';
 
 export function fechaNotificacion(fecha: string, enviadoEn?: string | null): string {
   if (!enviadoEn) return `${formatFecha(fecha)} · Hora no registrada`;
-  return new Intl.DateTimeFormat('es-GT', {
-    timeZone: 'America/Guatemala', day: 'numeric', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).format(new Date(enviadoEn));
+  return formatFechaHora(enviadoEn);
 }
 
 // datetime-local representa la hora parroquial (UTC-6), no la zona del navegador.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
+import ImagenAmpliable from '../../components/ui/ImagenAmpliable';
 import PublicPortalLayout, { PUBLIC_NAV_LINKS } from '../public-portal/PublicPortalLayout';
 import ContactoForm from './ContactoForm';
 import { obtenerContenidoLanding, type ContenidoLanding } from '../../api/landing';
@@ -82,7 +83,7 @@ function Slot({ label, src, eager = false }: { label: string; src?: string; eage
   const [urlFallida, setUrlFallida] = useState<string | null>(null);
   if (src && urlFallida !== src) {
     return <div className="slot">
-      <img src={src} alt={label} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setUrlFallida(src)} />
+      <ImagenAmpliable src={src} alt={label} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setUrlFallida(src)} />
     </div>;
   }
   return <div className="slot" role="img" aria-label={label}>{label}</div>;

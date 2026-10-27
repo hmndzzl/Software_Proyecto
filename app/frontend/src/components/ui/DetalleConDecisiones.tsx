@@ -4,6 +4,7 @@ import Modal from './Modal';
 import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
 import styles from './DetalleConDecisiones.module.css';
+import { formatFechaHora } from '../../utils/date';
 
 export interface Decision {
   id: number;
@@ -17,9 +18,7 @@ const RESULTADO: Record<Decision['resultado'], string> = {
   aprobada: 'Aprobada', rechazada: 'Rechazada', pendiente: 'Devuelta a pendiente', cancelada: 'Cancelada',
 };
 export function fechaDecision(fecha: string): string {
-  return new Intl.DateTimeFormat('es-GT', {
-    timeZone: 'America/Guatemala', dateStyle: 'long', timeStyle: 'medium', hourCycle: 'h23',
-  }).format(new Date(fecha));
+  return formatFechaHora(fecha);
 }
 
 interface Props {

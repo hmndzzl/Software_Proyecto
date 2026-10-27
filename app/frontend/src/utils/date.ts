@@ -12,6 +12,19 @@ export function formatFecha(fecha: string): string {
   });
 }
 
+/** Fecha y hora de un instante en Guatemala: "25 de octubre de 2026 · 20:26". */
+export function formatFechaHora(fechaHora: string): string {
+  const instante = new Date(fechaHora);
+  const zonaHoraria = 'America/Guatemala';
+  const fecha = new Intl.DateTimeFormat('es-GT', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: zonaHoraria,
+  }).format(instante);
+  const hora = new Intl.DateTimeFormat('es-GT', {
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zonaHoraria,
+  }).format(instante);
+  return `${fecha} · ${hora}`;
+}
+
 /** Recorta una hora "HH:MM:SS" a "HH:MM". */
 export function formatHora(hora: string): string {
   return hora.substring(0, 5);

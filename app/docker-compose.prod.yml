@@ -25,6 +25,8 @@ services:
       target: prod
     ports:
       - "3001:3001"
+    volumes:
+      - espacios_imagenes:/app/media/espacios/subidas
     environment:
       PORT: "3001"
       NODE_ENV: production
@@ -76,3 +78,4 @@ services:
 
 volumes:
   mariadb_data:
+  espacios_imagenes:

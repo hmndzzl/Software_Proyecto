@@ -4,6 +4,7 @@ import styles from './Modal.module.css';
 interface ModalProps {
   open: boolean;
   title: string;
+  subtitle?: string | null;
   onClose: () => void;
   children: ReactNode;
   width?: number;
@@ -15,8 +16,9 @@ interface ModalProps {
   onBack?: () => void;
 }
 
-export default function Modal({ open, title, onClose, children, width = 520, onBack, closeDisabled = false, describedBy, initialFocusSelector }: ModalProps) {
+export default function Modal({ open, title, subtitle, onClose, children, width = 520, onBack, closeDisabled = false, describedBy, initialFocusSelector }: ModalProps) {
   const titleId = useId();
+  const subtitleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   useEffect(() => { close.current = () => { if (!closeDisabled) onClose(); }; }, [onClose, closeDisabled]);
@@ -65,19 +67,22 @@ export default function Modal({ open, title, onClose, children, width = 520, onB
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={describedBy}
+        aria-describedby={describedBy ?? (subtitle ? subtitleId : undefined)}
         tabIndex={-1}
         className={styles.panel}
         style={{ width }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className={styles.header}>
+        <div className={`${styles.header}${subtitle ? ` ${styles.headerWithSubtitle}` : ''}`}>
           {onBack && <button type="button" className={styles.backBtn} onClick={onBack} disabled={closeDisabled} aria-label="Volver a la tarjeta anterior">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
             </svg>
           </button>}
-          <h2 id={titleId} className={styles.title}>{title}</h2>
+          {subtitle ? <div className={styles.heading}>
+            <h2 id={titleId} className={styles.title}>{title}</h2>
+            <p id={subtitleId} className={styles.subtitle} tabIndex={0}>{subtitle}</p>
+          </div> : <h2 id={titleId} className={styles.title}>{title}</h2>}
           <button type="button" className={styles.closeBtn} onClick={() => close.current()} disabled={closeDisabled} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>

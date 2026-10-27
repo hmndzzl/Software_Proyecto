@@ -31,7 +31,9 @@ test('reservas y mis reservas muestran autores y horas de Guatemala sin desborda
     const dialog = page.getByRole('dialog', { name: 'Detalle de reserva #7' });
     await expect(dialog.getByText('Por Diego Calderon', { exact: true })).toBeVisible();
     await expect(dialog.getByText('Por Padre Luis', { exact: true })).toBeVisible();
-    await expect(dialog.locator('time').first()).toContainText('08:05:06');
+    const fechaDecision = dialog.locator('time').first();
+    await expect(fechaDecision).toHaveText('25 de octubre de 2026 · 08:05');
+    await expect(fechaDecision).toHaveAttribute('datetime', decisiones[0].fecha);
     await expect(dialog.getByText(/Fechas y horas de Guatemala/)).toHaveCount(0);
     await expect(dialog.getByText('Aprobada', { exact: true })).toHaveCSS('color', 'rgb(47, 122, 77)');
     await expect(dialog.getByText('Devuelta a pendiente', { exact: true })).toHaveCSS('color', 'rgb(164, 116, 3)');

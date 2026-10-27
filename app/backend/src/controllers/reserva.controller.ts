@@ -402,6 +402,10 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
       }
 
       if (estadoReservaId === ESTADOS_RESERVA.CONFIRMADA) {
+        if (reserva.espacio_id === null) {
+          res.status(HttpStatus.BAD_REQUEST).json({ message: 'El espacio de esta reserva fue eliminado. Selecciona otro espacio antes de aprobarla' });
+          return 'rollback';
+        }
         await validarCapacidad(conn, Number(reserva.espacio_id), reserva.cantidad_personas ?? null);
         const [conflictos]: any = await conn.query(
           `SELECT * FROM reserva
