@@ -416,4 +416,14 @@ describe('calendario mensual', () => {
     mostrar(ROLES.COORDINADOR_MINISTROS);
     await screen.findByText('Misa del lunes');
   });
+  it('presenta la descripción del evento bajo el título antes de sus datos', async () => {
+    mostrar();
+    await userEvent.click(await screen.findByRole('button', { name: /Ver detalle del evento Misa del lunes/ }));
+    const dialogo = screen.getByRole('dialog', { name: 'Misa del lunes' });
+    const descripcion = within(dialogo).getByText('Celebración parroquial');
+    const horario = within(dialogo).getByText('10:00 – 11:00');
+    expect(descripcion.compareDocumentPosition(horario) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dialogo).toHaveAccessibleDescription('Celebración parroquial');
+  });
+
 });

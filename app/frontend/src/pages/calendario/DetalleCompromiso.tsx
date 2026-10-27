@@ -50,6 +50,7 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
   };
 
   return <Modal open title={estadoPorConfirmar === ESTADOS_RESERVA.CANCELADA ? 'Cancelar reserva' : estadoPorConfirmar !== null ? 'Rechazar reserva' : item.dato.titulo} onClose={onClose} onBack={onVolver} width={720}
+    subtitle={estadoPorConfirmar === null && item.tipo === 'evento' ? item.dato.descripcion : undefined}
     closeDisabled={actualizando} describedBy={estadoPorConfirmar !== null ? confirmacionId : undefined}>
     {estadoPorConfirmar !== null ? <>
       <ConfirmDialogContent descriptionId={confirmacionId} busy={actualizando}
@@ -117,7 +118,7 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
         <p><strong>Ministros asignados:</strong> {nombresAsignados(item.dato)}</p>
       </div>}
 
-      {item.dato.descripcion && <div className={styles.detailSection}><p>{item.dato.descripcion}</p></div>}
+      {item.tipo !== 'evento' && item.dato.descripcion && <div className={styles.detailSection}><p>{item.dato.descripcion}</p></div>}
     </div>
     </>}
   </Modal>;

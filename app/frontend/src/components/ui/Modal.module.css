@@ -70,3 +70,7 @@
   overflow-y: auto;
   flex: 1;
 }
+
+.headerWithSubtitle { align-items: flex-start; }
+.heading { flex: 1; min-width: 0; }
+.subtitle { margin: 8px 0 0; font-family: var(--font-body); font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--color-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
