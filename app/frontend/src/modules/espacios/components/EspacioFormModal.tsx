@@ -10,11 +10,13 @@ import styles from './EspacioGestion.module.css';
 
 interface Props {
   espacio?: Espacio;
+  open?: boolean;
+  onDelete?: () => void;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function EspacioFormModal({ espacio, onClose, onSaved }: Props) {
+export default function EspacioFormModal({ espacio, open = true, onDelete, onClose, onSaved }: Props) {
   const id = useId();
   const archivoInput = useRef<HTMLInputElement | null>(null);
   const lock = useRef(false);
@@ -67,7 +69,7 @@ export default function EspacioFormModal({ espacio, onClose, onSaved }: Props) {
     } finally { lock.current = false; setGuardando(false); }
   };
 
-  return <Modal open title={espacio ? 'Editar espacio' : 'Crear espacio'} onClose={onClose} closeDisabled={guardando} initialFocusSelector="input">
+  return <Modal open={open} title={espacio ? 'Editar espacio' : 'Crear espacio'} onClose={onClose} closeDisabled={guardando} initialFocusSelector="input">
     <form className={styles.form} onSubmit={guardar} aria-busy={guardando}>
       <Field label="Nombre del espacio" htmlFor={`${id}-nombre`} required>
         <InputUI id={`${id}-nombre`} value={nombre} onChange={e => setNombre(e.target.value)} maxLength={100} required disabled={guardando} placeholder="Ej. Salón parroquial" />
@@ -97,9 +99,12 @@ export default function EspacioFormModal({ espacio, onClose, onSaved }: Props) {
         {quitarImagen && <span className={styles.hint}>Se quitará la imagen al guardar.</span>}
       </div>}
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <div className={styles.actions}>
-        <Btn type="button" kind="ghost" disabled={guardando} onClick={onClose}>Cancelar</Btn>
-        <Btn type="submit" disabled={guardando}>{guardando ? 'Guardando…' : espacio ? 'Guardar cambios' : 'Crear espacio'}</Btn>
+      <div className={styles.formFooter}>
+        {espacio && onDelete && <Btn type="button" kind="bad" disabled={guardando} onClick={onDelete}>Eliminar espacio</Btn>}
+        <div className={styles.actions}>
+          <Btn type="button" kind="ghost" disabled={guardando} onClick={onClose}>Cancelar</Btn>
+          <Btn type="submit" disabled={guardando}>{guardando ? 'Guardando…' : espacio ? 'Guardar cambios' : 'Crear espacio'}</Btn>
+        </div>
       </div>
     </form>
   </Modal>;

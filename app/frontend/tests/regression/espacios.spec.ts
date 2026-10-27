@@ -52,7 +52,9 @@ for (const width of [375, 1280]) {
     await editar.getByLabel('Nombre del espacio').fill('Salón editado');
     await editar.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Salón editado' })).toBeVisible();
-    await page.getByRole('button', { name: 'Eliminar espacio', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Eliminar espacio', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Editar espacio', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Editar espacio', exact: true }).getByRole('button', { name: 'Eliminar espacio', exact: true }).click();
     const confirmar = page.getByRole('dialog', { name: 'Eliminar espacio', exact: true });
     await expect(confirmar.getByText('Reservas afectadas (100)')).toBeVisible();
     await expect(confirmar).toHaveAttribute('aria-describedby', /.+/);

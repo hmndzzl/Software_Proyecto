@@ -22,16 +22,15 @@ export default function EspacioGestion({ espacio, onChanged, onDeleted }: Props)
     <Btn type="button" kind={espacio ? 'ghost' : 'primary'} size={espacio ? 'sm' : 'md'} onClick={() => setEditar(true)}>
       {espacio ? 'Editar espacio' : 'Crear espacio'}
     </Btn>
-    {espacio && <Btn type="button" kind="bad" size="sm" onClick={() => setEliminar(true)}>Eliminar espacio</Btn>}
-    {espacio && eliminar && createPortal(<EspacioEliminarModal espacio={espacio} onClose={() => setEliminar(false)} onDeleted={() => {
-      setEliminar(false);
-      toast.success('Espacio eliminado', 'Se eliminó el espacio y se cancelaron las reservas afectadas, si las había.');
-      (onDeleted ?? onChanged)();
-    }} />, document.body)}
-    {editar && createPortal(<EspacioFormModal espacio={espacio} onClose={() => setEditar(false)} onSaved={() => {
+    {editar && createPortal(<EspacioFormModal espacio={espacio} open={!eliminar} onDelete={espacio ? () => setEliminar(true) : undefined} onClose={() => setEditar(false)} onSaved={() => {
       setEditar(false);
       toast.success(espacio ? 'Espacio actualizado' : 'Espacio creado', 'Los datos del espacio se guardaron correctamente.');
       onChanged();
+    }} />, document.body)}
+    {espacio && eliminar && createPortal(<EspacioEliminarModal espacio={espacio} onClose={() => setEliminar(false)} onDeleted={() => {
+      setEliminar(false); setEditar(false);
+      toast.success('Espacio eliminado', 'Se eliminó el espacio y se cancelaron las reservas afectadas, si las había.');
+      (onDeleted ?? onChanged)();
     }} />, document.body)}
   </div>;
 }

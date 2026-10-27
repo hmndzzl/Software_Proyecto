@@ -1,6 +1,6 @@
 # D2 — Gestión de espacios e imágenes
 
-Admin y Sacerdote administran los espacios desde **Espacios → Crear espacio** y desde las acciones **Editar espacio / Eliminar espacio** del listado o detalle. Los demás usuarios conservan su consulta habitual sin acceso a las acciones de gestión.
+Admin y Sacerdote administran los espacios desde **Espacios → Crear espacio** y desde la acción **Editar espacio** del listado o detalle. El botón **Eliminar espacio** está dentro del modal de edición. Cancelar la confirmación devuelve a la edición y conserva los cambios sin guardar. Los demás usuarios conservan su consulta habitual sin acceso a las acciones de gestión.
 
 El nombre es obligatorio, se recorta y admite hasta 100 caracteres. La capacidad es obligatoria y debe ser un entero positivo hasta 2147483647. Los espacios antiguos sin capacidad deben completarse al editar. La imagen es opcional: al editar se conserva, se reemplaza o se quita explícitamente.
 
