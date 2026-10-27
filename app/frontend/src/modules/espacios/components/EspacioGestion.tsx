@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { ROLES } from '../../../utils/roles';
@@ -22,15 +23,15 @@ export default function EspacioGestion({ espacio, onChanged, onDeleted }: Props)
       {espacio ? 'Editar espacio' : 'Crear espacio'}
     </Btn>
     {espacio && <Btn type="button" kind="bad" size="sm" onClick={() => setEliminar(true)}>Eliminar espacio</Btn>}
-    {espacio && eliminar && <EspacioEliminarModal espacio={espacio} onClose={() => setEliminar(false)} onDeleted={() => {
+    {espacio && eliminar && createPortal(<EspacioEliminarModal espacio={espacio} onClose={() => setEliminar(false)} onDeleted={() => {
       setEliminar(false);
       toast.success('Espacio eliminado', 'Se eliminó el espacio y se cancelaron las reservas afectadas, si las había.');
       (onDeleted ?? onChanged)();
-    }} />}
-    {editar && <EspacioFormModal espacio={espacio} onClose={() => setEditar(false)} onSaved={() => {
+    }} />, document.body)}
+    {editar && createPortal(<EspacioFormModal espacio={espacio} onClose={() => setEditar(false)} onSaved={() => {
       setEditar(false);
       toast.success(espacio ? 'Espacio actualizado' : 'Espacio creado', 'Los datos del espacio se guardaron correctamente.');
       onChanged();
-    }} />}
+    }} />, document.body)}
   </div>;
 }
