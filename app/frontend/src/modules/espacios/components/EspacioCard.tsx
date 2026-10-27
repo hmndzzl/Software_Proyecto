@@ -1,6 +1,7 @@
 import styles from './EspacioCard.module.css';
 import Badge from '../../../components/ui/Badge';
 import EspacioFoto from './EspacioFoto';
+import EspacioGestion from './EspacioGestion';
 
 export interface ReservaCheckinDisponible {
   id: number;
@@ -23,10 +24,11 @@ export interface Espacio {
 
 interface EspacioCardProps {
   espacio: Espacio;
+  onChanged: () => void;
   onClick: (id: number) => void;
 }
 
-export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
+export default function EspacioCard({ espacio, onClick, onChanged }: EspacioCardProps) {
   const estaOcupado = espacio.disponible === false || espacio.disponible === 0;
   const enUso = espacio.en_uso === true || espacio.en_uso === 1;
 
@@ -61,7 +63,8 @@ export default function EspacioCard({ espacio, onClick }: EspacioCardProps) {
         )}
       </div>
 
-      <button className={styles.btnDetalle} onClick={() => onClick(espacio.id)}>
+      <div className={styles.management}><EspacioGestion espacio={espacio} onChanged={onChanged} /></div>
+      <button className={styles.btnDetalle} onClick={e => { e.stopPropagation(); onClick(espacio.id); }}>
         Ver Detalle
       </button>
     </div>

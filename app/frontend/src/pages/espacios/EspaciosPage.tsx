@@ -10,6 +10,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { getApiErrorMessage } from '../../utils/apiError';
 import styles from './EspaciosPage.module.css';
+import EspacioGestion from '../../modules/espacios/components/EspacioGestion';
 
 export default function EspaciosPage() {
   const fieldId = useId();
@@ -72,6 +73,7 @@ export default function EspaciosPage() {
   return (
     <div className={styles.page}>
       <PageHeader
+        actions={<EspacioGestion onChanged={cargarEspacios} />}
         kicker="Espacios Parroquiales"
         title="Recintos y salones"
         subtitle="Consulta los espacios disponibles para reservar y organizar actividades."
@@ -126,6 +128,7 @@ export default function EspaciosPage() {
             <EspacioCard
               key={espacio.id}
               espacio={espacio}
+              onChanged={cargarEspacios}
               onClick={id => navigate(`/espacios/${id}`)}
             />
           ))}

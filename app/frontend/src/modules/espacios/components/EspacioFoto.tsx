@@ -10,7 +10,7 @@ interface Props {
 
 export default function EspacioFoto({ nombre, fotoUrl, className, eager = false }: Props) {
   const [urlFallida, setUrlFallida] = useState<string | null>(null);
-  const urlValida = fotoUrl && /^\/uploads\/espacios\/[a-z0-9-]+\.webp$/.test(fotoUrl) ? fotoUrl : null;
+  const urlValida = fotoUrl && /^\/uploads\/espacios\/(?:subidas\/)?[a-z0-9-]+\.webp$/.test(fotoUrl) ? fotoUrl : null;
 
   return (
     <div className={className}>

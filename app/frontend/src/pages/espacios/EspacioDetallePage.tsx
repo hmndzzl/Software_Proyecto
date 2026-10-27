@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { avisoCambioEstadoReserva, ESTADOS_RESERVA } from '../../utils/estadosReserva';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { Espacio } from '../../modules/espacios/components/EspacioCard';
+import EspacioGestion from '../../modules/espacios/components/EspacioGestion';
 import EspacioFoto from '../../modules/espacios/components/EspacioFoto';
 import EspacioQrModal from '../../modules/espacios/components/EspacioQrModal';
 import EspacioCalendarioReservas from '../../modules/espacios/components/EspacioCalendarioReservas';
@@ -130,6 +131,7 @@ export default function EspacioDetallePage() {
           <p className={styles.kicker}>Recinto parroquial</p>
           <h1 className={styles.nombre}>{espacio.nombre}</h1>
           <div className={styles.rule} />
+          <EspacioGestion espacio={espacio} onChanged={cargarEspacio} />
 
           <div className={styles.estadoActualWrap}>
             {reservaEnUso ? (
