@@ -8,6 +8,14 @@ const completed = new Counter('journeys_completed');
 const journeySuccess = new Rate('journey_success');
 const journeyDuration = new Trend('journey_duration_ms', true);
 
+function finishJourney(start, ok, phase) {
+  const duration = Date.now() - start;
+  journeySuccess.add(ok, { phase });
+  journeyDuration.add(duration, { phase });
+  if (ok) completed.add(1, { phase });
+  return { ok, duration };
+}
+
 export function espacios(token, phase = 'measure') {
   const date = __ENV.TEST_DATE || futureDate(7 + (__VU % 5));
   const start = 7 + (__VU % 10);
@@ -52,9 +60,15 @@ export function journey(includeCalendar = false, phase = 'measure') {
     ok = espacios(session.token, phase) && ok;
     if (includeCalendar) ok = calendario(session.token, phase) && ok;
   }
-  const duration = Date.now() - start;
-  journeySuccess.add(ok, { phase });
-  journeyDuration.add(duration, { phase });
-  if (ok) completed.add(1, { phase });
-  return { ok, duration };
+  return finishJourney(start, ok, phase);
+}
+
+// El spike mide tráfico de usuarios activos; el costo del login concurrente
+// se mide por separado en PE-AUTH-01.
+export function authenticatedJourney(token, includeCalendar = false, phase = 'measure') {
+  const start = Date.now();
+  let ok = notificaciones(token, phase);
+  ok = espacios(token, phase) && ok;
+  if (includeCalendar) ok = calendario(token, phase) && ok;
+  return finishJourney(start, ok, phase);
 }

@@ -2,7 +2,8 @@ import { sleep } from 'k6';
 import exec from 'k6/execution';
 import { Counter, Trend } from 'k6/metrics';
 import { SMOKE, baseOptions } from '../helpers/config.js';
-import { journey } from '../helpers/requests.js';
+import { sessions } from '../helpers/auth.js';
+import { authenticatedJourney } from '../helpers/requests.js';
 
 const recovered = new Counter('spike_recovered');
 const recoverySeconds = new Trend('spike_recovery_seconds');
@@ -22,10 +23,18 @@ options.thresholds.dropped_iterations = ['count==0'];
 options.thresholds.spike_recovered = ['count==1'];
 options.thresholds.spike_recovery_seconds = ['max<15'];
 options.thresholds['journey_success{phase:measure}'] = ['rate==1'];
-export default function () { journey(true); }
-export function recovery() {
+export function setup() {
+  const count = SMOKE ? 2 : 100;
+  const users = sessions(count);
+  if (users.length !== count) throw new Error(`PE-SPIKE-01 necesita ${count} cuentas distintas`);
+  return users.map(user => user.token);
+}
+export default function (tokens) {
+  authenticatedJourney(tokens[(__VU - 1) % tokens.length], true);
+}
+export function recovery(tokens) {
   if (!recorded) recovered.add(0);
-  const result = journey(true, 'recovery');
+  const result = authenticatedJourney(tokens[0], true, 'recovery');
   streak = result.ok && result.duration < 400 ? streak + 1 : 0;
   if (streak >= 3 && !recorded) {
     recorded = true;
