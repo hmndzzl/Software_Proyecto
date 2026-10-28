@@ -117,4 +117,19 @@ describe('avisos de nuevas reservas', () => {
     const [despues]: any = await pool.query('SELECT COUNT(*) n FROM notificacion');
     expect(despues).toEqual(antes);
   });
+  it('confirma solo una de varias solicitudes simultáneas del mismo salón y horario', async () => {
+    const solicitud = { ...body, fecha: '2099-12-01', titulo: 'Aprobación concurrente' };
+    const creadas = await Promise.all(Array.from({ length: 12 }, () =>
+      request(app).post('/api/reservas').auth(coordinador, { type: 'bearer' }).send(solicitud).expect(201)));
+    const ids = creadas.map(res => res.body.reservaId as number);
+
+    const respuestas = await Promise.all(ids.map(id =>
+      request(app).put(`/api/reservas/${id}/estado`).auth(admin, { type: 'bearer' }).send({ estado_id: 2 })));
+    expect(respuestas.filter(res => res.status === 200)).toHaveLength(1);
+    expect(respuestas.filter(res => res.status === 400)).toHaveLength(ids.length - 1);
+
+    const [confirmadas] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM reserva WHERE id IN (?) AND estado_reserva_id = 2', [ids]);
+    expect(confirmadas).toHaveLength(1);
+  });
 });

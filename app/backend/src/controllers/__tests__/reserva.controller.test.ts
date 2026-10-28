@@ -29,6 +29,9 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
   let mockConnection: any;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    (db.query as any).mockReset();
+    (db.getConnection as any).mockReset();
     req = {
       user: { id: 1, rol_id: ROLES.COORDINADOR_GRUPOS } as any,
       body: {},
@@ -59,7 +62,6 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
     // de entrar a la transacción; valor por defecto equivalente al fake time de abajo.
     (db.query as any).mockResolvedValue([[{ hoy: '2026-08-11', horaActual: '12:00' }]]);
 
-    vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => { });
 
     // Set fixed time to '2026-08-11T12:00:00Z'
@@ -483,6 +485,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { estado_id: 2 }; // aprobar
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (db.query as any).mockResolvedValueOnce([[{ espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]); // SELECT reserva
+      (db.query as any).mockResolvedValueOnce([[{ id: 1 }]]); // Bloqueo del salón
       (db.query as any).mockResolvedValueOnce([[{ id: 2 }]]); // SELECT conflicto (found)
 
       await cambiarEstadoReserva(req as Request, res as Response);
@@ -495,6 +498,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { estado_id: 2 }; // aprobar
       req.user = { id: 1, rol_id: ROLES.ADMIN } as any;
       (db.query as any).mockResolvedValueOnce([[{ espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([[{ id: 1 }]]); // Bloqueo del salón
       (db.query as any).mockResolvedValueOnce([[]]); // No conflictos
       (db.query as any).mockResolvedValueOnce([{}]); // UPDATE 
 
@@ -502,6 +506,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Reserva aprobada correctamente' }));
+      expect(db.query).toHaveBeenCalledWith('SELECT id FROM espacio WHERE id = ? FOR UPDATE', [1]);
     });
 
     it('debería retornar 200 y actualizar estado correctamente para pendientes (1) sin revisar conflictos', async () => {
@@ -643,6 +648,7 @@ describe('Reserva Controller - Pruebas Unitarias', () => {
       req.body = { estado_id: 2 }; // aprobar
       req.user = { id: 99, rol_id: ROLES.ADMIN } as any;
       (db.query as any).mockResolvedValueOnce([[{ solicitante_id: 1, espacio_id: 1, fecha: '2026-08-12', hora_inicio: '10:00', hora_fin: '11:00' }]]);
+      (db.query as any).mockResolvedValueOnce([[{ id: 1 }]]); // Bloqueo del salón
       (db.query as any).mockResolvedValueOnce([[]]); // sin conflictos
       (db.query as any).mockResolvedValueOnce([{}]); // UPDATE
       (db.query as any).mockResolvedValueOnce([{ insertId: 55 }]); // INSERT notificacion
