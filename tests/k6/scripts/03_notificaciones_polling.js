@@ -10,6 +10,7 @@ export function setup() { return sessions(SMOKE ? 1 : stress ? 120 : 50); }
 export default function (data) {
   const start = Date.now();
   notificaciones(data[(__VU - 1) % data.length].token);
-  // Cadencia entre inicios de solicitudes; estrés ejecuta sondeos sin pausa.
-  if (!SMOKE && !stress) sleep(Math.max(0, 60 - (Date.now() - start) / 1000));
+  // Aun bajo estrés, cada usuario sondea a una cadencia fija. Un segundo
+  // representa 60 veces la frecuencia real de la interfaz (60 segundos).
+  if (!SMOKE) sleep(Math.max(0, (stress ? 1 : 60) - (Date.now() - start) / 1000));
 }
