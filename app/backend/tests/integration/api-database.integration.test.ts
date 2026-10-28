@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { MariaDbContainer, type StartedMariaDbContainer } from '@testcontainers/mariadb';
 
@@ -18,6 +19,8 @@ describe('integración API y MariaDB', () => {
       .start();
 
     process.env.NODE_ENV = 'test';
+    // Estas pruebas usan la BD desechable y nunca crean usuarios en Clerk real.
+    process.env.CLERK_SECRET_KEY = '';
     process.env.DB_HOST = container.getHost();
     process.env.DB_PORT = String(container.getPort());
     process.env.DB_USER = container.getUsername();
@@ -46,6 +49,22 @@ describe('integración API y MariaDB', () => {
   afterAll(async () => {
     await pool?.end();
     await container?.stop();
+  });
+
+  it('la migración de tareas y eventos es repetible y conserva tareas y asignaciones', async () => {
+    const conn = await pool.getConnection();
+    try {
+      const [antes] = await conn.query<RowDataPacket[]>('SELECT id, titulo FROM tarea ORDER BY id');
+      const [asignaciones] = await conn.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea ORDER BY tarea_id, persona_id');
+      const sql = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261024_tarea_evento.sql'), 'utf8');
+      for (let intento = 0; intento < 2; intento++) {
+        for (const statement of sql.split(';').filter(s => s.trim())) await conn.query(statement);
+      }
+      const [despues] = await conn.query<RowDataPacket[]>('SELECT id, titulo FROM tarea ORDER BY id');
+      const [asignacionesDespues] = await conn.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea ORDER BY tarea_id, persona_id');
+      expect(despues).toEqual(antes);
+      expect(asignacionesDespues).toEqual(asignaciones);
+    } finally { conn.release(); }
   });
 
   it('autentica con credenciales persistidas y devuelve un JWT utilizable', async () => {
@@ -177,8 +196,8 @@ describe('integración API y MariaDB', () => {
 
   it('persiste cambios de landing y conserva los campos no enviados', async () => {
     const inicial = await request(app).get('/api/public/landing').expect(200);
-    expect(inicial.body).toMatchObject({ nombre_parroquia: 'Parroquia San Pedro Nolasco', cantidad_grupos: 12, cantidad_espacios: 7 });
-    expect(inicial.body.contacto.direccion).toContain('\nCiudad de Guatemala');
+    expect(inicial.body).toMatchObject({ nombre_parroquia: 'Parroquia San Pedro Nolasco', cantidad_grupos: 36, cantidad_espacios: 10 });
+    expect(inicial.body.contacto.direccion).toBe('9a Calle A 9-34, Ciudad San Cristóbal, Mixco');
     const login = await request(app).post('/api/auth/login')
       .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
     const [cantidadesAntes] = await pool.query<RowDataPacket[]>('SELECT (SELECT COUNT(*) FROM grupo) AS grupos, (SELECT COUNT(*) FROM espacio) AS espacios');
@@ -234,6 +253,45 @@ describe('integración API y MariaDB', () => {
     expect(despues.body).toEqual(anterior.body);
   });
 
+  it('limita creación, asignación individual y múltiple, reasignación y retiro a ministros propios', async () => {
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const norte = jwt.sign({ id: 7, rol_id: 2 }, JWT_SECRET);
+    const sur = jwt.sign({ id: 13, rol_id: 2 }, JWT_SECRET);
+    const admin = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const propios = await request(app).get('/api/personas').auth(norte, { type: 'bearer' }).expect(200);
+    const ajenos = await request(app).get('/api/personas').auth(sur, { type: 'bearer' }).expect(200);
+    const idsPropios = propios.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
+    const idsAjenos = ajenos.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
+    expect(idsPropios).toEqual([9, 10, 14, 15, 16, 17, 18, 19, 20, 21]);
+    expect(idsAjenos).toEqual([11, 12, 22, 23, 24, 25, 26, 27, 28, 29]);
+    expect(idsPropios.filter((id: number) => idsAjenos.includes(id))).toEqual([]);
+    const datos = { titulo: 'Alcance de coordinadores', descripcion: 'Verificar permisos', fecha: '2098-07-20', hora_inicio: '10:00', hora_fin: '11:00' };
+    const creada = await request(app).post('/api/tareas').auth(norte, { type: 'bearer' }).send({ ...datos, persona_ids: [9] }).expect(201);
+    const tarea_id = creada.body.tarea.id;
+    try {
+      await request(app).post('/api/tareas').auth(norte, { type: 'bearer' })
+        .send({ ...datos, titulo: 'Asignación ajena rechazada', persona_ids: [9, 11] }).expect(403);
+      await request(app).post('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_ids: [10, 11] }).expect(403);
+      await request(app).post('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_id: 11 }).expect(403);
+      await request(app).post('/api/tareas/asignar').auth(sur, { type: 'bearer' }).send({ tarea_id, persona_id: 9 }).expect(403);
+      for (const [persona_actual_id, persona_nueva_id] of [[9, 11], [11, 10]]) {
+        await request(app).put('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_actual_id, persona_nueva_id }).expect(403);
+      }
+      await request(app).delete('/api/tareas/asignar').auth(sur, { type: 'bearer' }).send({ tarea_id, persona_id: 9 }).expect(403);
+      const [asignaciones] = await pool.query<RowDataPacket[]>('SELECT persona_id FROM asignacion_tarea WHERE tarea_id = ?', [tarea_id]);
+      expect(asignaciones.map(a => a.persona_id)).toEqual([9]);
+      const [parciales] = await pool.query<RowDataPacket[]>('SELECT id FROM tarea WHERE titulo = ?', ['Asignación ajena rechazada']);
+      expect(parciales).toHaveLength(0);
+      await request(app).post('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_id: 10 }).expect(201);
+      await request(app).delete('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_id: 10 }).expect(204);
+      await request(app).put('/api/tareas/asignar').auth(norte, { type: 'bearer' }).send({ tarea_id, persona_actual_id: 9, persona_nueva_id: 10 }).expect(200);
+      await request(app).post('/api/tareas/asignar').auth(sur, { type: 'bearer' }).send({ tarea_id, persona_id: 11 }).expect(201);
+      await request(app).post('/api/tareas/asignar').auth(admin, { type: 'bearer' }).send({ tarea_id, persona_id: 12 }).expect(201);
+    } finally {
+      await request(app).delete(`/api/tareas/${tarea_id}`).auth(admin, { type: 'bearer' }).expect(204);
+    }
+  });
+
   it('crea y asigna a varios ministros, evita resultados parciales y conserva tareas sin asignados', async () => {
     const login = await request(app).post('/api/auth/login')
       .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
@@ -274,6 +332,167 @@ describe('integración API y MariaDB', () => {
     const [restantes] = await pool.query<RowDataPacket[]>('SELECT * FROM asignacion_tarea WHERE tarea_id = ?', [id]);
     expect(restantes).toHaveLength(0);
     await request(app).get(`/api/tareas/${id}`).auth(token, { type: 'bearer' }).expect(404);
+  });
+
+  it('guarda el teléfono de una cuenta, lo edita y lo muestra en el directorio sin duplicar personas', async () => {
+    const login = await request(app).post('/api/auth/login').send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    const cuenta = { nombre: 'Ministro Teléfono', correo: 'telefono@example.com', password: 'Clave-Segura-123', rol_id: 4, telefono: '55559876' };
+    await request(app).post('/api/auth/register').auth(token, { type: 'bearer' }).send(cuenta).expect(201);
+    const [personas] = await pool.query<RowDataPacket[]>('SELECT id FROM persona WHERE correo = ?', [cuenta.correo]);
+    const id = personas[0].id;
+    // Crear una cuenta sigue el flujo de aprobación existente.
+    await pool.query("UPDATE persona SET estado_cuenta = 'activa' WHERE id = ?", [id]);
+    const perfil = () => request(app).get(`/api/personas/${id}`).auth(token, { type: 'bearer' }).expect(200);
+    expect((await perfil()).body.telefono).toBe('+50255559876');
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ telefono: '+502 5555-9877' }).expect(200);
+    const directorio = await request(app).get('/api/personas').auth(token, { type: 'bearer' }).expect(200);
+    expect(directorio.body.filter((p: { id: number }) => p.id === id)).toEqual([expect.objectContaining({ telefono: '+50255559877' })]);
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ nombre: 'Nombre actualizado' }).expect(200);
+    expect((await perfil()).body.telefono).toBe('+50255559877');
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ telefono: '' }).expect(200);
+    expect((await perfil()).body.telefono).toBeNull();
+    await request(app).put(`/api/personas/${id}`).auth(token, { type: 'bearer' }).send({ telefono: 'abc' }).expect(400);
+  });
+
+  it('un teléfono duplicado revierte la creación completa y no altera el perfil', async () => {
+    const login = await request(app).post('/api/auth/login').send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    await request(app).put('/api/personas/1').auth(token, { type: 'bearer' }).send({ telefono: '55559878' }).expect(200);
+    await request(app).post('/api/auth/register').auth(token, { type: 'bearer' }).send({
+      nombre: 'No debe persistirse', correo: 'telefono-duplicado@example.com', password: 'Clave-Segura-123', rol_id: 4, telefono: '+50255559878',
+    }).expect(409);
+    const [personas] = await pool.query<RowDataPacket[]>('SELECT id FROM persona WHERE correo = ?', ['telefono-duplicado@example.com']);
+    expect(personas).toHaveLength(0);
+    await request(app).put('/api/personas/9').auth(token, { type: 'bearer' }).send({ nombre: 'No guardar', telefono: '55559878' }).expect(409);
+    const [ministro] = await pool.query<RowDataPacket[]>('SELECT nombre FROM persona WHERE id = 9');
+    expect(ministro[0].nombre).not.toBe('No guardar');
+  });
+
+  it('valida y persiste el aforo al crear, editar y aprobar, sin escrituras parciales', async () => {
+    const login = await request(app).post('/api/auth/login').send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
+    const token = login.body.token;
+    const [espacios] = await pool.query<RowDataPacket[]>('SELECT capacidad FROM espacio WHERE id = 2');
+    const capacidad = Number(espacios[0].capacidad);
+    const datos = { fecha: '2099-11-28', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Prueba aforo', descripcion: 'Con aforo', cantidad_personas: capacidad };
+    for (const cantidad_personas of [0, -1, 1.5, '10', null, capacidad + 1]) {
+      await request(app).post('/api/reservas').auth(token, { type: 'bearer' }).send({ ...datos, cantidad_personas }).expect(400);
+    }
+    const [rechazadas] = await pool.query<RowDataPacket[]>('SELECT id FROM evento WHERE titulo = ?', [datos.titulo]);
+    expect(rechazadas).toHaveLength(0);
+    const creada = await request(app).post('/api/reservas').auth(token, { type: 'bearer' }).send(datos).expect(201);
+    const id = creada.body.reservaId;
+    const consultar = async () => {
+      const [rows] = await pool.query<RowDataPacket[]>('SELECT cantidad_personas, estado_reserva_id FROM reserva WHERE id = ?', [id]);
+      return rows[0];
+    };
+    expect((await consultar()).cantidad_personas).toBe(capacidad);
+    await request(app).put(`/api/reservas/${id}`).auth(token, { type: 'bearer' }).send({ ...datos, cantidad_personas: capacidad + 1 }).expect(400);
+    expect((await consultar()).cantidad_personas).toBe(capacidad);
+    const { cantidad_personas: _cantidad, ...sinCantidad } = datos;
+    await request(app).put(`/api/reservas/${id}`).auth(token, { type: 'bearer' }).send(sinCantidad).expect(200);
+    expect((await consultar()).cantidad_personas).toBe(capacidad);
+    await pool.query('UPDATE espacio SET capacidad = ? WHERE id = 2', [capacidad - 1]);
+    try {
+      await request(app).put(`/api/reservas/${id}/estado`).auth(token, { type: 'bearer' }).send({ estado_id: 2 }).expect(400);
+      expect((await consultar()).estado_reserva_id).toBe(1);
+    } finally { await pool.query('UPDATE espacio SET capacidad = ? WHERE id = 2', [capacidad]); }
+    await request(app).put(`/api/reservas/${id}/estado`).auth(token, { type: 'bearer' }).send({ estado_id: 2 }).expect(200);
+    const lista = await request(app).get('/api/reservas/mis-reservas').auth(token, { type: 'bearer' }).expect(200);
+    expect(lista.body).toEqual(expect.arrayContaining([expect.objectContaining({ id, cantidad_personas: capacidad })]));
+  });
+
+  it('la migración de aforo conserva reservas históricas y puede repetirse', async () => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.query('CREATE TEMPORARY TABLE reserva_migracion (id INT PRIMARY KEY)');
+      await connection.query('INSERT INTO reserva_migracion (id) VALUES (1)');
+      const migration = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261024_reserva_cantidad_personas.sql'), 'utf8')
+        .replace('ALTER TABLE reserva', 'ALTER TABLE reserva_migracion');
+      await connection.query(migration);
+      await connection.query(migration);
+      const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM reserva_migracion');
+      expect(rows).toEqual([{ id: 1, cantidad_personas: null }]);
+    } finally {
+      await connection.query('DROP TEMPORARY TABLE IF EXISTS reserva_migracion');
+      connection.release();
+    }
+  });
+
+  it('conserva autores, fechas y decisiones sucesivas de cuentas y reservas', async () => {
+    // Aquí se prueba auditoría, no login: JWT locales evitan consumir el límite por IP.
+    const { default: jwt } = await import('jsonwebtoken');
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const segundo = jwt.sign({ id: 2, rol_id: 5 }, JWT_SECRET);
+    // Solicitud de prueba: rechazar solo aplica a cuentas pendientes.
+    await pool.query("UPDATE persona SET estado_cuenta = 'pendiente' WHERE id = 3");
+    // No se inventan decisiones de las cuentas preexistentes.
+    expect((await request(app).get('/api/cuentas/3/decisiones').auth(token, { type: 'bearer' }).expect(200)).body).toEqual([]);
+    await request(app).patch('/api/cuentas/3/rechazar').auth(token, { type: 'bearer' }).expect(200);
+    await request(app).patch('/api/cuentas/3/aprobar').auth(segundo, { type: 'bearer' }).send({ rol_id: 5, actor_id: 999, fecha: '1900-01-01' }).expect(200);
+    // La segunda aprobación no crea una decisión adicional.
+    await request(app).patch('/api/cuentas/3/aprobar').auth(segundo, { type: 'bearer' }).send({ rol_id: 5 }).expect(409);
+    const cuentas = await request(app).get('/api/cuentas/3/decisiones').auth(token, { type: 'bearer' }).expect(200);
+    expect(cuentas.body).toEqual([
+      expect.objectContaining({ resultado: 'aprobada', actor_id: 2, actor_nombre: 'Pedro Caso' }),
+      expect.objectContaining({ resultado: 'rechazada', actor_id: 1, actor_nombre: 'Diego Calderon' }),
+    ]);
+    for (const decision of cuentas.body) expect(Math.abs(Date.parse(decision.fecha) - Date.now())).toBeLessThan(10_000);
+    const datos = { fecha: '2099-12-17', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Historial reserva', descripcion: 'Prueba de decisiones', cantidad_personas: 5 };
+    const creada = await request(app).post('/api/reservas').auth(token, { type: 'bearer' }).send(datos).expect(201);
+    const id = creada.body.reservaId;
+    await request(app).put(`/api/reservas/${id}/estado`).auth(segundo, { type: 'bearer' }).send({ estado_id: 2, actor_id: 999 }).expect(200);
+    await request(app).put(`/api/reservas/${id}`).auth(token, { type: 'bearer' }).send({ ...datos, descripcion: 'Modificada' }).expect(200);
+    await request(app).put(`/api/reservas/${id}/estado`).auth(segundo, { type: 'bearer' }).send({ estado_id: 3 }).expect(200);
+    const historial = await request(app).get(`/api/reservas/${id}/decisiones`).auth(token, { type: 'bearer' }).expect(200);
+    expect(historial.body).toEqual([
+      expect.objectContaining({ resultado: 'rechazada', actor_id: 2 }),
+      expect.objectContaining({ resultado: 'pendiente', actor_id: 1 }),
+      expect.objectContaining({ resultado: 'aprobada', actor_id: 2 }),
+    ]);
+    // El nombre registrado no cambia al editar posteriormente el perfil del autor.
+    await pool.query("UPDATE persona SET nombre = 'Nombre cambiado' WHERE id = 2");
+    try {
+      const preservado = await request(app).get(`/api/reservas/${id}/decisiones`).auth(token, { type: 'bearer' }).expect(200);
+      expect(preservado.body[0].actor_nombre).toBe('Pedro Caso');
+      const migration = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261025_historial_decisiones.sql'), 'utf8');
+      const connection = await mysql.createConnection({
+        host: container.getHost(), port: container.getPort(), user: container.getUsername(),
+        password: container.getUserPassword(), database: container.getDatabase(), multipleStatements: true,
+      });
+      try { await connection.query(migration); await connection.query(migration); } finally { await connection.end(); }
+      const despues = await request(app).get(`/api/reservas/${id}/decisiones`).auth(token, { type: 'bearer' }).expect(200);
+      expect(despues.body).toEqual(preservado.body);
+    } finally { await pool.query("UPDATE persona SET nombre = 'Pedro Caso' WHERE id = 2"); }
+  });
+
+  it('revierte el estado y la notificación si falla el registro del historial', async () => {
+    const { default: jwt } = await import('jsonwebtoken');
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const [avisosAntes] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
+    await pool.query("CREATE TRIGGER fallo_historial_cuenta BEFORE INSERT ON cuenta_decision FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fallo de historial de prueba'");
+    try {
+      await request(app).patch('/api/cuentas/4/baja').auth(token, { type: 'bearer' }).expect(500);
+      const [persona] = await pool.query<RowDataPacket[]>('SELECT estado_cuenta FROM persona WHERE id = 4');
+      expect(persona[0].estado_cuenta).toBe('activa');
+      const [avisosDespues] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
+      expect(avisosDespues).toEqual(avisosAntes);
+    } finally { await pool.query('DROP TRIGGER fallo_historial_cuenta'); }
+    const creada = await request(app).post('/api/reservas').auth(token, { type: 'bearer' })
+      .send({ fecha: '2099-12-18', hora_inicio: '10:00', hora_fin: '11:00', espacio_id: 2, titulo: 'Rollback', descripcion: 'Prueba', cantidad_personas: 5 }).expect(201);
+    await pool.query("CREATE TRIGGER fallo_historial_reserva BEFORE INSERT ON reserva_decision FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fallo de historial de prueba'");
+    try {
+      await request(app).put(`/api/reservas/${creada.body.reservaId}/estado`).auth(token, { type: 'bearer' }).send({ estado_id: 2 }).expect(500);
+      const [reserva] = await pool.query<RowDataPacket[]>('SELECT estado_reserva_id FROM reserva WHERE id = ?', [creada.body.reservaId]);
+      expect(reserva[0].estado_reserva_id).toBe(1);
+    } finally { await pool.query('DROP TRIGGER fallo_historial_reserva'); }
+    await request(app).get('/api/cuentas/1/decisiones').expect(401);
+    await request(app).get('/api/reservas/1/decisiones').expect(401);
+    const tokenMinistro = jwt.sign({ id: 9, rol_id: 4 }, JWT_SECRET);
+    await request(app).get('/api/cuentas/1/decisiones').auth(tokenMinistro, { type: 'bearer' }).expect(403);
+    await request(app).get('/api/reservas/1/decisiones').auth(tokenMinistro, { type: 'bearer' }).expect(403);
   });
 
   it('persiste un contacto y notifica a cada sacerdote y administrador', async () => {

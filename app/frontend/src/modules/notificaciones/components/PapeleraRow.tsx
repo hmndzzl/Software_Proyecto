@@ -1,6 +1,6 @@
 import Btn from '../../../components/ui/Btn';
 import type { NotificacionPapelera } from '../../../types';
-import { formatFecha } from '../../../utils/date';
+import { fechaNotificacion } from '../utils/fechaNotificacion';
 import styles from './NotificacionRow.module.css';
 
 interface Props {
@@ -13,7 +13,7 @@ export default function PapeleraRow({ notificacion, onRestaurar }: Props) {
 
   return (
     <tr className={styles.row}>
-      <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
+      <td className={styles.tdFecha}>{fechaNotificacion(fecha, notificacion.enviado_en)}</td>
       <td className={styles.tdMensaje}>{mensaje}</td>
       <td className={styles.tdRemitente}>
         {remitente_nombre ?? <span className={styles.sistema}>Sistema</span>}

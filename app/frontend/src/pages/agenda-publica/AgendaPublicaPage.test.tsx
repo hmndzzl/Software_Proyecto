@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import AgendaPublicaPage from './AgendaPublicaPage';
+import { AuthProvider } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
 vi.mock('../../api/client', () => ({ default: { get: vi.fn() } }));
@@ -18,7 +19,7 @@ const evento = {
 };
 
 function mostrar() {
-  return render(<MemoryRouter><AgendaPublicaPage /></MemoryRouter>);
+  return render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><AgendaPublicaPage /></AuthProvider></MemoryRouter>);
 }
 
 describe('AgendaPublicaPage', () => {
@@ -31,6 +32,10 @@ describe('AgendaPublicaPage', () => {
     mostrar();
 
     expect(await screen.findByRole('heading', { name: 'Encuentro parroquial' })).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'contenido-principal');
+    expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('region', { name: 'Actividades públicas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Saltar al contenido principal' })).toHaveAttribute('href', '#contenido-principal');
     expect(document.querySelector('.agenda-publica.public-portal')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Quiénes Somos' })[0]).toHaveAttribute('href', '/#quienes-somos');

@@ -31,3 +31,7 @@ CLAUDE.md
 # Testing
 tests/k6/results/
 tests/db-volume/reports/
+
+# Fotografías cargadas desde la interfaz (persistidas por Docker)
+app/backend/media/espacios/subidas/
+app/backend/media/landing/subidas/

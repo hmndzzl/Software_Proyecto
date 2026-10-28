@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -6,6 +7,8 @@ import pool from '../../config/db';
 import tareaRoutes from '../../routes/tarea.routes';
 import { ROLES } from '../../config/roles';
 import { JWT_SECRET } from '../../config/env';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../../config/db', () => ({
   default: {
@@ -35,6 +38,7 @@ const conn = {
 };
 
 function token(rol_id: number, id = 7) {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id, rol_id, estado_cuenta: 'activa' });
   return jwt.sign({ id, rol_id }, JWT_SECRET);
 }
 
@@ -48,6 +52,29 @@ beforeEach(() => {
 });
 
 describe('RBAC en mutaciones de tareas (DT-06)', () => {
+  describe('alcance del coordinador en asignaciones individuales', () => {
+    it.each(['post', 'put', 'delete'] as const)('rechaza %s cuando el ministro pertenece a otro coordinador', async method => {
+      vi.mocked(pool.execute).mockResolvedValueOnce([[]] as never);
+      const body = method === 'put'
+        ? { tarea_id: 1, persona_actual_id: 9, persona_nueva_id: 11 }
+        : { tarea_id: 1, persona_id: 11 };
+      const response = await request(app)[method]('/api/tareas/asignar')
+        .auth(token(ROLES.COORDINADOR_MINISTROS), { type: 'bearer' }).send(body).expect(403);
+      expect(response.body.mensaje).toContain('propios ministros');
+      expect(pool.execute).toHaveBeenCalledOnce();
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('coordinador_ministro'),
+        method === 'put' ? [7, 9, 11, ROLES.MINISTRO] : [7, 11, ROLES.MINISTRO]);
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+
+    it('no permite quitar un ministro ajeno aunque el reemplazo sea propio', async () => {
+      vi.mocked(pool.execute).mockResolvedValueOnce([[{ ministro_id: 9 }]] as never);
+      await request(app).put('/api/tareas/asignar').auth(token(ROLES.COORDINADOR_MINISTROS), { type: 'bearer' })
+        .send({ tarea_id: 1, persona_actual_id: 11, persona_nueva_id: 9 }).expect(403);
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+  });
+
   describe('POST /api/tareas (createTarea)', () => {
     it.each(ROLES_BLOQUEADOS)('bloquea con 403 a rol %s', async (rol) => {
       const res = await request(app).post('/api/tareas').set('Authorization', `Bearer ${token(rol)}`).send(tareaBody);
@@ -56,7 +83,7 @@ describe('RBAC en mutaciones de tareas (DT-06)', () => {
     });
 
     it.each(ROLES_PERMITIDOS)('permite a rol %s crear una tarea (201)', async (rol) => {
-      (pool.execute as any).mockResolvedValueOnce([{ insertId: 1 }]);
+      conn.execute.mockResolvedValueOnce([{ insertId: 1 }]);
       const res = await request(app).post('/api/tareas').set('Authorization', `Bearer ${token(rol)}`).send(tareaBody);
       expect(res.status).toBe(201);
     });
@@ -87,6 +114,7 @@ describe('RBAC en mutaciones de tareas (DT-06)', () => {
     });
 
     it.each(ROLES_PERMITIDOS)('permite a rol %s asignar una tarea (201)', async (rol) => {
+      if (rol === ROLES.COORDINADOR_MINISTROS) vi.mocked(pool.execute).mockResolvedValueOnce([[{ ministro_id: 9 }]] as never);
       (pool.execute as any)
         .mockResolvedValueOnce([[{ id: 1, titulo: 'T', descripcion: 'D', fecha: '2026-10-01', hora_inicio: '10:00', hora_fin: '11:00' }]])
         .mockResolvedValueOnce([[{ id: 9, disponible: 1 }]])
@@ -112,6 +140,7 @@ describe('RBAC en mutaciones de tareas (DT-06)', () => {
     });
 
     it.each(ROLES_PERMITIDOS)('permite a rol %s desasignar una tarea (204)', async (rol) => {
+      if (rol === ROLES.COORDINADOR_MINISTROS) vi.mocked(pool.execute).mockResolvedValueOnce([[{ ministro_id: 9 }]] as never);
       (pool.execute as any)
         .mockResolvedValueOnce([{ affectedRows: 1 }])
         .mockResolvedValueOnce([[{ titulo: 'Tarea' }]])

@@ -23,10 +23,27 @@
   font-family: 'Noto Serif', Georgia, serif;
   font-size: var(--text-base);
   line-height: 1.65;
+  color-scheme: light;
   min-height: 100vh;
 }
 
 .public-portal * { box-sizing: border-box; }
+.public-portal main { scroll-margin-top: calc(var(--nav-h) + 16px); }
+/* Fuera del flujo: solo aparece al navegar con teclado, sin mover el header. */
+.public-portal .skip-link {
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 100;
+  transform: translateY(calc(-100% - 16px));
+  padding: 10px 16px;
+  border: 2px solid var(--rojo-dk);
+  border-radius: 8px;
+  background: var(--crema);
+  color: var(--rojo-dk);
+  font-weight: 700;
+}
+.public-portal .skip-link:focus { transform: translateY(0); }
 .public-portal h1, .public-portal h2, .public-portal h3, .public-portal h4 {
   font-family: 'Cinzel', Georgia, serif;
   font-weight: 700;
@@ -197,7 +214,7 @@
 }
 .public-portal .foot-bar span:last-child { letter-spacing: .18em; }
 
-@media (max-width: 1100px) {
+@media (max-width: 1380px) {
   .public-portal .nav-links { display: none; }
   .public-portal .nav-login { display: none; }
   .public-portal .burger { display: grid; }
@@ -220,7 +237,7 @@
   .public-portal .nav.open .nav-links a:not(.btn-login)::after { left: 12px; right: auto; width: 22px; bottom: 8px; }
   .public-portal .nav.open .nav-links .btn-login { margin-top: 8px; justify-content: center; }
 }
-@media (min-width: 1101px) {
+@media (min-width: 1381px) {
   .public-portal .nav-links .btn-login { display: none; }
 }
 @media (max-width: 1000px) {

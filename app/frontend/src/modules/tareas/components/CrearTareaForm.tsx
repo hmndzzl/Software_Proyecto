@@ -1,22 +1,28 @@
+import { motivoIndisponibilidad, type PeriodoDisponibilidad, type AlertaDisponibilidad } from '../../../api/disponibilidad';
 import { useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import local from './TareaForm.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
+import { formatFecha, formatHorario } from '../../../utils/date';
 import type { Ministro, Tarea } from '../../../types';
 import ErrorState from '../../../components/ui/ErrorState';
 import LoadingState from '../../../components/ui/LoadingState';
+import EventoTareaSelect from './EventoTareaSelect';
+import SelectorMinistros from './SelectorMinistros';
 
 const TOPE_SERVICIOS_MES = 8;
 
 export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshKey?: number; onTareaCreada?: () => void }) {
+  const [selectorRevision, setSelectorRevision] = useState(0);
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [horaFin, setHoraFin] = useState('');
   const [tareaId, setTareaId] = useState('');
+  const [eventoId, setEventoId] = useState<number | null>(null);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
@@ -25,6 +31,21 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
   const [intento, setIntento] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const toast = useToast();
+  const [advertenciaGuardada, setAdvertenciaGuardada] = useState('');
+  const [periodos, setPeriodos] = useState<Record<number, PeriodoDisponibilidad[]>>({});
+  const [errorPeriodos, setErrorPeriodos] = useState(false);
+  const [consultandoPeriodos, setConsultandoPeriodos] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    setPeriodos({}); setErrorPeriodos(false); setConsultandoPeriodos(seleccionados.length > 0);
+    Promise.all(seleccionados.map(async id => {
+      const res = await apiClient.get<PeriodoDisponibilidad[]>(`/api/personas/${id}/disponibilidad/periodos`);
+      return [id, res.data] as const;
+    })).then(entries => { if (vigente) setPeriodos(Object.fromEntries(entries)); })
+      .catch(() => { if (vigente) setErrorPeriodos(true); })
+      .finally(() => { if (vigente) setConsultandoPeriodos(false); });
+    return () => { vigente = false; };
+  }, [seleccionados]);
 
   useEffect(() => {
     let vigente = true;
@@ -52,7 +73,8 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
     const conflictos = dia && inicio && fin ? otros.filter(tarea => tarea.fecha.split('T')[0] === dia
       && tarea.hora_inicio.slice(0, 5) < fin && tarea.hora_fin.slice(0, 5) > inicio) : [];
     const servicios = otros.filter(tarea => tarea.fecha.slice(0, 7) === dia.slice(0, 7)).length + 1;
-    return { ministro, conflictos, servicios };
+    const ausencias = (periodos[ministro.id] ?? []).filter(p => dia && inicio && fin && p.desde < `${dia}T${fin}` && p.hasta > `${dia}T${inicio}`);
+    return { ministro, conflictos, servicios, ausencias };
   });
   const hayConflicto = avisos.some(aviso => aviso.conflictos.length > 0);
 
@@ -73,14 +95,24 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
     }
     setGuardando(true);
     try {
-      if (tareaId) await apiClient.post('/api/tareas/asignar', { tarea_id: Number(tareaId), persona_ids: seleccionados });
-      else await apiClient.post('/api/tareas', {
+      const res = tareaId ? await apiClient.post('/api/tareas/asignar', { tarea_id: Number(tareaId), persona_ids: seleccionados })
+      : await apiClient.post('/api/tareas', {
         titulo: titulo.trim(), descripcion: descripcion.trim(), fecha,
         hora_inicio: horaInicio, hora_fin: horaFin, persona_ids: seleccionados,
+        evento_id: eventoId,
       });
-      toast.success(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', 'Las asignaciones se guardaron correctamente.');
+      const advertencias = ((res.data?.alertas ?? []) as AlertaDisponibilidad[]).flatMap(a => {
+        const nombre = ministros.find(m => m.id === a.persona_id)?.nombre ?? 'Ministro';
+        return [a.ministro_no_disponible && `${nombre}: ${motivoIndisponibilidad(a)}`,
+          a.tope_servicios_superado && `${nombre}: supera el tope mensual (${a.servicios_en_el_mes}/${a.tope_servicios_mes}).`].filter(Boolean);
+      });
+      setAdvertenciaGuardada(advertencias.join(' '));
+      const notificar = advertencias.length ? toast.warning : toast.success;
+      notificar(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', advertencias.length ? advertencias.join(' ') : 'Las asignaciones se guardaron correctamente.');
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
+      setSelectorRevision(value => value + 1);
+      setEventoId(null);
       onTareaCreada?.();
     } catch (error: unknown) {
       toast.error('No se pudo guardar la tarea', getApiErrorMessage(error, 'Error de red al intentar guardar la tarea.'));
@@ -92,15 +124,24 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
+      {advertenciaGuardada && <div role="alert" className={styles.modalWarning}><strong>Asignación guardada con advertencias</strong><p>{advertenciaGuardada}</p></div>}
       <fieldset className={local.fields} disabled={guardando}>
         <div className={styles.field}>
           <label htmlFor="tarea" className={styles.label}>Tarea</label>
           <select id="tarea" className={styles.input} value={tareaId} onChange={e => { setTareaId(e.target.value); setSeleccionados([]); }}>
             <option value="">Crear una nueva tarea</option>
-            {tareas.map(tarea => <option key={tarea.id} value={tarea.id}>{tarea.titulo} · {tarea.fecha.split('T')[0]} · {tarea.hora_inicio.slice(0, 5)}</option>)}
+            {tareas.map(tarea => <option key={tarea.id} value={tarea.id}>{tarea.titulo} · {formatFecha(tarea.fecha)} · {formatHorario(tarea.hora_inicio, tarea.hora_fin)}</option>)}
           </select>
         </div>
         {!tareaId && <>
+          <EventoTareaSelect value={eventoId} disabled={guardando} onChange={(id, evento) => {
+            setEventoId(id);
+            if (evento) {
+              setFecha(evento.fecha.slice(0, 10));
+              setHoraInicio(evento.hora_inicio.slice(0, 5));
+              setHoraFin(evento.hora_fin.slice(0, 5));
+            }
+          }} />
           <div className={styles.field}>
             <label htmlFor="titulo" className={styles.label}>Título:</label>
             <input id="titulo" className={styles.input} value={titulo} maxLength={255} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Lectura primera" />
@@ -125,21 +166,18 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </div>
         </>}
         {existente && <p>{existente.descripcion} · {dia} · {inicio}–{fin}</p>}
-        <fieldset className={local.ministros}>
-          <legend className={styles.label}>Ministros ({seleccionados.length} seleccionados)</legend>
-          {!ministros.length && <p>No hay ministros disponibles en tu directorio para asignar.</p>}
-          {ministros.map(ministro => <label key={ministro.id} className={local.option}>
-            <input type="checkbox" checked={seleccionados.includes(ministro.id) || yaAsignados.includes(ministro.id)} disabled={yaAsignados.includes(ministro.id)}
-              onChange={event => setSeleccionados(actual => event.target.checked ? [...actual, ministro.id] : actual.filter(id => id !== ministro.id))} />
-            <span>{ministro.nombre}{yaAsignados.includes(ministro.id) ? ' (ya asignado)' : ''}</span>
-          </label>)}
-        </fieldset>
-        {avisos.map(({ ministro, conflictos, servicios }) => (
-          (conflictos.length > 0 || !ministro.disponible || (dia && servicios > TOPE_SERVICIOS_MES)) &&
+        <SelectorMinistros key={`${tareaId}-${selectorRevision}`} ministros={ministros}
+          seleccionados={seleccionados} yaAsignados={yaAsignados} onChange={setSeleccionados} disabled={guardando} />
+        {consultandoPeriodos && <p role="status">Comprobando ausencias y periodos...</p>}
+        {errorPeriodos && <p role="alert">No se pudieron consultar los periodos. El servidor volverá a comprobarlos al guardar.</p>}
+        {avisos.map(({ ministro, conflictos, servicios, ausencias }) => (
+          (ausencias.length > 0 || conflictos.length > 0 || !ministro.disponible || (dia && servicios > TOPE_SERVICIOS_MES)) &&
           <div key={ministro.id} className={styles.modalWarning}>
             <strong>{ministro.nombre}</strong>
             <ul className={styles.conflictList}>
               {conflictos.length > 0 && <li>Conflicto de horario: {conflictos.map(tarea => tarea.titulo).join(', ')}.</li>}
+              {ausencias.map(p =>
+                <li key={`${p.origen}-${p.id}`}>{p.origen === 'ausencia' ? 'Tiene una ausencia reportada en esta fecha.' : 'Tiene un periodo no disponible en este horario.'}</li>)}
               {!ministro.disponible && <li>Está marcado como no disponible.</li>}
               {dia && servicios > TOPE_SERVICIOS_MES && <li>Tendría {servicios} servicios este mes (tope: {TOPE_SERVICIOS_MES}).</li>}
             </ul>

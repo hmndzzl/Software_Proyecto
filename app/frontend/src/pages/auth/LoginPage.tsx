@@ -27,7 +27,12 @@ function ClerkSignInPanel() {
         routing="hash"
         forceRedirectUrl="/login"
         withSignUp={false}
-        appearance={{ elements: { footerAction: { display: 'none' } } }}
+        appearance={{ elements: {
+          footerAction: { display: 'none' },
+          rootBox: { width: '100%', maxWidth: '100%' },
+          cardBox: { width: '100%', maxWidth: '100%', minWidth: 0 },
+          card: { width: '100%', maxWidth: '100%', minWidth: 0 },
+        } }}
       />
     </>
   );
@@ -63,10 +68,10 @@ export default function LoginPage() {
           </Link>
 
           {/* Marca */}
-          <div className={styles.logoWrap}>
+          <Link to="/" className={styles.logoWrap} aria-label="Parroquia San Pedro Nolasco — Volver al inicio">
             <img src={logoImg} alt="Parroquia San Pedro Nolasco" className={styles.logoImg} />
             <span className={styles.logoName}>Parroquia San Pedro Nolasco</span>
-          </div>
+          </Link>
 
           {/* Titular */}
           <p className={styles.leftKicker}>Bienvenido de nuevo</p>

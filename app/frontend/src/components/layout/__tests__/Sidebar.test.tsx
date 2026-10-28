@@ -26,7 +26,7 @@ describe('Sidebar Component', () => {
       localStorage.setItem('usuario', JSON.stringify({ rol_id: rolId }));
     }
     return render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Sidebar colapsado={colapsado} onAlternar={onAlternar} />
         </AuthProvider>
@@ -63,10 +63,28 @@ describe('Sidebar Component', () => {
     expect(screen.queryByText('Contenido público')).not.toBeInTheDocument();
   });
 
+  it.each([ROLES.ADMIN, ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS])('muestra reportes al rol %s', (rol) => {
+    renderWithRouterAndAuth(rol);
+    expect(screen.getByRole('link', { name: 'Reportes' })).toHaveAttribute('href', '/reportes');
+  });
+
+  it.each([ROLES.MINISTRO, ROLES.COORDINADOR_GRUPOS])('oculta reportes al rol %s', (rol) => {
+    renderWithRouterAndAuth(rol);
+    expect(screen.queryByRole('link', { name: 'Reportes' })).not.toBeInTheDocument();
+  });
+
   it('NO renderiza botón "Nueva Reserva" si el usuario es ministro', () => {
     renderWithRouterAndAuth(ROLES.MINISTRO);
     expect(screen.queryByText('Nueva Reserva')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Mis Reservas' })).not.toBeInTheDocument();
   });
+
+  it.each([ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN])(
+    'mantiene Mis Reservas para el rol autorizado %s', (rol) => {
+      renderWithRouterAndAuth(rol);
+      expect(screen.getByRole('link', { name: 'Mis Reservas' })).toHaveAttribute('href', '/mis-reservas');
+    }
+  );
 
   it('llama a onAlternar al hacer click en el botón de colapsar', () => {
     const onAlternar = vi.fn();

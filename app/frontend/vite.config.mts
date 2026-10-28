@@ -3,7 +3,7 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: process.env.VITEST ? [] : [react()],
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -12,6 +12,10 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
+      '/uploads': {
+        target: process.env.DEV_BACKEND_TARGET || 'http://localhost:3001',
+        changeOrigin: true,
+      },
       '/api': {
         target: process.env.VITE_API_URL || 'http://backend:3001',
         changeOrigin: true,

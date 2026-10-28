@@ -3,10 +3,15 @@ import { Request, Response } from 'express';
 import pool from '../../config/db';
 import { HttpStatus } from '../../utils/httpStatus';
 import { ROLES } from '../../config/roles';
-import { listarCuentas, aprobarCuenta, rechazarCuenta } from '../cuenta.controller';
+import { enviarCorreoCuenta } from '../../services/email.service';
+import { listarCuentas, aprobarCuenta, rechazarCuenta, darDeBajaCuenta } from '../cuenta.controller';
 
 vi.mock('../../config/db', () => ({
-  default: { execute: vi.fn() },
+  default: { execute: vi.fn(), getConnection: vi.fn() },
+}));
+
+vi.mock('../../services/email.service', () => ({
+  enviarCorreoCuenta: vi.fn().mockResolvedValue(true),
 }));
 
 describe('Cuenta Controller - aprobación de cuentas', () => {
@@ -17,6 +22,11 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(pool.execute).mockResolvedValue([{ affectedRows: 1 }] as never);
+    vi.mocked(pool.getConnection).mockResolvedValue({
+      execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
+    } as never);
+    vi.mocked(enviarCorreoCuenta).mockResolvedValue(true);
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
     res = { status: statusMock, json: jsonMock };
@@ -74,7 +84,7 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
       const [sql, params] = (pool.execute as any).mock.calls[0];
       expect(sql).toContain('UPDATE persona SET estado_cuenta');
-      expect(params).toEqual(['activa', ROLES.COORDINADOR_MINISTROS, 12, 'activa']);
+      expect(params).toEqual(['activa', ROLES.COORDINADOR_MINISTROS, 12, 'pendiente', 'rechazada']);
       expect(pool.execute).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO notificacion'),
@@ -86,6 +96,33 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
         [12, 201]
       );
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+    });
+
+    it('envía el correo de aprobación a la persona', async () => {
+      req.body = { rol_id: ROLES.MINISTRO };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 204 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockResolvedValueOnce([[{ correo: 'ana@gmail.com', nombre: 'Ana' }]]); // SELECT destinatario
+
+      await aprobarCuenta(req as Request, res as Response);
+
+      await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('ana@gmail.com', 'Ana', 'aprobada'));
+    });
+
+    it('responde 200 aunque falle la consulta del destinatario para el correo', async () => {
+      req.body = { rol_id: ROLES.MINISTRO };
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 205 }]);
+      (pool.execute as any).mockResolvedValueOnce([{}]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockRejectedValueOnce(new Error('BD caída'));
+
+      await aprobarCuenta(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(enviarCorreoCuenta).not.toHaveBeenCalled();
     });
 
     it('Sacerdote aprueba la cuenta con un rol que no es Admin', async () => {
@@ -179,7 +216,7 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
       await rechazarCuenta(req as Request, res as Response);
 
-      expect((pool.execute as any).mock.calls[1][1]).toEqual(['rechazada', 12, 'pendiente', 'activa']);
+      expect((pool.execute as any).mock.calls[1][1]).toEqual(['rechazada', 12, 'pendiente']);
       expect(pool.execute).toHaveBeenNthCalledWith(
         3,
         expect.stringContaining('INSERT INTO notificacion'),
@@ -193,16 +230,25 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
     });
 
-    it('rechaza (desactiva) una cuenta que ya estaba activa', async () => {
-      cuenta(ROLES.MINISTRO, 'activa');
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
-      (pool.execute as any).mockResolvedValueOnce([{ insertId: 302 }]);
-      (pool.execute as any).mockResolvedValueOnce([{}]);
+    it('envía el correo de rechazo a la persona', async () => {
+      cuenta(ROLES.MINISTRO, 'pendiente');
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      (pool.execute as any).mockResolvedValueOnce([{ insertId: 304 }]); // INSERT notificacion
+      (pool.execute as any).mockResolvedValueOnce([{}]); // INSERT persona_notificacion
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // INSERT decision
+      (pool.execute as any).mockResolvedValueOnce([[{ correo: 'luis@gmail.com', nombre: 'Luis' }]]); // SELECT destinatario
 
       await rechazarCuenta(req as Request, res as Response);
 
+      await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('luis@gmail.com', 'Luis', 'rechazada'));
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Cuenta rechazada' });
+    });
+
+    it.each(['activa', 'rechazada', 'baja'])('no usa el rechazo para una cuenta %s', async estado => {
+      cuenta(ROLES.MINISTRO, estado);
+      await rechazarCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(pool.execute).toHaveBeenCalledTimes(1);
     });
 
     it('no permite rechazar la propia cuenta (403)', async () => {
@@ -224,8 +270,8 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       expect(pool.execute).toHaveBeenCalledTimes(1);
     });
 
-    it('un Admin sí puede rechazar la cuenta de otro Administrador', async () => {
-      cuenta(ROLES.ADMIN, 'activa');
+    it('un Admin sí puede rechazar una solicitud de otro Administrador', async () => {
+      cuenta(ROLES.ADMIN, 'pendiente');
       (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
       (pool.execute as any).mockResolvedValueOnce([{ insertId: 303 }]);
       (pool.execute as any).mockResolvedValueOnce([{}]);
@@ -245,7 +291,6 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
 
     it('retorna 409 si la cuenta ya estaba rechazada', async () => {
       cuenta(ROLES.MINISTRO, 'rechazada');
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 0 }]);
 
       await rechazarCuenta(req as Request, res as Response);
 
@@ -269,4 +314,61 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       expect(pool.execute).not.toHaveBeenCalled();
     });
   });
+  describe('darDeBajaCuenta', () => {
+    it.each([ROLES.ADMIN, ROLES.SACERDOTE])('da de baja como rol %s y audita sin eliminar relaciones', async rol => {
+      req.user = { id: 1, rol_id: rol };
+      vi.mocked(pool.execute)
+        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' }]] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([[{ nombre: 'Ana', correo: 'ana@example.com' }]] as never);
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(pool.execute).toHaveBeenCalledWith('UPDATE persona SET estado_cuenta = ? WHERE id = ?', ['baja', 12]);
+      expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO cuenta_decision'), [12, 'baja', 1]);
+      expect(vi.mocked(pool.execute).mock.calls.some(([sql]) => /DELETE/i.test(String(sql)))).toBe(false);
+      await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('ana@example.com', 'Ana', 'desactivada'));
+    });
+    it.each(['pendiente', 'rechazada', 'baja'])('impide dar de baja una cuenta %s', async estado => {
+      vi.mocked(pool.execute).mockResolvedValueOnce([[{ rol_id: 4, estado_cuenta: estado }]] as never);
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(pool.execute).toHaveBeenCalledTimes(1);
+    });
+    it.each(['0', '-1', 'texto', '9007199254740992'])('rechaza id inválido %s', async id => {
+      req.params = { id };
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(pool.getConnection).not.toHaveBeenCalled();
+    });
+    it('impide la baja propia', async () => {
+      req.params = { id: '1' };
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(403);
+      expect(pool.execute).not.toHaveBeenCalled();
+    });
+    it('impide que Sacerdote dé de baja a Admin', async () => {
+      req.user = { id: 1, rol_id: ROLES.SACERDOTE };
+      vi.mocked(pool.execute).mockResolvedValueOnce([[{ rol_id: ROLES.ADMIN, estado_cuenta: 'activa' }]] as never);
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(403);
+      expect(pool.execute).toHaveBeenCalledTimes(1);
+    });
+    it('retorna 404 para cuenta inexistente', async () => {
+      vi.mocked(pool.execute).mockResolvedValueOnce([[]] as never);
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(404);
+    });
+    it('revierte si falla la auditoría', async () => {
+      const rollback = vi.fn();
+      vi.mocked(pool.getConnection).mockResolvedValue({ execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback, release: vi.fn() } as never);
+      vi.mocked(pool.execute).mockResolvedValueOnce([[{ rol_id: 4, estado_cuenta: 'activa' }]] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never).mockRejectedValueOnce(new Error('Auditoría caída'));
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(rollback).toHaveBeenCalled();
+      expect(enviarCorreoCuenta).not.toHaveBeenCalled();
+    });
+  });
+
 });

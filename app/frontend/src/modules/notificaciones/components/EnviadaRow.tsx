@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Badge from '../../../components/ui/Badge';
 import type { NotificacionEnviada } from '../../../types';
-import { formatFecha } from '../../../utils/date';
+import { fechaNotificacion } from '../utils/fechaNotificacion';
 import styles from './NotificacionRow.module.css';
 import destStyles from './EnviadaRow.module.css';
 
@@ -22,7 +22,7 @@ export default function EnviadaRow({ notificacion }: Props) {
 
   return (
     <tr className={styles.row}>
-      <td className={styles.tdFecha}>{formatFecha(fecha)}</td>
+      <td className={styles.tdFecha}>{fechaNotificacion(fecha, notificacion.enviado_en)}</td>
       <td className={styles.tdMensaje}>{mensaje}</td>
       <td className={destStyles.destinatarios}>
         {destinatarios_nombres ? (

@@ -13,7 +13,7 @@ Sistema web para la gestión interna de la Parroquia San Pedro Nolasco (Guatemal
 - Alerta de rotación (HU-09): avisa si el ministro está indisponible o supera el tope mensual; informa, no bloquea la asignación.
 - Cambio de turno entre ministros (HU-23): solicitud, aceptación/rechazo y reasignación automática del titular al aceptar.
 - Notificaciones con polling, confirmación/excusa de asistencia y aviso de inasistencia al coordinador.
-- Calendario semanal, perfil de usuario, eventos, grupos y páginas de error/carga/estado vacío reutilizables.
+- Calendario unificado semanal y mensual de tareas y eventos, filtro por ministro, perfil de usuario, grupos y estados reutilizables.
 - UI responsive con sistema de diseño litúrgico, tablas ordenables y formato uniforme de fechas/horas.
 
 ## Stack
@@ -190,7 +190,8 @@ Sobre bases existentes, ejecutar una vez `app/database/migrations/20261005_perso
 | `/dashboard` | Resumen y accesos rápidos por rol. |
 | `/ministros` | Directorio y disponibilidad de ministros. |
 | `/tareas` | Tareas, asignaciones y reasignación del responsable. |
-| `/calendario` | Calendario semanal de servicios. |
+| `/reportes` | Descarga Excel/PDF/CSV de reservas (Sacerdote/Admin) y tareas (también CoordMin). |
+| `/calendario` | Calendario unificado semanal/mensual de eventos y tareas, con filtro por ministro. |
 | `/cambios-turno` | Solicitudes y respuestas de cambios de turno. |
 | `/reservas`, `/mis-reservas` | Gestión e historial de reservas. |
 | `/espacios`, `/espacios/:id` | Espacios y disponibilidad por horario. |
@@ -260,7 +261,17 @@ Todas las rutas (excepto login/logout/refresh) requieren `Authorization: Bearer 
 | PUT | `/:id` | Solicitante/Sacerdote/Admin | Edita + resetea a Pendiente |
 | PUT | `/:id/estado` | Sacerdote/Admin | Aprueba o rechaza |
 
+### Reportes — `/api/reportes`
+
+| Método | Ruta | Roles | Parámetros |
+|---|---|---|---|
+| GET | `/reservas` | Sacerdote/Admin | `desde`, `hasta` (YYYY-MM-DD, hasta 366 días); `formato=xlsx\|pdf\|csv` |
+| GET | `/tareas` | Sacerdote/Admin/CoordMin | `desde`, `hasta` (YYYY-MM-DD, hasta 31 días); `formato=xlsx\|pdf\|csv` |
+
+Ambos extremos requieren sesión y verifican el rol y el estado actual de la cuenta en la BD en cada solicitud. Se limitan a 60 solicitudes por minuto y cuenta. Los periodos son inclusivos y el máximo es de 1000 filas por archivo; si se excede, responden 413 para que se reduzca el periodo. Los archivos son adjuntos sin caché. Excel (.xlsx) es la opción principal, seguida de PDF y CSV. En Excel, los textos se guardan como cadenas, no fórmulas; el CSV mitiga la ejecución de fórmulas en hojas de cálculo. El reporte de reservas incluye todas las reservas del periodo y su estado; el de tareas incluye una fila por asignación y las tareas sin asignar.
+
 ### Otros módulos
+
 | Recurso | Prefijo | Notas |
 |---|---|---|
 | Tareas | `/api/tareas` | CRUD + asignación/desasignación (409 si hay conflicto de horario, HU-08) |
@@ -428,3 +439,13 @@ Solo Admin/Sacerdote puede cambiar la publicación con `PATCH /api/eventos/:id/p
 En bases existentes aplicar `app/database/migrations/20261009_evento_publico.sql`;
 los eventos existentes y nuevos permanecen privados por defecto.
 Ver [contrato, ejemplos y pruebas de la agenda pública](docs/hu32/agenda-publica.md).
+
+## Calendario unificado (D4)
+
+El calendario reúne eventos y tareas, permite consultar el horario de un ministro
+autorizado y ofrece semana y mes. Las tareas pueden vincularse explícitamente
+a una misa o evento desde sus formularios de creación y edición.
+
+En bases existentes, aplicar `app/database/migrations/20261024_tarea_evento.sql`
+antes de utilizar el backend nuevo, conservando los volúmenes de datos.
+Ver [uso por rol, contrato de API, migración y pruebas](docs/d4/calendario-unificado.md).

@@ -12,6 +12,9 @@ export interface Persona {
 
 export interface Evento {
   id: number;
+  titulo?: string;
+  estado_reserva_id?: number;
+  publico?: 0 | 1 | boolean;
   descripcion: string;
   encargado_id: number;
   reserva_id: number;
@@ -28,6 +31,7 @@ export interface Notificacion {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   remitente_id: number | null;
   remitente_nombre: string | null;
@@ -44,6 +48,7 @@ export interface NotificacionPapelera {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   remitente_id: number | null;
   remitente_nombre: string | null;
@@ -59,6 +64,7 @@ export interface NotificacionEnviada {
   id: number;
   mensaje: string;
   fecha: string;
+  enviado_en?: string | null;
   tipo: NotificacionTipo;
   grupo_id: number | null;
   evento_id: number | null;
@@ -87,6 +93,7 @@ export interface ReservaDisponible {
 }
 
 export interface Reserva {
+  cantidad_personas?: number | null;
   id: number;
   fecha: string;
   hora_inicio: string;
@@ -97,8 +104,11 @@ export interface Reserva {
   solicitante_id?: number;
   solicitante_nombre: string | null;
   evento_id?: number | null;
+  evento_publico?: 0 | 1 | boolean;
   evento_titulo: string | null;
   evento_descripcion: string | null;
+  checkin_en?: string | null;
+  en_uso?: boolean;
 }
 
 export interface AsignadoInfo {
@@ -110,6 +120,7 @@ export interface AsignadoInfo {
 
 export interface Tarea {
   id: number;
+  evento_id?: number | null;
   titulo: string;
   descripcion: string;
   fecha: string;
@@ -120,6 +131,9 @@ export interface Tarea {
 }
 
 export interface Ministro {
+  periodo_activo?: boolean | number;
+  ausencia_activa?: boolean | number;
+  telefono?: string | null;
   id: number;
   nombre: string;
   correo: string;

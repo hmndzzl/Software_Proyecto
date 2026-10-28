@@ -1,0 +1,9 @@
+.wrap { margin: 16px 0; padding: 16px; border-block: 1px solid var(--color-line); }
+.fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.field { display: flex; flex: 1 1 170px; flex-direction: column; gap: 7px; min-width: 0; color: var(--color-carbon); font-size: 14px; }
+.field:first-child { flex-basis: 240px; }
+.summary { margin: 12px 0 0; color: var(--color-ink); font-size: 14px; }
+@media (max-width: 480px) {
+  .field, .field:first-child { flex-basis: 100%; }
+  .fields > button { width: 100%; }
+}

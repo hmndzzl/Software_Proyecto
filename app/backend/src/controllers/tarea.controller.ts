@@ -1,3 +1,5 @@
+import { DISPONIBILIDAD_TAREA_SQL, parametrosDisponibilidad, alertaDisponibilidad } from '../services/disponibilidad.service';
+import { validarEventoTarea } from '../services/tareaEvento.service';
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import pool from '../config/db';
@@ -7,13 +9,17 @@ import { TOPE_SERVICIOS_MES } from '../config/constants';
 import type { TareaCreateInput, TareaConAsignados, AsignadoInfo } from '../types/tarea.types';
 import { withTransaction } from '../utils/withTransaction';
 import { ErrorAsignacion, guardarTareaConMinistros, validarMinistros } from '../services/tareasAsignacion.service';
+import { validarMinistrosPropios } from '../services/alcanceMinistros.service';
 
 // Manejo de get, post, put, delete para tareas y asignaciones
 // Retorna todas las tareas con sus ministros asignados con GET /api/tareas
 export const getTareas = async (req: Request, res: Response): Promise<void> => {
   try {
     const { fecha_inicio, fecha_fin, persona_id } = req.query;
-    const tieneParametros = !!(fecha_inicio || fecha_fin || persona_id);
+    // Coordinador de Ministros solo ve tareas con al menos un ministro propio
+    // asignado (coordinador_ministro) — mismo alcance que getMinistros/getDestinatarios.
+    const esCoordinadorMinistros = req.user?.rol_id === ROLES.COORDINADOR_MINISTROS;
+    const tieneParametros = !!(fecha_inicio || fecha_fin || persona_id) || esCoordinadorMinistros;
 
     let tareas: RowDataPacket[];
 
@@ -46,6 +52,16 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
         conditions.push('at.persona_id = ?');
         values.push(Number(persona_id));
       }
+      if (esCoordinadorMinistros) {
+        conditions.push(
+          `EXISTS (
+            SELECT 1 FROM asignacion_tarea at2
+            JOIN coordinador_ministro cm ON cm.ministro_id = at2.persona_id
+            WHERE at2.tarea_id = t.id AND cm.coordinador_id = ?
+          )`
+        );
+        values.push(req.user!.id);
+      }
 
       query += ' WHERE ' + conditions.join(' AND ');
 
@@ -67,7 +83,7 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
           [tarea.id]
         );
         return {
-          ...(tarea as any),
+          ...(tarea),
           asignados,
           persona_nombre: (asignados[0] as AsignadoInfo | undefined)?.nombre ?? null,
         } as TareaConAsignados;
@@ -116,7 +132,7 @@ export const getTareaById = async (req: Request, res: Response): Promise<void> =
 
 // Manejo de creación de tarea con POST /api/tareas
 export const createTarea = async (req: Request, res: Response): Promise<void> => {
-  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id } = req.body as TareaCreateInput;
 
   if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
@@ -135,19 +151,26 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
   try {
     if (req.body.persona_ids !== undefined) {
       const ids = validarMinistros(req.body.persona_ids);
-      const resultado = await guardarTareaConMinistros({ fecha, hora_inicio, hora_fin, titulo, descripcion }, ids, req.user!);
+      const resultado = await guardarTareaConMinistros({ fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id }, ids, req.user!);
       res.status(HttpStatus.CREATED).json({ mensaje: 'Tarea creada y asignada exitosamente', ...resultado });
       return;
     }
-    const [result] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion) VALUES (?, ?, ?, ?, ?)',
-      [fecha, hora_inicio, hora_fin, titulo, descripcion]
-    );
+    let tareaId = 0;
+    await withTransaction(async conn => {
+      await validarEventoTarea(conn, evento_id, fecha);
+      const [result] = await conn.execute<ResultSetHeader>(
+        'INSERT INTO tarea (fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id ?? null],
+      );
+      tareaId = result.insertId;
+      return 'commit';
+    });
 
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Tarea creada exitosamente',
       tarea: {
-        id: result.insertId,
+        id: tareaId,
+        evento_id: evento_id ?? null,
         fecha,
         hora_inicio,
         hora_fin,
@@ -169,7 +192,7 @@ export const createTarea = async (req: Request, res: Response): Promise<void> =>
 // manejo de PUT para actualizar una tarea con PUT /api/tareas/:id
 export const updateTarea = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { fecha, hora_inicio, hora_fin, titulo, descripcion } = req.body as TareaCreateInput;
+  const { fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id } = req.body as TareaCreateInput;
 
   if (!fecha || !hora_inicio || !hora_fin || !titulo || !descripcion) {
     res.status(HttpStatus.BAD_REQUEST).json({
@@ -210,21 +233,32 @@ export const updateTarea = async (req: Request, res: Response): Promise<void> =>
       }
     }
 
-    const [result] = await pool.execute<ResultSetHeader>(
-      'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, titulo = ?, descripcion = ? WHERE id = ?',
-      [fecha, hora_inicio, hora_fin, titulo, descripcion, id]
-    );
-
-    if (result.affectedRows === 0) {
+    let eventoActual: number | null = null;
+    let existe = true;
+    await withTransaction(async conn => {
+      const [actual] = await conn.execute<RowDataPacket[]>('SELECT * FROM tarea WHERE id = ? FOR UPDATE', [id]);
+      if (!actual.length) { existe = false; return 'rollback'; }
+      eventoActual = evento_id === undefined ? (actual[0].evento_id ?? null) : evento_id;
+      await validarEventoTarea(conn, eventoActual, fecha, eventoActual !== actual[0].evento_id);
+      await conn.execute(
+        'UPDATE tarea SET fecha = ?, hora_inicio = ?, hora_fin = ?, titulo = ?, descripcion = ?, evento_id = ? WHERE id = ?',
+        [fecha, hora_inicio, hora_fin, titulo, descripcion, eventoActual, id],
+      );
+      return 'commit';
+    });
+    if (!existe) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Tarea no encontrada' });
       return;
     }
-
     res.status(HttpStatus.OK).json({
       mensaje: 'Tarea actualizada exitosamente',
-      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, titulo, descripcion },
+      tarea: { id: Number(id), fecha, hora_inicio, hora_fin, titulo, descripcion, evento_id: eventoActual },
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en updateTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar la tarea' });
   }
@@ -279,6 +313,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
 
   try {
     // Validaciones previas (sin transacción para evitar bloqueos innecesarios)
+    await validarMinistrosPropios(pool, req.user!, [Number(persona_id)]);
     const [tareas] = await pool.execute<RowDataPacket[]>(
       'SELECT id, titulo, descripcion, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
@@ -288,8 +323,12 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     }
 
     const [personas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, disponible FROM persona WHERE id = ?', [persona_id]
+      `SELECT p.id, p.disponible, ${DISPONIBILIDAD_TAREA_SQL}
+       FROM persona p
+       WHERE p.id = ? AND p.rol_id = 4 AND p.estado_cuenta = 'activa'`,
+      [...parametrosDisponibilidad(tareas[0]), persona_id]
     );
+    
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
       return;
@@ -300,7 +339,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     // Alerta de rotación, no bloquea la asignación, solo informa.
     // ministro_no_disponible: fue marcado manualmente como no disponible (enfermo, permiso, etc.)
     // tope_servicios_superado: ya alcanzó/superó el tope de tareas del mes de la tarea asignada
-    const ministroNoDisponible = !personas[0].disponible;
+    const disponibilidad = alertaDisponibilidad(personas[0]);
 
     const [conteoMes] = await pool.execute<RowDataPacket[]>(
       `SELECT COUNT(*) AS total
@@ -362,7 +401,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
         tarea_id,
         persona_id,
         alerta: {
-          ministro_no_disponible: ministroNoDisponible,
+          ...disponibilidad,
           tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
           servicios_en_el_mes: serviciosEnElMes,
           tope_servicios_mes: TOPE_SERVICIOS_MES,
@@ -371,6 +410,10 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
       return 'commit';
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en asignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al realizar la asignación' });
   }
@@ -392,6 +435,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
   }
 
   try {
+    await validarMinistrosPropios(pool, req.user!, [Number(persona_actual_id), Number(persona_nueva_id)]);
     const [tareas] = await pool.execute<RowDataPacket[]>(
       'SELECT id, titulo, fecha, hora_inicio, hora_fin FROM tarea WHERE id = ?', [tarea_id]
     );
@@ -411,7 +455,10 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
     }
 
     const [personas] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, disponible FROM persona WHERE id = ?', [persona_nueva_id]
+    `SELECT p.id, p.disponible, ${DISPONIBILIDAD_TAREA_SQL}
+     FROM persona p
+     WHERE p.id = ? AND p.rol_id = 4 AND p.estado_cuenta = 'activa'`,
+    [...parametrosDisponibilidad(tarea), persona_nueva_id]
     );
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
@@ -419,7 +466,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
     }
 
     // Misma alerta de rotación (no bloqueante) que asignarTarea, calculada para el nuevo responsable.
-    const ministroNoDisponible = !personas[0].disponible;
+    const disponibilidad = alertaDisponibilidad(personas[0]);
 
     const [conteoMes] = await pool.execute<RowDataPacket[]>(
       `SELECT COUNT(*) AS total
@@ -488,7 +535,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
         persona_anterior_id: Number(persona_actual_id),
         persona_nueva_id: Number(persona_nueva_id),
         alerta: {
-          ministro_no_disponible: ministroNoDisponible,
+          ...disponibilidad,
           tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
           servicios_en_el_mes: serviciosEnElMes,
           tope_servicios_mes: TOPE_SERVICIOS_MES,
@@ -497,6 +544,10 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
       return 'commit';
     });
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en reasignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al reasignar la tarea' });
   }
@@ -512,6 +563,7 @@ export const desasignarTarea = async (req: Request, res: Response): Promise<void
   }
 
   try {
+    await validarMinistrosPropios(pool, req.user!, [Number(persona_id)]);
     const [result] = await pool.execute<ResultSetHeader>(
       'DELETE FROM asignacion_tarea WHERE tarea_id = ? AND persona_id = ?',
       [tarea_id, persona_id]
@@ -540,6 +592,10 @@ export const desasignarTarea = async (req: Request, res: Response): Promise<void
 
     res.status(HttpStatus.NO_CONTENT).send();
   } catch (error) {
+    if (error instanceof ErrorAsignacion) {
+      res.status(error.status).json({ mensaje: error.message });
+      return;
+    }
     console.error('Error en desasignarTarea:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al eliminar la asignación' });
   }

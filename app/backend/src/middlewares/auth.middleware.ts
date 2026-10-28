@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../services/sesion.service';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ROLE_HIERARCHY } from '../config/roles';
@@ -54,8 +55,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    req.user = decoded;
-    next();
+    void authenticateWithJwt(decoded, req, res, next);
     return;
   } catch {
     // Si no es un JWT propio, puede ser un token de sesión de Clerk (migración).
@@ -67,6 +67,29 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   }
 
   void authenticateWithClerk(token, req, res, next);
+}
+
+async function authenticateWithJwt(decoded: JwtPayload, req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (!Number.isSafeInteger(decoded.id) || decoded.id <= 0) {
+    res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Token inválido o expirado' });
+    return;
+  }
+  try {
+    const persona = await obtenerPersonaSesion(decoded.id);
+    if (!persona) {
+      res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'La cuenta ya no existe' });
+      return;
+    }
+    if (persona.estado_cuenta !== ESTADOS_CUENTA.ACTIVA) {
+      res.status(HttpStatus.FORBIDDEN).json(respuestaCuentaNoActiva(persona.estado_cuenta));
+      return;
+    }
+    req.user = { id: persona.id, rol_id: persona.rol_id };
+    next();
+  } catch (error) {
+    console.error('Error al consultar la sesión:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'No se pudo validar la sesión' });
+  }
 }
 
 async function authenticateWithClerk(token: string, req: Request, res: Response, next: NextFunction): Promise<void> {

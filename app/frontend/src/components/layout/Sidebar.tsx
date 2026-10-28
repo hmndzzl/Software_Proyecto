@@ -3,6 +3,8 @@ import styles from './Sidebar.module.css';
 import { ROLES } from '../../utils/roles';
 import { useAuth } from '../../context/AuthContext';
 
+const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
+
 const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles?: number[]; icon: React.ReactNode }[] = [
   {
     to: '/dashboard',
@@ -50,12 +52,32 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
     ),
   },
   {
+    to: '/mensajes-contacto',
+    label: 'Mensajes de contacto',
+    roles: [ROLES.SACERDOTE, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>
+      </svg>
+    ),
+  },
+  {
     to: '/tareas',
     label: 'Tareas',
     roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.MINISTRO, ROLES.ADMIN],
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/reportes',
+    label: 'Reportes',
+    roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.ADMIN],
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 3h10l4 4v14H5z"/><path d="M15 3v5h4M8 12h8M8 16h8"/>
       </svg>
     ),
   },
@@ -85,7 +107,7 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
   {
     to: '/reservas',
     label: 'Reservas',
-    roles: [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN],
+    roles: ROLES_RESERVAS,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
@@ -142,7 +164,7 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
   {
     to: '/mis-reservas',
     label: 'Mis Reservas',
-    roles: null,
+    roles: ROLES_RESERVAS,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="5"/><path d="M3 21v-1a9 9 0 0 1 18 0v1"/>
@@ -172,8 +194,6 @@ const NAV_ITEMS: { to: string; label: string; roles: number[] | null; exactRoles
     ),
   },
 ];
-
-const ROLES_RESERVAS = [ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN];
 
 interface SidebarProps {
   colapsado: boolean;

@@ -1,7 +1,7 @@
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // CLERK_ENABLED se calcula al importar el módulo: la key se define antes de los imports.
 vi.hoisted(() => {
@@ -30,7 +30,7 @@ import { getLoginError, setLoginError } from '../../../auth/clerkSession';
 
 const renderLogin = () =>
   render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <LoginPage />
     </MemoryRouter>
   );
@@ -44,8 +44,6 @@ describe('LoginPage con Clerk', () => {
     setLoginError(null);
     sessionStorage.clear();
   });
-
-  afterEach(() => setLoginError(null));
 
   it('muestra el formulario de Clerk sin mensaje de error por defecto', () => {
     renderLogin();

@@ -36,7 +36,7 @@ function Espia() {
 
 function mostrar({ conSync = false } = {}) {
   render(
-    <MemoryRouter initialEntries={['/privada']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/privada']}>
       <AuthProvider>
         <Espia />
         {conSync && <ClerkSessionSync />}

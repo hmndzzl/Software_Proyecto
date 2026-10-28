@@ -35,14 +35,13 @@ describe('integración de grupos y permisos', () => {
       await userEvent.click(header);
     }
     await userEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0]);
-    expect(screen.getAllByText('Editar Grupo')).toHaveLength(2);
+    expect(screen.getAllByRole('heading', { name: 'Editar Grupo' })).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(screen.queryByText('Editar Grupo')).not.toBeInTheDocument();
   });
 
   it('actualiza y elimina tras confirmar', async () => {
     const cambiado = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<EditarGrupoForm grupo={grupo as any} onGrupoActualizado={cambiado} />, { wrapper });
     await screen.findByRole('option', { name: 'Ana' });
     await userEvent.clear(screen.getByLabelText('Nombre del Grupo:'));
@@ -50,12 +49,26 @@ describe('integración de grupos y permisos', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/grupos/3', { nombre: 'Coro juvenil', coordinador_id: 7 });
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(apiClient.delete).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/grupos/3');
     expect(cambiado).toHaveBeenCalledTimes(2);
   });
 
+  it('conserva la confirmación y permite reintentar si falla eliminar el grupo', async () => {
+    const cambiado = vi.fn();
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    render(<EditarGrupoForm grupo={grupo as any} onGrupoActualizado={cambiado} />, { wrapper });
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar el grupo');
+    expect(screen.getByRole('dialog', { name: 'Eliminar grupo' })).toBeInTheDocument();
+    expect(cambiado).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
+    expect(cambiado).toHaveBeenCalledOnce();
+  });
+
   it('valida, cancela eliminación y muestra errores del servidor', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { mensaje: 'Duplicado' } } });
     render(<EditarGrupoForm grupo={grupo as any} />, { wrapper });
     await userEvent.clear(screen.getByLabelText('Nombre del Grupo:'));
@@ -66,6 +79,8 @@ describe('integración de grupos y permisos', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Duplicado');
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('recupera error, muestra vacío y oculta acciones sin permiso', async () => {

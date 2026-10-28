@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -5,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/db';
 import ausenciaRoutes from '../../routes/ausencia.routes';
 import { JWT_SECRET } from '../../config/env';
+
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
 vi.mock('../../config/db', () => ({ default: { getConnection: vi.fn() } }));
 const app = express();
@@ -16,6 +19,7 @@ const conn = {
   beginTransaction: vi.fn(), execute: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
 };
 function enviar(payload: object = body, id = 9, rol_id = 4) {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id, rol_id, estado_cuenta: 'activa' });
   const token = jwt.sign({ id, rol_id }, JWT_SECRET);
   return request(app).post('/api/ausencias').set('Authorization', `Bearer ${token}`).send(payload);
 }
@@ -35,7 +39,7 @@ describe('POST /api/ausencias (HU-31)', () => {
     const res = await enviar({ ...body, nombre: 'Nombre falsificado', correo: 'falso@example.com' });
     expect(res.status).toBe(201);
     expect(res.body.ausencia).toEqual({ ...body, id: 21, ministro, notificacion_id: 80 });
-    expect(conn.execute).toHaveBeenNthCalledWith(2, 'SELECT id FROM persona WHERE rol_id IN (?, ?)', [2, 1]);
+    expect(conn.execute).toHaveBeenNthCalledWith(2, "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [2, 1]);
     for (const id of [6, 7, 13]) {
       expect(conn.execute).toHaveBeenCalledWith(
         'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [id, 80]);
@@ -102,7 +106,7 @@ describe('POST /api/ausencias (HU-31)', () => {
     expect(conn.execute).toHaveBeenNthCalledWith(1,
       'SELECT id, nombre, correo FROM persona WHERE id = ? AND rol_id = ?', [9, 5]);
     expect(conn.execute).toHaveBeenNthCalledWith(2,
-      'SELECT id FROM persona WHERE rol_id IN (?, ?)', [2, 1]);
+      "SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa'", [2, 1]);
   });
 
   it('el admin tampoco puede suplantar otra identidad', async () => {

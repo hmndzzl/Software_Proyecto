@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardHead, CardBody } from '../../../components/ui/Card';
 import DetalleEventoModal from '../../../components/ui/DetalleEventoModal';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
-import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey, formatHora } from '../../../utils/date';
+import { DIAS_SEMANA, getMonday, formatYYYYMMDD, formatRangeText, fechaKey, formatHorario } from '../../../utils/date';
 import type { Reserva } from '../../../types';
 import styles from './EspacioCalendarioReservas.module.css';
 
@@ -107,14 +107,20 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
                       <button
                         key={r.id}
                         type="button"
-                        className={styles.reservaCard}
+                        className={`${styles.reservaCard}${r.en_uso ? ` ${styles.reservaCardEnUso}` : ''}`}
                         onClick={() => setReservaSeleccionada(r)}
                       >
                         <div className={styles.timeRow}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                          <span>{formatHora(r.hora_inicio)}–{formatHora(r.hora_fin)}</span>
+                          <span>{formatHorario(r.hora_inicio, r.hora_fin)}</span>
                         </div>
                         <p className={styles.reservaTitulo}>{r.evento_titulo || `Reserva #${r.id}`}</p>
+                        {r.en_uso && (
+                          <span className={styles.enUsoTag}>
+                            <span className={styles.enUsoDot} />
+                            En uso ahora
+                          </span>
+                        )}
                       </button>
                     ))
                   )}

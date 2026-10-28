@@ -7,11 +7,14 @@ import Badge from '../../../components/ui/Badge';
 import type { BadgeKind } from '../../../components/ui/Badge';
 import Btn from '../../../components/ui/Btn';
 import SortableTh from '../../../components/ui/SortableTh';
+import TableFilters from '../../../components/ui/TableFilters';
+import { useTableFilters } from '../../../hooks/useTableFilters';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import LoadingState from '../../../components/ui/LoadingState';
 import ErrorState from '../../../components/ui/ErrorState';
 import EmptyState from '../../../components/ui/EmptyState';
-import { formatFecha } from '../../../utils/date';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import { formatFecha, formatHorario, esTareaFutura } from '../../../utils/date';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import styles from './ListaCambiosTurno.module.css';
 
@@ -65,6 +68,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   const [cambios, setCambios] = useState<CambioTurno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [porRechazar, setPorRechazar] = useState<CambioTurno | null>(null);
   const toast = useToast();
 
   const cargarCambios = () => {
@@ -80,21 +84,34 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
     cargarCambios();
   }, [refreshKey]);
 
-  const responder = async (id: number, aceptar: boolean) => {
+  const responder = async (id: number, aceptar: boolean, tareaFecha?: string, tareaHoraInicio?: string) => {
+    if (aceptar && tareaFecha && !esTareaFutura(tareaFecha, tareaHoraInicio)) {
+      toast.error('Tarea vencida', 'No se puede aceptar un cambio de turno para una tarea cuya fecha ya pasó.');
+      return;
+    }
     try {
       const res = await apiClient.put<{ mensaje: string }>(`/api/cambios-turno/${id}/responder`, { aceptar });
       toast.success(aceptar ? 'Cambio aceptado' : 'Cambio rechazado', res.data.mensaje);
       cargarCambios();
     } catch (err: unknown) {
       toast.error('No se pudo responder la solicitud', getApiErrorMessage(err, 'Error al responder la solicitud de cambio de turno.'));
+      throw err;
     }
   };
 
   const recibidas = usuario ? cambios.filter(c => c.destinatario_id === usuario.id) : [];
   const enviadas = usuario ? cambios.filter(c => c.solicitante_id === usuario.id) : [];
 
-  const recibidasSort = useSortableTable(recibidas, SORT_VALUE_RECIBIDAS);
-  const enviadasSort = useSortableTable(enviadas, SORT_VALUE_ENVIADAS);
+  const recibidasFiltros = useTableFilters(recibidas, {
+    search: c => [c.tarea_titulo, c.tarea_descripcion, c.solicitante_nombre], date: c => c.tarea_fecha,
+    selects: [{ key: 'estado', label: 'Estado', value: c => ESTADO_LABEL[c.estado] }],
+  });
+  const enviadasFiltros = useTableFilters(enviadas, {
+    search: c => [c.tarea_titulo, c.tarea_descripcion, c.destinatario_nombre], date: c => c.tarea_fecha,
+    selects: [{ key: 'estado', label: 'Estado', value: c => ESTADO_LABEL[c.estado] }],
+  });
+  const recibidasSort = useSortableTable(recibidasFiltros.filteredData, SORT_VALUE_RECIBIDAS);
+  const enviadasSort = useSortableTable(enviadasFiltros.filteredData, SORT_VALUE_ENVIADAS);
 
   if (loading) return <LoadingState label="Cargando solicitudes de cambio de turno..." />;
   if (error) return <ErrorState message={error} onRetry={cargarCambios} />;
@@ -104,6 +121,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
       <CardHead title="Cambios de Turno" hint={!loading ? `${cambios.length} solicitudes` : undefined} />
 
       <h3 className={styles.seccionTitulo}>Solicitudes Recibidas</h3>
+      <TableFilters {...recibidasFiltros.controls} label="Filtros de cambios recibidos" />
       {recibidas.length === 0 ? (
         <EmptyState message="No has recibido solicitudes de cambio de turno." />
       ) : (
@@ -124,14 +142,18 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
                 <tr key={c.id}>
                   <td>{c.tarea_titulo}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
-                  <td className={styles.horaCell}>{c.tarea_hora_inicio.substring(0, 5)}-{c.tarea_hora_fin.substring(0, 5)}</td>
+                  <td className={styles.horaCell}>{formatHorario(c.tarea_hora_inicio, c.tarea_hora_fin)}</td>
                   <td>{c.solicitante_nombre}</td>
                   <td><Badge kind={ESTADO_BADGE[c.estado]}>{ESTADO_LABEL[c.estado]}</Badge></td>
                   <td>
                     {c.estado === 'pendiente' && (
                       <div className={styles.acciones}>
-                        <Btn kind="ok" size="sm" onClick={() => responder(c.id, true)}>Aceptar</Btn>
-                        <Btn kind="bad" size="sm" onClick={() => responder(c.id, false)}>Rechazar</Btn>
+                        {esTareaFutura(c.tarea_fecha, c.tarea_hora_inicio) ? (
+                          <Btn kind="ok" size="sm" onClick={() => { void responder(c.id, true, c.tarea_fecha, c.tarea_hora_inicio).catch(() => {}); }}>Aceptar</Btn>
+                        ) : (
+                          <Badge kind="rechazada">Vencida</Badge>
+                        )}
+                        <Btn kind="bad" size="sm" onClick={() => setPorRechazar(c)}>Rechazar</Btn>
                       </div>
                     )}
                   </td>
@@ -143,6 +165,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
       )}
 
       <h3 className={styles.seccionTitulo}>Mis Solicitudes Enviadas</h3>
+      <TableFilters {...enviadasFiltros.controls} label="Filtros de cambios enviados" />
       {enviadas.length === 0 ? (
         <EmptyState message="No has solicitado ningún cambio de turno." />
       ) : (
@@ -162,7 +185,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
                 <tr key={c.id}>
                   <td>{c.tarea_titulo}</td>
                   <td className={styles.horaCell}>{formatFecha(c.tarea_fecha)}</td>
-                  <td className={styles.horaCell}>{c.tarea_hora_inicio.substring(0, 5)}-{c.tarea_hora_fin.substring(0, 5)}</td>
+                  <td className={styles.horaCell}>{formatHorario(c.tarea_hora_inicio, c.tarea_hora_fin)}</td>
                   <td>{c.destinatario_nombre}</td>
                   <td><Badge kind={ESTADO_BADGE[c.estado]}>{ESTADO_LABEL[c.estado]}</Badge></td>
                 </tr>
@@ -171,6 +194,15 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
           </table>
         </div>
       )}
+      <ConfirmDialog open={porRechazar !== null} title="Rechazar cambio de turno" confirmLabel="Rechazar solicitud"
+        description={porRechazar
+          ? `¿Rechazar la solicitud de ${porRechazar.solicitante_nombre} para intercambiar el turno «${porRechazar.tarea_titulo}» del ${formatFecha(porRechazar.tarea_fecha)}?`
+          : ''}
+        onCancel={() => setPorRechazar(null)} onConfirm={async () => {
+          if (!porRechazar) return;
+          await responder(porRechazar.id, false, porRechazar.tarea_fecha, porRechazar.tarea_hora_inicio);
+          setPorRechazar(null);
+        }} />
     </div>
   );
 }

@@ -156,6 +156,7 @@ test('una solicitud de reserva válida envía todos los datos y confirma el resu
 
   await page.goto('/reservas?nueva=1');
   await page.locator('#espacio_id').selectOption('2');
+  await page.getByLabel('Cantidad de personas esperadas').fill('100');
   await page.locator('#fecha').fill('2099-10-20');
   await page.locator('#hora_inicio').fill('14:00');
   await page.locator('#hora_fin').fill('15:00');
@@ -169,7 +170,9 @@ test('una solicitud de reserva válida envía todos los datos y confirma el resu
     hora_inicio: '14:00',
     hora_fin: '15:00',
     espacio_id: 2,
+    cantidad_personas: 100,
     titulo: 'Reunión parroquial',
     descripcion: 'Planificación mensual',
+    publico: false,
   });
 });

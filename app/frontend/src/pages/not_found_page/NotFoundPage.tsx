@@ -13,7 +13,7 @@ const NotFoundPage = () => {
           La ruta que intentaste abrir no existe o fue movida.
         </p>
 
-        <Link to="/dashboard" className="not-found-button">
+        <Link to="/dashboard" className="btn-primary not-found-button">
           Volver al dashboard
         </Link>
       </section>

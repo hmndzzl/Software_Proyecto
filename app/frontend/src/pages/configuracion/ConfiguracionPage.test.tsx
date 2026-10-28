@@ -6,7 +6,7 @@ import ConfiguracionPage from './ConfiguracionPage';
 
 function mostrar() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ToastProvider>
         <ConfiguracionPage />
       </ToastProvider>
@@ -25,9 +25,13 @@ describe('ConfiguracionPage', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Cada 5 minutos' }));
     expect(localStorage.getItem('intervalo_notificaciones')).toBe('300');
+    fireEvent.click(screen.getByRole('radio', { name: 'Cada minuto' }));
+    expect(localStorage.getItem('intervalo_notificaciones')).toBe('60');
 
     fireEvent.click(screen.getByRole('radio', { name: 'Oscuro' }));
     expect(localStorage.getItem('tema_aplicacion')).toBe('oscuro');
+    fireEvent.click(screen.getByRole('radio', { name: 'Claro' }));
+    expect(localStorage.getItem('tema_aplicacion')).toBe('claro');
   });
 
   it('restablece las preferencias y enlaza al perfil', () => {

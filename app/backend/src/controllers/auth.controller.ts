@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
 import bcrypt from 'bcryptjs';
+import bcryptNative from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { HttpStatus } from '../utils/httpStatus';
@@ -8,6 +9,8 @@ import { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN 
 import { isClerkEnabled, getClerkClient } from '../config/clerk';
 import { ESTADOS_CUENTA, respuestaCuentaNoActiva } from '../config/cuentas';
 import { ROLES } from '../config/roles';
+import { withTransaction } from '../utils/withTransaction';
+import { normalizarTelefono, ErrorTelefono, esTelefonoDuplicado } from '../utils/telefono';
 
 const REFRESH_MAX_AGE = 15 * 24 * 60 * 60 * 1000;
 
@@ -54,7 +57,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const usuario = rows[0];
-    const constrasenaValida = await bcrypt.compare(password, usuario.password);
+    const constrasenaValida = await bcryptNative.compare(password, usuario.password);
 
     if (!constrasenaValida) {
       res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Credenciales inválidas' });
@@ -169,15 +172,30 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const telefono = normalizarTelefono(req.body.telefono);
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const [resultado] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO persona (nombre, correo, password, rol_id) VALUES (?, ?, ?, ?)',
-      [nombre, correo, hashedPassword, rol_id]
-    );
+    // La cuenta nace 'pendiente': hasta que Admin o Sacerdote la aprueben (y se envíe el correo) no puede entrar.
+    let personaId: number;
+    if (telefono) {
+      let creadoId = 0;
+      await withTransaction(async conn => {
+        const [resultado] = await conn.execute<ResultSetHeader>(
+          'INSERT INTO persona (nombre, correo, password, rol_id, estado_cuenta) VALUES (?, ?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id, ESTADOS_CUENTA.PENDIENTE],
+        );
+        creadoId = resultado.insertId;
+        await conn.execute('INSERT INTO telefono (numero, persona_id) VALUES (?, ?)', [telefono, creadoId]);
+        return 'commit';
+      });
+      personaId = creadoId;
+    } else {
+      const [resultado] = await pool.execute<ResultSetHeader>(
+        'INSERT INTO persona (nombre, correo, password, rol_id, estado_cuenta) VALUES (?, ?, ?, ?, ?)', [nombre, correo, hashedPassword, rol_id, ESTADOS_CUENTA.PENDIENTE],
+      );
+      personaId = resultado.insertId;
+    }
 
     // La cuenta ya existe en la BD; si Clerk falla se avisa en la respuesta en lugar de callar el problema.
-    const clerk = isClerkEnabled() ? await crearUsuarioEnClerk(resultado.insertId, nombre, correo, hashedPassword) : null;
+    const clerk = isClerkEnabled() ? await crearUsuarioEnClerk(personaId, nombre, correo, hashedPassword) : null;
 
     res.status(HttpStatus.CREATED).json({
       mensaje: 'Usuario registrado exitosamente',
@@ -186,6 +204,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         : {}),
     });
   } catch (error) {
+    if (error instanceof ErrorTelefono || esTelefonoDuplicado(error)) {
+      res.status(error instanceof ErrorTelefono ? error.status : 409).json({ mensaje: error instanceof ErrorTelefono ? error.message : 'El teléfono ya está registrado en otra cuenta' });
+      return;
+    }
     console.error('Error en el controlador de registro:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
   }

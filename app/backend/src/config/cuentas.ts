@@ -2,6 +2,7 @@ export const ESTADOS_CUENTA = {
   PENDIENTE: 'pendiente',
   ACTIVA: 'activa',
   RECHAZADA: 'rechazada',
+  BAJA: 'baja',
 } as const;
 
 export type EstadoCuenta = typeof ESTADOS_CUENTA[keyof typeof ESTADOS_CUENTA];
@@ -11,6 +12,7 @@ export function esEstadoCuenta(valor: unknown): valor is EstadoCuenta {
 }
 
 const MENSAJES_CUENTA_NO_ACTIVA: Record<string, string> = {
+  [ESTADOS_CUENTA.BAJA]: 'Tu cuenta fue dada de baja. Contacta al administrador parroquial.',
   [ESTADOS_CUENTA.PENDIENTE]: 'Tu cuenta está pendiente de aprobación. Un administrador o el sacerdote la revisará.',
   [ESTADOS_CUENTA.RECHAZADA]: 'Tu cuenta no fue aprobada. Contacta al administrador parroquial.',
 };

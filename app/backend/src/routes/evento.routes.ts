@@ -16,7 +16,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', getEventos);
-router.get('/reservas-disponibles', getReservasDisponibles);
+router.get('/reservas-disponibles', requireRole(ROLES.SACERDOTE), getReservasDisponibles);
 router.get('/:id', getEventoById);
 
 router.post('/', requireRole(ROLES.SACERDOTE, ROLES.ADMIN), createEvento);

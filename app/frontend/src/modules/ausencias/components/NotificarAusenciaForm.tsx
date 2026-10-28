@@ -48,7 +48,7 @@ export default function NotificarAusenciaForm() {
 
   return (
     <form className={form.form} onSubmit={enviar} aria-label="Notificar periodo de ausencia" aria-busy={enviando}>
-      <p className={form.infoBox}>La notificación se enviará a todos los coordinadores de ministros y sacerdotes de la parroquia.</p>
+      <p className={form.infoBox}>Indica el periodo de ausencia y luego su razón y justificación. La notificación se enviará a todos los coordinadores de ministros y sacerdotes de la parroquia.</p>
       <fieldset disabled={enviando} className={styles.fields}>
         <div className={styles.dates}>
           <div className={form.field}>

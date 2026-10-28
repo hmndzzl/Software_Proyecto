@@ -10,7 +10,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { authValue } from '../../../test/authValue';
 import { ROLES } from '../../../utils/roles';
 
-vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
+vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
 vi.mock('../../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const reserva = { id: 4, fecha: '2099-10-20', hora_inicio: '14:00:00', hora_fin: '15:00:00', nombre_espacio: null, nombre_solicitante: 'Ana' };
@@ -20,11 +20,12 @@ const conToast = (ui: React.ReactNode) => render(<ToastProvider>{ui}</ToastProvi
 
 describe('integración de eventos, reservas y permisos', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Admin', correo: 'admin@test.com', rol_id: ROLES.ADMIN }));
     vi.mocked(apiClient.get).mockImplementation(async (url) => ({ data: String(url).includes('reservas-disponibles') ? [reserva] : String(url).includes('encargados-evento') ? [{ id: 2, nombre: 'Padre Luis' }] : [evento] }));
     vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: {} });
     vi.mocked(apiClient.delete).mockResolvedValue({ data: {} });
   });
 
@@ -77,7 +78,6 @@ describe('integración de eventos, reservas y permisos', () => {
   it('actualiza y elimina un evento confirmado', async () => {
     const actualizado = vi.fn();
     const cancelar = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     conToast(<EditarEventoForm evento={evento as any} onEventoActualizado={actualizado} onCancelar={cancelar} />);
     await screen.findByRole('option', { name: 'Padre Luis' });
     const descripcion = screen.getByDisplayValue('Misa mayor');
@@ -86,20 +86,97 @@ describe('integración de eventos, reservas y permisos', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
     expect(apiClient.put).toHaveBeenCalledWith('/api/eventos/7', { descripcion: 'Misa actualizada', encargado_id: 2 });
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(apiClient.delete).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar evento' }));
     expect(apiClient.delete).toHaveBeenCalledWith('/api/eventos/7');
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(cancelar).toHaveBeenCalled();
   });
 
   it('no elimina sin confirmación y valida/expone errores al editar', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     vi.mocked(apiClient.put).mockRejectedValueOnce(new Error('red'));
     conToast(<EditarEventoForm evento={evento as any} />);
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     const descripcion = screen.getByDisplayValue('Misa mayor');
     await userEvent.clear(descripcion);
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datos');
+  });
+
+  it('conserva la confirmación y permite reintentar si falla eliminar el evento', async () => {
+    const actualizado = vi.fn();
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    conToast(<EditarEventoForm evento={evento as any} onEventoActualizado={actualizado} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar evento' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar el evento');
+    expect(screen.getByRole('dialog', { name: 'Eliminar evento' })).toBeInTheDocument();
+    expect(actualizado).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar evento' }));
+    expect(actualizado).toHaveBeenCalledOnce();
+  });
+
+  it.each([0, 1] as const)('cambia la publicación desde el estado %s sin modificar otros datos', async (publico) => {
+    const actualizado = vi.fn();
+    conToast(<EditarEventoForm evento={{ ...evento, publico }} onEventoActualizado={actualizado} />);
+    const checkbox = screen.getByRole('checkbox', { name: 'Mostrar en la agenda pública' });
+    expect(checkbox).toHaveProperty('checked', Boolean(publico));
+    await userEvent.click(checkbox);
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(apiClient.patch).toHaveBeenCalledWith('/api/eventos/7/publico', { publico: !publico });
+    expect(apiClient.put).not.toHaveBeenCalled();
+    expect(actualizado).toHaveBeenCalledOnce();
+  });
+
+  it('carga la visibilidad del nuevo evento al cambiar la selección', async () => {
+    const { rerender } = conToast(<EditarEventoForm evento={{ ...evento, publico: 1 }} />);
+    await screen.findByRole('option', { name: 'Padre Luis' });
+    expect(screen.getByRole('checkbox')).toBeChecked();
+    rerender(<ToastProvider><EditarEventoForm evento={{ ...evento, id: 8, publico: 0 }} /></ToastProvider>);
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('conserva el formulario y permite reintentar cuando falla publicar', async () => {
+    const actualizado = vi.fn();
+    vi.mocked(apiClient.patch).mockRejectedValueOnce({ response: { data: { mensaje: 'Sin permiso' } } });
+    conToast(<EditarEventoForm evento={{ ...evento, publico: 0 }} onEventoActualizado={actualizado} />);
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sin permiso');
+    expect(actualizado).not.toHaveBeenCalled();
+    expect(screen.getByRole('checkbox')).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(actualizado).toHaveBeenCalledOnce();
+  });
+
+  it('informa el guardado parcial si los datos se guardan pero la visibilidad falla', async () => {
+    vi.mocked(apiClient.patch).mockRejectedValueOnce(new Error('red'));
+    const actualizado = vi.fn();
+    conToast(<EditarEventoForm evento={{ ...evento, publico: 0 }} onEventoActualizado={actualizado} />);
+    await userEvent.type(screen.getByDisplayValue('Misa mayor'), ' editada');
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('La descripción y el encargado se guardaron');
+    expect(actualizado).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(apiClient.put).toHaveBeenCalledOnce();
+    expect(actualizado).toHaveBeenCalledOnce();
+  });
+
+  it('bloquea otro envío mientras la publicación está pendiente', async () => {
+    let terminar!: () => void;
+    vi.mocked(apiClient.patch).mockImplementationOnce(() => new Promise(resolve => {
+      terminar = () => resolve({ data: {} });
+    }));
+    conToast(<EditarEventoForm evento={{ ...evento, publico: 0 }} />);
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(screen.getByRole('button', { name: 'Guardando…' })).toBeDisabled();
+    expect(screen.getByRole('checkbox')).toBeDisabled();
+    terminar();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar Cambios' })).toBeEnabled());
+    expect(apiClient.patch).toHaveBeenCalledOnce();
   });
 });

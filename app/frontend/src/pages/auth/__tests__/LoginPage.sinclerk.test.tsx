@@ -16,7 +16,7 @@ import LoginPage from '../LoginPage';
 describe('LoginPage sin Clerk', () => {
   it('avisa que el inicio de sesión no está disponible y no muestra formularios', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>
     );

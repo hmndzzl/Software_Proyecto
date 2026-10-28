@@ -22,7 +22,7 @@ export default function ReservasPage() {
       />
 
       <Card>
-        <CardHead title="Nueva Solicitud" />
+        <CardHead title="Solicitar Reserva" />
         <CardBody>
           <CrearReservaForm
             autoFocus={enfocarFormulario}

@@ -12,9 +12,28 @@ export function formatFecha(fecha: string): string {
   });
 }
 
+/** Fecha y hora de un instante en Guatemala: "25 de octubre de 2026 · 20:26". */
+export function formatFechaHora(fechaHora: string): string {
+  const instante = new Date(fechaHora);
+  const zonaHoraria = 'America/Guatemala';
+  const fecha = new Intl.DateTimeFormat('es-GT', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: zonaHoraria,
+  }).format(instante);
+  const hora = new Intl.DateTimeFormat('es-GT', {
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zonaHoraria,
+  }).format(instante);
+  return `${fecha} · ${hora}`;
+}
+
 /** Recorta una hora "HH:MM:SS" a "HH:MM". */
 export function formatHora(hora: string): string {
   return hora.substring(0, 5);
+}
+
+/** Rango de horario compartido: 24 horas, sin segundos y con raya corta espaciada. */
+export function formatHorario(inicio?: string, fin?: string): string {
+  if (!inicio || !fin) return 'Horario no indicado';
+  return `${formatHora(inicio)} – ${formatHora(fin)}`;
 }
 
 /** Día y mes abreviado por separado, para bloques de fecha tipo "13 / SEP". */
@@ -76,4 +95,21 @@ export function formatRangeText(mon: Date, sun: Date): string {
  */
 export function fechaKey(fecha?: string | null): string {
   return fecha ? fecha.slice(0, 10) : '';
+}
+
+/**
+ * Determina si una tarea (con fecha YYYY-MM-DD o ISO y hora_inicio HH:MM[:SS])
+ * tiene una fecha/hora futura respecto a una fecha de referencia (por defecto 'ahora').
+ */
+export function esTareaFutura(fecha?: string | null, horaInicio?: string | null, ahora = new Date()): boolean {
+  if (!fecha) return false;
+  const f = fechaKey(fecha);
+  const hoyStr = formatYYYYMMDD(ahora);
+  if (f > hoyStr) return true;
+  if (f < hoyStr) return false;
+  if (!horaInicio) return false;
+  const hh = String(ahora.getHours()).padStart(2, '0');
+  const mm = String(ahora.getMinutes()).padStart(2, '0');
+  const horaActualStr = `${hh}:${mm}`;
+  return horaInicio.substring(0, 5) > horaActualStr;
 }

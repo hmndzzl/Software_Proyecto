@@ -7,7 +7,7 @@ import { HttpStatus } from '../utils/httpStatus';
 export const getEventos = async (_req: Request, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT e.id, e.descripcion, e.encargado_id, e.reserva_id, e.publico,
+      `SELECT e.id, e.titulo, e.descripcion, e.encargado_id, e.reserva_id, e.publico,
               p.nombre  AS nombre_encargado,
               r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS nombre_espacio
@@ -28,7 +28,7 @@ export const getEventoById = async (req: Request, res: Response): Promise<void> 
   const { id } = req.params;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT e.id, e.descripcion, e.encargado_id, e.reserva_id, e.publico,
+      `SELECT e.id, e.titulo, e.descripcion, e.encargado_id, e.reserva_id, e.publico,
               p.nombre  AS nombre_encargado,
               r.fecha, r.hora_inicio, r.hora_fin, r.estado_reserva_id,
               esp.nombre AS nombre_espacio
@@ -139,7 +139,7 @@ export const updateEvento = async (req: Request, res: Response): Promise<void> =
       }
 
       const [personas] = await pool.execute<RowDataPacket[]>(
-        'SELECT id FROM persona WHERE id = ?',
+        "SELECT id FROM persona WHERE id = ? AND estado_cuenta = 'activa'",
         [encargadoId]
       );
 

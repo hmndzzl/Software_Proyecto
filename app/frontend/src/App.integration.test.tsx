@@ -21,6 +21,7 @@ const admin = {
 };
 
 function respuestaGet(url: string) {
+  if (url === '/api/calendario') return { data: { eventos: [], tareas: [] } };
   if (/\/api\/espacios\/\d+$/.test(url)) {
     return {
       data: {
@@ -62,6 +63,7 @@ describe('integración del enrutador con los módulos principales', () => {
     '/',
     '/dashboard',
     '/ministros',
+    '/ministros/coordinadores',
     '/tareas',
     '/reservas',
     '/grupos',
@@ -97,7 +99,33 @@ describe('integración del enrutador con los módulos principales', () => {
 
   it('cambia el tema sin recargar la aplicación', async () => {
     await abrir('/configuracion');
-    fireEvent.click(screen.getByRole('radio', { name: 'Oscuro' }));
-    expect(document.documentElement).toHaveAttribute('data-tema', 'oscuro');
+    fireEvent.click(await screen.findByRole('radio', { name: 'Oscuro' }));
+    await waitFor(() =>
+    expect(document.documentElement).toHaveAttribute('data-tema', 'oscuro')
+);
+  });
+
+  it.each([1, 5])('abre la gestión de coordinadores para el rol %s', async rol_id => {
+    localStorage.setItem('usuario', JSON.stringify({ ...admin, rol_id }));
+    await abrir('/ministros/coordinadores');
+    expect(await screen.findByRole('heading', { name: 'Coordinadores de ministros' })).toBeInTheDocument();
+  });
+
+  it.each([2, 3, 4])('impide acceso directo a gestión al rol %s', async rol_id => {
+    localStorage.setItem('usuario', JSON.stringify({ ...admin, rol_id }));
+    await abrir('/ministros/coordinadores');
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'));
+  });
+
+  it('impide al ministro abrir Mis Reservas mediante la URL', async () => {
+    localStorage.setItem('usuario', JSON.stringify({ ...admin, rol_id: 4 }));
+    await abrir('/mis-reservas');
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'));
+  });
+
+  it('impide al ministro abrir el detalle de espacios que muestra reservas', async () => {
+    localStorage.setItem('usuario', JSON.stringify({ ...admin, rol_id: 4 }));
+    await abrir('/espacios/1');
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'));
   });
 });

@@ -1,3 +1,4 @@
+import { iniciarRecordatorios } from './services/recordatorios.scheduler';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -7,6 +8,7 @@ import { checkDbConnection } from './config/db';
 import { validateEnv, getAllowedOrigins } from './config/env';
 import authRoutes from './routes/auth.routes';
 import tareaRoutes from './routes/tarea.routes';
+import calendarioRoutes from './routes/calendario.routes';
 import personaRoutes from './routes/persona.routes';
 import reservaRoutes from './routes/reserva.routes';
 import espacioRoutes from './routes/espacio.routes';
@@ -19,6 +21,9 @@ import contactoRoutes from './routes/contacto.routes';
 import cuentaRoutes from './routes/cuenta.routes';
 import publicRoutes from './routes/public.routes';
 import landingRoutes from './routes/landing.routes';
+import reporteRoutes from './routes/reporte.routes';
+import coordinadorMinistroRoutes from './routes/coordinadorMinistro.routes';
+import mediaRoutes from './routes/media.routes';
 
 dotenv.config();
 validateEnv();
@@ -55,10 +60,12 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', mediaRoutes);
 
 // Rutas 
 app.use('/api/auth', authRoutes);
 app.use('/api/tareas', tareaRoutes);
+app.use('/api/calendario', calendarioRoutes);
 app.use('/api/personas', personaRoutes);
 app.use('/api/reservas', reservaRoutes);
 app.use('/api/espacios', espacioRoutes);
@@ -71,6 +78,8 @@ app.use('/api/contacto', contactoRoutes);
 app.use('/api/cuentas', cuentaRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/landing', landingRoutes);
+app.use('/api/reportes', reporteRoutes);
+app.use('/api/coordinadores-ministros', coordinadorMinistroRoutes);
 
 // Ruta de salud para verificar que el backend está funcionando
 app.get('/health', (_req, res) => {
@@ -81,9 +90,12 @@ app.get('/health', (_req, res) => {
 export function startServer() {
   checkDbConnection();
 
-  return app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Backend corriendo en puerto ${PORT}`);
+    const detenerRecordatorios = iniciarRecordatorios();
+    server.once('close', detenerRecordatorios);
   });
+  return server;
 }
 
 if (require.main === module) {

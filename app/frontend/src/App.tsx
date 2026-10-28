@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import GlobalErrorBanner from './components/ui/GlobalErrorBanner';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute, { ROLES } from './components/ui/ProtectedRoute';
+import { ROLES_RESERVAS } from './utils/roles';
 import LoadingState from './components/ui/LoadingState';
 
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
@@ -16,6 +17,7 @@ const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
 const AgendaPublicaPage = lazy(() => import('./pages/agenda-publica/AgendaPublicaPage'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const MinistrosPage = lazy(() => import('./pages/ministers/MinistrosPage'));
+const CoordinadoresMinistrosPage = lazy(() => import('./pages/coordinadores/CoordinadoresMinistrosPage'));
 const TareasPage = lazy(() => import('./pages/tasks/TareasPage'));
 const ReservasPage = lazy(() => import('./pages/reservas/ReservasPage'));
 const GruposPage = lazy(() => import('./pages/grupos/gruposPage'));
@@ -35,6 +37,8 @@ import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './auth/clerkSession';
 import { leerTemaAplicacion, UI_PREFERENCES_EVENT } from './auth/sessionStore';
 const ConfiguracionPage = lazy(() => import('./pages/configuracion/ConfiguracionPage'));
 const ContenidoPublicoPage = lazy(() => import('./pages/contenido-publico/ContenidoPublicoPage'));
+const ReportesPage = lazy(() => import('./pages/reportes/ReportesPage'));
+const MensajesContactoPage = lazy(() => import('./pages/mensajes-contacto/MensajesContactoPage'));
 
 const ALL_ROLES = [
   ROLES.ADMIN,
@@ -118,10 +122,25 @@ function AppRoutes() {
           }
         />
 
+        <Route path="/ministros/coordinadores" element={
+          <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+            <CoordinadoresMinistrosPage />
+          </ProtectedRoute>
+        } />
+
+        <Route
+          path="/reportes"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.ADMIN]}>
+              <ReportesPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/reservas"
           element={
-            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS, ROLES.ADMIN]}>
+            <ProtectedRoute allowedRoles={ROLES_RESERVAS}>
               <ReservasPage />
             </ProtectedRoute>
           }
@@ -148,7 +167,7 @@ function AppRoutes() {
         <Route
           path="/espacios/:id"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={ROLES_RESERVAS}>
               <EspacioDetallePage />
             </ProtectedRoute>
           }
@@ -184,7 +203,7 @@ function AppRoutes() {
         <Route
           path="/mis-reservas"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={ROLES_RESERVAS}>
               <MisReservasPage />
             </ProtectedRoute>
           }
@@ -241,6 +260,15 @@ function AppRoutes() {
           }
         />
 
+        <Route
+          path="/mensajes-contacto"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.SACERDOTE, ROLES.ADMIN]}>
+              <MensajesContactoPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
@@ -270,7 +298,7 @@ function App() {
   return (
     <ErrorProvider>
       <ErrorBoundary>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <SincronizarPreferenciasUI />
           <MaybeClerkProvider>
             <ToastProvider>

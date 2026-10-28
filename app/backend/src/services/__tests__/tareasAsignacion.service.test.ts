@@ -14,7 +14,7 @@ beforeEach(() => {
   vi.mocked(pool.getConnection).mockResolvedValue(conn as never);
   conn.execute.mockImplementation(async (sql: string) => {
     if (sql.startsWith('SELECT * FROM tarea')) return [[{ ...entrada, id: 7 }]];
-    if (sql.startsWith('SELECT id, nombre')) return [ministros];
+    if (sql.startsWith('SELECT p.id, p.nombre')) return [ministros];
     if (sql.startsWith('SELECT ministro_id')) return [[{ ministro_id: 9 }, { ministro_id: 10 }]];
     if (sql.startsWith('SELECT t.id')) return [[]];
     if (sql.startsWith('SELECT COUNT')) return [[{ total: 9 }]];
@@ -79,7 +79,7 @@ describe('asignación múltiple transaccional', () => {
   it('respeta los ministros propios del coordinador', async () => {
     const usuario = { id: 3, rol_id: ROLES.COORDINADOR_MINISTROS };
     await guardarTareaConMinistros(entrada, [9, 10], usuario);
-    expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('coordinador_ministro'), [3, 9, 10]);
+    expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('coordinador_ministro'), [3, 9, 10, ROLES.MINISTRO]);
   });
 
   it('impide al coordinador asignar a ministros ajenos', async () => {

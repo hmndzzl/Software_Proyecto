@@ -1,0 +1,28 @@
+.intro {
+  color: var(--color-muted);
+  margin: 0 0 16px;
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.lista li {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+
+.lista p {
+  margin: 0 0 8px;
+}
+
+.lista span {
+  color: var(--color-muted);
+  font-size: 13px;
+}

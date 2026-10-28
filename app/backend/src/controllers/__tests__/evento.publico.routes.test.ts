@@ -1,3 +1,4 @@
+import { obtenerPersonaSesion } from '../../services/sesion.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -7,12 +8,17 @@ import eventoRoutes from '../../routes/evento.routes';
 import { ROLES } from '../../config/roles';
 import { JWT_SECRET } from '../../config/env';
 
+vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
+
 vi.mock('../../config/db', () => ({ default: { execute: vi.fn() } }));
 const app = express();
 app.use(express.json());
 app.use('/api/eventos', eventoRoutes);
 const endpoint = '/api/eventos/8/publico';
-const token = (rol_id: number) => jwt.sign({ id: 1, rol_id }, JWT_SECRET);
+const token = (rol_id: number) => {
+  vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 1, rol_id, estado_cuenta: 'activa' });
+  return jwt.sign({ id: 1, rol_id }, JWT_SECRET);
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -21,6 +27,18 @@ beforeEach(() => {
 });
 
 describe('visibilidad de eventos', () => {
+  it('limita la consulta de reservas disponibles para eventos al sacerdote y admin', async () => {
+    const ruta = '/api/eventos/reservas-disponibles';
+    await request(app).get(ruta).expect(401);
+    for (const rol of [ROLES.MINISTRO, ROLES.COORDINADOR_MINISTROS, ROLES.COORDINADOR_GRUPOS]) {
+      await request(app).get(ruta).auth(token(rol), { type: 'bearer' }).expect(403);
+    }
+    expect(pool.execute).not.toHaveBeenCalled();
+    for (const rol of [ROLES.SACERDOTE, ROLES.ADMIN]) {
+      await request(app).get(ruta).auth(token(rol), { type: 'bearer' }).expect(200);
+    }
+  });
+
   it('requiere autenticación para publicar', async () => {
     await request(app).patch(endpoint).send({ publico: true }).expect(401);
     expect(pool.execute).not.toHaveBeenCalled();

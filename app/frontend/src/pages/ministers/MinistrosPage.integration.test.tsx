@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../api/client';
@@ -7,13 +7,14 @@ import { ToastProvider } from '../../context/ToastContext';
 import { authValue } from '../../test/authValue';
 import { ROLES } from '../../utils/roles';
 import MinistrosPage from './MinistrosPage';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../api/client', () => ({ default: { get: vi.fn(), patch: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const wrapper = ({ children }: { children: React.ReactNode }) => <ToastProvider>{children}</ToastProvider>;
+const wrapper = ({ children }: { children: React.ReactNode }) => <MemoryRouter><ToastProvider>{children}</ToastProvider></MemoryRouter>;
 const ministros = [
-  { id: 1, nombre: '  Ana María López ', correo: 'ana@test.com', rol_id: 1, disponible: true },
+  { id: 1, nombre: '  Ana María López ', correo: 'ana@test.com', telefono: '+50255551234', rol_id: 1, disponible: true },
   { id: 2, nombre: 'Bruno', correo: 'bruno@test.com', rol_id: 99, disponible: false },
   { id: 3, nombre: 'Carla', correo: 'carla@test.com', disponible: true },
 ];
@@ -30,12 +31,14 @@ describe('integración del directorio de ministros', () => {
     render(<MinistrosPage />, { wrapper });
     await screen.findByText('Ana María López');
     expect(screen.getByText('AM')).toBeInTheDocument();
-    expect(screen.getAllByText('Ministro')).toHaveLength(2);
-    expect(screen.getAllByText('Disponible')).toHaveLength(2);
-    for (const label of ['Nombre', 'Correo', 'Rol', 'Disponibilidad']) {
+    expect(within(screen.getByRole('table')).getAllByText('Ministro')).toHaveLength(2);
+    expect(within(screen.getByRole('table')).getAllByText('Disponible')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: '+50255551234' })).toHaveAttribute('href', 'tel:+50255551234');
+    expect(screen.getAllByText('Sin teléfono')).toHaveLength(2);
+    for (const label of ['Nombre', 'Correo', 'Teléfono', 'Rol', 'Disponibilidad']) {
       const header = screen.getByRole('columnheader', { name: new RegExp(label) });
-      await userEvent.click(header);
-      await userEvent.click(header);
+      fireEvent.click(header);
+      fireEvent.click(header);
     }
   });
 
@@ -73,4 +76,41 @@ describe('integración del directorio de ministros', () => {
     await screen.findByText('Bruno');
     expect(screen.queryByRole('button', { name: /Marcar/ })).not.toBeInTheDocument();
   });
+
+  it.each([ROLES.ADMIN, ROLES.SACERDOTE])('ofrece gestión de coordinadores al rol %s', async rol_id => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Usuario', correo: 'u@test.com', rol_id }));
+    render(<MinistrosPage />, { wrapper });
+    expect(await screen.findByRole('button', { name: 'Gestionar coordinadores' })).toBeEnabled();
+  });
+
+  it('no ofrece gestión de coordinadores a quien solo coordina ministros', async () => {
+    render(<MinistrosPage />, { wrapper });
+    await screen.findByText('Bruno');
+    expect(screen.queryByRole('button', { name: 'Gestionar coordinadores' })).not.toBeInTheDocument();
+  });
+});
+
+it('abre y cierra los periodos del ministro seleccionado desde el directorio', async () => {
+  vi.mocked(useAuth).mockReturnValue(authValue({ id: 20, nombre: 'Coordinador', correo: 'coord@test.com', rol_id: ROLES.COORDINADOR_MINISTROS }));
+  vi.mocked(apiClient.get).mockImplementation(async url => ({ data: url === '/api/personas' ? ministros : [] }));
+  render(<MinistrosPage />, { wrapper });
+  const fila = (await screen.findByText('Carla')).closest('tr')!;
+  fireEvent.click(within(fila).getByRole('button', { name: 'Periodos no disponibles' }));
+  expect(await screen.findByRole('dialog', { name: 'Disponibilidad de Carla' })).toBeInTheDocument();
+  await screen.findByText('No hay periodos registrados.');
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+it('muestra no disponible si hay un periodo o una ausencia activa aunque el interruptor siga encendido', async () => {
+  vi.mocked(useAuth).mockReturnValue(authValue({ id: 20, nombre: 'Coordinador', correo: 'coord@test.com', rol_id: ROLES.COORDINADOR_MINISTROS }));
+  vi.mocked(apiClient.get).mockResolvedValue({ data: [
+    { ...ministros[0], periodo_activo: 1 }, { ...ministros[2], ausencia_activa: 1 },
+  ] });
+  render(<MinistrosPage />, { wrapper });
+  const ana = (await screen.findByText('Ana María López')).closest('tr')!;
+  expect(within(ana).getByText('No disponible')).toBeInTheDocument();
+  expect(within(ana).queryByText('Disponible')).not.toBeInTheDocument();
+  const carla = screen.getByText('Carla').closest('tr')!;
+  expect(within(carla).getByText('No disponible')).toBeInTheDocument();
 });

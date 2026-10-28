@@ -10,7 +10,7 @@ import DashboardPage from './DashboardPage';
 vi.mock('../../api/client', () => ({ default: { get: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const mostrar = () => render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+const mostrar = () => render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><DashboardPage /></MemoryRouter>);
 const futuras = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, fecha: `2099-11-${String(i + 1).padStart(2, '0')}`, hora_inicio: '08:00:00', descripcion: `Tarea ${i + 1}` }));
 
 describe('integración del dashboard por rol', () => {
@@ -36,9 +36,10 @@ describe('integración del dashboard por rol', () => {
     expect(screen.getByText('5 próximas')).toBeInTheDocument();
     expect(screen.getByText('Revisar ahora →')).toHaveAttribute('href', '/reservas');
     expect(screen.getByText('Gestionar Espacios')).toBeInTheDocument();
-    for (const ruta of ['/api/grupos', '/api/personas', '/api/espacios', '/api/reservas', '/api/tareas']) {
+    for (const ruta of ['/api/grupos', '/api/personas', '/api/espacios', '/api/reservas']) {
       expect(apiClient.get).toHaveBeenCalledWith(ruta);
     }
+    expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: undefined });
   });
 
   it('aísla fallos de indicadores y tareas sin bloquear el panel', async () => {
@@ -59,6 +60,7 @@ describe('integración del dashboard por rol', () => {
     expect(screen.getByRole('link', { name: /Eventos/ })).toBeInTheDocument();
     expect(screen.queryByText('Gestionar Espacios')).not.toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledTimes(1);
+    expect(apiClient.get).toHaveBeenCalledWith('/api/tareas', { params: { persona_id: 4 } });
   });
 
   it('presenta un dashboard mínimo para un usuario ausente o rol desconocido', async () => {

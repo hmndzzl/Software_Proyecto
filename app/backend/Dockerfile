@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN mkdir -p media/espacios/subidas media/landing/subidas && chown node:node media/espacios/subidas media/landing/subidas
 EXPOSE 3001
 CMD ["npm", "run", "dev"]
 
@@ -15,6 +16,8 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
+COPY --chown=node:node media ./media
+RUN mkdir -p media/espacios/subidas media/landing/subidas && chown node:node media/espacios/subidas media/landing/subidas
 USER node
 EXPOSE 3001
 CMD ["npm", "start"]

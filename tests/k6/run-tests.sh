@@ -96,10 +96,12 @@ for id in "${IDS[@]}"; do
     args+=(--summary-export "$OUTPUT_DIR/$id-summary.json")
     [[ "${K6_TIMESERIES:-false}" != true ]] || args+=(--out "json=$OUTPUT_DIR/$id-timeseries.json.gz")
   fi
-  if "${CMD[@]}" "${args[@]}" "$SCRIPT_DIR/$script" > >(tee "$RESULTS/$id.log") 2>&1; then
+  if "${CMD[@]}" "${args[@]}" "$SCRIPT_DIR/$script" > "$RESULTS/$id.log" 2>&1; then
+    cat "$RESULTS/$id.log"
     echo "$id OK" | tee -a "$RESULTS/status.txt"
   else
     code=$?
+    cat "$RESULTS/$id.log"
     echo "$id FAIL (exit=$code)" | tee -a "$RESULTS/status.txt"
     failed=1
   fi

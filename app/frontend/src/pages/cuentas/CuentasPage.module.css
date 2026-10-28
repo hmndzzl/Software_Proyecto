@@ -72,12 +72,6 @@
   flex-wrap: wrap;
 }
 
-.confirmTexto {
-  font-family: var(--font-body);
-  font-size: 14.5px;
-  color: var(--color-carbon);
-  margin: 0 0 20px;
-}
 
 .confirmAcciones {
   display: flex;

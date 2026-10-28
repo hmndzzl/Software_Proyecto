@@ -228,7 +228,7 @@ describe('Evento Controller - Pruebas Unitarias', () => {
 
       await updateEvento(req as Request, res as Response);
 
-      expect(pool.execute).toHaveBeenNthCalledWith(1, 'SELECT id FROM persona WHERE id = ?', [7]);
+      expect(pool.execute).toHaveBeenNthCalledWith(1, "SELECT id FROM persona WHERE id = ? AND estado_cuenta = 'activa'", [7]);
       expect(pool.execute).toHaveBeenNthCalledWith(
         2,
         'UPDATE evento SET descripcion = ?, encargado_id = ? WHERE id = ?',

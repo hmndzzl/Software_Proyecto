@@ -1,0 +1,7 @@
+.page { display: grid; gap: 24px; }
+.assignment { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 24px; }
+.assignment > div { flex: 1; min-width: 0; }
+.help { color: var(--color-muted); font-family: var(--font-body); font-size: 14px; line-height: 1.6; }
+@media (max-width: 600px) {
+  .assignment { flex-direction: column; align-items: stretch; }
+}

@@ -11,7 +11,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
   const personaId = req.user!.id;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
+      `SELECT n.id, n.mensaje, n.fecha, DATE_FORMAT(n.enviado_en, '%Y-%m-%dT%H:%i:%sZ') AS enviado_en, n.tipo, n.remitente_id, n.grupo_id,
               n.evento_id, n.requiere_confirmacion,
               pn.leida, pn.asistencia_confirmada, pn.inasistencia_reportada, pn.motivo_excusa,
               r.nombre AS remitente_nombre,
@@ -21,7 +21,7 @@ export const getNotificaciones = async (req: Request, res: Response): Promise<vo
        LEFT  JOIN persona r               ON r.id = n.remitente_id
        LEFT  JOIN evento ev               ON ev.id = n.evento_id
        WHERE pn.persona_id = ? AND pn.eliminada_en IS NULL
-       ORDER BY n.fecha DESC`,
+       ORDER BY COALESCE(n.enviado_en, TIMESTAMP(n.fecha)) DESC, n.id DESC`,
       [personaId]
     );
 
@@ -37,7 +37,7 @@ export const getNotificacionesEnviadas = async (req: Request, res: Response): Pr
   const remitenteId = req.user!.id;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
+      `SELECT n.id, n.mensaje, n.fecha, DATE_FORMAT(n.enviado_en, '%Y-%m-%dT%H:%i:%sZ') AS enviado_en, n.tipo, n.grupo_id, n.evento_id, n.requiere_confirmacion,
               COUNT(pn.persona_id) AS total_destinatarios,
               COALESCE(SUM(pn.leida), 0) AS total_leidas,
               COALESCE(SUM(pn.asistencia_confirmada), 0) AS total_confirmaron,
@@ -47,7 +47,7 @@ export const getNotificacionesEnviadas = async (req: Request, res: Response): Pr
        LEFT JOIN persona p               ON p.id = pn.persona_id
        WHERE n.remitente_id = ?
        GROUP BY n.id
-       ORDER BY n.fecha DESC`,
+       ORDER BY COALESCE(n.enviado_en, TIMESTAMP(n.fecha)) DESC, n.id DESC`,
       [remitenteId]
     );
 
@@ -166,7 +166,7 @@ export const getPapelera = async (req: Request, res: Response): Promise<void> =>
     );
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT n.id, n.mensaje, n.fecha, n.tipo, n.remitente_id, n.grupo_id,
+      `SELECT n.id, n.mensaje, n.fecha, DATE_FORMAT(n.enviado_en, '%Y-%m-%dT%H:%i:%sZ') AS enviado_en, n.tipo, n.remitente_id, n.grupo_id,
               n.evento_id, n.requiere_confirmacion,
               pn.leida, pn.eliminada_en,
               r.nombre AS remitente_nombre,
@@ -368,7 +368,7 @@ export const getDestinatarios = async (req: Request, res: Response): Promise<voi
          FROM persona p
          INNER JOIN coordinador_ministro cm ON cm.ministro_id = p.id
          INNER JOIN rol r ON r.id = p.rol_id
-         WHERE cm.coordinador_id = ?
+         WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'
          ORDER BY p.nombre ASC`,
         [userId]
       );
@@ -442,7 +442,8 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
         // CoordMinistros: validar que todos los destinatarios sean sus ministros
         if (rolId === ROLES.COORDINADOR_MINISTROS) {
           const [mis] = await conn.execute<RowDataPacket[]>(
-            `SELECT ministro_id FROM coordinador_ministro WHERE coordinador_id = ?`,
+            `SELECT cm.ministro_id FROM coordinador_ministro cm JOIN persona p ON p.id = cm.ministro_id
+             WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'`,
             [remitenteId]
           );
           const misIds = (mis as RowDataPacket[]).map((r) => r.ministro_id as number);
@@ -453,7 +454,14 @@ export const createNotificacion = async (req: Request, res: Response): Promise<v
           }
         }
 
-        ids = destinatarios;
+        ids = [...new Set(destinatarios)];
+        const [activas] = await conn.execute<RowDataPacket[]>(
+          `SELECT id FROM persona WHERE id IN (${ids.map(() => '?').join(',')}) AND estado_cuenta = 'activa' FOR UPDATE`, ids,
+        );
+        if (activas.length !== ids.length) {
+          res.status(HttpStatus.BAD_REQUEST).json({ mensaje: 'Solo puedes enviar notificaciones a cuentas activas' });
+          return 'rollback';
+        }
       }
 
       for (const personaId of ids) {

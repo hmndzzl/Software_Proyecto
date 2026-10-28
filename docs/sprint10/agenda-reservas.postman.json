@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "Sprint 10 - Agenda desde reservas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "reservaId",
+      "value": ""
+    },
+    {
+      "key": "eventoId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Crear reserva con evento público",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/reservas",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fecha\": \"2099-12-21\",\n  \"hora_inicio\": \"09:00\",\n  \"hora_fin\": \"11:00\",\n  \"espacio_id\": 2,\n  \"titulo\": \"Encuentro parroquial\",\n  \"descripcion\": \"Actividad abierta\",\n  \"publico\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Consultar reservas y evento_id",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/reservas",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": []
+      }
+    },
+    {
+      "name": "Aprobar reserva",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/reservas/{{reservaId}}/estado",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado_id\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Retirar de agenda",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/eventos/{{eventoId}}/publico",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"publico\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Publicar en agenda",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/eventos/{{eventoId}}/publico",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"publico\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Consultar agenda sin sesión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/public/agenda",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": []
+      }
+    }
+  ]
+}

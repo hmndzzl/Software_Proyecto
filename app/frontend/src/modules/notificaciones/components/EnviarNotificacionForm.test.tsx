@@ -44,13 +44,29 @@ describe('EnviarNotificacionForm', () => {
 
   function renderForm() {
     render(
-      <ToastProvider><MemoryRouter>
+      <ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <EnviarNotificacionForm onEnviada={onEnviada} onCancelar={onCancelar} />
         </AuthProvider>
       </MemoryRouter></ToastProvider>
     );
   }
+
+  it('asocia las etiquetas y nombra los grupos y el evento condicional', async () => {
+    renderForm();
+    expect(screen.getByRole('combobox', { name: 'Tipo de notificación' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Mensaje' })).toBeRequired();
+    expect(await screen.findByLabelText('Sacerdote Test')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Tus ministros' })).toContainElement(screen.getByLabelText('Sacerdote Test'));
+    const requiere = screen.getByLabelText('Requiere confirmación de asistencia');
+    expect(screen.getByRole('group', { name: 'Confirmación de asistencia' })).toContainElement(requiere);
+    expect(screen.queryByRole('combobox', { name: 'Evento para confirmar asistencia' })).not.toBeInTheDocument();
+    fireEvent.click(requiere);
+    expect(screen.getByRole('combobox', { name: 'Evento para confirmar asistencia' })).toBeRequired();
+    fireEvent.click(requiere);
+    expect(screen.queryByRole('combobox', { name: 'Evento para confirmar asistencia' })).not.toBeInTheDocument();
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
 
   it('permite enviar una notificacion individual', async () => {
     renderForm();
@@ -141,6 +157,7 @@ describe('EnviarNotificacionForm', () => {
 
   it('llama onCancelar al hacer clic en Cancelar', async () => {
     renderForm();
+    await screen.findByLabelText('Sacerdote Test');
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(onCancelar).toHaveBeenCalled();
   });
@@ -228,7 +245,7 @@ describe('EnviarNotificacionForm', () => {
   });
   it('muestra no hay eventos disponibles y permite deseleccionar requiere confirmacion', async () => {
     vi.mocked(apiClient.get).mockImplementation(async (url) => {
-      if (url === '/api/notificaciones/destinatarios') return { data: [{ id: 1, nombre: 'A', rol_id: 1 }] };
+      if (url === '/api/notificaciones/destinatarios') return { data: [{ id: 1, nombre: 'A', rol_id: 1, rol_nombre: 'Sacerdotes' }] };
       return { data: [] }; // No eventos
     });
     renderForm();

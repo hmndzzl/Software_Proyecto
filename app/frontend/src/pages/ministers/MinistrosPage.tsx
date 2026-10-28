@@ -1,4 +1,6 @@
+import DisponibilidadPeriodos from './DisponibilidadPeriodos';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
@@ -9,6 +11,8 @@ import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
 import SortableTh from '../../components/ui/SortableTh';
+import TableFilters from '../../components/ui/TableFilters';
+import { useTableFilters } from '../../hooks/useTableFilters';
 import { useSortableTable } from '../../hooks/useSortableTable';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../utils/roles';
@@ -28,23 +32,35 @@ function getInitials(nombre: string): string {
 }
 
 
-type SortKey = 'nombre' | 'correo' | 'rol' | 'disponibilidad';
+type SortKey = 'nombre' | 'correo' | 'telefono' | 'rol' | 'disponibilidad';
+
+const disponibleAhora = (m: Ministro) => m.disponible && !m.periodo_activo && !m.ausencia_activa;
 
 const SORT_VALUE: Record<SortKey, (m: Ministro) => string | number> = {
   nombre: (m) => m.nombre.toLowerCase(),
   correo: (m) => m.correo.toLowerCase(),
+  telefono: m => m.telefono ?? '',
   rol: (m) => ROL_LABEL[m.rol_id ?? 4] ?? '',
-  disponibilidad: (m) => (m.disponible ? 1 : 0),
+  disponibilidad: (m) => (disponibleAhora(m) ? 1 : 0),
 };
 
 export default function MinistrosPage() {
+  const navigate = useNavigate();
+  const [ministroPeriodos, setMinistroPeriodos] = useState<Ministro | null>(null);
   const [ministros, setMinistros] = useState<Ministro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const toast = useToast();
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
 
-  const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(ministros, SORT_VALUE);
+  const filtros = useTableFilters(ministros, {
+    search: m => [m.nombre, m.correo, m.telefono, ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'],
+    selects: [
+      { key: 'disponibilidad', label: 'Disponibilidad', value: m => disponibleAhora(m) ? 'Disponible' : 'No disponible' },
+      { key: 'rol', label: 'Rol', value: m => ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro' },
+    ],
+  });
+  const { sortKey, sortDir, toggleSort, sortedData: ministrosOrdenados } = useSortableTable(filtros.filteredData, SORT_VALUE);
 
   const { tieneRol } = useAuth();
   const puedeGestionar = tieneRol([ROLES.COORDINADOR_MINISTROS]);
@@ -81,6 +97,11 @@ export default function MinistrosPage() {
         kicker="Directorio"
         title="Ministros y Personas"
         subtitle="Directorio de ministros y voluntarios de la parroquia."
+        actions={tieneRol([ROLES.SACERDOTE, ROLES.ADMIN]) ? (
+          <Btn type="button" kind="primary" onClick={() => navigate('/ministros/coordinadores')}>
+            Gestionar coordinadores
+          </Btn>
+        ) : undefined}
       />
 
       <Card>
@@ -90,6 +111,7 @@ export default function MinistrosPage() {
         />
 
         {loading && <LoadingState label="Cargando ministros..." />}
+        {!loading && !error && <TableFilters {...filtros.controls} label="Filtros del directorio" />}
         {error   && <ErrorState message={error} onRetry={cargarMinistros} />}
 
         {!loading && !error && ministros.length === 0 && (
@@ -103,6 +125,7 @@ export default function MinistrosPage() {
                 <tr>
                   <SortableTh label="Nombre" sortKey="nombre" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Correo" sortKey="correo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Teléfono" sortKey="telefono" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Rol" sortKey="rol" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Disponibilidad" sortKey="disponibilidad" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 </tr>
@@ -117,6 +140,7 @@ export default function MinistrosPage() {
                       </div>
                     </td>
                     <td className={styles.correo}>{m.correo}</td>
+                    <td>{m.telefono ? <a href={`tel:${m.telefono}`}>{m.telefono}</a> : 'Sin teléfono'}</td>
                     <td>
                       <span className={styles.rolBadge}>
                         {ROL_LABEL[m.rol_id ?? 4] ?? 'Ministro'}
@@ -124,10 +148,12 @@ export default function MinistrosPage() {
                     </td>
                     <td>
                       <div className={styles.dispoCell}>
-                        <Badge kind={m.disponible ? 'confirmada' : 'bad'}>
-                          {m.disponible ? 'Disponible' : 'No disponible'}
+                        <Badge kind={disponibleAhora(m) ? 'confirmada' : 'bad'}>
+                          {disponibleAhora(m) ? 'Disponible' : 'No disponible'}
                         </Badge>
-                        {puedeGestionar && (
+                        {Boolean(m.periodo_activo || m.ausencia_activa) && <span>Ausencia o periodo activo</span>}
+                        {puedeGestionar && (<>
+                          <Btn kind="primary" size="sm" onClick={() => setMinistroPeriodos(m)}>Periodos no disponibles</Btn>
                           <Btn
                             kind="ghost"
                             size="sm"
@@ -135,7 +161,7 @@ export default function MinistrosPage() {
                             onClick={() => toggleDisponibilidad(m)}
                           >
                             {m.disponible ? 'Marcar no disponible' : 'Marcar disponible'}
-                          </Btn>
+                          </Btn></>
                         )}
                       </div>
                     </td>
@@ -146,6 +172,7 @@ export default function MinistrosPage() {
           </div>
         )}
       </Card>
+      {ministroPeriodos && <DisponibilidadPeriodos ministro={ministroPeriodos} onClose={() => { setMinistroPeriodos(null); cargarMinistros(); }} />}
     </div>
   );
 }

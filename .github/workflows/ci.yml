@@ -61,9 +61,17 @@ jobs:
         if: ${{ !cancelled() }}
         run: >
           npm run coverage --
+          --coverage.reporter=text --coverage.reporter=json-summary
           --reporter=default --reporter=junit
           --outputFile.junit=reports/junit.xml
           2>&1 | tee -a reports/ci.log
+
+      - name: Preserve coverage summary
+        if: ${{ always() }}
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            cp coverage/coverage-summary.json reports/coverage-summary.json
+          fi
 
       - name: Write result summary
         if: ${{ always() }}
@@ -96,7 +104,7 @@ jobs:
               echo "### ❌ Ejecución FALLIDA"
             fi
             echo
-            echo "Evidencia (JUnit XML + log) en el artefacto \`frontend-test-evidence\`."
+            echo "Evidencia (JUnit XML + cobertura JSON + log) en el artefacto \`frontend-test-evidence\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test evidence
@@ -140,9 +148,17 @@ jobs:
         id: unit
         run: >
           npm run coverage --
+          --coverage.reporter=text --coverage.reporter=json-summary
           --reporter=default --reporter=junit
           --outputFile.junit=reports/junit.xml
           2>&1 | tee -a reports/ci.log
+
+      - name: Preserve coverage summary
+        if: ${{ always() }}
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            cp coverage/coverage-summary.json reports/coverage-summary.json
+          fi
 
       # Las pruebas de integración levantan su propio MariaDB con Testcontainers
       # (Docker ya viene en ubuntu-latest), por eso no hace falta "services:".
@@ -182,7 +198,7 @@ jobs:
               echo "### ❌ Ejecución FALLIDA"
             fi
             echo
-            echo "Evidencia (JUnit XML + log) en el artefacto \`backend-test-evidence\`."
+            echo "Evidencia (JUnit XML + cobertura JSON + log) en el artefacto \`backend-test-evidence\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test evidence
@@ -227,7 +243,9 @@ jobs:
 
       # playwright.config.ts levanta el servidor de Vite y genera el reporte HTML
       # (playwright-report/) y el JUnit (test-results/regression-junit.xml).
-      - name: Run Regression Tests
+      # Incluye accesibilidad-publica.spec.ts: axe audita el portal completo,
+      # con contraste, encabezados y landmarks, sin excluir los nodos que fallen.
+      - name: Run Regression and Public Accessibility Tests
         id: regression
         run: npm run test:regression 2>&1 | tee -a reports/ci.log
 
@@ -238,6 +256,7 @@ jobs:
         run: |
           {
             echo "## Frontend regresión (Playwright): resultado de CI"
+            echo "Incluye auditoría automatizada de accesibilidad del portal público (axe)."
             echo
             junit=test-results/regression-junit.xml
             if [ -f "$junit" ]; then

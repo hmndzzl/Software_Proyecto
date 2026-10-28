@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/httpStatus';
 import pool from '../../config/db';
 import bcrypt from 'bcryptjs';
+import bcryptNative from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { ROLES } from '../../config/roles';
 
@@ -19,6 +20,10 @@ vi.mock('bcryptjs', () => ({
     compare: vi.fn(),
     hash: vi.fn(),
   },
+}));
+
+vi.mock('bcrypt', () => ({
+  default: { compare: vi.fn() },
 }));
 
 vi.mock('jsonwebtoken', () => ({
@@ -87,7 +92,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       const userFromDb = { id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 2, estado_cuenta: 'activa' };
 
       (pool.execute as any).mockResolvedValue([[userFromDb]]);
-      (bcrypt.compare as any).mockResolvedValue(true);
+      (bcryptNative.compare as any).mockResolvedValue(true);
 
       await login(req as Request, res as Response);
 
@@ -95,7 +100,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
         'SELECT id, nombre, correo, password, rol_id, estado_cuenta FROM persona WHERE correo = ?',
         ['test@test.com']
       );
-      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedpassword');
+      expect(bcryptNative.compare).toHaveBeenCalledWith('password123', 'hashedpassword');
       expect(cookieMock).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -109,7 +114,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       const userFromDb = { id: 1, password: 'hashedpassword' };
 
       (pool.execute as any).mockResolvedValue([[userFromDb]]);
-      (bcrypt.compare as any).mockResolvedValue(false);
+      (bcryptNative.compare as any).mockResolvedValue(false);
 
       await login(req as Request, res as Response);
 
@@ -120,10 +125,11 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it.each([
       ['pendiente', 'CUENTA_PENDIENTE'],
       ['rechazada', 'CUENTA_RECHAZADA'],
+      ['baja', 'CUENTA_BAJA'],
     ])('debería rechazar con 403 una cuenta %s aunque la contraseña sea correcta', async (estado, codigo) => {
       req.body = { correo: 'test@test.com', password: 'password123' };
       (pool.execute as any).mockResolvedValue([[{ id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 4, estado_cuenta: estado }]]);
-      (bcrypt.compare as any).mockResolvedValue(true);
+      (bcryptNative.compare as any).mockResolvedValue(true);
 
       await login(req as Request, res as Response);
 
@@ -135,7 +141,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it('no revela el estado de la cuenta si la contraseña es incorrecta', async () => {
       req.body = { correo: 'test@test.com', password: 'mala' };
       (pool.execute as any).mockResolvedValue([[{ id: 1, password: 'hashedpassword', estado_cuenta: 'pendiente' }]]);
-      (bcrypt.compare as any).mockResolvedValue(false);
+      (bcryptNative.compare as any).mockResolvedValue(false);
 
       await login(req as Request, res as Response);
 
@@ -192,6 +198,19 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       expect(pool.execute).toHaveBeenCalledTimes(2);
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Usuario registrado exitosamente' });
+    });
+
+    it('crea la cuenta como pendiente de aprobación', async () => {
+      req.body = { nombre: 'Nuevo', correo: 'nuevo@test.com', password: 'pass', rol_id: 2 };
+      (pool.execute as any).mockResolvedValueOnce([[]]);
+      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      (bcrypt.hash as any).mockResolvedValue('hashedpass');
+
+      await register(req as Request, res as Response);
+
+      const [sql, params] = (pool.execute as any).mock.calls[1];
+      expect(sql).toContain('estado_cuenta');
+      expect(params).toContain('pendiente');
     });
 
     it('debería fallar si el correo ya está registrado (400)', async () => {
@@ -299,7 +318,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       expect((jwt.sign as any).mock.calls[0][0]).toEqual({ id: 1, rol_id: 2 });
     });
 
-    it.each(['rechazada', 'pendiente'])('retorna 401 y limpia la cookie si la cuenta está %s', async (estado) => {
+    it.each(['rechazada', 'pendiente', 'baja'])('retorna 401 y limpia la cookie si la cuenta está %s', async (estado) => {
       req.cookies = { refreshToken: 'valid-token' };
       (jwt.verify as any).mockReturnValue({ id: 1, rol_id: 2 });
       (pool.execute as any).mockResolvedValueOnce([[{ rol_id: 2, estado_cuenta: estado }]]);
