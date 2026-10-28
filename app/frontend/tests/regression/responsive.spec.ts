@@ -25,7 +25,7 @@ test('el login móvil muestra la presentación y no cubre el área de Clerk', as
 const contenido: ContenidoLanding = {
   nombre_parroquia: 'Parroquia San Pedro Nolasco', lema: 'Casa de oración',
   titulo_principal: 'Una comunidad viva', descripcion_principal: 'Bienvenidos a nuestra parroquia.',
-  quienes_somos: { titulo: 'Nuestra historia', descripcion: 'Nuestra comunidad.', mision: 'Servir.', comunidad: 'Compartir.', servicio: 'Acompañar.' },
+  quienes_somos: { titulo: 'Quiénes somos', descripcion: 'Nuestra comunidad.', mision: 'Servir.', comunidad: 'Compartir.', servicio: 'Acompañar.' },
   cantidad_grupos: 12, cantidad_espacios: 7,
   valores_encabezado: { titulo: 'Nuestros valores', descripcion: 'Fe y servicio.' },
   valores: [{ titulo: 'Servicio', descripcion: 'Acompañamos a nuestra comunidad.' }],
