@@ -158,6 +158,8 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Ministros agregados');
     expect(screen.getByRole('status')).toHaveTextContent('José está marcado como no disponible.');
     expect(screen.getByRole('status')).toHaveTextContent('9 servicios');
+    await userEvent.click(within(modal).getByRole('button', { name: 'Cerrar' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('José está marcado como no disponible.');
   });
 
   it('conserva los ministros elegidos si falla la asignación y permite reintentar', async () => {

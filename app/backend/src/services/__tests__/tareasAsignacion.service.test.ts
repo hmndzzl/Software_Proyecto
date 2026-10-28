@@ -14,7 +14,7 @@ beforeEach(() => {
   vi.mocked(pool.getConnection).mockResolvedValue(conn as never);
   conn.execute.mockImplementation(async (sql: string) => {
     if (sql.startsWith('SELECT * FROM tarea')) return [[{ ...entrada, id: 7 }]];
-    if (sql.startsWith('SELECT id, nombre')) return [ministros];
+    if (sql.startsWith('SELECT p.id, p.nombre')) return [ministros];
     if (sql.startsWith('SELECT ministro_id')) return [[{ ministro_id: 9 }, { ministro_id: 10 }]];
     if (sql.startsWith('SELECT t.id')) return [[]];
     if (sql.startsWith('SELECT COUNT')) return [[{ total: 9 }]];

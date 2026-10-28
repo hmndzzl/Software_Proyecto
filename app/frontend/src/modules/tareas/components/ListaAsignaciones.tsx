@@ -1,3 +1,4 @@
+import { motivoIndisponibilidad } from '../../../api/disponibilidad';
 import { useId, useState, useEffect, useRef } from 'react';
 import apiClient from '../../../api/client';
 import { useToast } from '../../../context/ToastContext';
@@ -26,6 +27,8 @@ type Vista = 'detalle' | 'listado' | 'editar' | 'ministros' | 'eliminar' | 'quit
 interface AlertaAsignacion {
   persona_id?: number;
   ministro_no_disponible?: boolean;
+  periodo_no_disponible?: boolean;
+  ausencia_reportada?: boolean;
   tope_servicios_superado?: boolean;
   servicios_en_el_mes?: number;
   tope_servicios_mes?: number;
@@ -43,6 +46,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   const id = useId();
   const { usuario } = useAuth();
   const toast = useToast();
+  const [advertenciaGuardada, setAdvertenciaGuardada] = useState('');
   const esMinistro = usuario?.rol_id === ROLES.MINISTRO;
   const puedeGestionar = rolTieneAcceso(usuario?.rol_id, [ROLES.COORDINADOR_MINISTROS]);
   const [tareas, setTareas] = useState<Tarea[]>([]);
@@ -139,29 +143,35 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   };
   const guardarMinistros = async () => {
     if (!activa || ocupado || !nuevos.length) return;
+    setAdvertenciaGuardada('');
     setOcupado(true);
     try {
       const res = await apiClient.post<{ alertas?: AlertaAsignacion[] }>('/api/tareas/asignar', { tarea_id: activa.id, persona_ids: nuevos });
       const avisos = (res.data.alertas ?? []).flatMap(alerta => {
         const nombre = ministros.find(m => m.id === alerta.persona_id)?.nombre ?? 'Un ministro';
-        return [alerta.ministro_no_disponible && `${nombre} está marcado como no disponible.`,
+        return [alerta.ministro_no_disponible && `${nombre} ${motivoIndisponibilidad(alerta).replace(/^./, letra => letra.toLowerCase())}`,
           alerta.tope_servicios_superado && `${nombre} tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes}).`].filter(Boolean);
       });
-      setNuevos([]); toast.success('Ministros agregados', avisos.length ? avisos.join(' ') : 'Las asignaciones se guardaron correctamente.'); refrescar();
+      setAdvertenciaGuardada(avisos.join(' '));
+      const notificar = avisos.length ? toast.warning : toast.success;
+      setNuevos([]); notificar('Ministros agregados', avisos.length ? avisos.join(' ') : 'Las asignaciones se guardaron correctamente.'); refrescar();
     } catch (err) { toast.error('No se pudo guardar la asignación', getApiErrorMessage(err, 'Error al asignar ministros.')); }
     finally { setOcupado(false); }
   };
   const reasignar = async (personaActualId: number, personaNuevaId: number) => {
     if (!activa || ocupado || personaActualId === personaNuevaId) return;
+    setAdvertenciaGuardada('');
     setOcupado(true);
     try {
       const res = await apiClient.put<{ alerta?: AlertaAsignacion }>('/api/tareas/asignar', {
         tarea_id: activa.id, persona_actual_id: personaActualId, persona_nueva_id: personaNuevaId,
       });
       const alerta = res.data.alerta;
-      const avisos = [alerta?.ministro_no_disponible && 'Está marcado como no disponible.',
+      const avisos = [alerta?.ministro_no_disponible && motivoIndisponibilidad(alerta),
         alerta?.tope_servicios_superado && `Tendría ${alerta.servicios_en_el_mes} servicios este mes (tope: ${alerta.tope_servicios_mes}).`].filter(Boolean);
-      toast.success('Responsable actualizado', avisos.length ? avisos.join(' ') : 'El cambio se guardó correctamente.');
+      setAdvertenciaGuardada(avisos.join(' '));
+      const notificar = avisos.length ? toast.warning : toast.success;
+      notificar('Responsable actualizado', avisos.length ? avisos.join(' ') : 'El cambio se guardó correctamente.');
       setReemplazando(null); refrescar();
     } catch (err) { toast.error('No se pudo reasignar la tarea', getApiErrorMessage(err, 'Error al reasignar la tarea.')); }
     finally { setOcupado(false); }
@@ -194,6 +204,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
   return <>
     <CardHead title={esMinistro ? 'Mis Tareas' : 'Asignaciones Actuales'} />
     <CardBody>
+      {!activa && advertenciaGuardada && <div role="alert" className={form.modalWarning}><strong>Asignación guardada con advertencias</strong><p>{advertenciaGuardada}</p></div>}
       <TableFilters {...filtros.controls} label="Filtros de tareas" />
       {cargando ? <LoadingState label="Cargando asignaciones..." /> : error ? <ErrorState message={error} onRetry={cargar} />
         : !tareas.length ? <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
@@ -241,6 +252,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
       initialFocusSelector={vista === 'eliminar' || vista === 'quitar' ? '[data-confirm-cancel]' : undefined}
       onBack={vista !== 'detalle' ? () => { if (!ocupado) { setVista(vista === 'quitar' ? 'ministros' : 'detalle'); setReemplazando(null); } } : undefined}>
       {activa && <div ref={contenido} className={styles.detalle}>
+        {advertenciaGuardada && <div role="alert" className={form.modalWarning}><strong>Asignación guardada con advertencias</strong><p>{advertenciaGuardada}</p></div>}
         {vista === 'detalle' && <>
           <dl className={styles.datos}>
             <div><dt>Descripción</dt><dd>{activa.descripcion}</dd></div>

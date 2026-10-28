@@ -1,3 +1,4 @@
+import { DISPONIBILIDAD_TAREA_SQL, parametrosDisponibilidad, alertaDisponibilidad } from '../services/disponibilidad.service';
 import { validarEventoTarea } from '../services/tareaEvento.service';
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
@@ -82,7 +83,7 @@ export const getTareas = async (req: Request, res: Response): Promise<void> => {
           [tarea.id]
         );
         return {
-          ...(tarea as any),
+          ...(tarea),
           asignados,
           persona_nombre: (asignados[0] as AsignadoInfo | undefined)?.nombre ?? null,
         } as TareaConAsignados;
@@ -322,8 +323,12 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     }
 
     const [personas] = await pool.execute<RowDataPacket[]>(
-      "SELECT id, disponible FROM persona WHERE id = ? AND rol_id = 4 AND estado_cuenta = 'activa'", [persona_id]
+      `SELECT p.id, p.disponible, ${DISPONIBILIDAD_TAREA_SQL}
+       FROM persona p
+       WHERE p.id = ? AND p.rol_id = 4 AND p.estado_cuenta = 'activa'`,
+      [...parametrosDisponibilidad(tareas[0]), persona_id]
     );
+    
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
       return;
@@ -334,7 +339,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     // Alerta de rotación, no bloquea la asignación, solo informa.
     // ministro_no_disponible: fue marcado manualmente como no disponible (enfermo, permiso, etc.)
     // tope_servicios_superado: ya alcanzó/superó el tope de tareas del mes de la tarea asignada
-    const ministroNoDisponible = !personas[0].disponible;
+    const disponibilidad = alertaDisponibilidad(personas[0]);
 
     const [conteoMes] = await pool.execute<RowDataPacket[]>(
       `SELECT COUNT(*) AS total
@@ -396,7 +401,7 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
         tarea_id,
         persona_id,
         alerta: {
-          ministro_no_disponible: ministroNoDisponible,
+          ...disponibilidad,
           tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
           servicios_en_el_mes: serviciosEnElMes,
           tope_servicios_mes: TOPE_SERVICIOS_MES,
@@ -450,7 +455,10 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
     }
 
     const [personas] = await pool.execute<RowDataPacket[]>(
-      "SELECT id, disponible FROM persona WHERE id = ? AND rol_id = 4 AND estado_cuenta = 'activa'", [persona_nueva_id]
+    `SELECT p.id, p.disponible, ${DISPONIBILIDAD_TAREA_SQL}
+     FROM persona p
+     WHERE p.id = ? AND p.rol_id = 4 AND p.estado_cuenta = 'activa'`,
+    [...parametrosDisponibilidad(tarea), persona_nueva_id]
     );
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
@@ -458,7 +466,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
     }
 
     // Misma alerta de rotación (no bloqueante) que asignarTarea, calculada para el nuevo responsable.
-    const ministroNoDisponible = !personas[0].disponible;
+    const disponibilidad = alertaDisponibilidad(personas[0]);
 
     const [conteoMes] = await pool.execute<RowDataPacket[]>(
       `SELECT COUNT(*) AS total
@@ -527,7 +535,7 @@ export const reasignarTarea = async (req: Request, res: Response): Promise<void>
         persona_anterior_id: Number(persona_actual_id),
         persona_nueva_id: Number(persona_nueva_id),
         alerta: {
-          ministro_no_disponible: ministroNoDisponible,
+          ...disponibilidad,
           tope_servicios_superado: serviciosEnElMes > TOPE_SERVICIOS_MES,
           servicios_en_el_mes: serviciosEnElMes,
           tope_servicios_mes: TOPE_SERVICIOS_MES,

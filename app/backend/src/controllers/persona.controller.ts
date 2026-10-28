@@ -1,3 +1,4 @@
+import { DISPONIBILIDAD_ACTUAL_SQL } from '../services/disponibilidad.service';
 import { Request, Response } from 'express';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import bcrypt from 'bcryptjs';
@@ -32,7 +33,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
   try {
     if (req.user?.rol_id === ROLES.COORDINADOR_MINISTROS) {
       const [rows] = await pool.execute<RowDataPacket[]>(
-        `SELECT p.id, p.nombre, p.correo, p.disponible, ${TELEFONO_PRINCIPAL_SQL}
+        `SELECT p.id, p.nombre, p.correo, p.disponible, ${DISPONIBILIDAD_ACTUAL_SQL}, ${TELEFONO_PRINCIPAL_SQL}
          FROM persona p
          INNER JOIN coordinador_ministro cm ON cm.ministro_id = p.id
          WHERE cm.coordinador_id = ? AND p.estado_cuenta = 'activa'
@@ -44,7 +45,7 @@ export const getMinistros = async (req: Request, res: Response): Promise<void> =
     }
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.disponible, ${TELEFONO_PRINCIPAL_SQL}
+      `SELECT p.id, p.nombre, p.correo, p.disponible, ${DISPONIBILIDAD_ACTUAL_SQL}, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p
        INNER JOIN rol r ON r.id = p.rol_id
        WHERE LOWER(TRIM(r.detalle)) = 'ministro' AND p.estado_cuenta = 'activa'

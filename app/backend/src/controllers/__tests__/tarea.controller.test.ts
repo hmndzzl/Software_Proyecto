@@ -478,6 +478,8 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
         alerta: {
           ministro_no_disponible: false,
+          periodo_no_disponible: false,
+          ausencia_reportada: false,
           tope_servicios_superado: false,
           servicios_en_el_mes: 1,
           tope_servicios_mes: TOPE_SERVICIOS_MES,
@@ -760,6 +762,8 @@ describe('Tarea Controller - Pruebas Unitarias', () => {
         persona_nueva_id: 3,
         alerta: {
           ministro_no_disponible: false,
+          periodo_no_disponible: false,
+          ausencia_reportada: false,
           tope_servicios_superado: false,
           servicios_en_el_mes: 1,
           tope_servicios_mes: TOPE_SERVICIOS_MES,
