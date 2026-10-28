@@ -21,7 +21,6 @@ services:
   backend:
     build:
       context: ../../app/backend
-    command: [sh, -c, 'npm run build && node dist/app.js']
     environment:
       NODE_ENV: performance
       K6_DISABLE_LOGIN_RATE_LIMIT: 'true'
