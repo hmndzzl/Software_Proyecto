@@ -59,7 +59,7 @@ for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 
       await page.goto('/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(contenido.titulo_principal);
       await auditar(page, 'landing');
-      if (viewport.width <= 1100) {
+      if (viewport.width <= 1380) {
         await page.getByRole('button', { name: 'Menú', exact: true }).click();
         await expect(page.getByRole('navigation', { name: 'Navegación principal', exact: true })).toBeVisible();
         await auditar(page, 'landing-menu-abierto');
