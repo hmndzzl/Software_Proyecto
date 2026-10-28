@@ -323,12 +323,11 @@ export const asignarTarea = async (req: Request, res: Response): Promise<void> =
     }
 
     const [personas] = await pool.execute<RowDataPacket[]>(
-    const [personas] = await pool.execute<RowDataPacket[]>(
-  `SELECT p.id, p.disponible, ${DISPONIBILIDAD_TAREA_SQL}
-   FROM persona p
-   WHERE p.id = ? AND p.rol_id = 4 AND p.estado_cuenta = 'activa'`,
-  [...parametrosDisponibilidad(tareas[0]), persona_id]
-);
+      `SELECT p.id, p.disponible, ${DISPONIBILIDAD_TAREA_SQL}
+       FROM persona p
+       WHERE p.id = ? AND p.rol_id = 4 AND p.estado_cuenta = 'activa'`,
+      [...parametrosDisponibilidad(tareas[0]), persona_id]
+    );
     
     if (personas.length === 0) {
       res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Persona no encontrada' });
