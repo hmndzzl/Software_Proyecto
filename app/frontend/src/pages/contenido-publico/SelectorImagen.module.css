@@ -1,0 +1,12 @@
+.root { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.preview { flex: 0 0 auto; display: grid; place-items: center; width: 132px; height: 92px; overflow: hidden; border: 1px solid var(--color-line); border-radius: var(--radius-input); background: var(--color-cremaDk); }
+.preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vacio { padding: 6px; color: var(--color-muted); font-family: var(--font-body); font-size: 12px; line-height: 1.3; text-align: center; }
+.info { display: flex; flex: 1; flex-direction: column; gap: 8px; min-width: 0; }
+.label { margin: 0; color: var(--color-carbon); font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.estado, .error { margin: 0; font-family: var(--font-body); font-size: 13px; line-height: 1.45; }
+.estado { color: var(--color-muted); }
+.error { color: var(--color-bad); font-weight: 600; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.archivo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 520px) { .root { flex-direction: column; } .preview { width: 100%; height: 150px; } .acciones > button { flex: 1; } }
