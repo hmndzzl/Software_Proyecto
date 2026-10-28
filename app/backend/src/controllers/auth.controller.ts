@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
 import bcrypt from 'bcryptjs';
+import bcryptNative from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { HttpStatus } from '../utils/httpStatus';
@@ -56,7 +57,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const usuario = rows[0];
-    const constrasenaValida = await bcrypt.compare(password, usuario.password);
+    const constrasenaValida = await bcryptNative.compare(password, usuario.password);
 
     if (!constrasenaValida) {
       res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Credenciales inválidas' });

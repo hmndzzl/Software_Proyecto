@@ -406,6 +406,13 @@ export const cambiarEstadoReserva = async (req: Request, res: Response) => {
           res.status(HttpStatus.BAD_REQUEST).json({ message: 'El espacio de esta reserva fue eliminado. Selecciona otro espacio antes de aprobarla' });
           return 'rollback';
         }
+        // Distintas solicitudes bloquean filas de reserva distintas. Bloquear el
+        // salón serializa sus aprobaciones antes de consultar solapamientos.
+        const [espacios]: any = await conn.query('SELECT id FROM espacio WHERE id = ? FOR UPDATE', [reserva.espacio_id]);
+        if (!espacios.length) {
+          res.status(HttpStatus.BAD_REQUEST).json({ message: 'El espacio de esta reserva fue eliminado. Selecciona otro espacio antes de aprobarla' });
+          return 'rollback';
+        }
         await validarCapacidad(conn, Number(reserva.espacio_id), reserva.cantidad_personas ?? null);
         const [conflictos]: any = await conn.query(
           `SELECT * FROM reserva

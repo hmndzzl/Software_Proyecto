@@ -67,5 +67,5 @@ export function cleanup(data, expectedCount) {
       if (row.estado_reserva_id !== 4) cancel(row.id, data.admin);
     }
   }
-  if (expectedCount !== undefined) check(found, { 'colisión: exactamente una reserva persistida': n => n === expectedCount });
+  if (expectedCount !== undefined) check(found, { 'auditoría: cantidad esperada de reservas persistidas': n => n === expectedCount });
 }
