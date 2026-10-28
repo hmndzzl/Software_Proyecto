@@ -3,7 +3,8 @@ import { RowDataPacket } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
 import pool from '../config/db';
 import { HttpStatus } from '../utils/httpStatus';
-import { combinarContenidoLanding, validarCambiosLanding } from '../utils/landing';
+import { combinarContenidoLanding, recopilarImagenesLanding, validarCambiosLanding } from '../utils/landing';
+import { eliminarImagenLanding, ErrorImagenLanding, guardarImagenLanding } from '../services/landingImagen.service';
 import { ContenidoLanding } from '../types/landing.types';
 
 interface LandingRow extends RowDataPacket { contenido: string | ContenidoLanding }
@@ -47,6 +48,11 @@ export const actualizarContenidoLanding = async (req: Request, res: Response): P
     const contenido = combinarContenidoLanding(leerContenido(rows[0]), cambios);
     await conn.execute('UPDATE contenido_landing SET contenido = ? WHERE id = 1', [JSON.stringify(contenido)]);
     await conn.commit();
+    // Las fotos que el contenido ya no usa se borran del disco (mejor esfuerzo: el contenido ya quedó guardado).
+    const vigentes = recopilarImagenesLanding(contenido);
+    for (const url of recopilarImagenesLanding(leerContenido(rows[0]))) {
+      if (!vigentes.has(url)) await eliminarImagenLanding(url);
+    }
     res.setHeader('Cache-Control', 'no-store');
     // Respuesta breve: solo los campos enviados, normalizados y guardados.
     res.status(HttpStatus.OK).json(cambios);
@@ -58,5 +64,23 @@ export const actualizarContenidoLanding = async (req: Request, res: Response): P
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error al actualizar el contenido de la landing' });
   } finally {
     conn?.release();
+  }
+};
+
+// Solo guarda y optimiza el archivo: la URL se publica al guardar el contenido (PATCH).
+export const subirImagenLanding = async (req: Request, res: Response): Promise<void> => {
+  if (!req.file) {
+    res.status(HttpStatus.BAD_REQUEST).json({ message: 'Selecciona una imagen' });
+    return;
+  }
+  try {
+    res.status(HttpStatus.CREATED).json({ url: await guardarImagenLanding(req.file) });
+  } catch (error) {
+    if (error instanceof ErrorImagenLanding) {
+      res.status(error.status).json({ message: error.message });
+      return;
+    }
+    console.error('Error en subirImagenLanding:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Error al guardar la imagen' });
   }
 };

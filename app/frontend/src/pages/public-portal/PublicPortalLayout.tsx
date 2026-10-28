@@ -6,7 +6,10 @@ import './PublicPortal.css';
 
 export const PUBLIC_NAV_LINKS = [
   { id: 'quienes-somos', label: 'Quiénes Somos' },
+  { id: 'historia', label: 'Historia' },
   { id: 'valores', label: 'Nuestros Valores' },
+  { id: 'devocion', label: 'Devoción' },
+  { id: 'fechas', label: 'Fechas' },
   { id: 'contacto', label: 'Contáctanos' },
 ] as const;
 
@@ -36,8 +39,8 @@ interface PublicPortalLayoutProps {
 }
 
 const HORARIOS_OFICINA_POR_DEFECTO = [
-  { dias: 'Lunes a viernes', horario: '9:00 – 13:00 · 15:00 – 19:00' },
-  { dias: 'Sábados', horario: '9:00 – 13:00' },
+  { dias: 'Lunes a viernes', horario: '09:00 a 12:00' },
+  { dias: 'Sábados y Domingos', horario: 'Cerrado' },
 ];
 
 export default function PublicPortalLayout({ page, activeSection, onSectionClick, nombreParroquia, textoPie, horariosOficina, children }: PublicPortalLayoutProps) {

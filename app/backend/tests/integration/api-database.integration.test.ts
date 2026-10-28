@@ -196,8 +196,8 @@ describe('integración API y MariaDB', () => {
 
   it('persiste cambios de landing y conserva los campos no enviados', async () => {
     const inicial = await request(app).get('/api/public/landing').expect(200);
-    expect(inicial.body).toMatchObject({ nombre_parroquia: 'Parroquia San Pedro Nolasco', cantidad_grupos: 12, cantidad_espacios: 7 });
-    expect(inicial.body.contacto.direccion).toContain('\nCiudad de Guatemala');
+    expect(inicial.body).toMatchObject({ nombre_parroquia: 'Parroquia San Pedro Nolasco', cantidad_grupos: 36, cantidad_espacios: 10 });
+    expect(inicial.body.contacto.direccion).toBe('9a Calle A 9-34, Ciudad San Cristóbal, Mixco');
     const login = await request(app).post('/api/auth/login')
       .send({ correo: 'diego@parroquia.com', password: 'admin123' }).expect(200);
     const [cantidadesAntes] = await pool.query<RowDataPacket[]>('SELECT (SELECT COUNT(*) FROM grupo) AS grupos, (SELECT COUNT(*) FROM espacio) AS espacios');

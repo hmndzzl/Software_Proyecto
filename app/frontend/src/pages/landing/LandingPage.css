@@ -31,6 +31,9 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .slot{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:14px;background:repeating-linear-gradient(135deg,rgba(139,90,45,.06) 0 12px,rgba(139,90,45,.11) 12px 24px);color:var(--muted);font-size:var(--text-label);font-style:italic}
 .landing .hero .slot{background:repeating-linear-gradient(135deg,rgba(139,90,45,.06) 0 12px,rgba(139,90,45,.11) 12px 24px);color:var(--muted)}
 .landing .slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.landing .slot-ajustada{overflow:hidden;background:var(--crema-dk)}
+.landing .slot-ajustada::before{content:'';position:absolute;inset:-24px;background:var(--foto-fondo) center/cover no-repeat;filter:blur(20px) brightness(.92) saturate(1.1)}
+.landing .slot-ajustada img{object-fit:contain}
 
 /* Secciones */
 .landing .sec{padding:96px 0}
@@ -55,11 +58,41 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .values{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .landing .vcard{background:var(--blanco);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02),0 6px 20px rgba(60,40,20,.05);display:flex;flex-direction:column;transition:transform .16s,box-shadow .16s}
 .landing .vcard:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(60,40,20,.1)}
-.landing .vcard-ph{position:relative;height:166px;border-bottom:1px solid var(--line)}
+.landing .vcard-ph{position:relative;height:260px;border-bottom:1px solid var(--line)}
 .landing .vcard-body{padding:26px 26px 30px;display:flex;flex-direction:column;gap:12px;flex:1}
 .landing .vnum{font-family:'Cinzel',serif;font-weight:700;font-size:var(--text-label);letter-spacing:.14em;color:var(--tierra-text)}
 .landing .vcard h3{font-size:21px;color:var(--rojo);letter-spacing:.05em}
 .landing .vcard p{font-size:16px;color:var(--ink);line-height:1.62}
+.landing .sec-devocion,.landing .sec-historia{background:var(--crema-dk);border-block:1px solid var(--line)}
+.landing .oracion{max-width:760px;margin:0 auto 52px;background:var(--blanco);border:1px solid var(--line);border-top:3px solid var(--oro);border-radius:14px;padding:40px 44px;text-align:center;box-shadow:0 6px 20px rgba(60,40,20,.05)}
+.landing .oracion h3{font-size:26px;color:var(--rojo);margin:10px 0 24px}
+.landing .oracion p{font-size:18px;line-height:1.8;color:var(--ink);white-space:pre-line}
+.landing .oracion p+p{margin-top:18px}
+.landing button.oracion{display:block;width:100%;font:inherit;color:inherit;cursor:pointer;transition:transform .16s,box-shadow .16s}
+.landing button.oracion:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(60,40,20,.1)}
+.landing button.oracion .kicker{display:block}
+.landing .oracion-more{display:inline-block;margin-top:20px;font-family:'Cinzel',serif;font-weight:700;font-size:var(--text-label);letter-spacing:.14em;color:var(--tierra-text);text-transform:uppercase}
+.landing .qmodal-oracion{text-align:center}
+.landing .dcards{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+.landing .qcards{display:grid;gap:22px}
+.landing .historia-media{grid-template-rows:250px 190px}
+/* En escritorio las fotos van a la derecha de las tarjetas; en pantallas angostas conservan su orden. */
+@media(min-width:1001px){
+  .landing .about.historia{grid-template-columns:1.05fr 1fr}
+  .landing .historia .historia-media{order:2}
+}
+.landing .qcard{font:inherit;text-align:left;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:12px;background:var(--blanco);border:1px solid var(--line);border-radius:14px;padding:28px 28px 24px;box-shadow:0 1px 0 rgba(0,0,0,.02),0 6px 20px rgba(60,40,20,.05);transition:transform .16s,box-shadow .16s}
+.landing .qcard:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(60,40,20,.1)}
+.landing .qcard h3{font-size:21px;color:var(--rojo);letter-spacing:.05em;margin:0}
+.landing .qcard p{font-size:16px;color:var(--ink);line-height:1.62}
+.landing .qcard-more{margin-top:auto;padding-top:6px;font-family:'Cinzel',serif;font-weight:700;font-size:var(--text-label);letter-spacing:.14em;color:var(--tierra-text);text-transform:uppercase}
+.landing .qmodal{padding:24px;overflow-y:auto;animation:qmodal-in .22s ease-out}
+.landing .qmodal p{font-size:17px;line-height:1.75;color:var(--ink)}
+.landing .qmodal p+p{margin-top:16px}
+.landing .qcard p.qcard-lema{font-size:18px;font-style:italic;color:var(--tierra-text)}
+.landing .qmodal p.qmodal-lema{font-size:20px;font-style:italic;color:var(--rojo);margin-bottom:20px}
+@keyframes qmodal-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.landing .dcards .vcard p{white-space:pre-line}
 
 .landing .contact{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
 .landing .cinfo{display:flex;flex-direction:column;gap:22px;margin-top:32px}
@@ -94,7 +127,7 @@ html:has(.landing){scroll-behavior:smooth}
 }
 @media(max-width:768px){
   .landing .sec{padding:64px 0}
-  .landing .values,.landing .fgrid{grid-template-columns:1fr}
+  .landing .values,.landing .fgrid,.landing .dcards,.landing .qcards{grid-template-columns:1fr}
   .landing .about-media{grid-template-rows:170px 130px}
   .landing .hero-stats{gap:24px}
   .landing .form{padding:26px}
@@ -118,12 +151,16 @@ html:has(.landing){scroll-behavior:smooth}
   .landing .ico{width:40px;height:40px}
   .landing .sec-head{margin-bottom:34px}
   .landing .vcard-body{padding:22px}
+  .landing .vcard-ph{height:220px}
+  .landing .oracion{padding:28px 22px}
+  .landing .oracion p{font-size:16px}
   .landing .form{padding:20px}
   .landing .cmap{height:180px}
 }
 @media(prefers-reduced-motion:reduce){
   html:has(.landing){scroll-behavior:auto}
-  .landing .btn,.landing .vcard{transition:none}
+  .landing .btn,.landing .vcard,.landing .qcard,.landing button.oracion{transition:none}
+  .landing .qmodal{animation:none}
 }
 
 .landing .slot > button { position: absolute; inset: 0; }

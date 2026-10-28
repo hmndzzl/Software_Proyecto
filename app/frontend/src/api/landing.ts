@@ -1,8 +1,15 @@
 import apiClient from './client';
 
+export const CLAVES_IMAGENES_LANDING = [
+  'hero', 'quienes_1', 'quienes_2', 'quienes_3', 'historia_1', 'historia_2', 'historia_3', 'entrada',
+] as const;
+export type ClaveImagenLanding = typeof CLAVES_IMAGENES_LANDING[number];
+export type ImagenesLanding = Partial<Record<ClaveImagenLanding, string>>;
+
 export interface ValorLanding {
   titulo: string;
   descripcion: string;
+  imagen?: string;
 }
 
 export interface HorarioMisa {
@@ -13,6 +20,45 @@ export interface HorarioMisa {
 export interface HorarioOficina {
   dias: string;
   horario: string;
+}
+
+export interface TarjetaDevocion {
+  titulo: string;
+  descripcion: string;
+  imagen?: string;
+}
+
+export interface TarjetaHistoria {
+  titulo: string;
+  lema: string;
+  resumen: string;
+  detalle: string;
+}
+
+export interface HistoriaLanding {
+  titulo: string;
+  descripcion: string;
+  tarjetas: TarjetaHistoria[];
+}
+
+export interface TarjetaFecha {
+  fecha: string;
+  titulo: string;
+  descripcion: string;
+  imagen?: string;
+}
+
+export interface FechasLanding {
+  titulo: string;
+  descripcion: string;
+  tarjetas: TarjetaFecha[];
+}
+
+export interface DevocionLanding {
+  titulo: string;
+  descripcion: string;
+  oracion: { titulo: string; texto: string };
+  tarjetas: TarjetaDevocion[];
 }
 
 export interface ContenidoLanding {
@@ -42,6 +88,10 @@ export interface ContenidoLanding {
     correo: string;
     telefono: string;
   };
+  historia: HistoriaLanding;
+  fechas: FechasLanding;
+  devocion: DevocionLanding;
+  imagenes?: ImagenesLanding;
   texto_pie: string;
 }
 
@@ -52,6 +102,10 @@ export type CambiosLanding = Partial<Pick<ContenidoLanding,
   quienes_somos?: Partial<ContenidoLanding['quienes_somos']>;
   valores_encabezado?: Partial<ContenidoLanding['valores_encabezado']>;
   contacto?: Partial<ContenidoLanding['contacto']>;
+  historia?: Partial<HistoriaLanding>;
+  imagenes?: ImagenesLanding;
+  fechas?: Partial<FechasLanding>;
+  devocion?: Partial<Omit<DevocionLanding, 'oracion'>> & { oracion?: Partial<DevocionLanding['oracion']> };
 };
 
 export async function obtenerContenidoLanding(publico = false): Promise<ContenidoLanding> {
@@ -63,4 +117,12 @@ export async function obtenerContenidoLanding(publico = false): Promise<Contenid
 export async function actualizarContenidoLanding(cambios: CambiosLanding): Promise<CambiosLanding> {
   const { data } = await apiClient.patch<CambiosLanding>('/api/landing', cambios);
   return data;
+}
+
+/** Sube una foto ya optimizada por el servidor; su URL se publica al guardar el contenido. */
+export async function subirImagenLanding(archivo: File): Promise<string> {
+  const datos = new FormData();
+  datos.set('imagen', archivo);
+  const { data } = await apiClient.post<{ url: string }>('/api/landing/imagenes', datos);
+  return data.url;
 }

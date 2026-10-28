@@ -7,7 +7,7 @@ const AUDIT_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']
 const contenido: ContenidoLanding = {
   nombre_parroquia: 'Parroquia San Pedro Nolasco', lema: 'Casa de oración',
   titulo_principal: 'Una comunidad viva', descripcion_principal: 'Bienvenidos a nuestra parroquia.',
-  quienes_somos: { titulo: 'Nuestra historia', descripcion: 'Nuestra comunidad.', mision: 'Servir.', comunidad: 'Compartir.', servicio: 'Acompañar.' },
+  quienes_somos: { titulo: 'Quiénes somos', descripcion: 'Nuestra comunidad.', mision: 'Servir.', comunidad: 'Compartir.', servicio: 'Acompañar.' },
   cantidad_grupos: 12, cantidad_espacios: 7,
   valores_encabezado: { titulo: 'Nuestros valores', descripcion: 'Fe y servicio.' },
   valores: [{ titulo: 'Servicio', descripcion: 'Acompañamos a nuestra comunidad.' }],
@@ -59,7 +59,7 @@ for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 
       await page.goto('/');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(contenido.titulo_principal);
       await auditar(page, 'landing');
-      if (viewport.width <= 1100) {
+      if (viewport.width <= 1380) {
         await page.getByRole('button', { name: 'Menú', exact: true }).click();
         await expect(page.getByRole('navigation', { name: 'Navegación principal', exact: true })).toBeVisible();
         await auditar(page, 'landing-menu-abierto');
