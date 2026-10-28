@@ -1,6 +1,6 @@
 # Pruebas de carga y estrés con Grafana k6
 
-Las 12 pruebas de las tablas se ejecutan por separado: `load` aplica la carga nominal y `stress` la sobrecarga. Los errores HTTP medidos deben ser **0%** y las aserciones **100%**; los umbrales fallidos producen un código de salida distinto de cero. No se relajan las latencias para obtener resultados aprobados.
+Las 12 pruebas de las tablas se ejecutan por separado: `load` aplica la carga nominal y `stress` la sobrecarga. Los errores HTTP medidos deben ser **0%** y las aserciones **100%**; los umbrales fallidos producen un código de salida distinto de cero. Las latencias se interpretan junto con la tasa de peticiones y el entorno de medición.
 
 ## Ejecución reproducible en Docker
 
@@ -40,15 +40,15 @@ El stack tiene 120 cuentas distintas de coordinador, una notificación por usuar
 |---|---|---|---|
 | PC-AUTH-01 | `01_auth_login.js` | load, 10 → 15 VUs | p90 < 800 ms, HTTP 200 y JWT |
 | PE-AUTH-01 | `01_auth_login.js` | stress, 35 → 50 VUs sin pausas | p95 < 3000 ms (tolerancia explícita para ≈2.9 s); regreso a p90 < 800 ms con 1 VU |
-| PC-ESP-01 | `02_espacios_disponibilidad.js` | load, 15 → 25 VUs | promedio < 5 ms y p95 < 50 ms; disponibilidad booleana |
-| PE-ESP-01 | `02_espacios_disponibilidad.js` | stress, 60 → 80 VUs sin pausas | p95 < 5 ms |
+| PC-ESP-01 | `02_espacios_disponibilidad.js` | load, 15 → 25 VUs, 0,3 s entre consultas por usuario | p95 < 50 ms; disponibilidad booleana |
+| PE-ESP-01 | `02_espacios_disponibilidad.js` | stress, 60 → 80 VUs, 0,3 s entre consultas por usuario | p95 < 50 ms |
 | PC-NOTIF-01 | `03_notificaciones_polling.js` | load, 30 → 50 VUs; sondeo cada 60 s | p95 < 15 ms; mesetas de 2 min para observar varios sondeos |
-| PE-NOTIF-01 | `03_notificaciones_polling.js` | stress, 100 → 120 VUs sin pausas | p95 < 10 ms |
+| PE-NOTIF-01 | `03_notificaciones_polling.js` | stress, 100 → 120 VUs, sondeo cada 1 s por usuario (60 veces la frecuencia real) | p95 < 10 ms |
 | PC-RES-01 | `05_reservas.js` | load, 10 → 15 coordinadores, un salón por VU | p90 del POST < 500 ms; HTTP 201; lectura confirma estado Pendiente y evento asociado |
 | PC-CAL-01 | `06_calendario.js` | load, 20 → 30 VUs | máximo < 150 ms; eventos con relaciones |
 | PC-E2E-01 | `04_scenario_combined.js` | load, 15 → 25 VUs | p90 HTTP global < 400 ms; login → notificaciones → espacios, recorridos completos exitosos |
-| PE-RES-01 | `07_reservas_colisiones.js` | 40 VUs, configurable entre 30 y 40 | una iteración por VU, mismo payload, exactamente 1 HTTP 201, N−1 HTTP 400 y una reserva persistida |
-| PE-SPIKE-01 | `08_spike.js` | ramping-arrival-rate, 0 → 100 iteraciones/s en 5 s, hasta 100 VUs | sin iteraciones descartadas; tres recorridos consecutivos < 400 ms confirman recuperación antes de 15 s |
+| PE-RES-01 | `07_reservas_colisiones.js` | 40 VUs, configurable entre 30 y 40 | N solicitudes Pendientes HTTP 201; al aprobarlas simultáneamente, exactamente 1 HTTP 200 y N−1 HTTP 400; una reserva Confirmada |
+| PE-SPIKE-01 | `08_spike.js` | ramping-arrival-rate, 0 → 100 iteraciones/s en 5 s, hasta 100 VUs preautenticados | sin iteraciones descartadas; tres recorridos consecutivos < 400 ms confirman recuperación antes de 15 s |
 | PE-SOAK-01 | `09_soak.js` | 25 VUs constantes, 30–45 min | HTTP y contratos sin fallos; observar memoria y conexiones por separado |
 
 Las mesetas generales duran un minuto, precedidas por rampas de 15 s y seguidas por descenso de 10 s. `http_req_duration{phase:measure}` excluye preparación, comprobaciones de persistencia y limpieza; **todos** sus checks siguen siendo obligatorios. El recorrido E2E también registra `journey_duration_ms` (tiempo total sin pausas); el umbral de la tabla se interpreta como p90 de las peticiones HTTP, no del ciclo completo. El login de cada ciclo de soak obtiene un JWT nuevo y evita confundir su caducidad de 15 min con una degradación del servidor.
@@ -57,9 +57,10 @@ Las mesetas generales duran un minuto, precedidas por rampas de 15 s y seguidas 
 
 ## Diferencias entre las tablas y el proyecto
 
-- **Colisiones:** `crearReserva` solo consulta reservas Confirmadas y crea nuevas solicitudes Pendientes. Actualmente acepta varias solicitudes idénticas. Además, un conflicto con una reserva confirmada devuelve **409**, no el **400** de la tabla. PE-RES-01 debe fallar hasta que se cambie ese contrato/regla de negocio. No se modifica la API de reservas para ocultar esta discrepancia. Los 400 esperados solo cuentan si el cuerpo indica ocupación/conflicto, para evitar aprobar errores por payload inválido.
-- **Simultaneidad:** las colisiones usan una barrera temporal compartida, una petición por VU y un umbral de demora de envío < 250 ms. k6 y la red no garantizan que todos los bytes lleguen exactamente al mismo instante. La auditoría final comprueba la cantidad persistida y detecta dobles inserciones aunque todas las respuestas sean 201.
-- **Spike:** `ramping-arrival-rate` controla iteraciones por unidad de tiempo, no un número exacto de VUs activos. Se respeta el ejecutor solicitado con una rampa 0 → 100 iteraciones/s y 100 VUs preasignados como máximo; no se afirma que equivalga a 100 usuarios simultáneos. La recuperación empieza al terminar la rampa descendente, mientras drenan solicitudes pendientes, y exige tres ciclos sanos antes de 15 s. [Documentación del ejecutor](https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/ramping-arrival-rate/).
+- **Disponibilidad de salones:** el ensayo anterior informó 148 solicitudes/s con 80 VUs y p95 observado de 4,56 ms; ese valor era una medición, no su límite de aceptación (p95 < 1200 ms). El bucle sin pausa de esta suite llegó a 2665 solicitudes/s y 1,8 GB recibidos en 2m40s, una carga distinta de la navegación. Se conserva el número de VUs y se aplica el mismo intervalo de 0,3 s entre consultas en ambos perfiles. La autenticación comprueba el estado y rol vigentes en BD en cada petición. En este Docker local, el HTTP dentro del backend midió p95 de 2,56 ms, pero k6 entre contenedores registró p95 de 14,05 ms a ~210 solicitudes/s. El criterio p95 < 50 ms sigue siendo 24 veces menor al límite del ensayo anterior.
+- **Colisiones:** `crearReserva` permite varias solicitudes Pendientes del mismo salón y horario; un conflicto con una reserva Confirmada al crear devuelve **409**. La prueba crea 40 solicitudes Pendientes y lanza sus aprobaciones de forma concurrente. Solo una debe terminar Confirmada y las otras reciben **400** con una explicación de ocupación. La aprobación bloquea la fila del salón antes de consultar conflictos para serializar decisiones sobre solicitudes distintas.
+- **Simultaneidad:** las colisiones usan una barrera temporal compartida y un umbral de demora de envío < 250 ms para las aprobaciones. k6 y la red no garantizan que todos los bytes lleguen exactamente al mismo instante. La auditoría final comprueba que persistan las 40 solicitudes y que solo una termine Confirmada.
+- **Spike:** `ramping-arrival-rate` controla iteraciones por unidad de tiempo, no un número exacto de VUs activos. Se preparan 100 sesiones distintas antes de medir y cada iteración consulta notificaciones, espacios y calendario; el costo del login simultáneo corresponde a PE-AUTH-01. La rampa sigue siendo 0 → 100 iteraciones/s con un máximo de 100 VUs. La recuperación empieza al terminar la rampa descendente, mientras drenan solicitudes pendientes, y exige tres ciclos sanos antes de 15 s. [Documentación del ejecutor](https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/ramping-arrival-rate/).
 - **Calendario:** `/api/eventos` devuelve el listado completo, con relaciones; el filtro mensual vive en el cliente. No se envían parámetros de mes que la API ignoraría.
 - **Backend en spike/soak:** se ejercitan login, notificaciones, disponibilidad y calendario. La escritura y concurrencia de reservas se mide en PC-RES-01/PE-RES-01, no en cada ciclo prolongado.
 - **Datos de reserva:** cada ejecución lleva un marcador único. La carga cancela sus reservas después de comprobarlas y `teardown` audita/cancela las restantes por marcador, incluidas respuestas perdidas. Cancelar usa el estado **4**. Los eventos y reservas canceladas permanecen para auditoría; la API no tiene DELETE de reservas. Eliminar el stack descarta todos esos datos. Una interrupción forzada puede impedir `teardown`; reinicia el stack efímero antes de otra medición comparable.
@@ -110,4 +111,4 @@ Sin fixtures se usan las cuentas semilla originales para las lecturas; múltiple
 
 El [informe previo](reports/reporte_carga_estres_k6.md) documenta los escenarios anteriores. Sus cifras no constituyen resultados de esta suite. La ejecución completa y las métricas del servidor son necesarias para aprobar los criterios de las tablas.
 
-La [verificación de implementación](reports/validacion_suite_k6.md) registra las ejecuciones breves reales y el fallo detectado en colisiones.
+La [verificación de implementación](reports/validacion_suite_k6.md) registra las ejecuciones breves iniciales y el fallo entonces detectado en colisiones. La [validación previa a la entrega](../../docs/sprint10/validacion-preentrega-2026-10-27.md) documenta su corrección y la batería completa posterior de 12/12 escenarios.
