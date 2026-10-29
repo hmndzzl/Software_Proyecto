@@ -335,3 +335,87 @@ INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `pu
   ('Misa de bautizos comunitaria', 6, 47, 'Celebración parroquial: misa de bautizos comunitaria.', 0),
   ('Convivencia de ministros', 13, 48, 'Celebración parroquial: convivencia de ministros.', 0),
   ('Taller de liturgia', 8, 49, 'Celebración parroquial: taller de liturgia.', 0);
+
+-- Tareas de los 18 eventos nuevos (ids 16-51): 2 por evento (Lectura + Ministro de
+-- comunión), dentro del horario de la reserva de su evento. Cada evento cae en una
+-- fecha distinta de todas las demás tareas del seed, así que repetir ministro entre
+-- eventos nunca produce un solape real de horario para esa persona.
+INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `titulo`, `descripcion`) VALUES
+  ('2026-09-23', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-09-23', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-09-26', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-09-26', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-09-28', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-09-28', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-01', '11:00:00', '11:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-01', '11:15:00', '11:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-05', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-05', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-07', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-07', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-09', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-09', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-12', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-12', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-15', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-15', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-19', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-19', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-22', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-22', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-24', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-24', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-27', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-27', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-29', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-29', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-31', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-31', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-11-03', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-11-03', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-11-05', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-11-05', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-11-07', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-11-07', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.');
+
+-- Asignaciones: 2 ministros distintos por evento, rotando por los 20 ministros
+-- disponibles (9,10,11,12,14-21,22-29). Nunca se repite un ministro en el mismo día.
+INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
+  (16, 9),  (17, 10),
+  (18, 11), (19, 12),
+  (20, 14), (21, 15),
+  (22, 16), (23, 17),
+  (24, 18), (25, 19),
+  (26, 20), (27, 21),
+  (28, 22), (29, 23),
+  (30, 24), (31, 25),
+  (32, 26), (33, 27),
+  (34, 28), (35, 29),
+  (36, 9),  (37, 10),
+  (38, 11), (39, 12),
+  (40, 14), (41, 15),
+  (42, 16), (43, 17),
+  (44, 18), (45, 19),
+  (46, 20), (47, 21),
+  (48, 22), (49, 23),
+  (50, 24), (51, 25);
+
+-- Vincula cada par de tareas a su evento correspondiente.
+UPDATE `tarea` SET `evento_id` = 8  WHERE `id` IN (16, 17);
+UPDATE `tarea` SET `evento_id` = 9  WHERE `id` IN (18, 19);
+UPDATE `tarea` SET `evento_id` = 10 WHERE `id` IN (20, 21);
+UPDATE `tarea` SET `evento_id` = 11 WHERE `id` IN (22, 23);
+UPDATE `tarea` SET `evento_id` = 12 WHERE `id` IN (24, 25);
+UPDATE `tarea` SET `evento_id` = 13 WHERE `id` IN (26, 27);
+UPDATE `tarea` SET `evento_id` = 14 WHERE `id` IN (28, 29);
+UPDATE `tarea` SET `evento_id` = 15 WHERE `id` IN (30, 31);
+UPDATE `tarea` SET `evento_id` = 16 WHERE `id` IN (32, 33);
+UPDATE `tarea` SET `evento_id` = 17 WHERE `id` IN (34, 35);
+UPDATE `tarea` SET `evento_id` = 18 WHERE `id` IN (36, 37);
+UPDATE `tarea` SET `evento_id` = 19 WHERE `id` IN (38, 39);
+UPDATE `tarea` SET `evento_id` = 20 WHERE `id` IN (40, 41);
+UPDATE `tarea` SET `evento_id` = 21 WHERE `id` IN (42, 43);
+UPDATE `tarea` SET `evento_id` = 22 WHERE `id` IN (44, 45);
+UPDATE `tarea` SET `evento_id` = 23 WHERE `id` IN (46, 47);
+UPDATE `tarea` SET `evento_id` = 24 WHERE `id` IN (48, 49);
+UPDATE `tarea` SET `evento_id` = 25 WHERE `id` IN (50, 51);
