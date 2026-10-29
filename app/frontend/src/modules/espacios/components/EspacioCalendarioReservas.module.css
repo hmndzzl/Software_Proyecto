@@ -191,26 +191,3 @@
   font-size: 12px;
   font-style: italic;
 }
-
-/* ── Variante clickeable: deja elegir un día del calendario desde fuera (p. ej. para
-   precargar la fecha del formulario de reserva) sin afectar la vista de solo lectura. ── */
-.dayHeaderClickable {
-  width: 100%;
-  appearance: none;
-  cursor: pointer;
-  transition: background-color var(--transition);
-}
-
-.dayHeaderClickable:hover,
-.dayHeaderClickable:focus-visible { background: var(--color-line); }
-
-.libreClickable {
-  width: 100%;
-  appearance: none;
-  background: none;
-  cursor: pointer;
-  transition: color var(--transition);
-}
-
-.libreClickable:hover,
-.libreClickable:focus-visible { color: var(--color-rojo); }

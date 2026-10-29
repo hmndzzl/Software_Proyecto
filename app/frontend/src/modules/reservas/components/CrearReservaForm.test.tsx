@@ -271,15 +271,23 @@ describe('CrearReservaForm', () => {
     expect(apiClient.post).not.toHaveBeenCalled();
   });
 
-  it('clickear "Libre" en el calendario semanal rellena la fecha del formulario', async () => {
+  it('clickear un día del selector semanal rellena la fecha del formulario, aunque ese día ya tenga reservas', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 14)); // miércoles 14-oct-2026
+    vi.mocked(apiClient.get).mockImplementation((url: string) => url.startsWith('/api/reservas')
+      ? Promise.resolve({ data: [{
+          id: 9, fecha: '2026-10-12', hora_inicio: '09:00:00', hora_fin: '10:00:00', // lunes de esa semana
+          estado_reserva_id: 2, evento_titulo: null, solicitante_nombre: 'Alguien',
+        }] })
+      : Promise.resolve({ data: [{ id: 2, nombre: 'Salón Parroquial', capacidad: 80 }] }));
     mostrar();
     await screen.findByRole('option', { name: /Salón Parroquial/ });
     fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
 
-    const libres = await screen.findAllByRole('button', { name: 'Libre' });
-    fireEvent.click(libres[0]);
+    const diaOcupado = await screen.findByText('1');
+    fireEvent.click(diaOcupado.closest('button')!);
 
-    expect((screen.getByLabelText('Fecha:') as HTMLInputElement).value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect((screen.getByLabelText('Fecha:') as HTMLInputElement).value).toBe('2026-10-12');
   });
 
   it('no avisa conflicto si la reserva que se cruza no está confirmada', async () => {

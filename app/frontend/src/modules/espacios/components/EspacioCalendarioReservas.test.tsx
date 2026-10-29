@@ -129,29 +129,4 @@ describe('EspacioCalendarioReservas', () => {
     const columnas = within(container).getAllByText('Libre').map(el => el.parentElement?.parentElement);
     expect(columnas.some(col => col?.className.includes('todayColumn'))).toBe(true);
   });
-
-  it('sin onSeleccionarDia, "Libre" no es un botón clickeable', () => {
-    render(<EspacioCalendarioReservas reservas={[]} />);
-    expect(screen.queryAllByRole('button', { name: 'Libre' })).toHaveLength(0);
-  });
-
-  it('con onSeleccionarDia, clickear el encabezado de un día avisa la fecha de ese día', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const onSeleccionarDia = vi.fn();
-    render(<EspacioCalendarioReservas reservas={[]} onSeleccionarDia={onSeleccionarDia} />);
-
-    await user.click(screen.getByText('14')); // miércoles = hoy, dentro de un <button>
-    expect(onSeleccionarDia).toHaveBeenCalledWith(fechaDelDia(2));
-  });
-
-  it('con onSeleccionarDia, clickear "Libre" también avisa la fecha de ese día', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const onSeleccionarDia = vi.fn();
-    render(<EspacioCalendarioReservas reservas={[]} onSeleccionarDia={onSeleccionarDia} />);
-
-    const libres = screen.getAllByRole('button', { name: 'Libre' });
-    expect(libres).toHaveLength(7);
-    await user.click(libres[0]);
-    expect(onSeleccionarDia).toHaveBeenCalledWith(fechaDelDia(0));
-  });
 });

@@ -9,7 +9,7 @@ import { useAuth } from '../../../context/AuthContext';
 import type { Espacio } from '../../espacios/components/EspacioCard';
 import EspacioFoto from '../../espacios/components/EspacioFoto';
 import DisponibilidadEspacioDia from './DisponibilidadEspacioDia';
-import EspacioCalendarioReservas from '../../espacios/components/EspacioCalendarioReservas';
+import SelectorSemanaEspacio from './SelectorSemanaEspacio';
 import AforoField, { errorAforo } from '../../../components/ui/AforoField';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import type { Reserva } from '../../../types';
@@ -208,6 +208,12 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         </div>
       )}
 
+      {espacioSeleccionado && (
+        <div className={styles.infoBoxMargin}>
+          <SelectorSemanaEspacio reservas={reservasEspacio} fechaSeleccionada={fecha} onSeleccionarDia={setFecha} />
+        </div>
+      )}
+
       {espacioSeleccionado && fecha && (
         <div className={styles.infoBoxMargin}>
           <DisponibilidadEspacioDia
@@ -217,12 +223,6 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
             horaFin={horaFin}
             hayConflicto={Boolean(conflicto)}
           />
-        </div>
-      )}
-
-      {espacioSeleccionado && (
-        <div className={styles.infoBoxMargin}>
-          <EspacioCalendarioReservas reservas={reservasEspacio} onSeleccionarDia={setFecha} />
         </div>
       )}
 
