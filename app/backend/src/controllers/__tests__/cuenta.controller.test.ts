@@ -331,6 +331,63 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       expect(vi.mocked(pool.execute).mock.calls.some(([sql]) => /DELETE/i.test(String(sql)))).toBe(false);
       await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('ana@example.com', 'Ana', 'desactivada'));
     });
+    it('notifica al coordinador de un ministro con una tarea futura sin reasignar', async () => {
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      vi.mocked(pool.execute)
+        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa', nombre: 'Carlos' }]] as never)
+        .mockResolvedValueOnce([[{ titulo: 'Lectura primera', fecha: '2099-01-05', hora_inicio: '10:00:00' }]] as never) // tareas futuras
+        .mockResolvedValueOnce([[]] as never) // reservas futuras: ninguna
+        .mockResolvedValueOnce([[{ coordinador_id: 7 }]] as never) // coordinador del ministro
+        .mockResolvedValueOnce([{ insertId: 50 }] as never) // INSERT notificacion
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never) // INSERT persona_notificacion
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never) // UPDATE persona
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never) // registrarDecision
+        .mockResolvedValueOnce([[{ nombre: 'Carlos', correo: 'carlos@example.com' }]] as never); // correo
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(pool.execute).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notificacion'),
+        expect.arrayContaining([expect.stringContaining('Lectura primera')]),
+      );
+      expect(pool.execute).toHaveBeenCalledWith('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [7, 50]);
+    });
+    it('cae a Sacerdote/Admin si el ministro dado de baja no tiene coordinador registrado', async () => {
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      vi.mocked(pool.execute)
+        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa', nombre: 'Carlos' }]] as never)
+        .mockResolvedValueOnce([[{ titulo: 'Lectura primera', fecha: '2099-01-05', hora_inicio: '10:00:00' }]] as never)
+        .mockResolvedValueOnce([[]] as never)
+        .mockResolvedValueOnce([[]] as never) // sin coordinador
+        .mockResolvedValueOnce([[{ id: 6 }, { id: 9 }]] as never) // Sacerdote/Admin activos (excluye al actor, id 1)
+        .mockResolvedValueOnce([{ insertId: 51 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([[{ nombre: 'Carlos', correo: 'carlos@example.com' }]] as never);
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(pool.execute).toHaveBeenCalledWith('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [6, 51]);
+      expect(pool.execute).toHaveBeenCalledWith('INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)', [9, 51]);
+    });
+    it('notifica a Sacerdote/Admin una reserva futura de una cuenta que no es Ministro', async () => {
+      req.user = { id: 1, rol_id: ROLES.ADMIN };
+      vi.mocked(pool.execute)
+        .mockResolvedValueOnce([[{ rol_id: ROLES.COORDINADOR_GRUPOS, estado_cuenta: 'activa', nombre: 'Lucía' }]] as never)
+        .mockResolvedValueOnce([[]] as never) // tareas: no aplica a este rol
+        .mockResolvedValueOnce([[{ titulo: 'Reunión pastoral', fecha: '2099-02-01' }]] as never) // reserva futura
+        .mockResolvedValueOnce([[{ id: 6 }]] as never) // Sacerdote/Admin
+        .mockResolvedValueOnce([{ insertId: 52 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
+        .mockResolvedValueOnce([[{ nombre: 'Lucía', correo: 'lucia@example.com' }]] as never);
+      await darDeBajaCuenta(req as Request, res as Response);
+      expect(pool.execute).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO notificacion'),
+        expect.arrayContaining([expect.stringContaining('Reunión pastoral')]),
+      );
+    });
     it.each(['pendiente', 'rechazada', 'baja'])('impide dar de baja una cuenta %s', async estado => {
       vi.mocked(pool.execute).mockResolvedValueOnce([[{ rol_id: 4, estado_cuenta: estado }]] as never);
       await darDeBajaCuenta(req as Request, res as Response);
