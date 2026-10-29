@@ -318,7 +318,9 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
     it.each([ROLES.ADMIN, ROLES.SACERDOTE])('da de baja como rol %s y audita sin eliminar relaciones', async rol => {
       req.user = { id: 1, rol_id: rol };
       vi.mocked(pool.execute)
-        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' }]] as never)
+        .mockResolvedValueOnce([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa', nombre: 'Ana' }]] as never)
+        .mockResolvedValueOnce([[]] as never) // tareas futuras: ninguna
+        .mockResolvedValueOnce([[]] as never) // reservas futuras: ninguna
         .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
         .mockResolvedValueOnce([{ affectedRows: 1 }] as never)
         .mockResolvedValueOnce([[{ nombre: 'Ana', correo: 'ana@example.com' }]] as never);
