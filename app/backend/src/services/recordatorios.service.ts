@@ -22,7 +22,10 @@ export async function enviarRecordatorios(ahora = new Date()) {
 // diseño); en ambos casos un aviso de más, solo al arrancar, es preferible a uno de menos.
 export async function enviarRecordatoriosTardios(ahora = new Date()) {
   const desde = horaGuatemala(ahora);
-  const hasta = horaGuatemala(new Date(ahora.getTime() + 24 * 3600_000));
+  // -1s: BETWEEN es inclusivo en ambos extremos y `enviarRecordatorios` ya usa
+  // exactamente `ahora + 24h` como su propio límite inferior inclusivo — sin este
+  // ajuste, una tarea justo en ese instante caería en las dos ventanas a la vez.
+  const hasta = horaGuatemala(new Date(ahora.getTime() + 24 * 3600_000 - 1000));
   const fechaEnvio = horaGuatemala(ahora).slice(0, 10);
   return procesarVentana(desde, hasta, fechaEnvio, 'Recordatorio de servicio (recuperado tras una interrupción)');
 }
