@@ -9,6 +9,8 @@ import { enviarCorreoCuenta, EstadoCuentaCorreo } from '../services/email.servic
 import type { PoolConnection } from 'mysql2/promise';
 import { withTransaction } from '../utils/withTransaction';
 import { registrarDecision } from '../services/decisiones.service';
+import { AHORA_GUATEMALA_SQL } from '../utils/horaGuatemala';
+import { ESTADOS_RESERVA } from '../config/estadosReserva';
 
 const ROLES_VALIDOS: number[] = Object.values(ROLES);
 
@@ -166,7 +168,7 @@ export const darDeBajaCuenta = async (req: Request, res: Response): Promise<void
     let aplicada = false;
     await withTransaction(async conn => {
       const [cuentas] = await conn.execute<RowDataPacket[]>(
-        'SELECT rol_id, estado_cuenta FROM persona WHERE id = ? FOR UPDATE', [id],
+        'SELECT rol_id, estado_cuenta, nombre FROM persona WHERE id = ? FOR UPDATE', [id],
       );
       if (!cuentas.length) {
         res.status(HttpStatus.NOT_FOUND).json({ mensaje: 'Cuenta no encontrada' });
@@ -180,6 +182,7 @@ export const darDeBajaCuenta = async (req: Request, res: Response): Promise<void
         res.status(HttpStatus.CONFLICT).json({ mensaje: 'Solo se pueden dar de baja cuentas activas' });
         return 'rollback';
       }
+      await notificarCompromisosHuerfanos(conn, id, cuentas[0].rol_id, cuentas[0].nombre, req.user!.id);
       await conn.execute('UPDATE persona SET estado_cuenta = ? WHERE id = ?', [ESTADOS_CUENTA.BAJA, id]);
       await registrarDecision(conn, 'cuenta', id, 'baja', req.user!.id);
       aplicada = true;
@@ -215,6 +218,64 @@ async function enviarCorreoCambioCuenta(personaId: number, estado: EstadoCuentaC
     await enviarCorreoCuenta(rows[0].correo, rows[0].nombre, estado);
   } catch (error) {
     console.error('Error en enviarCorreoCambioCuenta:', error);
+  }
+}
+
+// Avisa al coordinador (o, si no tiene o no aplica, a Sacerdote/Admin) de las tareas
+// y reservas futuras que la persona dada de baja deja sin seguimiento. La baja no las
+// cancela ni reasigna (se conservan intactas); esto solo evita que pasen desapercibidas.
+async function notificarCompromisosHuerfanos(
+  conn: PoolConnection, personaId: number, rolId: number, nombrePersona: string, actorId: number,
+): Promise<void> {
+  const [tareas] = await conn.execute<RowDataPacket[]>(
+    `SELECT t.titulo, t.fecha, t.hora_inicio FROM tarea t
+     JOIN asignacion_tarea at ON at.tarea_id = t.id
+     WHERE at.persona_id = ? AND t.fecha >= DATE(${AHORA_GUATEMALA_SQL})
+     ORDER BY t.fecha, t.hora_inicio`,
+    [personaId],
+  );
+  const [reservas] = await conn.execute<RowDataPacket[]>(
+    `SELECT e.titulo, r.fecha FROM reserva r JOIN evento e ON e.reserva_id = r.id
+     WHERE r.solicitante_id = ? AND r.fecha >= DATE(${AHORA_GUATEMALA_SQL})
+       AND r.estado_reserva_id IN (?, ?)
+     ORDER BY r.fecha, r.hora_inicio`,
+    [personaId, ESTADOS_RESERVA.PENDIENTE, ESTADOS_RESERVA.CONFIRMADA],
+  );
+  if (!tareas.length && !reservas.length) return;
+
+  const destinatarios = new Set<number>();
+  if (rolId === ROLES.MINISTRO) {
+    const [coordinadores] = await conn.execute<RowDataPacket[]>(
+      `SELECT cm.coordinador_id FROM coordinador_ministro cm
+       JOIN persona p ON p.id = cm.coordinador_id WHERE cm.ministro_id = ? AND p.estado_cuenta = 'activa'`,
+      [personaId],
+    );
+    for (const c of coordinadores) destinatarios.add(c.coordinador_id);
+  }
+  if (destinatarios.size === 0) {
+    const [aprobadores] = await conn.execute<RowDataPacket[]>(
+      `SELECT id FROM persona WHERE rol_id IN (?, ?) AND estado_cuenta = 'activa' AND id != ?`,
+      [ROLES.SACERDOTE, ROLES.ADMIN, actorId],
+    );
+    for (const a of aprobadores) destinatarios.add(a.id);
+  }
+  if (destinatarios.size === 0) return;
+
+  const detalle = [
+    ...tareas.map(t => `tarea "${t.titulo}" el ${t.fecha} ${String(t.hora_inicio).slice(0, 5)}`),
+    ...reservas.map(r => `reserva "${r.titulo}" el ${r.fecha}`),
+  ].join('; ');
+  const mensaje = `${nombrePersona} fue dado de baja con compromisos futuros sin reasignar: ${detalle}. Revísalos en las pantallas correspondientes.`;
+
+  const [notifResult] = await conn.execute<ResultSetHeader>(
+    `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, DATE(${AHORA_GUATEMALA_SQL}), 'individual', ?)`,
+    [mensaje, actorId],
+  );
+  for (const destinatarioId of destinatarios) {
+    await conn.execute(
+      'INSERT INTO persona_notificacion (persona_id, notificacion_id) VALUES (?, ?)',
+      [destinatarioId, notifResult.insertId],
+    );
   }
 }
 
