@@ -245,3 +245,20 @@ INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`, `estado_cuenta`
   ('Gloria Tiul', 'gloria.tiul@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
   ('Alberto Pec', 'alberto.pec@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
   ('Yesenia Mux', 'yesenia.mux@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa');
+
+-- Grupos pastorales adicionales. grupo.coordinador_id es UNIQUE (1 grupo por coordinador),
+-- así que cada grupo nuevo recibe su propio coordinador de grupos (personas 30-32 y 38-47).
+INSERT INTO `grupo` (`nombre`, `coordinador_id`) VALUES
+  ('Catequesis de Primera Comunión', 30),
+  ('Pastoral Juvenil', 31),
+  ('Legión de María', 32),
+  ('Grupo de Oración Renovación', 38),
+  ('Pastoral Familiar', 39),
+  ('Monaguillos', 40),
+  ('Coro de Jóvenes', 41),
+  ('Catequesis de Confirmación', 42),
+  ('Pastoral de Salud', 43),
+  ('Grupo de Lectores', 44),
+  ('Ministros Extraordinarios de la Eucaristía', 45),
+  ('Pastoral Social', 46),
+  ('Comité de Liturgia', 47);
