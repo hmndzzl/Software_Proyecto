@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '../../../utils/apiError';
 import { useAuth } from '../../../context/AuthContext';
 import type { Espacio } from '../../espacios/components/EspacioCard';
 import EspacioFoto from '../../espacios/components/EspacioFoto';
+import DisponibilidadEspacioDia from './DisponibilidadEspacioDia';
 import AforoField, { errorAforo } from '../../../components/ui/AforoField';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import type { Reserva } from '../../../types';
@@ -203,6 +204,18 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
               Ver detalle del espacio
             </Link>
           </div>
+        </div>
+      )}
+
+      {espacioSeleccionado && fecha && (
+        <div className={styles.infoBoxMargin}>
+          <DisponibilidadEspacioDia
+            fecha={fecha}
+            reservas={reservasEspacio}
+            horaInicio={horaInicio}
+            horaFin={horaFin}
+            hayConflicto={Boolean(conflicto)}
+          />
         </div>
       )}
 
