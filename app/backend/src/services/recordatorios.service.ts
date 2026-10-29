@@ -11,6 +11,23 @@ export async function enviarRecordatorios(ahora = new Date()) {
   const desde = horaGuatemala(new Date(ahora.getTime() + 24 * 3600_000));
   const hasta = horaGuatemala(new Date(ahora.getTime() + 48 * 3600_000));
   const fechaEnvio = horaGuatemala(ahora).slice(0, 10);
+  return procesarVentana(desde, hasta, fechaEnvio, 'Recordatorio de servicio');
+}
+
+// Si el backend estuvo apagado durante toda la ventana normal de 24-48h de una tarea,
+// `enviarRecordatorios` nunca llega a verla (para cuando el proceso vuelve a arrancar,
+// ya está a menos de 24h o directamente pasó). Esta función cubre esa ventana perdida
+// una sola vez al iniciar el servidor — no distingue si la tarea de verdad quedó sin
+// aviso por la caída o si simplemente se asignó tarde (sin recordatorio esperado por
+// diseño); en ambos casos un aviso de más, solo al arrancar, es preferible a uno de menos.
+export async function enviarRecordatoriosTardios(ahora = new Date()) {
+  const desde = horaGuatemala(ahora);
+  const hasta = horaGuatemala(new Date(ahora.getTime() + 24 * 3600_000));
+  const fechaEnvio = horaGuatemala(ahora).slice(0, 10);
+  return procesarVentana(desde, hasta, fechaEnvio, 'Recordatorio de servicio (recuperado tras una interrupción)');
+}
+
+async function procesarVentana(desde: string, hasta: string, fechaEnvio: string, prefijoMensaje: string) {
   const [candidatos] = await pool.execute<Candidato[]>(
     `SELECT a.tarea_id, a.persona_id FROM asignacion_tarea a
      JOIN tarea t ON t.id = a.tarea_id JOIN persona p ON p.id = a.persona_id
@@ -41,7 +58,7 @@ export async function enviarRecordatorios(ahora = new Date()) {
       // La clave única protege también cuando hay varios procesos del backend.
       await conn.execute(`INSERT INTO recordatorio_servicio (tarea_id, persona_id, fecha, hora_inicio) VALUES (?, ?, ?, ?)`,
         [candidato.tarea_id, candidato.persona_id, servicio.fecha, servicio.hora_inicio]);
-      const mensaje = `Recordatorio de servicio: ${servicio.titulo}. Te corresponde el ${servicio.fecha} de ${servicio.hora_inicio.slice(0, 5)} a ${servicio.hora_fin.slice(0, 5)} (hora de Guatemala).`;
+      const mensaje = `${prefijoMensaje}: ${servicio.titulo}. Te corresponde el ${servicio.fecha} de ${servicio.hora_inicio.slice(0, 5)} a ${servicio.hora_fin.slice(0, 5)} (hora de Guatemala).`;
       const [notificacion] = await conn.execute<ResultSetHeader>(
         `INSERT INTO notificacion (mensaje, fecha, tipo, remitente_id) VALUES (?, ?, 'individual', NULL)`,
         [mensaje, fechaEnvio]);
