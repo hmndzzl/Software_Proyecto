@@ -270,8 +270,8 @@
 }
 
 .espacioHeaderFoto {
-  width: 84px;
-  height: 84px;
+  width: 128px;
+  height: 128px;
   flex-shrink: 0;
   border-radius: var(--radius-input);
   overflow: hidden;
