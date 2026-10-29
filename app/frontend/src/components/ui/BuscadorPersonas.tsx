@@ -28,7 +28,9 @@ export default function BuscadorPersonas({ id, label, personas, valor, onChange,
 
   useEffect(() => {
     setBusqueda(seleccionada?.nombre ?? '');
-  }, [valor]);
+    // `personas` puede llegar después de `valor` (carga async) — hay que resincronizar
+    // el texto mostrado cuando cualquiera de los dos cambie, no solo el id seleccionado.
+  }, [valor, personas]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
