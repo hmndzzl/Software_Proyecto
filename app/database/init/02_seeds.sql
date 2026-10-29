@@ -218,3 +218,30 @@ INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `pu
 
 UPDATE `tarea` SET `evento_id` = 6 WHERE `id` IN (11, 12);
 UPDATE `tarea` SET `evento_id` = 7 WHERE `id` IN (13, 14);
+
+-- ============================================================
+-- Seed ampliada (post-Sprint 8): más personas, grupos, reservas,
+-- eventos, tareas, cambios de turno, notificaciones y contacto.
+-- ============================================================
+
+-- Personas adicionales: más coordinadores de grupos y variedad de estado_cuenta,
+-- para poblar /cuentas con pendientes/rechazadas reales y demostrar D9 con historial.
+INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`, `estado_cuenta`) VALUES
+  ('Marisol Ixcot', 'marisol.ixcot@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Fernando Us', 'fernando.us@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Diana Pop', 'diana.pop@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Walter Sic', 'walter.sic@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'pendiente'),
+  ('Noemi Batz', 'noemi.batz@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'pendiente'),
+  ('Byron Coy', 'byron.coy@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'rechazada'),
+  ('Claudia Ajpop', 'claudia.ajpop@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'rechazada'),
+  ('Oscar Quej', 'oscar.quej@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'baja'),
+  ('Esteban Chuc', 'esteban.chuc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Rosario Tum', 'rosario.tum@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Manuel Xicara', 'manuel.xicara@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Flor Canil', 'flor.canil@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Victor Quiej', 'victor.quiej@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Patricia Sactic', 'patricia.sactic@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Rodrigo Chach', 'rodrigo.chach@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Gloria Tiul', 'gloria.tiul@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Alberto Pec', 'alberto.pec@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Yesenia Mux', 'yesenia.mux@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa');
