@@ -419,3 +419,15 @@ UPDATE `tarea` SET `evento_id` = 22 WHERE `id` IN (44, 45);
 UPDATE `tarea` SET `evento_id` = 23 WHERE `id` IN (46, 47);
 UPDATE `tarea` SET `evento_id` = 24 WHERE `id` IN (48, 49);
 UPDATE `tarea` SET `evento_id` = 25 WHERE `id` IN (50, 51);
+
+-- Días con varias reservas simultáneas (distintos espacios, sin solaparse entre sí): hasta
+-- ahora cada fecha del seed tenía como máximo 1 reserva, lo cual no refleja un fin de semana
+-- real de la parroquia con varios grupos/salones ocupados el mismo día. Sábado 14-nov queda
+-- con 3 reservas nuevas; domingo 15-nov ya tenía 1 (Capilla Lateral 09:00-09:30) y se le
+-- agregan 2 más, para un total de 3 ese día también.
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`, `cantidad_personas`) VALUES
+  ('2026-11-14', '08:00:00', '09:00:00', 5, 2, 39, 15),  -- Sala de Reuniones, Confirmada, Pastoral Familiar
+  ('2026-11-14', '09:00:00', '11:00:00', 2, 2, 7,  60),  -- Salón Parroquial, Confirmada, Coord Ministros
+  ('2026-11-14', '15:00:00', '18:00:00', 6, 1, 31, 120), -- Patio Central, Pendiente, Pastoral Juvenil
+  ('2026-11-15', '10:00:00', '11:00:00', 4, 1, 42, 25),  -- Sala de Catequesis B, Pendiente, Catequesis de Confirmación
+  ('2026-11-15', '17:00:00', '19:00:00', 1, 2, 6,  300); -- Templo Principal, Confirmada, misa vespertina (Sacerdote)
