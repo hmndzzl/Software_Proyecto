@@ -271,6 +271,17 @@ describe('CrearReservaForm', () => {
     expect(apiClient.post).not.toHaveBeenCalled();
   });
 
+  it('clickear "Libre" en el calendario semanal rellena la fecha del formulario', async () => {
+    mostrar();
+    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+
+    const libres = await screen.findAllByRole('button', { name: 'Libre' });
+    fireEvent.click(libres[0]);
+
+    expect((screen.getByLabelText('Fecha:') as HTMLInputElement).value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
   it('no avisa conflicto si la reserva que se cruza no está confirmada', async () => {
     vi.mocked(apiClient.get).mockImplementation((url: string) => url.startsWith('/api/reservas')
       ? Promise.resolve({ data: [{
