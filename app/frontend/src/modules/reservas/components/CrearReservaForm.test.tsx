@@ -11,7 +11,9 @@ vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn() }
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  vi.mocked(apiClient.get).mockResolvedValue({ data: [{ id: 2, nombre: 'Salón Parroquial', capacidad: 80 }] });
+  vi.mocked(apiClient.get).mockImplementation((url: string) => url.startsWith('/api/reservas')
+    ? Promise.resolve({ data: [] })
+    : Promise.resolve({ data: [{ id: 2, nombre: 'Salón Parroquial', capacidad: 80 }] }));
   vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
 });
 
@@ -154,18 +156,18 @@ describe('CrearReservaForm', () => {
     mostrar({ espacioInicial: '2' });
     await screen.findByRole('option', { name: /Salón Parroquial/ });
     expect(screen.getByLabelText('Espacio:')).toHaveValue('2');
-    expect(screen.getByText('Espacio seleccionado:')).toBeInTheDocument();
     expect(screen.getAllByText('Salón Parroquial').length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toBeInTheDocument();
   });
 
   it('no preselecciona si espacioInicial no existe en el catálogo cargado', async () => {
     mostrar({ espacioInicial: '999' });
     await screen.findByRole('option', { name: /Salón Parroquial/ });
     expect(screen.getByLabelText('Espacio:')).toHaveValue('');
-    expect(screen.queryByText('Espacio seleccionado:')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ver detalle del espacio/ })).not.toBeInTheDocument();
   });
 
-  it('oculta el aviso de preselección si la persona cambia el espacio a mano', async () => {
+  it('actualiza la cabecera del espacio si la persona cambia el espacio a mano', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
       data: [
         { id: 2, nombre: 'Salón Parroquial', capacidad: 80 },
@@ -173,10 +175,12 @@ describe('CrearReservaForm', () => {
       ],
     });
     mostrar({ espacioInicial: '2' });
-    await screen.findByText('Espacio seleccionado:');
+    await screen.findByRole('link', { name: /Ver detalle del espacio/ });
+    expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toHaveAttribute('href', '/espacios/2');
 
     fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '3' } });
-    expect(screen.queryByText('Espacio seleccionado:')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toHaveAttribute('href', '/espacios/3');
+    expect(screen.getAllByText('Capilla').length).toBeGreaterThan(0);
   });
 
   it('enfoca la fecha en vez del espacio cuando llega preseleccionado por el QR', async () => {
@@ -239,5 +243,44 @@ describe('CrearReservaForm', () => {
     await completar();
     enviar();
     expect(await screen.findByRole('alert')).toHaveTextContent('Error de red');
+  });
+
+  it('avisa en tiempo real que el horario está disponible cuando no hay conflicto', async () => {
+    mostrar();
+    await completar();
+    expect(await screen.findByText('Horario disponible para este espacio.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Solicitar Reserva' })).not.toBeDisabled();
+  });
+
+  it('avisa en tiempo real el conflicto con una reserva confirmada y bloquea el envío', async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => url.startsWith('/api/reservas')
+      ? Promise.resolve({ data: [{
+          id: 9, fecha: '2099-10-12', hora_inicio: '17:00:00', hora_fin: '19:00:00',
+          estado_reserva_id: 2, evento_titulo: 'Retiro parroquial', solicitante_nombre: 'Coord Grupos',
+        }] })
+      : Promise.resolve({ data: [{ id: 2, nombre: 'Salón Parroquial', capacidad: 80 }] }));
+    mostrar();
+    await completar(); // 18:00–20:00, se cruza con 17:00–19:00
+
+    const aviso = await screen.findByRole('alert');
+    expect(aviso).toHaveTextContent('se cruza con una reserva ya confirmada');
+    expect(aviso).toHaveTextContent('Retiro parroquial');
+    expect(aviso).toHaveTextContent('Coord Grupos');
+    expect(screen.getByRole('button', { name: 'Solicitar Reserva' })).toBeDisabled();
+    enviar();
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
+  it('no avisa conflicto si la reserva que se cruza no está confirmada', async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => url.startsWith('/api/reservas')
+      ? Promise.resolve({ data: [{
+          id: 9, fecha: '2099-10-12', hora_inicio: '17:00:00', hora_fin: '19:00:00',
+          estado_reserva_id: 1, evento_titulo: 'Solicitud pendiente', solicitante_nombre: 'Otro',
+        }] })
+      : Promise.resolve({ data: [{ id: 2, nombre: 'Salón Parroquial', capacidad: 80 }] }));
+    mostrar();
+    await completar();
+    expect(await screen.findByText('Horario disponible para este espacio.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Solicitar Reserva' })).not.toBeDisabled();
   });
 });
