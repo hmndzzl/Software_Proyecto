@@ -10,6 +10,7 @@ export type ReservaCalendario = Reserva;
 
 interface EspacioCalendarioReservasProps {
   reservas: ReservaCalendario[];
+  onSeleccionarDia?: (fecha: string) => void;
 }
 
 const compararPorHora = (a: ReservaCalendario, b: ReservaCalendario): number =>
@@ -34,7 +35,7 @@ function agruparConfirmadasPorDia(reservas: ReservaCalendario[]): Map<string, Re
   return porDia;
 }
 
-export default function EspacioCalendarioReservas({ reservas }: EspacioCalendarioReservasProps) {
+export default function EspacioCalendarioReservas({ reservas, onSeleccionarDia }: EspacioCalendarioReservasProps) {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [reservaSeleccionada, setReservaSeleccionada] = useState<ReservaCalendario | null>(null);
 
@@ -94,14 +95,25 @@ export default function EspacioCalendarioReservas({ reservas }: EspacioCalendari
 
             return (
               <div key={dayStr} className={`${styles.dayColumn}${isToday ? ` ${styles.todayColumn}` : ''}`}>
-                <div className={styles.dayHeader}>
-                  <span className={styles.weekdayName}>{DIAS_SEMANA[idx]}</span>
-                  <span className={styles.dayNum}>{day.getDate()}</span>
-                </div>
+                {onSeleccionarDia ? (
+                  <button type="button" className={`${styles.dayHeader} ${styles.dayHeaderClickable}`} onClick={() => onSeleccionarDia(dayStr)}>
+                    <span className={styles.weekdayName}>{DIAS_SEMANA[idx]}</span>
+                    <span className={styles.dayNum}>{day.getDate()}</span>
+                  </button>
+                ) : (
+                  <div className={styles.dayHeader}>
+                    <span className={styles.weekdayName}>{DIAS_SEMANA[idx]}</span>
+                    <span className={styles.dayNum}>{day.getDate()}</span>
+                  </div>
+                )}
 
                 <div className={styles.dayBody}>
                   {reservasDelDia.length === 0 ? (
-                    <div className={styles.libre}>Libre</div>
+                    onSeleccionarDia ? (
+                      <button type="button" className={`${styles.libre} ${styles.libreClickable}`} onClick={() => onSeleccionarDia(dayStr)}>Libre</button>
+                    ) : (
+                      <div className={styles.libre}>Libre</div>
+                    )
                   ) : (
                     reservasDelDia.map(r => (
                       <button
