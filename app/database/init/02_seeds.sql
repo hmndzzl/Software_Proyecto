@@ -293,3 +293,45 @@ INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado
   ('2026-12-12', '10:00:00', '12:00:00', 3, 1, 7, 60),
   -- DEMO aforo (P3/DEV-267): 50 personas en Sala de Reuniones (capacidad 20).
   ('2026-12-13', '15:00:00', '17:00:00', 5, 1, 8, 50);
+-- Reservas de los nuevos eventos (misas, retiros, jornadas) — cada una Confirmada,
+-- sin solaparse entre sí en el mismo espacio/fecha, para poder vincular tareas reales.
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`, `cantidad_personas`) VALUES
+  ('2026-09-23', '07:00:00', '09:00:00', 6, 2, 13, 75),
+  ('2026-09-26', '07:00:00', '09:00:00', 1, 2, 31, 105),
+  ('2026-09-28', '07:00:00', '08:00:00', 1, 2, 6, 285),
+  ('2026-10-01', '11:00:00', '13:00:00', 1, 2, 13, 90),
+  ('2026-10-05', '07:00:00', '08:00:00', 6, 2, 6, 14),
+  ('2026-10-07', '07:00:00', '08:00:00', 6, 2, 32, 69),
+  ('2026-10-09', '07:00:00', '08:00:00', 6, 2, 30, 39),
+  ('2026-10-12', '07:00:00', '08:00:00', 2, 2, 31, 20),
+  ('2026-10-15', '07:00:00', '09:00:00', 1, 2, 30, 52),
+  ('2026-10-19', '07:00:00', '08:00:00', 1, 2, 30, 157),
+  ('2026-10-22', '07:00:00', '08:00:00', 6, 2, 13, 23),
+  ('2026-10-24', '07:00:00', '08:00:00', 1, 2, 32, 10),
+  ('2026-10-27', '07:00:00', '09:00:00', 1, 2, 13, 213),
+  ('2026-10-29', '07:00:00', '08:00:00', 6, 2, 32, 96),
+  ('2026-10-31', '07:00:00', '09:00:00', 1, 2, 8, 17),
+  ('2026-11-03', '07:00:00', '08:00:00', 1, 2, 31, 61),
+  ('2026-11-05', '07:00:00', '09:00:00', 2, 2, 7, 81),
+  ('2026-11-07', '07:00:00', '08:00:00', 6, 2, 31, 108);
+-- Eventos adicionales (misas, retiros, jornadas) con su reserva recién creada arriba.
+-- Un tercio queda publico=1 para que la agenda pública tenga contenido real.
+INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `publico`) VALUES
+  ('Misa dominical de las 8am', 3, 32, 'Celebración parroquial: misa dominical de las 8am.', 1),
+  ('Misa dominical del mediodía', 7, 33, 'Celebración parroquial: misa dominical del mediodía.', 0),
+  ('Misa de acción de gracias', 5, 34, 'Celebración parroquial: misa de acción de gracias.', 0),
+  ('Novena a la Virgen de la Merced', 3, 35, 'Celebración parroquial: novena a la virgen de la merced.', 1),
+  ('Vigilia de oración', 13, 36, 'Celebración parroquial: vigilia de oración.', 0),
+  ('Misa de sanación', 31, 37, 'Celebración parroquial: misa de sanación.', 0),
+  ('Celebración de la Palabra', 4, 38, 'Celebración parroquial: celebración de la palabra.', 1),
+  ('Misa de difuntos', 1, 39, 'Celebración parroquial: misa de difuntos.', 0),
+  ('Misa de Primera Comunión', 5, 40, 'Celebración parroquial: misa de primera comunión.', 1),
+  ('Confirmaciones del sector sur', 6, 41, 'Celebración parroquial: confirmaciones del sector sur.', 1),
+  ('Retiro de Adviento', 30, 42, 'Celebración parroquial: retiro de adviento.', 0),
+  ('Jornada de catequistas', 13, 43, 'Celebración parroquial: jornada de catequistas.', 0),
+  ('Encuentro de pastoral juvenil', 32, 44, 'Celebración parroquial: encuentro de pastoral juvenil.', 1),
+  ('Misa de quinceañeros', 30, 45, 'Celebración parroquial: misa de quinceañeros.', 0),
+  ('Procesión mariana', 32, 46, 'Celebración parroquial: procesión mariana.', 0),
+  ('Misa de bautizos comunitaria', 6, 47, 'Celebración parroquial: misa de bautizos comunitaria.', 0),
+  ('Convivencia de ministros', 13, 48, 'Celebración parroquial: convivencia de ministros.', 0),
+  ('Taller de liturgia', 8, 49, 'Celebración parroquial: taller de liturgia.', 0);
