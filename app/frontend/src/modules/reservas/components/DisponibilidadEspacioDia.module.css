@@ -1,0 +1,80 @@
+.wrap {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 14px 16px 12px;
+  margin-top: -2px;
+}
+
+.titulo {
+  margin: 0 0 10px 0;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.pista {
+  position: relative;
+  height: 28px;
+  border-radius: 6px;
+  background-color: var(--color-cremaDk);
+  overflow: hidden;
+}
+
+.ocupado {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-color: var(--color-bad);
+  opacity: .55;
+}
+
+.borrador {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  border: 2px solid;
+  box-sizing: border-box;
+}
+
+.borradorLibre { border-color: var(--color-ok); background-color: rgba(47, 122, 77, .18); }
+.borradorConflicto { border-color: var(--color-rojo); background-color: rgba(157, 47, 56, .22); }
+
+.etiquetas {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--color-muted);
+}
+
+.leyenda {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-ink);
+}
+
+.leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatchOcupado, .swatchBorrador {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.swatchOcupado { background-color: var(--color-bad); opacity: .55; }
+.swatchBorrador { border: 2px solid var(--color-ok); background-color: rgba(47, 122, 77, .18); }
+.swatchConflicto { border-color: var(--color-rojo); background-color: rgba(157, 47, 56, .22); }
