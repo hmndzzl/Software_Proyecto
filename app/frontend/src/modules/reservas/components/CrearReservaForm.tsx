@@ -10,6 +10,7 @@ import type { Espacio } from '../../espacios/components/EspacioCard';
 import EspacioFoto from '../../espacios/components/EspacioFoto';
 import DisponibilidadEspacioDia from './DisponibilidadEspacioDia';
 import SelectorSemanaEspacio from './SelectorSemanaEspacio';
+import SelectorEspacios from './SelectorEspacios';
 import AforoField, { errorAforo } from '../../../components/ui/AforoField';
 import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
 import type { Reserva } from '../../../types';
@@ -37,7 +38,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const [reservasEspacio, setReservasEspacio] = useState<Reserva[]>([]);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
-  const espacioRef = useRef<HTMLSelectElement>(null);
+  const espacioRef = useRef<HTMLDivElement>(null);
   const fechaRef = useRef<HTMLInputElement>(null);
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
   const { tieneRol } = useAuth();
@@ -51,9 +52,14 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     if (espacioInicial && !espaciosCargados) return;
     const espacioResuelto = espacioInicial && espacios.some((esp) => String(esp.id) === espacioInicial);
     // Con el espacio ya resuelto, el salto útil es a la fecha; si no se pudo resolver, vuelve al selector.
-    const campo = espacioResuelto ? fechaRef.current : espacioRef.current;
-    campo?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    campo?.focus();
+    if (espacioResuelto) {
+      fechaRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      fechaRef.current?.focus();
+      return;
+    }
+    espacioRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    // Enfoca la primera tarjeta seleccionable en vez del contenedor, para poder elegir con teclado de inmediato.
+    (espacioRef.current?.querySelector<HTMLElement>('[role="button"]') ?? espacioRef.current)?.focus();
   }, [autoFocus, espacioInicial, espaciosCargados, espacios]);
 
   useEffect(() => {
@@ -229,21 +235,10 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
         <p className={styles.fieldNote}>Selecciona el espacio, indica cuántas personas asistirán y completa la fecha, el horario y los datos de la actividad. La solicitud quedará pendiente de aprobación.</p>
         <div className={styles.field}>
-          <label htmlFor="espacio_id" className={`${styles.label} ${styles.required}`}>Espacio:</label>
-          <select
-            ref={espacioRef}
-            id="espacio_id"
-            className={styles.input}
-            value={espacioId}
-            onChange={(e) => setEspacioId(e.target.value)}
-          >
-            <option value="">-- Selecciona un espacio --</option>
-            {espacios.map((esp) => (
-              <option key={esp.id} value={esp.id}>
-                {esp.nombre}{esp.capacidad ? ` (cap. ${esp.capacidad})` : ''}
-              </option>
-            ))}
-          </select>
+          <span id="espacio_id-label" className={`${styles.label} ${styles.required}`}>Espacio:</span>
+          <div ref={espacioRef} tabIndex={-1}>
+            <SelectorEspacios espacios={espacios} valor={espacioId} onChange={setEspacioId} labelId="espacio_id-label" cargando={!espaciosCargados} />
+          </div>
         </div>
 
         <AforoField value={cantidad} onChange={setCantidad} capacidad={espacioSeleccionado ? espacioSeleccionado.capacidad ?? null : undefined} />
