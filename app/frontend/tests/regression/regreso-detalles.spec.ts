@@ -57,7 +57,11 @@ for (const width of [320, 1440]) {
           await dialog.getByRole('button', { name: 'Gestionar ministros', exact: true }).click();
           const regresarDetalle = dialog.getByRole('button', { name: 'Volver al detalle de la tarea', exact: true });
           await expect(regresarDetalle).toBeVisible();
+          // El texto ampliado también debe caber con métricas de fuente distintas a las locales.
+          if (width === 320) await regresarDetalle.evaluate(el => { el.style.fontSize = '20px'; });
           expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+          expect(await regresarDetalle.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+          await page.screenshot({ path: test.info().outputPath('regreso-tarea-texto-ampliado.png') });
           await regresarDetalle.click();
           await expect(dialog.getByRole('heading', { name: 'Preparar altar', exact: true })).toBeVisible();
         }
