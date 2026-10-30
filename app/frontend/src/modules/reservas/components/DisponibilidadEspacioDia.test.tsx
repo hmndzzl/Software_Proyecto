@@ -39,4 +39,11 @@ describe('DisponibilidadEspacioDia', () => {
     rerender(<DisponibilidadEspacioDia fecha="2026-11-03" reservas={[]} horaInicio="10:00" horaFin="09:00" hayConflicto={false} />);
     expect(document.querySelectorAll('[class*="borrador"]')).toHaveLength(0);
   });
+
+  it('no dibuja una reserva confirmada que queda totalmente fuera de la franja horaria visible', () => {
+    const fueraDeFranja = reserva({ id: 5, fecha: '2026-11-03', hora_inicio: '02:00:00', hora_fin: '03:00:00', estado_reserva_id: 2 });
+    render(<DisponibilidadEspacioDia fecha="2026-11-03" reservas={[fueraDeFranja]} horaInicio="" horaFin="" hayConflicto={false} />);
+    expect(screen.getByRole('img', { name: '1 horario(s) ya confirmado(s) ese día' })).toBeInTheDocument();
+    expect(document.querySelectorAll('[class*="ocupado"]')).toHaveLength(0);
+  });
 });
