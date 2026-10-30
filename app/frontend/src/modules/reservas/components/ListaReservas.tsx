@@ -300,7 +300,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         </Modal>
       )}
 
-      {loading && <LoadingState label="Cargando reservas..." />}
+      {loading && <LoadingState variant="table" label="Cargando reservas..." />}
       {error && <ErrorState message={error} onRetry={fetchReservas} />}
 
       {!loading && !error && reservas.length === 0 && (

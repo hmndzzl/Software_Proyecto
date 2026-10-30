@@ -206,7 +206,7 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
     <CardBody>
       {!activa && advertenciaGuardada && <div role="alert" className={form.modalWarning}><strong>Asignación guardada con advertencias</strong><p>{advertenciaGuardada}</p></div>}
       <TableFilters {...filtros.controls} label="Filtros de tareas" />
-      {cargando ? <LoadingState label="Cargando asignaciones..." /> : error ? <ErrorState message={error} onRetry={cargar} />
+      {cargando ? <LoadingState variant="table" label="Cargando asignaciones..." /> : error ? <ErrorState message={error} onRetry={cargar} />
         : !tareas.length ? <EmptyState message={esMinistro ? 'No tienes tareas asignadas en este momento.' : 'No hay tareas asignadas en este momento.'} />
         : <>
           <div className={`table-container ${styles.tabla}`}>

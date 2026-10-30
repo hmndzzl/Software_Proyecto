@@ -67,7 +67,7 @@ export default function ListaGrupos({
       <CardHead title="Lista de Grupos" hint={!loading && grupos.length > 0 ? `${grupos.length} grupos` : undefined} />
       {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de grupos" />}
 
-      {loading && <LoadingState label="Cargando grupos..." />}
+      {loading && <LoadingState variant="table" label="Cargando grupos..." />}
       {error && <ErrorState message={error} onRetry={fetchGrupos} />}
 
       {!loading && !error && grupos.length === 0 && (

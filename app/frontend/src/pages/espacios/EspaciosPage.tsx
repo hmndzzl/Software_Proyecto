@@ -164,7 +164,7 @@ export default function EspaciosPage() {
       </div>}
       {avisoActualizacion && consulta && <p className={styles.validation} role="alert">{avisoActualizacion}. Se conserva la última consulta; puedes volver a actualizar.</p>}
 
-      {cargando && <LoadingState label="Cargando espacios..." />}
+      {cargando && <LoadingState variant="cards" label="Cargando espacios..." />}
       {error    && <ErrorState message={error} onRetry={cargarEspacios} />}
 
       {!cargando && !error && espacios.length === 0 && (

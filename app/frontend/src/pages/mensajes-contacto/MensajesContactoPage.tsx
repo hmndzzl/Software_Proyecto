@@ -65,7 +65,7 @@ export default function MensajesContactoPage() {
       <Card>
         <CardHead title="Mensajes recibidos" hint={!loading && !error ? `${mensajes.length} mensajes` : undefined} />
 
-        {loading && <LoadingState label="Cargando mensajes..." />}
+        {loading && <LoadingState variant="table" label="Cargando mensajes..." />}
         {!loading && !error && mensajes.length > 0 && <TableFilters {...filtros.controls} label="Filtros de mensajes" />}
         {error && <ErrorState message={error} onRetry={cargar} />}
         {!loading && !error && mensajes.length === 0 && <EmptyState message="Aún no se han recibido mensajes de contacto." />}
