@@ -21,9 +21,17 @@ function mostrar(props: Parameters<typeof CrearReservaForm>[0] = {}) {
   render(<ToastProvider><MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><CrearReservaForm {...props} /></AuthProvider></MemoryRouter></ToastProvider>);
 }
 
+function nombreExacto(nombre: string) {
+  return new RegExp(`^${nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, capacidad`);
+}
+
+async function elegirEspacio(nombre: string) {
+  const tarjeta = await screen.findByRole('button', { name: nombreExacto(nombre) });
+  fireEvent.click(tarjeta);
+}
+
 async function completar() {
-  await screen.findByRole('option', { name: /Salón Parroquial/ });
-  fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+  await elegirEspacio('Salón Parroquial');
   fireEvent.change(screen.getByLabelText(/Cantidad de personas esperadas/), { target: { value: '50' } });
   fireEvent.change(screen.getByLabelText('Fecha:'), { target: { value: '2099-10-12' } });
   fireEvent.change(screen.getByLabelText('Hora de Inicio:'), { target: { value: '18:00' } });
@@ -39,13 +47,14 @@ const enviar = () => fireEvent.click(screen.getByRole('button', { name: 'Solicit
 describe('CrearReservaForm', () => {
   it('no muestra el enlace de ver detalle sin espacio seleccionado, y lo muestra al seleccionar uno', async () => {
     mostrar();
-    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    await screen.findByRole('button', { name: /Salón Parroquial/ });
     expect(screen.queryByRole('link', { name: /Ver detalle del espacio/ })).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+    await elegirEspacio('Salón Parroquial');
 
     const enlace = screen.getByRole('link', { name: /Ver detalle del espacio/ });
     expect(enlace).toHaveAttribute('href', '/espacios/2');
+    expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('avisa si excede la capacidad, acepta el límite y envía el aforo numérico', async () => {
@@ -143,27 +152,27 @@ describe('CrearReservaForm', () => {
 
   it('enfoca el selector de espacio cuando autoFocus está activo', async () => {
     mostrar({ autoFocus: true });
-    await waitFor(() => expect(screen.getByLabelText('Espacio:')).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveFocus());
   });
 
   it('no enfoca ningún campo sin autoFocus', async () => {
     mostrar();
-    await screen.findByRole('option', { name: /Salón Parroquial/ });
-    expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
+    await screen.findByRole('button', { name: /Salón Parroquial/ });
+    expect(screen.getByRole('button', { name: /Salón Parroquial/ })).not.toHaveFocus();
   });
 
   it('preselecciona el espacio cuando espacioInicial existe en el catálogo', async () => {
     mostrar({ espacioInicial: '2' });
-    await screen.findByRole('option', { name: /Salón Parroquial/ });
-    expect(screen.getByLabelText('Espacio:')).toHaveValue('2');
+    await screen.findByRole('button', { name: /Salón Parroquial/ });
+    expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByText('Salón Parroquial').length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toBeInTheDocument();
   });
 
   it('no preselecciona si espacioInicial no existe en el catálogo cargado', async () => {
     mostrar({ espacioInicial: '999' });
-    await screen.findByRole('option', { name: /Salón Parroquial/ });
-    expect(screen.getByLabelText('Espacio:')).toHaveValue('');
+    await screen.findByRole('button', { name: /Salón Parroquial/ });
+    expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByRole('link', { name: /Ver detalle del espacio/ })).not.toBeInTheDocument();
   });
 
@@ -178,7 +187,7 @@ describe('CrearReservaForm', () => {
     await screen.findByRole('link', { name: /Ver detalle del espacio/ });
     expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toHaveAttribute('href', '/espacios/2');
 
-    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '3' } });
+    await elegirEspacio('Capilla');
     expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toHaveAttribute('href', '/espacios/3');
     expect(screen.getAllByText('Capilla').length).toBeGreaterThan(0);
   });
@@ -186,27 +195,54 @@ describe('CrearReservaForm', () => {
   it('enfoca la fecha en vez del espacio cuando llega preseleccionado por el QR', async () => {
     mostrar({ autoFocus: true, espacioInicial: '2' });
     await waitFor(() => expect(screen.getByLabelText('Fecha:')).toHaveFocus());
-    expect(screen.getByLabelText('Espacio:')).not.toHaveFocus();
+    expect(screen.getByRole('button', { name: /Salón Parroquial/ })).not.toHaveFocus();
   });
 
   it('avisa y enfoca el selector si el espacio del QR ya no existe en el catálogo', async () => {
     mostrar({ autoFocus: true, espacioInicial: '999' });
-    await screen.findByRole('option', { name: /Salón Parroquial/ });
+    await screen.findByRole('button', { name: /Salón Parroquial/ });
     expect(screen.getByText('El espacio del enlace ya no está disponible. Selecciona uno manualmente.')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByLabelText('Espacio:')).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveFocus());
   });
 
   it('lista espacios sin capacidad y tolera que falle la carga de espacios', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 3, nombre: 'Capilla', capacidad: null }] });
     mostrar();
-    expect(await screen.findByRole('option', { name: 'Capilla' })).toBeInTheDocument();
+    const tarjeta = await screen.findByRole('button', { name: /Capilla/ });
+    expect(tarjeta).toHaveTextContent('Sin capacidad definida');
   });
 
-  it('deja el selector solo con la opción por defecto si falla la carga de espacios', async () => {
+  it('muestra un mensaje si falla la carga de espacios', async () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red'));
     mostrar();
     await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
-    expect(screen.getAllByRole('option')).toHaveLength(1);
+    expect(await screen.findByText('No hay espacios disponibles.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Salón Parroquial/ })).not.toBeInTheDocument();
+  });
+
+  it('con pocos espacios no muestra el buscador ni el botón "ver más"', async () => {
+    mostrar();
+    await screen.findByRole('button', { name: /Salón Parroquial/ });
+    expect(screen.queryByLabelText('Buscar espacio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ver \d+ más/ })).not.toBeInTheDocument();
+  });
+
+  it('con muchos espacios, filtra por búsqueda y muestra "ver más" para revelar el resto', async () => {
+    const muchos = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, nombre: `Espacio ${i + 1}`, capacidad: 10 }));
+    vi.mocked(apiClient.get).mockImplementation((url: string) => url.startsWith('/api/reservas')
+      ? Promise.resolve({ data: [] })
+      : Promise.resolve({ data: muchos }));
+    mostrar();
+    await screen.findByRole('button', { name: nombreExacto('Espacio 1') });
+
+    // Solo se muestran los primeros 8 hasta que se pida ver más.
+    expect(screen.queryByRole('button', { name: nombreExacto('Espacio 9') })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver 4 más' }));
+    expect(screen.getByRole('button', { name: nombreExacto('Espacio 9') })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Buscar espacio'), { target: { value: 'Espacio 10' } });
+    expect(screen.getByRole('button', { name: nombreExacto('Espacio 10') })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: nombreExacto('Espacio 1') })).not.toBeInTheDocument();
   });
 
   it('rechaza una hora de fin anterior a la de inicio', async () => {
@@ -281,8 +317,7 @@ describe('CrearReservaForm', () => {
         }] })
       : Promise.resolve({ data: [{ id: 2, nombre: 'Salón Parroquial', capacidad: 80 }] }));
     mostrar();
-    await screen.findByRole('option', { name: /Salón Parroquial/ });
-    fireEvent.change(screen.getByLabelText('Espacio:'), { target: { value: '2' } });
+    await elegirEspacio('Salón Parroquial');
 
     const diaOcupado = await screen.findByText('1');
     fireEvent.click(diaOcupado.closest('button')!);
