@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import GruposPage from '../../../pages/grupos/gruposPage';
@@ -13,7 +13,7 @@ import { ROLES } from '../../../utils/roles';
 vi.mock('../../../api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
 vi.mock('../../../context/AuthContext', () => ({ useAuth: vi.fn() }));
 
-const grupo = { id: 3, nombre: 'Coro', coordinador_id: 7, nombre_coordinador: 'Ana' };
+const grupo = { id: 3, nombre: 'Coro', coordinadores: [{ id: 7, nombre: 'Ana' }] };
 const wrapper = ({ children }: { children: React.ReactNode }) => <ToastProvider>{children}</ToastProvider>;
 
 describe('integración de grupos y permisos', () => {
@@ -26,7 +26,7 @@ describe('integración de grupos y permisos', () => {
   });
 
   it('lista, ordena y abre/cierra la edición desde la página', async () => {
-    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).includes('coordinadores') ? [{ id: 7, nombre: 'Ana' }] : [grupo, { id: 4, nombre: 'Acólitos', coordinador_id: null, nombre_coordinador: null }] }));
+    vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).includes('coordinadores') ? [{ id: 7, nombre: 'Ana' }] : [grupo, { id: 4, nombre: 'Acólitos', coordinadores: [] }] }));
     render(<GruposPage />, { wrapper });
     await screen.findByText('Coro');
     for (const label of ['#', 'Nombre', 'Coordinador']) {
@@ -43,11 +43,11 @@ describe('integración de grupos y permisos', () => {
   it('actualiza y elimina tras confirmar', async () => {
     const cambiado = vi.fn();
     render(<EditarGrupoForm grupo={grupo as any} onGrupoActualizado={cambiado} />, { wrapper });
-    await screen.findByRole('option', { name: 'Ana' });
+    await screen.findByRole('checkbox', { name: 'Ana' });
     await userEvent.clear(screen.getByLabelText('Nombre del Grupo:'));
     await userEvent.type(screen.getByLabelText('Nombre del Grupo:'), 'Coro juvenil');
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
-    expect(apiClient.put).toHaveBeenCalledWith('/api/grupos/3', { nombre: 'Coro juvenil', coordinador_id: 7 });
+    expect(apiClient.put).toHaveBeenCalledWith('/api/grupos/3', { nombre: 'Coro juvenil', coordinador_ids: [7] });
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
@@ -98,5 +98,34 @@ describe('integración de grupos y permisos', () => {
     render(<GruposPage />, { wrapper });
     await screen.findByText('Coro');
     expect(screen.queryByText('Crear Nuevo Grupo')).not.toBeInTheDocument();
+  });
+
+  it('no duplica filas por varios coordinadores, y permite ver el detalle completo de los que no caben en la celda', async () => {
+    const grupoVarios = { id: 5, nombre: 'Pastoral Juvenil', coordinadores: [
+      { id: 7, nombre: 'Ana' }, { id: 8, nombre: 'Luis' }, { id: 9, nombre: 'Marta' },
+    ] };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: String(url).includes('coordinadores') ? [{ id: 7, nombre: 'Ana' }] : [grupoVarios],
+    }));
+    render(<ListaGrupos onEditar={vi.fn()} />, { wrapper });
+
+    await screen.findByText('Pastoral Juvenil');
+    expect(screen.getAllByText('Pastoral Juvenil')).toHaveLength(1); // una sola fila, no una por coordinador
+
+    const fila = screen.getByText('Pastoral Juvenil').closest('tr')!;
+    expect(within(fila).getByText('Ana, Luis')).toBeInTheDocument(); // solo los primeros 2 en la celda
+    expect(within(fila).queryByText('Marta', { exact: true })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ver los 3 coordinadores de Pastoral Juvenil' }));
+    const dialogo = screen.getByRole('dialog', { name: 'Coordinadores de Pastoral Juvenil' });
+    expect(within(dialogo).getByText('Ana')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Luis')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Marta')).toBeInTheDocument();
+  });
+
+  it('un grupo con 2 o menos coordinadores no muestra el botón "más"', async () => {
+    render(<ListaGrupos onEditar={vi.fn()} />, { wrapper });
+    await screen.findByText('Coro');
+    expect(screen.queryByText(/\+\d+ más/)).not.toBeInTheDocument();
   });
 });

@@ -37,7 +37,7 @@ beforeEach(() => {
     if (url === '/api/reservas' || url === '/api/reservas/mis-reservas') return { data: reservas };
     if (url === '/api/espacios') return { data: [] };
     if (url === '/api/eventos') return { data: reservas.map(r => ({ ...r, descripcion: r.evento_titulo, nombre_encargado: r.solicitante_nombre, nombre_espacio: r.espacio_nombre })) };
-    if (url === '/api/grupos') return { data: nombres.map((nombre, i) => ({ id: i + 1, nombre, nombre_coordinador: personas[i].nombre })) };
+    if (url === '/api/grupos') return { data: nombres.map((nombre, i) => ({ id: i + 1, nombre, coordinadores: [{ id: personas[i].id, nombre: personas[i].nombre }] })) };
     if (url === '/api/cambios-turno') return { data: [1, 2].flatMap(destinatario_id => nombres.map((nombre, i) => ({
       id: destinatario_id * 10 + i, tarea_titulo: nombre, tarea_descripcion: nombre,
       solicitante_nombre: personas[i].nombre, destinatario_nombre: personas[i].nombre,

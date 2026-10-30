@@ -1,2 +1,55 @@
 .textoInfo  { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; padding: 16px 24px; }
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
+
+.enlace {
+  border: 0;
+  padding: 4px 0;
+  margin-right: 8px;
+  background: transparent;
+  color: var(--color-rojo);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.enlace:hover { text-decoration: underline; }
+.enlace:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 3px; }
+
+.personas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.persona {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-input);
+  background: var(--color-crema);
+  color: var(--color-carbon);
+  overflow-wrap: anywhere;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-blanco);
+  color: var(--color-tierra);
+  font-size: 12px;
+  font-weight: 700;
+}
