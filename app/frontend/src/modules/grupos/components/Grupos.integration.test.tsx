@@ -25,7 +25,7 @@ describe('integración de grupos y permisos', () => {
     vi.mocked(apiClient.delete).mockResolvedValue({ data: {} });
   });
 
-  it('lista, ordena y abre/cierra la edición desde la página', async () => {
+  it('lista, ordena y abre/edita/vuelve al detalle dentro del mismo modal', async () => {
     vi.mocked(apiClient.get).mockImplementation(async url => ({ data: String(url).includes('coordinadores') ? [{ id: 7, nombre: 'Ana' }] : [grupo, { id: 4, nombre: 'Acólitos', coordinadores: [] }] }));
     render(<GruposPage />, { wrapper });
     await screen.findByText('Coro');
@@ -34,59 +34,67 @@ describe('integración de grupos y permisos', () => {
       await userEvent.click(header);
       await userEvent.click(header);
     }
-    await userEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0]);
-    expect(screen.getAllByRole('heading', { name: 'Editar Grupo' })).toHaveLength(1);
-    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(screen.queryByText('Editar Grupo')).not.toBeInTheDocument();
+    const filaCoro = screen.getByText('Coro').closest('tr')!;
+    await userEvent.click(within(filaCoro).getByRole('button', { name: 'Editar' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Editar Coro' });
+    expect(within(dialogo).getByLabelText('Nombre del Grupo:')).toHaveValue('Coro');
+    expect(within(dialogo).getByRole('button', { name: 'Volver a la tarjeta anterior' })).toBeInTheDocument();
+
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cancelar' }));
+    const dialogoDetalle = screen.getByRole('dialog', { name: 'Coro' }); // vuelve al detalle, no cierra el modal
+    expect(within(dialogoDetalle).queryByLabelText('Nombre del Grupo:')).not.toBeInTheDocument();
   });
 
-  it('actualiza y elimina tras confirmar', async () => {
+  it('guarda cambios de nombre y coordinadores, y muestra errores de validación o del servidor', async () => {
+    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { mensaje: 'Duplicado' } } });
     const cambiado = vi.fn();
     render(<EditarGrupoForm grupo={grupo as any} onGrupoActualizado={cambiado} />, { wrapper });
     await screen.findByRole('checkbox', { name: 'Ana' });
-    await userEvent.clear(screen.getByLabelText('Nombre del Grupo:'));
-    await userEvent.type(screen.getByLabelText('Nombre del Grupo:'), 'Coro juvenil');
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
-    expect(apiClient.put).toHaveBeenCalledWith('/api/grupos/3', { nombre: 'Coro juvenil', coordinador_ids: [7] });
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
-    expect(apiClient.delete).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
-    expect(apiClient.delete).toHaveBeenCalledWith('/api/grupos/3');
-    expect(cambiado).toHaveBeenCalledTimes(2);
-  });
 
-  it('conserva la confirmación y permite reintentar si falla eliminar el grupo', async () => {
-    const cambiado = vi.fn();
-    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
-    render(<EditarGrupoForm grupo={grupo as any} onGrupoActualizado={cambiado} />, { wrapper });
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar el grupo');
-    expect(screen.getByRole('dialog', { name: 'Eliminar grupo' })).toBeInTheDocument();
-    expect(cambiado).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
-    expect(cambiado).toHaveBeenCalledOnce();
-  });
-
-  it('valida, cancela eliminación y muestra errores del servidor', async () => {
-    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { mensaje: 'Duplicado' } } });
-    render(<EditarGrupoForm grupo={grupo as any} />, { wrapper });
     await userEvent.clear(screen.getByLabelText('Nombre del Grupo:'));
     await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Faltan datos');
-    await userEvent.type(screen.getByLabelText('Nombre del Grupo:'), 'Coro');
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' }));
+    expect(cambiado).not.toHaveBeenCalled();
+
+    await userEvent.type(screen.getByLabelText('Nombre del Grupo:'), 'Coro juvenil');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' })); // falla (Duplicado)
     expect(await screen.findByRole('alert')).toHaveTextContent('Duplicado');
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(cambiado).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar Cambios' })); // reintento exitoso
+    expect(apiClient.put).toHaveBeenLastCalledWith('/api/grupos/3', { nombre: 'Coro juvenil', coordinador_ids: [7] });
+    expect(cambiado).toHaveBeenCalledOnce();
+  });
+
+  it('elimina un grupo tras confirmar, reintenta si falla, y se puede cancelar sin cerrar el modal', async () => {
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error('red'));
+    render(<ListaGrupos />, { wrapper });
+    await screen.findByText('Coro');
+    await userEvent.click(screen.getByText('Coro'));
+    const dialogoDetalle = await screen.findByRole('dialog', { name: 'Coro' });
+    await userEvent.click(within(dialogoDetalle).getByRole('button', { name: 'Eliminar grupo' }));
+
+    const confirmacion = screen.getByRole('dialog', { name: 'Eliminar grupo' });
+    expect(screen.getAllByRole('dialog')).toHaveLength(1); // un solo diálogo, no uno anidado dentro de otro
+
+    await userEvent.click(within(confirmacion).getByRole('button', { name: 'Cancelar' }));
     expect(apiClient.delete).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.getByRole('dialog', { name: 'Coro' })).toBeInTheDocument(); // vuelve al detalle, no cierra
+
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar grupo' }));
+    await userEvent.click(within(confirmacion).getByRole('button', { name: 'Eliminar grupo' })); // falla la primera vez
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo eliminar el grupo');
+    expect(screen.getByRole('dialog', { name: 'Eliminar grupo' })).toBeInTheDocument();
+
+    await userEvent.click(within(confirmacion).getByRole('button', { name: 'Eliminar grupo' })); // reintento exitoso
+    await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith('/api/grupos/3'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('recupera error, muestra vacío y oculta acciones sin permiso', async () => {
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 9, nombre: 'Ministro', correo: 'm@m.com', rol_id: ROLES.MINISTRO }));
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('red')).mockResolvedValue({ data: [] });
-    render(<ListaGrupos onEditar={vi.fn()} />, { wrapper });
+    render(<ListaGrupos />, { wrapper });
     expect(await screen.findByText('Error de red al obtener los grupos.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));
     expect(await screen.findByText('No hay grupos registrados.')).toBeInTheDocument();
@@ -107,7 +115,7 @@ describe('integración de grupos y permisos', () => {
     vi.mocked(apiClient.get).mockImplementation(async url => ({
       data: String(url).includes('coordinadores') ? [{ id: 7, nombre: 'Ana' }] : [grupoVarios],
     }));
-    render(<ListaGrupos onEditar={vi.fn()} />, { wrapper });
+    render(<ListaGrupos />, { wrapper });
 
     await screen.findByText('Pastoral Juvenil');
     expect(screen.getAllByText('Pastoral Juvenil')).toHaveLength(1); // una sola fila, no una por coordinador
@@ -117,15 +125,39 @@ describe('integración de grupos y permisos', () => {
     expect(within(fila).queryByText('Marta', { exact: true })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Ver los 3 coordinadores de Pastoral Juvenil' }));
-    const dialogo = screen.getByRole('dialog', { name: 'Coordinadores de Pastoral Juvenil' });
+    const dialogo = screen.getByRole('dialog', { name: 'Pastoral Juvenil' });
     expect(within(dialogo).getByText('Ana')).toBeInTheDocument();
     expect(within(dialogo).getByText('Luis')).toBeInTheDocument();
     expect(within(dialogo).getByText('Marta')).toBeInTheDocument();
   });
 
   it('un grupo con 2 o menos coordinadores no muestra el botón "más"', async () => {
-    render(<ListaGrupos onEditar={vi.fn()} />, { wrapper });
+    render(<ListaGrupos />, { wrapper });
     await screen.findByText('Coro');
     expect(screen.queryByText(/\+\d+ más/)).not.toBeInTheDocument();
+  });
+
+  it('clickear la fila (no solo el nombre) abre el detalle con los coordinadores asignados', async () => {
+    render(<ListaGrupos />, { wrapper });
+    await screen.findByText('Coro');
+
+    const celdaId = screen.getByRole('cell', { name: '3' });
+    await userEvent.click(celdaId);
+
+    const dialogo = await screen.findByRole('dialog', { name: 'Coro' });
+    expect(within(dialogo).getByText('Coordinadores asignados (1)')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Ana')).toBeInTheDocument();
+  });
+
+  it('clickear el botón "Editar grupo" dentro del detalle cambia a edición sin cerrar el modal', async () => {
+    render(<GruposPage />, { wrapper });
+    await screen.findByText('Coro');
+
+    await userEvent.click(screen.getByText('Coro'));
+    const dialogo = await screen.findByRole('dialog', { name: 'Coro' });
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Editar grupo' }));
+
+    const mismoDialogo = screen.getByRole('dialog', { name: 'Editar Coro' }); // mismo modal, ahora en edición
+    expect(within(mismoDialogo).getByLabelText('Nombre del Grupo:')).toHaveValue('Coro');
   });
 });

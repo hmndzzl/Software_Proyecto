@@ -11,7 +11,6 @@ import { authValue } from '../test/authValue';
 import { ROLES } from '../utils/roles';
 
 const evento = { id: 7, descripcion: 'Misa', encargado_id: 2, fecha: '2099-10-20', hora_inicio: '10:00', hora_fin: '11:00' };
-const grupo = { id: 3, nombre: 'Coro', coordinadores: [{ id: 2, nombre: 'Ana' }] };
 
 vi.mock('../context/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../modules/eventos/components/ListaEventos', () => ({ default: ({ refreshKey, onEditar }: any) => <><span>eventos-{refreshKey}</span>{onEditar && <button onClick={() => onEditar(evento)}>seleccionar-evento</button>}</> }));
@@ -20,9 +19,8 @@ vi.mock('../modules/cambioTurno/components/SolicitarCambioTurnoForm', () => ({ d
 vi.mock('../modules/cambioTurno/components/ListaCambiosTurno', () => ({ default: ({ refreshKey }: any) => <span>cambios-{refreshKey}</span> }));
 vi.mock('../modules/reservas/components/CrearReservaForm', () => ({ default: ({ autoFocus, onReservaCreada }: any) => <button data-focus={String(autoFocus)} onClick={onReservaCreada}>crear-reserva</button> }));
 vi.mock('../modules/reservas/components/ListaReservas', () => ({ default: ({ refreshKey }: any) => <span>reservas-{refreshKey}</span> }));
-vi.mock('../modules/grupos/components/ListaGrupos', () => ({ default: ({ refreshKey, onEditar }: any) => <><span>grupos-{refreshKey}</span><button onClick={() => onEditar(grupo)}>seleccionar-grupo</button></> }));
+vi.mock('../modules/grupos/components/ListaGrupos', () => ({ default: ({ refreshKey }: any) => <span>grupos-{refreshKey}</span> }));
 vi.mock('../modules/grupos/components/CrearGrupoForm', () => ({ default: ({ onGrupoCreado }: any) => <button onClick={onGrupoCreado}>crear-grupo</button> }));
-vi.mock('../modules/grupos/components/EditarGrupoForm', () => ({ default: ({ onGrupoActualizado, onCancelar }: any) => <><button onClick={onGrupoActualizado}>guardar-grupo</button><button onClick={onCancelar}>cancelar-grupo</button></> }));
 
 const mostrar = (ui: React.ReactNode, ruta = '/') => render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[ruta]}>{ui}</MemoryRouter>);
 
@@ -65,15 +63,9 @@ describe('callbacks de coordinación entre páginas y módulos', () => {
     expect(screen.getByText('crear-reserva')).toHaveAttribute('data-focus', 'false');
   });
 
-  it('grupos abre, cancela, crea y actualiza cerrando la edición', async () => {
+  it('grupos incrementa su clave de refresco al crear uno', async () => {
     mostrar(<GruposPage />);
-    await userEvent.click(screen.getByText('seleccionar-grupo'));
-    await userEvent.click(screen.getByText('cancelar-grupo'));
-    expect(screen.queryByText('cancelar-grupo')).not.toBeInTheDocument();
     await userEvent.click(screen.getByText('crear-grupo'));
     expect(screen.getByText('grupos-1')).toBeInTheDocument();
-    await userEvent.click(screen.getByText('seleccionar-grupo'));
-    await userEvent.click(screen.getByText('guardar-grupo'));
-    expect(screen.getByText('grupos-2')).toBeInTheDocument();
   });
 });

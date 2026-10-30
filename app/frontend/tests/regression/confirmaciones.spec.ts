@@ -44,9 +44,12 @@ const casos = [
 
 async function abrir(page: Page, caso: typeof casos[number]) {
   await page.goto(caso.ruta);
-  if (caso.nombre === 'eventos' || caso.nombre === 'grupos') {
+  if (caso.nombre === 'eventos') {
     await page.getByRole('button', { name: 'Editar', exact: true }).click();
     await page.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  } else if (caso.nombre === 'grupos') {
+    await page.getByRole('button', { name: 'Coro', exact: true }).click(); // abre el detalle
+    await page.getByRole('dialog').getByRole('button', { name: 'Eliminar grupo', exact: true }).click();
   } else if (caso.nombre === 'mis reservas') await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   else if (caso.nombre === 'edición de reservas') {
     await page.getByRole('button', { name: 'Editar', exact: true }).click();

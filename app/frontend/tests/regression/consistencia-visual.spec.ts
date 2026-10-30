@@ -24,7 +24,7 @@ test('los formularios conservan un único título de tarjeta', async ({ page }) 
     await expect(page.getByRole('heading', { name: titulo, exact: true })).toHaveCount(1);
   }
   await page.getByRole('button', { name: 'Editar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Editar Grupo', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Editar Coro', exact: true })).toHaveCount(1);
   await page.goto('/eventos');
   await expect(page.getByRole('cell', { name: '14:00 – 15:00' })).toBeVisible();
   await page.getByRole('button', { name: 'Editar', exact: true }).click();
