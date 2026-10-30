@@ -165,6 +165,7 @@ test('una solicitud de reserva válida envía todos los datos y confirma el resu
   await page.getByRole('button', { name: 'Solicitar Reserva' }).click();
 
   await expect(page.getByText('Solicitud enviada')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ver reservas', exact: true })).toHaveAttribute('href', '/reservas');
   expect(reserva).toEqual({
     fecha: '2099-10-20',
     hora_inicio: '14:00',
