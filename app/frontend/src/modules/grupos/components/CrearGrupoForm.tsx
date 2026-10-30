@@ -4,10 +4,11 @@ import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
+import SelectorCoordinadoresGrupo from './SelectorCoordinadoresGrupo';
 
 export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () => void }) {
   const [nombre, setNombre] = useState('');
-  const [coordinadorId, setCoordinadorId] = useState('');
+  const [coordinadorIds, setCoordinadorIds] = useState<number[]>([]);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const toast = useToast();
 
@@ -20,16 +21,16 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!nombre || !coordinadorId) {
+    if (!nombre || !coordinadorIds.length) {
       toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     try {
-      await apiClient.post('/api/grupos', { nombre, coordinador_id: parseInt(coordinadorId) });
+      await apiClient.post('/api/grupos', { nombre, coordinador_ids: coordinadorIds });
       toast.success('Grupo creado', `El grupo "${nombre}" ya está disponible.`);
       setNombre('');
-      setCoordinadorId('');
+      setCoordinadorIds([]);
       if (onGrupoCreado) onGrupoCreado();
     } catch (error: unknown) {
       toast.error('No se pudo crear el grupo', getApiErrorMessage(error, 'Error de red al intentar crear el grupo.'));
@@ -41,7 +42,7 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
 
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        <p className={styles.fieldNote}>Escribe el nombre del grupo y selecciona su coordinador entre las cuentas habilitadas para ese rol.</p>
+        <p className={styles.fieldNote}>Escribe el nombre del grupo y selecciona uno o varios coordinadores entre las cuentas habilitadas para ese rol.</p>
         <div className={styles.field}>
           <label htmlFor="nombre" className={styles.label}>Nombre del Grupo:</label>
           <input
@@ -54,23 +55,7 @@ export default function CrearGrupoForm({ onGrupoCreado }: { onGrupoCreado?: () =
           />
         </div>
 
-        <div className={styles.field}>
-          <label htmlFor="coordinador" className={styles.label}>Coordinador:</label>
-          <select
-            id="coordinador"
-            className={styles.input}
-            data-placeholder={coordinadorId === '' ? 'true' : undefined}
-            value={coordinadorId}
-            onChange={(e) => setCoordinadorId(e.target.value)}
-          >
-            <option value="" disabled hidden>Selecciona un coordinador</option>
-            {personas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectorCoordinadoresGrupo personas={personas} seleccionados={coordinadorIds} onChange={setCoordinadorIds} />
 
         <button type="submit" className="btn-primary">
           Crear Grupo

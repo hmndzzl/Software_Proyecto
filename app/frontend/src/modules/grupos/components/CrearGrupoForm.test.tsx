@@ -19,7 +19,7 @@ describe('CrearGrupoForm - avisos', () => {
 
   const llenar = async () => {
     await userEvent.type(screen.getByLabelText(/Nombre del Grupo/), 'Jóvenes');
-    await userEvent.selectOptions(screen.getByRole('combobox'), '7');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ana Coordinadora' }));
   };
 
   it('avisa con un toast si no se pueden cargar los coordinadores', async () => {
@@ -49,6 +49,23 @@ describe('CrearGrupoForm - avisos', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Grupo creadoEl grupo "Jóvenes" ya está disponible.');
     expect(onGrupoCreado).toHaveBeenCalled();
+    expect(apiClient.post).toHaveBeenCalledWith('/api/grupos', { nombre: 'Jóvenes', coordinador_ids: [7] });
+  });
+
+  it('permite seleccionar varios coordinadores a la vez', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: [{ id: 7, nombre: 'Ana Coordinadora' }, { id: 8, nombre: 'Luis Coordinador' }],
+    });
+    mostrar();
+    await screen.findByText('Ana Coordinadora');
+
+    await userEvent.type(screen.getByLabelText(/Nombre del Grupo/), 'Jóvenes');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ana Coordinadora' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Luis Coordinador' }));
+    await userEvent.click(screen.getByRole('button', { name: /crear grupo/i }));
+
+    await screen.findByRole('status');
+    expect(apiClient.post).toHaveBeenCalledWith('/api/grupos', { nombre: 'Jóvenes', coordinador_ids: [7, 8] });
   });
 
   it('el aviso sigue visible aunque el formulario se desmonte (p. ej. se cierre su modal)', async () => {
