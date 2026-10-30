@@ -57,6 +57,20 @@ describe('CrearReservaForm', () => {
     expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('selecciona la tarjeta de espacio con Enter o espacio, e ignora otras teclas', async () => {
+    mostrar();
+    const tarjeta = await screen.findByRole('button', { name: nombreExacto('Salón Parroquial') });
+
+    fireEvent.keyDown(tarjeta, { key: 'a' });
+    expect(tarjeta).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.keyDown(tarjeta, { key: 'Enter' });
+    expect(tarjeta).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.keyDown(tarjeta, { key: ' ' });
+    expect(tarjeta).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('avisa si excede la capacidad, acepta el límite y envía el aforo numérico', async () => {
     mostrar();
     await completar();
