@@ -152,6 +152,7 @@ export default function ListaGrupos({ refreshKey }: { refreshKey?: number }) {
       <Modal
         open={Boolean(grupoActivo)}
         title={tituloModal}
+        returnLabel={vista === 'detalle' ? 'Volver a grupos' : undefined}
         onClose={cerrar}
         closeDisabled={eliminando}
         describedBy={vista === 'eliminar' ? `${id}-confirmacion` : undefined}
