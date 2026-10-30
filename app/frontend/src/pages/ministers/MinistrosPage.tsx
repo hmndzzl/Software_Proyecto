@@ -110,7 +110,7 @@ export default function MinistrosPage() {
           hint={!loading ? `${ministros.length} personas` : undefined}
         />
 
-        {loading && <LoadingState label="Cargando ministros..." />}
+        {loading && <LoadingState variant="table" label="Cargando ministros..." />}
         {!loading && !error && <TableFilters {...filtros.controls} label="Filtros del directorio" />}
         {error   && <ErrorState message={error} onRetry={cargarMinistros} />}
 

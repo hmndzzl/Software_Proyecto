@@ -98,7 +98,7 @@ export default function EspacioDetallePage() {
     }
   };
 
-  if (cargando) return <LoadingState label="Cargando..." />;
+  if (cargando) return <LoadingState variant="detail" label="Cargando espacio..." />;
 
   if (error || !espacio) {
     return (

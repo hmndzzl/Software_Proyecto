@@ -208,7 +208,7 @@ export default function DashboardPage() {
                       <stat.Icon />
                     </div>
                   </div>
-                  <p className={styles.statNumber}>{sv.loading ? '—' : sv.value}</p>
+                  {sv.loading ? <LoadingState variant="metric" label={`Cargando ${stat.kicker}`} /> : <p className={styles.statNumber}>{sv.value}</p>}
                   <p className={styles.statHint}>{stat.hint}</p>
                   {stat.linkTo && (
                     <Link to={stat.linkTo} className={styles.statLink}>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
               right={<Link to="/tareas" style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-rojo)', fontWeight: 600, textDecoration: 'none' }}>Ver todas →</Link>}
             />
             <div className={styles.tareasList}>
-              {tareasLoading && <LoadingState size="sm" label="Cargando..." />}
+              {tareasLoading && <LoadingState variant="list" label="Cargando tareas..." />}
               {!tareasLoading && tareasProximas.length === 0 && (
                 <EmptyState message="No hay tareas próximas." />
               )}

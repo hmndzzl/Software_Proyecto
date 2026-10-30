@@ -68,7 +68,7 @@ export default function ListaEventos({
       <CardHead title="Lista de Eventos" hint={!loading && eventos.length > 0 ? `${eventos.length} eventos` : undefined} />
       {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de eventos" />}
 
-      {loading && <LoadingState label="Cargando eventos..." />}
+      {loading && <LoadingState variant="table" label="Cargando eventos..." />}
       {error   && <ErrorState message={error} onRetry={fetchEventos} />}
 
       {!loading && !error && eventos.length === 0 && (

@@ -232,7 +232,7 @@ export default function NotificacionesPage() {
           />
           <CardBody>
             {cargando ? (
-              <LoadingState label="Cargando notificaciones…" />
+              <LoadingState variant="table" label="Cargando notificaciones…" />
             ) : error ? (
               <ErrorState message={error} onRetry={refetch} />
             ) : recibidasFiltradas.length === 0 ? (
@@ -281,7 +281,7 @@ export default function NotificacionesPage() {
           />
           <CardBody>
             {cargandoEnviadas ? (
-              <LoadingState label="Cargando notificaciones enviadas…" />
+              <LoadingState variant="table" label="Cargando notificaciones enviadas…" />
             ) : errorEnviadas ? (
               <ErrorState message={errorEnviadas} onRetry={refetchEnviadas} />
             ) : enviadasFiltradas.length === 0 ? (
@@ -332,7 +332,7 @@ export default function NotificacionesPage() {
           />
           <CardBody>
             {cargandoPapelera ? (
-              <LoadingState label="Cargando papelera…" />
+              <LoadingState variant="table" label="Cargando papelera…" />
             ) : errorPapelera ? (
               <ErrorState message={errorPapelera} onRetry={refetchPapelera} />
             ) : papeleraFiltrada.length === 0 ? (

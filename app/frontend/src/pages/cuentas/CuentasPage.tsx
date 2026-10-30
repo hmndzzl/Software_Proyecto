@@ -189,7 +189,7 @@ export default function CuentasPage() {
           ))}
         </div>
 
-        {loading && <LoadingState label="Cargando cuentas..." />}
+        {loading && <LoadingState variant="table" label="Cargando cuentas..." />}
         {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de cuentas" />}
         {error && <ErrorState message={error} onRetry={cargar} />}
 

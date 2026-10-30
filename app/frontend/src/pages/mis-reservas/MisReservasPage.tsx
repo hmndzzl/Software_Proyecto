@@ -110,7 +110,7 @@ export default function MisReservasPage() {
           hint={!loading ? `${reservas.length} solicitudes` : undefined}
         />
 
-        {loading && <LoadingState label="Cargando tus reservas..." />}
+        {loading && <LoadingState variant="table" label="Cargando tus reservas..." />}
         {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de mis reservas" />}
         {error   && <ErrorState message={error} onRetry={cargarReservas} />}
         {!loading && !error && reservas.length === 0 && (
