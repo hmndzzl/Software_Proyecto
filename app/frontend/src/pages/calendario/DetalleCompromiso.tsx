@@ -50,6 +50,8 @@ export default function DetalleCompromiso({ item, onClose, onActualizado, onSele
   };
 
   return <Modal open title={estadoPorConfirmar === ESTADOS_RESERVA.CANCELADA ? 'Cancelar reserva' : estadoPorConfirmar !== null ? 'Rechazar reserva' : item.dato.titulo} onClose={onClose} onBack={onVolver} width={720}
+    returnLabel={estadoPorConfirmar === null ? onVolver ? 'Volver al evento' : 'Volver al calendario' : undefined}
+    onReturn={onVolver ?? onClose}
     subtitle={estadoPorConfirmar === null && item.tipo === 'evento' ? item.dato.descripcion : undefined}
     closeDisabled={actualizando} describedBy={estadoPorConfirmar !== null ? confirmacionId : undefined}>
     {estadoPorConfirmar !== null ? <>
