@@ -140,9 +140,12 @@ INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VA
 -- originales (CoordMin id=7 → 9,10; CoordMin Sur id=13 → 11,12).
 -- ======================================================================
 
--- Grupo parroquial (coordinador de grupos, id=8)
-INSERT INTO `grupo` (`nombre`, `coordinador_id`) VALUES
-  ('Coro Parroquial', 8);
+-- Grupo parroquial (coordinador de grupos, id=8) — un solo coordinador.
+INSERT INTO `grupo` (`nombre`) VALUES
+  ('Coro Parroquial');
+
+INSERT INTO `grupo_coordinador` (`grupo_id`, `coordinador_id`) VALUES
+  (1, 8);
 
 -- Tareas futuras repartidas entre los 4 ministros originales (tarea 15 queda sin asignar
 -- a propósito, para ver el estado "sin asignar" en ListaAsignaciones/Calendario).
@@ -244,24 +247,52 @@ INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`, `estado_cuenta`
   ('Rodrigo Chach', 'rodrigo.chach@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
   ('Gloria Tiul', 'gloria.tiul@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
   ('Alberto Pec', 'alberto.pec@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
-  ('Yesenia Mux', 'yesenia.mux@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa');
+  ('Yesenia Mux', 'yesenia.mux@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  -- Ocho coordinadores de grupos más (ids 48-55): un coordinador solo puede estar a
+  -- cargo de un grupo a la vez, así que los grupos con 2-3 coordinadores necesitan
+  -- personas propias en vez de reutilizar las de arriba.
+  ('Cristina Ical', 'cristina.ical@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Edgar Sop', 'edgar.sop@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Lesbia Tzoc', 'lesbia.tzoc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Herbert Siquin', 'herbert.siquin@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Dora Ajanel', 'dora.ajanel@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Selvin Boc', 'selvin.boc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Brenda Chen', 'brenda.chen@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Mario Tally', 'mario.tally@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa');
 
--- Grupos pastorales adicionales. grupo.coordinador_id es UNIQUE (1 grupo por coordinador),
--- así que cada grupo nuevo recibe su propio coordinador de grupos (personas 30-32 y 38-47).
-INSERT INTO `grupo` (`nombre`, `coordinador_id`) VALUES
-  ('Catequesis de Primera Comunión', 30),
-  ('Pastoral Juvenil', 31),
-  ('Legión de María', 32),
-  ('Grupo de Oración Renovación', 38),
-  ('Pastoral Familiar', 39),
-  ('Monaguillos', 40),
-  ('Coro de Jóvenes', 41),
-  ('Catequesis de Confirmación', 42),
-  ('Pastoral de Salud', 43),
-  ('Grupo de Lectores', 44),
-  ('Ministros Extraordinarios de la Eucaristía', 45),
-  ('Pastoral Social', 46),
-  ('Comité de Liturgia', 47);
+-- Grupos pastorales adicionales (ids 2-14, el grupo_coordinador va abajo). Mezcla
+-- deliberada de casos reales: grupos con 1 solo coordinador, con 2 y con 3 — cada
+-- coordinador aparece exactamente una vez en total, porque solo puede estar a cargo
+-- de un grupo a la vez (uq_grupo_coord_coordinador).
+INSERT INTO `grupo` (`nombre`) VALUES
+  ('Catequesis de Primera Comunión'),  -- id 2
+  ('Pastoral Juvenil'),                -- id 3
+  ('Legión de María'),                 -- id 4
+  ('Grupo de Oración Renovación'),     -- id 5
+  ('Pastoral Familiar'),               -- id 6
+  ('Monaguillos'),                     -- id 7
+  ('Coro de Jóvenes'),                 -- id 8
+  ('Catequesis de Confirmación'),      -- id 9
+  ('Pastoral de Salud'),               -- id 10
+  ('Grupo de Lectores'),               -- id 11
+  ('Ministros Extraordinarios de la Eucaristía'), -- id 12
+  ('Pastoral Social'),                 -- id 13
+  ('Comité de Liturgia');              -- id 14
+
+INSERT INTO `grupo_coordinador` (`grupo_id`, `coordinador_id`) VALUES
+  (2, 30),                   -- Catequesis de Primera Comunión: 1 coordinador
+  (3, 31), (3, 48),          -- Pastoral Juvenil: 2 coordinadores
+  (4, 32),                   -- Legión de María: 1 coordinador
+  (5, 38), (5, 49), (5, 50), -- Grupo de Oración Renovación: 3 coordinadores
+  (6, 39),                   -- Pastoral Familiar: 1 coordinador
+  (7, 40), (7, 51),          -- Monaguillos: 2 coordinadores
+  (8, 41),                   -- Coro de Jóvenes: 1 coordinador
+  (9, 42), (9, 52), (9, 53), -- Catequesis de Confirmación: 3 coordinadores
+  (10, 43),                  -- Pastoral de Salud: 1 coordinador
+  (11, 44), (11, 54),        -- Grupo de Lectores: 2 coordinadores
+  (12, 45),                  -- Ministros Extraordinarios de la Eucaristía: 1 coordinador
+  (13, 46), (13, 55),        -- Pastoral Social: 2 coordinadores
+  (14, 47);                  -- Comité de Liturgia: 1 coordinador
 
 -- Reservas adicionales en los 4 estados, ventana de ~90 días. Las últimas 2 son
 -- deliberadas para poder demostrar el rechazo por aforo (P3/DEV-267) en vivo: quedan
