@@ -104,8 +104,6 @@
 }
 
 .input::placeholder { color: var(--color-muted); }
-.input[data-placeholder='true'] { color: var(--color-muted); }
-.input[data-placeholder='true'] option:not(:disabled) { color: var(--color-carbon); }
 
 .input:focus {
   border-color: var(--color-rojo);
