@@ -149,6 +149,31 @@ describe('integración de grupos y permisos', () => {
     expect(within(dialogo).getByText('Ana')).toBeInTheDocument();
   });
 
+  it('el botón de volver regresa de edición al detalle sin guardar', async () => {
+    render(<ListaGrupos />, { wrapper });
+    await screen.findByText('Coro');
+    const fila = screen.getByText('Coro').closest('tr')!;
+    await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
+    await screen.findByRole('dialog', { name: 'Editar Coro' });
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a la tarjeta anterior' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Coro' });
+    expect(within(dialogo).queryByLabelText('Nombre del Grupo:')).not.toBeInTheDocument();
+    expect(apiClient.put).not.toHaveBeenCalled();
+  });
+
+  it('guardar desde la tarjeta de edición refresca el listado y cierra el modal', async () => {
+    render(<ListaGrupos />, { wrapper });
+    await screen.findByText('Coro');
+    const fila = screen.getByText('Coro').closest('tr')!;
+    await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Editar Coro' });
+    await userEvent.clear(within(dialogo).getByLabelText('Nombre del Grupo:'));
+    await userEvent.type(within(dialogo).getByLabelText('Nombre del Grupo:'), 'Coro renovado');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Guardar Cambios' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(apiClient.get).toHaveBeenCalledWith('/api/grupos');
+  });
+
   it('clickear el botón "Editar grupo" dentro del detalle cambia a edición sin cerrar el modal', async () => {
     render(<GruposPage />, { wrapper });
     await screen.findByText('Coro');
