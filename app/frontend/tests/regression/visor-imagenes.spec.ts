@@ -47,7 +47,7 @@ for (const viewport of [{ width: 375, height: 844 }, { width: 1280, height: 900 
     await page.screenshot({ path: test.info().outputPath(`visor-${viewport.width}.png`), fullPage: true });
     await page.keyboard.press('Escape'); await expect(dialogo).toHaveCount(0); await expect(abrir).toBeFocused();
     await page.evaluate(() => document.documentElement.setAttribute('data-tema', 'oscuro'));
-    await abrir.click(); await expect(dialogo).toHaveCSS('background-color', 'rgb(250, 248, 243)');
+    await abrir.click(); await expect(dialogo).toHaveCSS('background-color', 'rgb(51, 44, 38)'); // sigue el tema oscuro
     await page.mouse.click(2, 2); await expect(dialogo).toHaveCount(0);
     await page.getByRole('heading', { name: 'Salón parroquial', exact: true }).click();
     await expect(page).toHaveURL(/\/espacios\/1$/);
