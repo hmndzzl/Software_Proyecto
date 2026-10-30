@@ -26,24 +26,33 @@ export default function EditarGrupoForm({
     setCoordinadorIds(grupo.coordinadores.map((c) => c.id));
   }, [grupo]);
 
+  const [cargandoCoordinadores, setCargandoCoordinadores] = useState(true);
+  const [errorCoordinadores, setErrorCoordinadores] = useState(false);
+  const [revision, setRevision] = useState(0);
+
   useEffect(() => {
+    let vigente = true;
+    setCargandoCoordinadores(true);
+    setErrorCoordinadores(false);
     apiClient.get<Persona[]>('/api/personas/coordinadores-grupo')
-      .then(res => setPersonas(res.data))
-      .catch(() => toast.error('No se pudieron cargar los datos', 'Error al cargar la lista de coordinadores.'));
-  }, []);
+      .then(res => { if (vigente) setPersonas(res.data); })
+      .catch(() => { if (vigente) setErrorCoordinadores(true); })
+      .finally(() => { if (vigente) setCargandoCoordinadores(false); });
+    return () => { vigente = false; };
+  }, [revision]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (guardando) return;
+    if (guardando || cargandoCoordinadores || errorCoordinadores) return;
 
-    if (!nombre || !coordinadorIds.length) {
+    if (!nombre.trim() || !coordinadorIds.length) {
       toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     setGuardando(true);
     try {
-      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_ids: coordinadorIds });
+      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre: nombre.trim(), coordinador_ids: coordinadorIds });
       toast.success('Grupo actualizado', `Los cambios en "${nombre}" se guardaron.`);
       if (onGrupoActualizado) onGrupoActualizado();
     } catch (error: unknown) {
@@ -53,11 +62,12 @@ export default function EditarGrupoForm({
 
   return (
     <form onSubmit={handleUpdate} className={styles.form}>
-      <p className={styles.fieldNote}>Revisa el nombre y los coordinadores antes de guardar.</p>
+      <p className={styles.fieldNote}>Revisa el nombre y los coordinadores antes de guardar. Cada coordinador solo puede estar a cargo de un grupo.</p>
       <div className={styles.field}>
         <label htmlFor="edit-nombre" className={styles.label}>Nombre del Grupo:</label>
         <input
           type="text"
+            maxLength={200}
           id="edit-nombre"
           className={styles.input} disabled={guardando}
           value={nombre}
@@ -65,10 +75,10 @@ export default function EditarGrupoForm({
         />
       </div>
 
-      <SelectorCoordinadoresGrupo personas={personas} seleccionados={coordinadorIds} onChange={setCoordinadorIds} disabled={guardando} />
+      <SelectorCoordinadoresGrupo personas={personas} seleccionados={coordinadorIds} onChange={setCoordinadorIds} cargando={cargandoCoordinadores} error={errorCoordinadores} onRetry={() => setRevision(value => value + 1)} disabled={guardando} />
 
       <div className={styles.buttonRow}>
-        <button type="submit" className="btn-primary" disabled={guardando}>
+        <button type="submit" className="btn-primary" disabled={guardando || cargandoCoordinadores || errorCoordinadores}>
           {guardando ? 'Guardando...' : 'Guardar Cambios'}
         </button>
         {onCancelar && (
