@@ -217,8 +217,7 @@ describe('CrearReservaForm', () => {
 
   it('preselecciona el espacio cuando espacioInicial existe en el catálogo', async () => {
     mostrar({ espacioInicial: '2' });
-    await screen.findByRole('button', { name: /Salón Parroquial/ });
-    expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(screen.getByRole('button', { name: /Salón Parroquial/ })).toHaveAttribute('aria-pressed', 'true'));
     expect(screen.getAllByText('Salón Parroquial').length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /Ver detalle del espacio/ })).toBeInTheDocument();
   });
