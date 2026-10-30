@@ -204,7 +204,15 @@ INSERT INTO `periodo_ausencia` (`ministro_id`, `titulo`, `justificacion`, `fecha
 
 -- Mensaje de contacto público (HU-32), sin notificación asociada.
 INSERT INTO `mensaje_contacto` (`nombre`, `correo`, `telefono`, `motivo`, `mensaje`, `fecha`) VALUES
-  ('Rosa Martinez', 'rosa.martinez@example.com', '55512345', 'Información general', 'Quisiera saber el horario de la misa de los sábados.', '2026-10-20');
+  ('Rosa Martinez', 'rosa.martinez@example.com', '55512345', 'Información general', 'Quisiera saber el horario de la misa de los sábados.', '2026-10-20'),
+  ('Jorge Villatoro', 'jorge.villatoro@example.com', '55512346', 'Reserva de salón', 'Me gustaría reservar un salón para un bautizo en diciembre, ¿cómo lo solicito?', '2026-10-22'),
+  ('Mirna Castellanos', 'mirna.castellanos@example.com', NULL, 'Catequesis', 'Quiero inscribir a mi hija a catequesis de primera comunión, ¿cuándo inician las clases?', '2026-10-24'),
+  ('Edwin Barrios', 'edwin.barrios@example.com', '55512348', 'Voluntariado', 'Me interesa ser ministro de la eucaristía, ¿con quién debo hablar?', '2026-10-25'),
+  ('Silvia Monterroso', 'silvia.monterroso@example.com', NULL, 'Quejas y sugerencias', 'El sonido en la misa de las 12pm se corta seguido, sería bueno revisarlo.', '2026-10-26'),
+  ('Pablo Hernandez', 'pablo.hernandez@example.com', '55512350', 'Información general', '¿La parroquia tiene estacionamiento disponible para las misas dominicales?', '2026-10-27'),
+  ('Karla Figueroa', 'karla.figueroa@example.com', '55512351', 'Reserva de salón', 'Quisiera cotizar el salón parroquial para una actividad de fin de año de nuestro grupo.', '2026-10-28'),
+  ('Byron Letona', 'byron.letona@example.com', NULL, 'Donaciones', 'Quiero hacer una donación para la remodelación de la capilla, ¿cuál es el proceso?', '2026-10-29'),
+  ('Ana Lucía Ramos', 'analucia.ramos@example.com', '55512353', 'Voluntariado', 'Formo parte de un coro juvenil y nos gustaría ofrecer nuestros servicios en alguna misa.', '2026-10-30');
 
 -- Eventos con tareas vinculadas (evento_id) — para probar en el calendario la lista
 -- de "Tareas asociadas a este evento" (clickeable) dentro del detalle del evento.
@@ -479,3 +487,12 @@ INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
   (54, 19), (54, 20), (54, 21), (54, 22), -- Montaje del altar: 4 ministros
   (55, 23), (55, 24), (55, 25),       -- Coro ampliado: 3 ministros
   (56, 26), (56, 27);                 -- Ujieres: 2 ministros
+
+-- Teléfonos de los ministros (ids 9,10,11,12,14-29) — ficticios, para que el directorio
+-- de ministros muestre un dato de contacto real en vez de quedar siempre vacío.
+INSERT INTO `telefono` (`numero`, `persona_id`) VALUES
+  ('55010001', 9),  ('55010002', 10), ('55010003', 11), ('55010004', 12),
+  ('55010005', 14), ('55010006', 15), ('55010007', 16), ('55010008', 17),
+  ('55010009', 18), ('55010010', 19), ('55010011', 20), ('55010012', 21),
+  ('55010013', 22), ('55010014', 23), ('55010015', 24), ('55010016', 25),
+  ('55010017', 26), ('55010018', 27), ('55010019', 28), ('55010020', 29);
