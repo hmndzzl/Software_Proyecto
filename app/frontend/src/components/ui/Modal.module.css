@@ -16,6 +16,7 @@
   border-radius: var(--radius-card);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -69,7 +70,15 @@
 .body {
   padding: 24px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1;
+}
+
+@media (max-width: 600px) {
+  .overlay { padding: 16px; }
+  .panel { max-height: calc(100dvh - 32px); }
+  .header { padding: 16px 18px 12px; }
+  .body { padding: 18px; }
 }
 
 .headerWithSubtitle { align-items: flex-start; }
