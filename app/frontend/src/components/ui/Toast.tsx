@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import styles from './Toast.module.css';
 
+export interface ToastAction { label: string; href: string }
+
 export type ToastKind = 'ok' | 'warn' | 'bad';
 
 interface ToastProps {
@@ -10,6 +12,7 @@ interface ToastProps {
   onClose: () => void;
   /** Milisegundos hasta cerrarse solo; 0 lo deja fijo hasta que se cierre a mano. */
   duration?: number;
+  action?: ToastAction;
 }
 
 const DEFAULT_DURATION_MS = 7_000;
@@ -18,12 +21,12 @@ const DEFAULT_DURATION_MS = 7_000;
  * Aviso no bloqueante en la esquina inferior derecha para confirmar (o fallar) una acción.
  * Se cierra solo; cualquier cambio de mensaje reinicia el temporizador.
  */
-export default function Toast({ kind, title, message, onClose, duration = DEFAULT_DURATION_MS }: ToastProps) {
+export default function Toast({ kind, title, message, onClose, duration = DEFAULT_DURATION_MS, action }: ToastProps) {
   useEffect(() => {
-    if (duration <= 0) return;
+    if (duration <= 0 || action) return;
     const id = setTimeout(onClose, duration);
     return () => clearTimeout(id);
-  }, [title, message, duration, onClose]);
+  }, [title, message, duration, onClose, action]);
 
   return (
     <div
@@ -56,6 +59,7 @@ export default function Toast({ kind, title, message, onClose, duration = DEFAUL
       <div className={styles.content}>
         <p className={styles.title}>{title}</p>
         <p className={styles.message}>{message}</p>
+        {action && <a className={styles.action} href={action.href} onClick={onClose}>{action.label}</a>}
       </div>
 
       <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Cerrar aviso">

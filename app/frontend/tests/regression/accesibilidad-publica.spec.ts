@@ -50,6 +50,39 @@ async function auditar(page: Page, nombre: string) {
   await expect(page.getByRole('contentinfo')).toHaveCount(1);
 }
 
+for (const width of [320, 1440]) {
+  test(`el portal conserva ventanas y selección claras con el panel oscuro a ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(() => localStorage.setItem('tema_aplicacion', 'oscuro'));
+    await preparar(page);
+    await page.goto('/');
+    const titulo = page.getByRole('heading', { name: 'Una comunidad viva' });
+    await expect(titulo).toBeVisible();
+    const seleccion = await titulo.evaluate(el => ({ color: getComputedStyle(el, '::selection').color, fondo: getComputedStyle(el, '::selection').backgroundColor }));
+    expect(seleccion).toEqual({ color: 'rgb(26, 26, 26)', fondo: 'rgb(251, 230, 179)' });
+    await page.getByRole('button', { name: /Historia de la Orden Mercedaria/ }).click();
+    const historia = page.getByRole('dialog', { name: 'Historia de la Orden Mercedaria' });
+    await expect(historia).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect.poll(() => historia.locator('.qmodal p').last().evaluate(el => getComputedStyle(el, '::selection').backgroundColor)).toBe('rgb(251, 230, 179)');
+    await historia.locator('.qmodal').evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    expect((await new AxeBuilder({ page }).include('[role="dialog"]').withRules(['color-contrast']).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: test.info().outputPath(`historia-clara-${width}.png`) });
+    await historia.getByRole('button', { name: 'Volver a nuestra historia', exact: true }).click();
+    await expect(historia).toHaveCount(0);
+    await page.locator('button.oracion').click();
+    await expect(page.getByRole('dialog')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await page.getByRole('button', { name: 'Volver a devoción', exact: true }).click();
+    await expect(page.locator('button.oracion')).toBeFocused();
+    await page.getByRole('button', { name: 'Ampliar imagen: Vista exterior de la parroquia' }).click();
+    const visor = page.getByRole('dialog', { name: 'Imagen ampliada' });
+    await expect(visor).toHaveCSS('background-color', 'rgb(250, 248, 243)');
+    await expect.poll(() => visor.locator('p').last().evaluate(el => ({ color: getComputedStyle(el, '::selection').color, fondo: getComputedStyle(el, '::selection').backgroundColor }))).toEqual({ color: 'rgb(26, 26, 26)', fondo: 'rgb(251, 230, 179)' });
+    await visor.evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    expect((await new AxeBuilder({ page }).include('dialog[open]').withRules(['color-contrast']).analyze()).violations).toEqual([]);
+    await page.keyboard.press('Escape');
+  });
+}
+
 for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
   test.describe(`accesibilidad pública a ${viewport.width}px`, () => {
     test.use({ viewport });

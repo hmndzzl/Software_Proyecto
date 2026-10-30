@@ -9,9 +9,12 @@ interface Props {
   seleccionados: number[];
   onChange: (ids: number[]) => void;
   disabled?: boolean;
+  cargando?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export default function SelectorCoordinadoresGrupo({ personas, seleccionados, onChange, disabled = false }: Props) {
+export default function SelectorCoordinadoresGrupo({ personas, seleccionados, onChange, disabled = false, cargando = false, error = false, onRetry }: Props) {
   const id = useId();
   const [busqueda, setBusqueda] = useState('');
   const visibles = personas.filter((p) => normalizarBusqueda(p.nombre).includes(normalizarBusqueda(busqueda)));
@@ -24,7 +27,7 @@ export default function SelectorCoordinadoresGrupo({ personas, seleccionados, on
   };
 
   return (
-    <fieldset className={styles.selector} disabled={disabled}>
+    <fieldset className={styles.selector} disabled={disabled || cargando}>
       <legend className={form.label}>Coordinadores</legend>
       <div className={form.field}>
         <label htmlFor={`${id}-buscar`} className={form.label}>Buscar coordinador</label>
@@ -40,8 +43,10 @@ export default function SelectorCoordinadoresGrupo({ personas, seleccionados, on
       <p className={styles.nota} aria-live="polite">
         {seleccionados.length === 1 ? '1 coordinador seleccionado.' : `${seleccionados.length} coordinadores seleccionados.`}
       </p>
-      {!personas.length && <p className={styles.nota}>No hay coordinadores de grupo disponibles.</p>}
-      {personas.length > 0 && !visibles.length && <p className={styles.nota}>No hay coordinadores que coincidan con la búsqueda.</p>}
+      {cargando && <p className={styles.nota} role="status">Cargando coordinadores…</p>}
+      {error && <p className={styles.nota} role="alert">No se pudieron cargar los coordinadores. <button type="button" className={form.btnSecondary} onClick={onRetry}>Reintentar</button></p>}
+      {!cargando && !error && !personas.length && <p className={styles.nota}>No hay coordinadores de grupo disponibles.</p>}
+      {!cargando && !error && personas.length > 0 && !visibles.length && <p className={styles.nota}>No hay coordinadores que coincidan con la búsqueda.</p>}
       <div className={styles.lista} role="group" aria-label="Coordinadores disponibles">
         {visibles.map((persona) => (
           <label key={persona.id} className={styles.opcion}>

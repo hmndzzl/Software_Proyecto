@@ -73,10 +73,24 @@
   color: var(--color-tierra);
 }
 
+.selectWrap { position: relative; }
+
+.selectWrap svg {
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-ink);
+  pointer-events: none;
+}
+
+.field select::picker-icon { display: none; }
+
 .field select {
+  appearance: none;
   width: 100%;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 42px 0 12px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-btn);
   color: var(--color-ink);

@@ -74,3 +74,35 @@ test('consulta semana y mes, filtra por ministro y conserva legibilidad en móvi
     expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth))).toBeLessThanOrEqual(viewport.width + 1);
   }
 });
+
+test('las flechas de los filtros guardan separación del borde en ambos temas y tamaños', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'jwt-de-regresion');
+    localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Ana', correo: 'ana@test.com', rol_id: 5 }));
+  });
+  await page.route('http://api.test/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    return route.fulfill({ json: path === '/api/calendario' ? { eventos: [], tareas: [] } : path === '/api/personas' ? [{ id: 9, nombre: 'Ana Ministra' }] : [] });
+  });
+  await page.goto('/calendario');
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const tema of ['claro', 'oscuro']) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
+      for (const label of ['Qué deseas consultar', 'Ver horario de un ministro']) {
+        const select = page.getByLabel(label, { exact: true });
+        const caja = (await select.boundingBox())!;
+        const flecha = (await select.locator('..').locator('svg').boundingBox())!;
+        expect(Math.round(caja.x + caja.width - flecha.x - flecha.width)).toBe(14);
+        expect(await select.evaluate(el => parseFloat(getComputedStyle(el).paddingRight))).toBeGreaterThanOrEqual(42);
+      }
+      await page.getByLabel('Ver horario de un ministro').selectOption('9');
+      await expect(page.getByLabel('Ver horario de un ministro')).toHaveValue('9');
+      await page.getByLabel('Qué deseas consultar').selectOption('personal');
+      await expect(page.getByLabel('Ver horario de un ministro')).toHaveCount(0);
+      await page.getByLabel('Qué deseas consultar').selectOption('coordinacion');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: test.info().outputPath(`filtros-${width}-${tema}.png`) });
+    }
+  }
+});

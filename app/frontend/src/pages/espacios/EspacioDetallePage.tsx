@@ -13,6 +13,7 @@ import { Card, CardHead } from '../../components/ui/Card';
 import ReservaEstadoBadge from '../../components/ui/ReservaEstadoBadge';
 import Badge from '../../components/ui/Badge';
 import Btn from '../../components/ui/Btn';
+import BackButton from '../../components/ui/BackButton';
 import DetalleEventoModal from '../../components/ui/DetalleEventoModal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import LoadingState from '../../components/ui/LoadingState';
@@ -98,15 +99,14 @@ export default function EspacioDetallePage() {
     }
   };
 
-  if (cargando) return <LoadingState variant="detail" label="Cargando espacio..." />;
+  const regreso = <BackButton label="Volver a espacios" onClick={() => navigate('/espacios')} />;
+
+  if (cargando) return <div className={styles.page}>{regreso}<LoadingState variant="detail" label="Cargando espacio..." /></div>;
 
   if (error || !espacio) {
     return (
       <div className={styles.page}>
-        <Btn kind="ghost" size="sm" onClick={() => navigate('/espacios')}
-          icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>}>
-          Volver a Espacios
-        </Btn>
+        {regreso}
         <ErrorState message={error || 'Espacio no encontrado'} onRetry={cargarEspacio} />
       </div>
     );
@@ -115,12 +115,7 @@ export default function EspacioDetallePage() {
   return (
     <div className={styles.page}>
 
-      {/* Breadcrumb */}
-      <div className={styles.breadcrumb}>
-        <button className={styles.breadcrumbLink} onClick={() => navigate('/espacios')}>Espacios</button>
-        <span className={styles.breadcrumbSep}>›</span>
-        <span className={styles.breadcrumbCurrent}>{espacio.nombre}</span>
-      </div>
+      {regreso}
 
       <div className={styles.grid}>
 

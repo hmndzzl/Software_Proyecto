@@ -1,3 +1,4 @@
+import { afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Node ≥ 25 trae un localStorage nativo que, sin --localstorage-file, queda indefinido y tapa el de
@@ -14,3 +15,6 @@ if (typeof globalThis.localStorage === 'undefined' || typeof globalThis.localSto
   };
   Object.defineProperty(globalThis, 'localStorage', { value: almacen, configurable: true, writable: true });
 }
+
+// Cada prueba empieza con su propia pestaña lógica; la persistencia se comprueba dentro de la misma prueba.
+afterEach(() => sessionStorage.clear());

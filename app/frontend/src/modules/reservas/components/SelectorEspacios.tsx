@@ -10,6 +10,7 @@ interface Props {
   onChange: (id: string) => void;
   labelId: string;
   cargando?: boolean;
+  disabled?: boolean;
 }
 
 // A partir de este número de espacios aparece el buscador — por debajo, una grilla
@@ -17,7 +18,7 @@ interface Props {
 const UMBRAL_BUSCADOR = 8;
 const LIMITE_INICIAL = 8;
 
-export default function SelectorEspacios({ espacios, valor, onChange, labelId, cargando = false }: Props) {
+export default function SelectorEspacios({ espacios, valor, onChange, labelId, cargando = false, disabled = false }: Props) {
   const [busqueda, setBusqueda] = useState('');
   const [verTodos, setVerTodos] = useState(false);
 
@@ -50,12 +51,13 @@ export default function SelectorEspacios({ espacios, valor, onChange, labelId, c
       <div className={styles.grid} role="group" aria-labelledby={labelId}>
         {visibles.map((esp) => {
           const seleccionado = String(esp.id) === valor;
-          const activar = () => onChange(String(esp.id));
+          const activar = () => { if (!disabled) onChange(String(esp.id)); };
           return (
             <div
               key={esp.id}
               role="button"
-              tabIndex={0}
+              tabIndex={disabled ? -1 : 0}
+              aria-disabled={disabled}
               aria-pressed={seleccionado}
               aria-label={`${esp.nombre}, capacidad ${esp.capacidad ?? 'no definida'}`}
               className={`${styles.tarjeta}${seleccionado ? ` ${styles.seleccionada}` : ''}`}

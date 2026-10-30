@@ -95,3 +95,5 @@
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; }
 }
+
+.action { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; color: var(--color-rojo); font-weight: 600; font-size: 14px; text-decoration: underline; text-underline-offset: .2em; }

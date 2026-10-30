@@ -187,3 +187,16 @@ describe('integración de reservas, estados y edición', () => {
     expect(await screen.findByText('No hay reservas registradas.')).toBeInTheDocument();
   });
 });
+
+it('conserva las reservas visibles mientras refresca los datos', async () => {
+  preparar([reservas[0]]);
+  const view = render(<ToastProvider><ListaReservas refreshKey={0} /></ToastProvider>);
+  await screen.findByRole('cell', { name: 'Reunión' });
+  let terminar!: (value: { data: Reserva[] }) => void;
+  vi.mocked(apiClient.get).mockImplementation(url => url === '/api/espacios' ? Promise.resolve({ data: [] }) : new Promise(resolve => { terminar = resolve; }));
+  view.rerender(<ToastProvider><ListaReservas refreshKey={1} /></ToastProvider>);
+  expect(screen.getByRole('cell', { name: 'Reunión' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Actualizando reservas');
+  terminar({ data: [reservas[0]] });
+  await waitFor(() => expect(screen.queryByText('Actualizando reservas…')).not.toBeInTheDocument());
+});

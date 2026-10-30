@@ -98,7 +98,7 @@ export default function MisReservasPage() {
         )}
       />
 
-      {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
+      {detalle && <DetalleReserva returnLabel="Volver a mis reservas" reserva={detalle} onClose={() => setDetalle(null)} />}
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
         <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />

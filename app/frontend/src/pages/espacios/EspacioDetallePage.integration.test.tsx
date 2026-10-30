@@ -38,6 +38,13 @@ describe('integración del detalle de un espacio', () => {
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
   });
 
+  it('permite regresar al listado incluso mientras carga el espacio', async () => {
+    vi.mocked(apiClient.get).mockImplementation(() => new Promise(() => {}));
+    mostrar();
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a espacios' }));
+    expect(await screen.findByText('Destino /espacios')).toBeInTheDocument();
+  });
+
   it('muestra información, todos los estados y navega desde sus acciones', async () => {
     mostrar();
     await screen.findByRole('heading', { name: 'Salón Mayor' });
@@ -101,7 +108,7 @@ describe('integración del detalle de un espacio', () => {
     expect(await screen.findByText('Espacio eliminado')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));
     await screen.findByRole('heading', { name: 'Salón Mayor' });
-    await userEvent.click(screen.getByRole('button', { name: 'Espacios' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a espacios' }));
     expect(await screen.findByText('Destino /espacios')).toBeInTheDocument();
   });
 
@@ -253,7 +260,7 @@ describe('integración del detalle de un espacio', () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: [] });
     mostrar();
     expect(await screen.findByText('Espacio no encontrado')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Volver a Espacios' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a espacios' }));
     expect(await screen.findByText('Destino /espacios')).toBeInTheDocument();
   });
 

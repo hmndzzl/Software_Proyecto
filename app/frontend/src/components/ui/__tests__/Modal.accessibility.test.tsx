@@ -35,3 +35,31 @@ it('cambia el foco al pasar de una tarjeta a su confirmación dentro del mismo m
   rerender(<><button>Abrir reserva</button><Modal open={false} title="Reserva" onClose={close}><input aria-label="Título" /></Modal></>);
   expect(origen).toHaveFocus();
 });
+
+it('ofrece regreso explícito y respeta el bloqueo durante una operación', async () => {
+  const close = vi.fn();
+  const back = vi.fn();
+  const { rerender } = render(<Modal open title="Detalle" onClose={close} returnLabel="Volver al listado"><p>Contenido</p></Modal>);
+  await userEvent.click(screen.getByRole('button', { name: 'Volver al listado' }));
+  expect(close).toHaveBeenCalledOnce();
+  rerender(<Modal open title="Detalle" onClose={close} onReturn={back} returnLabel="Volver al evento" closeDisabled><p>Contenido</p></Modal>);
+  expect(screen.getByRole('button', { name: 'Volver al evento' })).toBeDisabled();
+  await userEvent.click(screen.getByRole('button', { name: 'Volver al evento' }));
+  expect(back).not.toHaveBeenCalled();
+  rerender(<Modal open title="Detalle" onClose={close} onReturn={back} returnLabel="Volver al evento"><p>Contenido</p></Modal>);
+  await userEvent.click(screen.getByRole('button', { name: 'Volver al evento' }));
+  expect(back).toHaveBeenCalledOnce();
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it('muestra un solo regreso y conserva el destino anterior al usar el botón con texto', async () => {
+  const close = vi.fn();
+  const back = vi.fn();
+  const { rerender } = render(<Modal open title="Tarea" onClose={close} onBack={back} returnLabel="Volver al evento"><p>Detalle</p></Modal>);
+  expect(screen.queryByRole('button', { name: 'Volver a la tarjeta anterior' })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Volver al evento' }));
+  expect(back).toHaveBeenCalledOnce();
+  expect(close).not.toHaveBeenCalled();
+  rerender(<Modal open title="Editar grupo" onClose={close} onBack={back}><p>Formulario</p></Modal>);
+  expect(screen.getByRole('button', { name: 'Volver a la tarjeta anterior' })).toBeInTheDocument();
+});

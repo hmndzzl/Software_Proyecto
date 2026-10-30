@@ -48,6 +48,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [loading, setLoading] = useState(true);
+  const cargada = useRef(false);
+  const cargaInicial = loading && !cargada.current;
   const [error, setError] = useState('');
 
   const [editando, setEditando] = useState<Reserva | null>(null);
@@ -70,6 +72,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   );
 
   const filtros = useTableFilters(reservas, {
+    persistenceKey: 'reservas',
     search: r => [r.id, r.espacio_nombre, r.evento_titulo, r.evento_descripcion, r.solicitante_nombre],
     date: r => r.fecha,
     selects: [
@@ -85,6 +88,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     try {
       const response = await apiClient.get<Reserva[]>('/api/reservas');
       setReservas(response.data);
+      cargada.current = true;
     } catch {
       setError('Error de red al obtener las reservas.');
     } finally {
@@ -205,8 +209,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div>
-      <CardHead title="Lista de Reservas" hint={!loading ? `${reservas.length} registradas` : undefined} />
-      {!loading && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
+      <CardHead title="Lista de Reservas" hint={!cargaInicial ? `${reservas.length} registradas` : undefined} />
+      {!cargaInicial && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
 
       {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
       {editando && (
@@ -300,14 +304,15 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         </Modal>
       )}
 
-      {loading && <LoadingState variant="table" label="Cargando reservas..." />}
+      {cargaInicial && <LoadingState variant="table" label="Cargando reservas..." />}
+      {loading && cargada.current && <p role="status" className={formStyles.fieldNote}>Actualizando reservas…</p>}
       {error && <ErrorState message={error} onRetry={fetchReservas} />}
 
-      {!loading && !error && reservas.length === 0 && (
-        <EmptyState message="No hay reservas registradas." />
+      {!cargaInicial && !error && reservas.length === 0 && (
+        <EmptyState message="No hay reservas registradas." action={<a className="btn-primary" href="/reservas?nueva=1">Solicitar primera reserva</a>} />
       )}
 
-      {!loading && reservas.length > 0 && (
+      {!cargaInicial && reservas.length > 0 && (
         <div className="table-container">
           <table className="styled-table">
             <thead>

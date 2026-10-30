@@ -70,9 +70,9 @@ for (const viewport of [{ width: 375, height: 844 }, { width: 1440, height: 1000
     await expect(page).toHaveURL(/\/espacios\/1$/);
     await expect(page.getByRole('button', { name: 'Editar espacio', exact: true })).toHaveCount(1);
     await expect(page.getByRole('heading', { name: nombreLargo, exact: true })).toBeVisible();
-    const volver = (await page.getByRole('button', { name: 'Espacios', exact: true }).boundingBox())!;
-    const ruta = (await page.locator('[class*="_breadcrumbCurrent_"]').boundingBox())!;
-    expect(ruta.x).toBeGreaterThanOrEqual(volver.x + volver.width);
+    const volver = (await page.getByRole('button', { name: 'Volver a espacios', exact: true }).boundingBox())!;
+    expect(volver.height).toBeGreaterThanOrEqual(44);
+    expect(volver.x + volver.width).toBeLessThanOrEqual(viewport.width);
     const gestion = (await page.getByRole('button', { name: 'Editar espacio' }).boundingBox())!;
     const libre = (await page.locator('span[class*="_badge_"]').filter({ hasText: /^Libre$/ }).boundingBox())!;
     const gap = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap-sm')));

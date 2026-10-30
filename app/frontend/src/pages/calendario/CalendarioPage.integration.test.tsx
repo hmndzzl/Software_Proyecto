@@ -170,7 +170,7 @@ describe('calendario unificado semanal', () => {
     await userEvent.click(screen.getByLabelText('Cerrar'));
   });
 
-  it('permite abrir el detalle de una tarea asociada desde el modal del evento y volver con el ícono de retroceso', async () => {
+  it('permite abrir una tarea del evento y volver con un único botón explícito', async () => {
     mostrar();
     const tarjeta = await screen.findByRole('button', { name: /Ver detalle del evento/ });
     await userEvent.click(tarjeta);
@@ -181,7 +181,8 @@ describe('calendario unificado semanal', () => {
     const modalTarea = screen.getByRole('dialog', { name: 'Preparar altar' });
     expect(modalTarea).toBeInTheDocument();
 
-    await userEvent.click(within(modalTarea).getByLabelText('Volver a la tarjeta anterior'));
+    expect(within(modalTarea).queryByLabelText('Volver a la tarjeta anterior')).not.toBeInTheDocument();
+    await userEvent.click(within(modalTarea).getByRole('button', { name: 'Volver al evento' }));
     const deVuelta = screen.getByRole('dialog', { name: 'Misa del lunes' });
     expect(within(deVuelta).queryByLabelText('Volver a la tarjeta anterior')).not.toBeInTheDocument();
   });

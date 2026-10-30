@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import styles from './Modal.module.css';
+import BackButton from './BackButton';
 
 interface ModalProps {
   open: boolean;
@@ -14,9 +15,11 @@ interface ModalProps {
   /** Cuando se provee, muestra un ícono de "volver" a la izquierda del título
    * — para modales que navegan a una tarjeta dentro de otra (ver DetalleCompromiso). */
   onBack?: () => void;
+  returnLabel?: string;
+  onReturn?: () => void;
 }
 
-export default function Modal({ open, title, subtitle, onClose, children, width = 520, onBack, closeDisabled = false, describedBy, initialFocusSelector }: ModalProps) {
+export default function Modal({ open, title, subtitle, onClose, children, width = 520, onBack, returnLabel, onReturn, closeDisabled = false, describedBy, initialFocusSelector }: ModalProps) {
   const titleId = useId();
   const subtitleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -74,7 +77,7 @@ export default function Modal({ open, title, subtitle, onClose, children, width 
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className={`${styles.header}${subtitle ? ` ${styles.headerWithSubtitle}` : ''}`}>
-          {onBack && <button type="button" className={styles.backBtn} onClick={onBack} disabled={closeDisabled} aria-label="Volver a la tarjeta anterior">
+          {onBack && !returnLabel && <button type="button" className={styles.backBtn} onClick={onBack} disabled={closeDisabled} aria-label="Volver a la tarjeta anterior">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
             </svg>
@@ -90,6 +93,9 @@ export default function Modal({ open, title, subtitle, onClose, children, width 
           </button>
         </div>
         <div className={styles.body}>{children}</div>
+        {returnLabel && <div className={styles.footer}>
+          <BackButton label={returnLabel} onClick={onReturn ?? onBack ?? onClose} disabled={closeDisabled} />
+        </div>}
       </div>
     </div>
   );

@@ -12,6 +12,15 @@
   --ink: #3a3530;
   --muted: #665d54;
   --line: #e4decf;
+  /* Los componentes compartidos del portal siempre usan la paleta clara. */
+  --color-blanco: var(--blanco);
+  --color-carbon: var(--carbon);
+  --color-ink: var(--ink);
+  --color-tierra: var(--tierra-text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-lineSoft: #efe9db;
+  --color-cremaDk: var(--crema-dk);
   --nav-h: 76px;
   --text-base: 17px;
   --text-small: 15px;
@@ -28,6 +37,18 @@
 }
 
 .public-portal * { box-sizing: border-box; }
+.public-portal ::selection { background: #fbe6b3; color: var(--carbon); }
+/* El visor se monta en body mediante un portal de React. */
+body:has(.public-portal) dialog {
+  color-scheme: light;
+  --visor-fondo: #ece7de;
+  --visor-panel: #faf8f3;
+  --visor-texto: #3a3530;
+  --visor-borde: #b6aa99;
+  --visor-acento: #9d2f38;
+}
+body:has(.public-portal) dialog::selection,
+body:has(.public-portal) dialog ::selection { background: #fbe6b3; color: #1a1a1a; }
 .public-portal main { scroll-margin-top: calc(var(--nav-h) + 16px); }
 /* Fuera del flujo: solo aparece al navegar con teclado, sin mover el header. */
 .public-portal .skip-link {

@@ -259,7 +259,7 @@ export default function CuentasPage() {
         )}
       </Card>
 
-      {detalle && <DetalleConDecisiones titulo={`Detalle de cuenta: ${detalle.nombre}`} endpoint={`/api/cuentas/${detalle.id}/decisiones`}
+      {detalle && <DetalleConDecisiones returnLabel="Volver a cuentas" titulo={`Detalle de cuenta: ${detalle.nombre}`} endpoint={`/api/cuentas/${detalle.id}/decisiones`}
         onClose={() => setDetalle(null)} campos={[
           { etiqueta: 'Nombre', valor: detalle.nombre }, { etiqueta: 'Correo', valor: detalle.correo },
           { etiqueta: 'Rol actual', valor: rolLabel(detalle.rol_id) }, { etiqueta: 'Estado actual', valor: detalle.estado_cuenta === 'baja' ? 'Dada de baja' : detalle.estado_cuenta },
