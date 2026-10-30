@@ -26,3 +26,7 @@ Las pruebas de navegador son locales con datos simulados y solicitudes intercept
 Resultado final: 892 pruebas de componentes/integración aprobadas; 94 pruebas de Chromium aprobadas en la suite completa y 7 comprobaciones finales específicas aprobadas tras ampliar las verificaciones de regreso. Compilación TypeScript/Vite, lint y `git diff --check` correctos.
 
 Corrección posterior: se eliminó el regreso duplicado del encabezado cuando existe un botón con texto en el pie. El botón conserva el destino anterior y los formularios sin pie mantienen su flecha. Verificación de esta corrección: 893 pruebas de componentes/integración y 7 pruebas de navegador aprobadas; compilación y lint correctos.
+
+Compatibilidad del regreso a 320 px: el botón compartido limita su ancho al contenedor y permite que las etiquetas largas ocupen varias líneas, conservando una altura mínima de 44 px. La regresión de gestión de tareas comprueba también texto ampliado a 20 px y mantiene la comprobación estricta de ausencia de desbordamiento. Se actualizó el escenario de cien ministros para usar el botón con texto que sustituyó la flecha del encabezado.
+
+Verificación de compatibilidad: suite completa de Chromium con 95 pruebas aprobadas; cobertura con 914 pruebas de componentes/integración aprobadas y 95,03 % de ramas (umbral conservado en 95 %). Build, lint y revisión del diff correctos. Ejecución local con las mismas pruebas de CI; no se ejecutó el workflow remoto.
