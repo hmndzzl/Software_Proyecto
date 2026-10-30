@@ -16,7 +16,7 @@
   --color-on-primary: #F3F1E9;
   --color-topbar: var(--color-rojo);
 
-  /* Visor de fotografías: superficie clara en ambos temas. */
+  /* Visor de fotografías: sigue el tema de la app (ver override en tema oscuro abajo). */
   --visor-fondo: #ECE7DE;
   --visor-panel: #FAF8F3;
   --visor-texto: #3A3530;
@@ -99,6 +99,12 @@ html[data-tema='oscuro'] {
   --color-lineSoft: #443A32;
   --color-on-primary: #FFF7EB;
   --color-topbar:   #631F2A;
+
+  --visor-fondo: #0E0C0A;
+  --visor-panel: #332C26;
+  --visor-texto: #F7EEE2;
+  --visor-borde: #5A4C40;
+  --visor-acento: #C65A63;
 
   --color-ok:      #75C797;
   --color-okDk:    #58A77A;
