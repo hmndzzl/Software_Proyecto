@@ -26,9 +26,10 @@ interface Props {
   endpoint: string;
   campos: Array<{ etiqueta: string; valor: ReactNode }>;
   onClose: () => void;
+  returnLabel?: string;
 }
 
-export default function DetalleConDecisiones({ titulo, endpoint, campos, onClose }: Props) {
+export default function DetalleConDecisiones({ titulo, endpoint, campos, onClose, returnLabel = 'Volver al listado' }: Props) {
   const [datos, setDatos] = useState<Decision[]>([]);
   const [estado, setEstado] = useState<'cargando' | 'error' | 'listo'>('cargando');
   const [intento, setIntento] = useState(0);
@@ -40,7 +41,7 @@ export default function DetalleConDecisiones({ titulo, endpoint, campos, onClose
       .catch(() => { if (vigente) setEstado('error'); });
     return () => { vigente = false; };
   }, [endpoint, intento]);
-  return <Modal open title={titulo} onClose={onClose} width={640}>
+  return <Modal open title={titulo} onClose={onClose} returnLabel={returnLabel} width={640}>
     <dl className={styles.campos}>
       {campos.map(campo => <div key={campo.etiqueta}><dt>{campo.etiqueta}</dt><dd>{campo.valor}</dd></div>)}
     </dl>

@@ -3,8 +3,8 @@ import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import type { Reserva } from '../../../types';
 import { formatFecha, formatHorario } from '../../../utils/date';
 
-export default function DetalleReserva({ reserva, onClose }: { reserva: Reserva; onClose: () => void }) {
-  return <DetalleConDecisiones titulo={`Detalle de reserva #${reserva.id}`} endpoint={`/api/reservas/${reserva.id}/decisiones`} onClose={onClose}
+export default function DetalleReserva({ reserva, onClose, returnLabel = 'Volver a reservas' }: { reserva: Reserva; onClose: () => void; returnLabel?: string }) {
+  return <DetalleConDecisiones titulo={`Detalle de reserva #${reserva.id}`} endpoint={`/api/reservas/${reserva.id}/decisiones`} onClose={onClose} returnLabel={returnLabel}
     campos={[
       { etiqueta: 'Actividad', valor: reserva.evento_titulo ?? 'Sin título' },
       { etiqueta: 'Descripción', valor: reserva.evento_descripcion ?? 'Sin descripción' },
