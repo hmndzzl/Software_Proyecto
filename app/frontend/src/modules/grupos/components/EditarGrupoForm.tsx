@@ -5,6 +5,7 @@ import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import SelectorCoordinadoresGrupo from './SelectorCoordinadoresGrupo';
 
 export default function EditarGrupoForm({
   grupo,
@@ -16,7 +17,7 @@ export default function EditarGrupoForm({
   onCancelar?: () => void;
 }) {
   const [nombre, setNombre] = useState(grupo.nombre);
-  const [coordinadorId, setCoordinadorId] = useState(String(grupo.coordinador_id));
+  const [coordinadorIds, setCoordinadorIds] = useState<number[]>(grupo.coordinadores.map((c) => c.id));
   const [personas, setPersonas] = useState<Persona[]>([]);
   const toast = useToast();
   const [confirmando, setConfirmando] = useState(false);
@@ -24,7 +25,7 @@ export default function EditarGrupoForm({
 
   useEffect(() => {
     setNombre(grupo.nombre);
-    setCoordinadorId(String(grupo.coordinador_id));
+    setCoordinadorIds(grupo.coordinadores.map((c) => c.id));
   }, [grupo]);
 
   useEffect(() => {
@@ -37,13 +38,13 @@ export default function EditarGrupoForm({
     e.preventDefault();
     if (eliminando) return;
 
-    if (!nombre || !coordinadorId) {
+    if (!nombre || !coordinadorIds.length) {
       toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
     try {
-      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_id: parseInt(coordinadorId) });
+      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_ids: coordinadorIds });
       toast.success('Grupo actualizado', `Los cambios en "${nombre}" se guardaron.`);
       if (onGrupoActualizado) onGrupoActualizado();
     } catch (error: unknown) {
@@ -70,7 +71,7 @@ export default function EditarGrupoForm({
 
 
       <form onSubmit={handleUpdate} className={styles.form}>
-        <p className={styles.fieldNote}>Revisa el nombre y el coordinador antes de guardar. Eliminar el grupo es una acción independiente.</p>
+        <p className={styles.fieldNote}>Revisa el nombre y los coordinadores antes de guardar. Eliminar el grupo es una acción independiente.</p>
         <div className={styles.field}>
           <label htmlFor="edit-nombre" className={styles.label}>Nombre del Grupo:</label>
           <input
@@ -82,23 +83,7 @@ export default function EditarGrupoForm({
           />
         </div>
 
-        <div className={styles.field}>
-          <label htmlFor="edit-coordinador" className={styles.label}>Coordinador:</label>
-          <select
-            id="edit-coordinador"
-            className={styles.input} disabled={eliminando}
-            data-placeholder={coordinadorId === '' ? 'true' : undefined}
-            value={coordinadorId}
-            onChange={(e) => setCoordinadorId(e.target.value)}
-          >
-            <option value="" disabled hidden>Selecciona un coordinador</option>
-            {personas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectorCoordinadoresGrupo personas={personas} seleccionados={coordinadorIds} onChange={setCoordinadorIds} disabled={eliminando} />
 
         <div className={styles.buttonRow}>
           <button type="submit" className="btn-primary" disabled={eliminando}>
