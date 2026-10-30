@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Toast from '../Toast';
@@ -45,3 +45,16 @@ describe('Toast', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+it('mantiene disponible la acción hasta que la persona la usa o cierra el aviso', () => {
+  vi.useFakeTimers();
+  const onClose = vi.fn();
+  render(<Toast kind="ok" title="Reserva creada" message="Coro" action={{ label: 'Ver mis reservas', href: '/mis-reservas' }} onClose={onClose} />);
+  act(() => vi.advanceTimersByTime(10000));
+  expect(onClose).not.toHaveBeenCalled();
+  const action = screen.getByRole('link', { name: 'Ver mis reservas' });
+  expect(action).toHaveAttribute('href', '/mis-reservas');
+  fireEvent.click(action);
+  expect(onClose).toHaveBeenCalledOnce();
+  vi.useRealTimers();
+ });

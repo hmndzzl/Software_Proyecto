@@ -1,18 +1,19 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import Toast, { type ToastKind } from '../components/ui/Toast';
+import Toast, { type ToastKind, type ToastAction } from '../components/ui/Toast';
 
 interface ToastData {
   id: number;
   kind: ToastKind;
   title: string;
   message: string;
+  action?: ToastAction;
 }
 
 interface ToastApi {
   /** Confirma una acción que salió bien. */
-  success: (title: string, message: string) => void;
+  success: (title: string, message: string, action?: ToastAction) => void;
   /** Avisa que la acción se hizo, pero con un problema que conviene atender. */
-  warning: (title: string, message: string) => void;
+  warning: (title: string, message: string, action?: ToastAction) => void;
   /** Avisa que una acción falló. */
   error: (title: string, message: string) => void;
 }
@@ -27,17 +28,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastData | null>(null);
   const nextId = useRef(0);
 
-  const show = useCallback((kind: ToastKind, title: string, message: string) => {
+  const show = useCallback((kind: ToastKind, title: string, message: string, action?: ToastAction) => {
     nextId.current += 1;
-    setToast({ id: nextId.current, kind, title, message });
+    setToast({ id: nextId.current, kind, title, message, action });
   }, []);
 
   const close = useCallback(() => setToast(null), []);
 
   const api = useMemo<ToastApi>(
     () => ({
-      success: (title, message) => show('ok', title, message),
-      warning: (title, message) => show('warn', title, message),
+      success: (title, message, action) => show('ok', title, message, action),
+      warning: (title, message, action) => show('warn', title, message, action),
       error: (title, message) => show('bad', title, message),
     }),
     [show]
@@ -46,7 +47,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {toast && <Toast key={toast.id} kind={toast.kind} title={toast.title} message={toast.message} onClose={close} />}
+      {toast && <Toast key={toast.id} kind={toast.kind} title={toast.title} message={toast.message} onClose={close} action={toast.action} />}
     </ToastContext.Provider>
   );
 }
