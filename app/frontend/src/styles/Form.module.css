@@ -104,8 +104,6 @@
 }
 
 .input::placeholder { color: var(--color-muted); }
-.input[data-placeholder='true'] { color: var(--color-muted); }
-.input[data-placeholder='true'] option:not(:disabled) { color: var(--color-carbon); }
 
 .input:focus {
   border-color: var(--color-rojo);
@@ -245,6 +243,56 @@
   font-size: 13.5px;
   color: var(--color-warn);
   font-weight: 600;
+}
+
+.okBox {
+  background-color: var(--color-okBg);
+  border-left: 4px solid var(--color-ok);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-ok);
+  font-weight: 600;
+}
+
+/* ── Cabecera del espacio elegido (foto + datos), arriba del formulario de reserva ── */
+.espacioHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: var(--color-cremaDk);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  padding: 14px;
+}
+
+.espacioHeaderFoto {
+  width: 128px;
+  height: 128px;
+  flex-shrink: 0;
+  border-radius: var(--radius-input);
+  overflow: hidden;
+}
+
+.espacioHeaderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.espacioHeaderNombre {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-carbon);
+}
+
+.espacioHeaderCapacidad {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-ink);
 }
 
 /* ── Modal ── */

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../../api/client';
@@ -158,6 +158,25 @@ describe('integración de cambios de turno', () => {
     }));
     render(<SolicitarCambioTurnoForm />, { wrapper });
     expect(await screen.findByText(/No tienes tareas asignadas/)).toBeInTheDocument();
+  });
+
+  it('rechaza el envío si la tarea vence entre la carga y el envío del formulario', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2099-10-20T07:00:00'));
+    const tareaDelDia = { id: 8, titulo: 'Lectura', descripcion: '', fecha: '2099-10-20', hora_inicio: '08:00:00', hora_fin: '09:00:00' };
+    vi.mocked(apiClient.get).mockImplementation(async url => ({
+      data: String(url) === '/api/tareas' ? [tareaDelDia] : [{ id: 7, nombre: 'Ana' }],
+    }));
+    render(<SolicitarCambioTurnoForm />, { wrapper });
+    await vi.waitFor(() => expect(screen.getByRole('option', { name: /Lectura/ })).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('Mi Tarea:'), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText('Cambiar con:'), { target: { value: '7' } });
+
+    vi.setSystemTime(new Date('2099-10-20T10:00:00'));
+    fireEvent.click(screen.getByRole('button', { name: 'Solicitar Cambio' }));
+    expect(await vi.waitFor(() => screen.getByRole('alert'))).toHaveTextContent('No se puede solicitar un cambio de turno para una tarea cuya fecha ya pasó.');
+    expect(apiClient.post).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it('muestra badge Vencida y no permite Aceptar en solicitudes recibidas con fecha pasada', async () => {

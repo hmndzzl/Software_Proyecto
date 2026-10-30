@@ -96,11 +96,8 @@ DROP TABLE IF EXISTS `grupo`;
 CREATE TABLE `grupo` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(200) NOT NULL,
-  `coordinador_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_grupo_nombre` (`nombre`),
-  UNIQUE KEY `uq_grupo_coordinador` (`coordinador_id`),
-  CONSTRAINT `fk_grupo_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`)
+  UNIQUE KEY `uq_grupo_nombre` (`nombre`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 DROP TABLE IF EXISTS `coordinador_ministro`;
@@ -111,6 +108,19 @@ CREATE TABLE `coordinador_ministro` (
   KEY `fk_coord_min_ministro_idx` (`ministro_id`),
   CONSTRAINT `fk_coord_min_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_coord_min_ministro` FOREIGN KEY (`ministro_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Un grupo pastoral puede tener varios coordinadores, pero cada coordinador solo puede
+-- estar a cargo de un grupo a la vez — por eso coordinador_id es UNIQUE aquí (no forma
+-- parte de la PK compuesta): evita que la misma persona quede asignada a dos grupos.
+DROP TABLE IF EXISTS `grupo_coordinador`;
+CREATE TABLE `grupo_coordinador` (
+  `grupo_id` int(11) NOT NULL,
+  `coordinador_id` int(11) NOT NULL,
+  PRIMARY KEY (`grupo_id`,`coordinador_id`),
+  UNIQUE KEY `uq_grupo_coord_coordinador` (`coordinador_id`),
+  CONSTRAINT `fk_grupo_coord_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_grupo_coord_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 DROP TABLE IF EXISTS `asignacion_tarea`;

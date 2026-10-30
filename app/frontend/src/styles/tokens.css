@@ -21,7 +21,7 @@
   --color-unread-hover: #fdf3d0;
   --color-highlight: #fdedb8;
 
-  /* Visor de fotografías: superficie clara en ambos temas. */
+  /* Visor de fotografías: sigue el tema de la app (ver override en tema oscuro abajo). */
   --visor-fondo: #ECE7DE;
   --visor-panel: #FAF8F3;
   --visor-texto: #3A3530;
@@ -109,6 +109,12 @@ html[data-tema='oscuro'] {
   --color-unread-bg: #3C3222;
   --color-unread-hover: #483B26;
   --color-highlight: #574524;
+
+  --visor-fondo: #0E0C0A;
+  --visor-panel: #332C26;
+  --visor-texto: #F7EEE2;
+  --visor-borde: #5A4C40;
+  --visor-acento: #C65A63;
 
   --color-ok:      #75C797;
   --color-okDk:    #58A77A;

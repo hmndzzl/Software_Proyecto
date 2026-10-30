@@ -79,7 +79,7 @@ describe('integración de eventos, reservas y permisos', () => {
     const actualizado = vi.fn();
     const cancelar = vi.fn();
     conToast(<EditarEventoForm evento={evento as any} onEventoActualizado={actualizado} onCancelar={cancelar} />);
-    await screen.findByRole('option', { name: 'Padre Luis' });
+    await screen.findByDisplayValue('Padre Luis');
     const descripcion = screen.getByDisplayValue('Misa mayor');
     await userEvent.clear(descripcion);
     await userEvent.type(descripcion, 'Misa actualizada');
@@ -132,7 +132,7 @@ describe('integración de eventos, reservas y permisos', () => {
 
   it('carga la visibilidad del nuevo evento al cambiar la selección', async () => {
     const { rerender } = conToast(<EditarEventoForm evento={{ ...evento, publico: 1 }} />);
-    await screen.findByRole('option', { name: 'Padre Luis' });
+    await screen.findByDisplayValue('Padre Luis');
     expect(screen.getByRole('checkbox')).toBeChecked();
     rerender(<ToastProvider><EditarEventoForm evento={{ ...evento, id: 8, publico: 0 }} /></ToastProvider>);
     expect(screen.getByRole('checkbox')).not.toBeChecked();

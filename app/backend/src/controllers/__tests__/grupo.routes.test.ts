@@ -10,13 +10,13 @@ import { JWT_SECRET } from '../../config/env';
 
 vi.mock('../../services/sesion.service', () => ({ obtenerPersonaSesion: vi.fn() }));
 
-vi.mock('../../config/db', () => ({ default: { execute: vi.fn() } }));
+vi.mock('../../config/db', () => ({ default: { execute: vi.fn(), getConnection: vi.fn() } }));
 
 const app = express();
 app.use(express.json());
 app.use('/api/grupos', grupoRoutes);
 
-const body = { nombre: 'Grupo Test', coordinador_id: 7 };
+const body = { nombre: 'Grupo Test', coordinador_ids: [7] };
 
 function token(rol_id: number) {
   vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: 1, rol_id, estado_cuenta: 'activa' });
@@ -26,9 +26,18 @@ function token(rol_id: number) {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  (pool.execute as any)
-    .mockResolvedValueOnce([[{ id: 7 }]])
-    .mockResolvedValueOnce([{ insertId: 1, affectedRows: 1 }]);
+  // Estas pruebas solo verifican el status code por rol (RBAC), no el cuerpo de la
+  // respuesta. Pero a diferencia de antes, ya no todas las consultas pueden resolver lo
+  // mismo: la verificación de "¿ya coordina otro grupo?" necesita un resultado vacío
+  // (si no, todo POST/PUT fallaría con 400), así que el mock decide por el texto de la
+  // consulta en vez de usar un único valor fijo para todas.
+  (pool.execute as any).mockImplementation(async (sql: string) => {
+    if (sql.includes('FROM grupo_coordinador WHERE coordinador_id IN')) return [[]];
+    return [[{ id: 7, nombre: 'Test', insertId: 1, affectedRows: 1 }]];
+  });
+  vi.mocked(pool.getConnection).mockResolvedValue({
+    execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
+  } as never);
 });
 
 describe('RBAC en rutas de escritura de grupos (DT-05)', () => {

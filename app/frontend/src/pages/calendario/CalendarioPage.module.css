@@ -305,6 +305,18 @@
   gap: 6px 10px;
 }
 
+/* RTF2-05 (continuación): el badge comparte .cardHeader con el rango de hora y,
+   en columnas angostas de la vista semanal, "Pendiente"/"Confirmada" no cabe
+   (se midió 85px de contenido en apenas 40px disponibles). .badge es de
+   components/ui/Badge.module.css — blindado a propósito con white-space:nowrap
+   porque lo usan muchas otras pantallas; esta clase solo se aplica aquí. */
+.cardBadge {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .timeRow {
   display: flex;
   align-items: center;
@@ -337,6 +349,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .placeRow svg, .assigneeRow svg {
@@ -344,11 +357,18 @@
   flex-shrink: 0;
 }
 
+/* RTF2-05: sin min-width/overflow aquí, un lugar o encargado con nombre largo
+   se salía de la tarjeta de evento entre ~1025 y 1190px de ancho (medido: 32px
+   de overflow real). Mismo tratamiento que .monthPreviewTitulo en la vista mensual. */
 .assignName {
   font-family: var(--font-body);
   font-size: 13.5px;
   color: var(--color-tierra);
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .unassignedBadge {

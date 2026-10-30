@@ -140,9 +140,12 @@ INSERT INTO `persona_notificacion` (`persona_id`, `notificacion_id`, `leida`) VA
 -- originales (CoordMin id=7 → 9,10; CoordMin Sur id=13 → 11,12).
 -- ======================================================================
 
--- Grupo parroquial (coordinador de grupos, id=8)
-INSERT INTO `grupo` (`nombre`, `coordinador_id`) VALUES
-  ('Coro Parroquial', 8);
+-- Grupo parroquial (coordinador de grupos, id=8) — un solo coordinador.
+INSERT INTO `grupo` (`nombre`) VALUES
+  ('Coro Parroquial');
+
+INSERT INTO `grupo_coordinador` (`grupo_id`, `coordinador_id`) VALUES
+  (1, 8);
 
 -- Tareas futuras repartidas entre los 4 ministros originales (tarea 15 queda sin asignar
 -- a propósito, para ver el estado "sin asignar" en ListaAsignaciones/Calendario).
@@ -201,7 +204,15 @@ INSERT INTO `periodo_ausencia` (`ministro_id`, `titulo`, `justificacion`, `fecha
 
 -- Mensaje de contacto público (HU-32), sin notificación asociada.
 INSERT INTO `mensaje_contacto` (`nombre`, `correo`, `telefono`, `motivo`, `mensaje`, `fecha`) VALUES
-  ('Rosa Martinez', 'rosa.martinez@example.com', '55512345', 'Información general', 'Quisiera saber el horario de la misa de los sábados.', '2026-10-20');
+  ('Rosa Martinez', 'rosa.martinez@example.com', '55512345', 'Información general', 'Quisiera saber el horario de la misa de los sábados.', '2026-10-20'),
+  ('Jorge Villatoro', 'jorge.villatoro@example.com', '55512346', 'Reserva de salón', 'Me gustaría reservar un salón para un bautizo en diciembre, ¿cómo lo solicito?', '2026-10-22'),
+  ('Mirna Castellanos', 'mirna.castellanos@example.com', NULL, 'Catequesis', 'Quiero inscribir a mi hija a catequesis de primera comunión, ¿cuándo inician las clases?', '2026-10-24'),
+  ('Edwin Barrios', 'edwin.barrios@example.com', '55512348', 'Voluntariado', 'Me interesa ser ministro de la eucaristía, ¿con quién debo hablar?', '2026-10-25'),
+  ('Silvia Monterroso', 'silvia.monterroso@example.com', NULL, 'Quejas y sugerencias', 'El sonido en la misa de las 12pm se corta seguido, sería bueno revisarlo.', '2026-10-26'),
+  ('Pablo Hernandez', 'pablo.hernandez@example.com', '55512350', 'Información general', '¿La parroquia tiene estacionamiento disponible para las misas dominicales?', '2026-10-27'),
+  ('Karla Figueroa', 'karla.figueroa@example.com', '55512351', 'Reserva de salón', 'Quisiera cotizar el salón parroquial para una actividad de fin de año de nuestro grupo.', '2026-10-28'),
+  ('Byron Letona', 'byron.letona@example.com', NULL, 'Donaciones', 'Quiero hacer una donación para la remodelación de la capilla, ¿cuál es el proceso?', '2026-10-29'),
+  ('Ana Lucía Ramos', 'analucia.ramos@example.com', '55512353', 'Voluntariado', 'Formo parte de un coro juvenil y nos gustaría ofrecer nuestros servicios en alguna misa.', '2026-10-30');
 
 -- Eventos con tareas vinculadas (evento_id) — para probar en el calendario la lista
 -- de "Tareas asociadas a este evento" (clickeable) dentro del detalle del evento.
@@ -218,3 +229,270 @@ INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `pu
 
 UPDATE `tarea` SET `evento_id` = 6 WHERE `id` IN (11, 12);
 UPDATE `tarea` SET `evento_id` = 7 WHERE `id` IN (13, 14);
+
+-- ============================================================
+-- Seed ampliada (post-Sprint 8): más personas, grupos, reservas,
+-- eventos, tareas, cambios de turno, notificaciones y contacto.
+-- ============================================================
+
+-- Personas adicionales: más coordinadores de grupos y variedad de estado_cuenta,
+-- para poblar /cuentas con pendientes/rechazadas reales y demostrar D9 con historial.
+INSERT INTO `persona` (`nombre`, `correo`, `password`, `rol_id`, `estado_cuenta`) VALUES
+  ('Marisol Ixcot', 'marisol.ixcot@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Fernando Us', 'fernando.us@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Diana Pop', 'diana.pop@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Walter Sic', 'walter.sic@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'pendiente'),
+  ('Noemi Batz', 'noemi.batz@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'pendiente'),
+  ('Byron Coy', 'byron.coy@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'rechazada'),
+  ('Claudia Ajpop', 'claudia.ajpop@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'rechazada'),
+  ('Oscar Quej', 'oscar.quej@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 4, 'baja'),
+  ('Esteban Chuc', 'esteban.chuc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Rosario Tum', 'rosario.tum@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Manuel Xicara', 'manuel.xicara@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Flor Canil', 'flor.canil@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Victor Quiej', 'victor.quiej@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Patricia Sactic', 'patricia.sactic@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Rodrigo Chach', 'rodrigo.chach@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Gloria Tiul', 'gloria.tiul@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Alberto Pec', 'alberto.pec@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Yesenia Mux', 'yesenia.mux@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  -- Ocho coordinadores de grupos más (ids 48-55): un coordinador solo puede estar a
+  -- cargo de un grupo a la vez, así que los grupos con 2-3 coordinadores necesitan
+  -- personas propias en vez de reutilizar las de arriba.
+  ('Cristina Ical', 'cristina.ical@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Edgar Sop', 'edgar.sop@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Lesbia Tzoc', 'lesbia.tzoc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Herbert Siquin', 'herbert.siquin@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Dora Ajanel', 'dora.ajanel@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Selvin Boc', 'selvin.boc@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Brenda Chen', 'brenda.chen@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa'),
+  ('Mario Tally', 'mario.tally@parroquia.com', '$2a$10$Uq5LAV/Bl79iQixHeoaghec4JrejHqONT14BcKZOcejp9IHNrRW0O', 3, 'activa');
+
+-- Grupos pastorales adicionales (ids 2-14, el grupo_coordinador va abajo). Mezcla
+-- deliberada de casos reales: grupos con 1 solo coordinador, con 2 y con 3 — cada
+-- coordinador aparece exactamente una vez en total, porque solo puede estar a cargo
+-- de un grupo a la vez (uq_grupo_coord_coordinador).
+INSERT INTO `grupo` (`nombre`) VALUES
+  ('Catequesis de Primera Comunión'),  -- id 2
+  ('Pastoral Juvenil'),                -- id 3
+  ('Legión de María'),                 -- id 4
+  ('Grupo de Oración Renovación'),     -- id 5
+  ('Pastoral Familiar'),               -- id 6
+  ('Monaguillos'),                     -- id 7
+  ('Coro de Jóvenes'),                 -- id 8
+  ('Catequesis de Confirmación'),      -- id 9
+  ('Pastoral de Salud'),               -- id 10
+  ('Grupo de Lectores'),               -- id 11
+  ('Ministros Extraordinarios de la Eucaristía'), -- id 12
+  ('Pastoral Social'),                 -- id 13
+  ('Comité de Liturgia');              -- id 14
+
+INSERT INTO `grupo_coordinador` (`grupo_id`, `coordinador_id`) VALUES
+  (2, 30),                   -- Catequesis de Primera Comunión: 1 coordinador
+  (3, 31), (3, 48),          -- Pastoral Juvenil: 2 coordinadores
+  (4, 32),                   -- Legión de María: 1 coordinador
+  (5, 38), (5, 49), (5, 50), -- Grupo de Oración Renovación: 3 coordinadores
+  (6, 39),                   -- Pastoral Familiar: 1 coordinador
+  (7, 40), (7, 51),          -- Monaguillos: 2 coordinadores
+  (8, 41),                   -- Coro de Jóvenes: 1 coordinador
+  (9, 42), (9, 52), (9, 53), -- Catequesis de Confirmación: 3 coordinadores
+  (10, 43),                  -- Pastoral de Salud: 1 coordinador
+  (11, 44), (11, 54),        -- Grupo de Lectores: 2 coordinadores
+  (12, 45),                  -- Ministros Extraordinarios de la Eucaristía: 1 coordinador
+  (13, 46), (13, 55),        -- Pastoral Social: 2 coordinadores
+  (14, 47);                  -- Comité de Liturgia: 1 coordinador
+
+-- Reservas adicionales en los 4 estados, ventana de ~90 días. Las últimas 2 son
+-- deliberadas para poder demostrar el rechazo por aforo (P3/DEV-267) en vivo: quedan
+-- Pendientes con cantidad_personas mayor a la capacidad del espacio elegido.
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`, `cantidad_personas`) VALUES
+  ('2026-09-20', '08:00:00', '11:00:00', 2, 1, 6, 14),
+  ('2026-09-22', '08:00:00', '10:00:00', 1, 2, 6, 264),
+  ('2026-09-25', '08:00:00', '09:00:00', 1, 2, 32, 219),
+  ('2026-09-26', '08:00:00', '09:00:00', 2, 3, 2, 59),
+  ('2026-09-27', '08:00:00', '09:00:00', 7, 4, 13, 45),
+  ('2026-09-28', '08:00:00', '09:00:00', 5, 1, 32, 5),
+  ('2026-10-01', '08:00:00', '10:00:00', 1, 2, 30, 219),
+  ('2026-10-02', '08:00:00', '09:00:00', 5, 2, 30, 13),
+  ('2026-10-03', '08:00:00', '09:00:00', 2, 3, 13, 52),
+  ('2026-10-06', '08:00:00', '09:00:00', 5, 4, 6, 14),
+  ('2026-10-07', '08:00:00', '11:00:00', 4, 1, 31, 19),
+  ('2026-10-08', '08:00:00', '10:00:00', 4, 2, 30, 12),
+  ('2026-10-11', '08:00:00', '10:00:00', 6, 2, 7, 81),
+  ('2026-10-12', '08:00:00', '10:00:00', 4, 3, 1, 14),
+  ('2026-10-15', '08:00:00', '09:00:00', 1, 4, 2, 219),
+  ('2026-10-18', '08:00:00', '10:00:00', 7, 1, 8, 36),
+  ('2026-10-19', '08:00:00', '09:00:00', 1, 2, 2, 298),
+  ('2026-10-21', '08:00:00', '10:00:00', 3, 2, 1, 19),
+  ('2026-10-23', '08:00:00', '09:00:00', 7, 3, 30, 35),
+  ('2026-10-24', '08:00:00', '09:00:00', 6, 4, 6, 84),
+  ('2026-10-27', '08:00:00', '11:00:00', 5, 1, 30, 11),
+  ('2026-10-30', '08:00:00', '09:00:00', 3, 2, 1, 16),
+  -- DEMO aforo (P3/DEV-267): 60 personas en Sala de Catequesis A (capacidad 30).
+  ('2026-12-12', '10:00:00', '12:00:00', 3, 1, 7, 60),
+  -- DEMO aforo (P3/DEV-267): 50 personas en Sala de Reuniones (capacidad 20).
+  ('2026-12-13', '15:00:00', '17:00:00', 5, 1, 8, 50);
+-- Reservas de los nuevos eventos (misas, retiros, jornadas) — cada una Confirmada,
+-- sin solaparse entre sí en el mismo espacio/fecha, para poder vincular tareas reales.
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`, `cantidad_personas`) VALUES
+  ('2026-09-23', '07:00:00', '09:00:00', 6, 2, 13, 75),
+  ('2026-09-26', '07:00:00', '09:00:00', 1, 2, 31, 105),
+  ('2026-09-28', '07:00:00', '08:00:00', 1, 2, 6, 285),
+  ('2026-10-01', '11:00:00', '13:00:00', 1, 2, 13, 90),
+  ('2026-10-05', '07:00:00', '08:00:00', 6, 2, 6, 14),
+  ('2026-10-07', '07:00:00', '08:00:00', 6, 2, 32, 69),
+  ('2026-10-09', '07:00:00', '08:00:00', 6, 2, 30, 39),
+  ('2026-10-12', '07:00:00', '08:00:00', 2, 2, 31, 20),
+  ('2026-10-15', '07:00:00', '09:00:00', 1, 2, 30, 52),
+  ('2026-10-19', '07:00:00', '08:00:00', 1, 2, 30, 157),
+  ('2026-10-22', '07:00:00', '08:00:00', 6, 2, 13, 23),
+  ('2026-10-24', '07:00:00', '08:00:00', 1, 2, 32, 10),
+  ('2026-10-27', '07:00:00', '09:00:00', 1, 2, 13, 213),
+  ('2026-10-29', '07:00:00', '08:00:00', 6, 2, 32, 96),
+  ('2026-10-31', '07:00:00', '09:00:00', 1, 2, 8, 17),
+  ('2026-11-03', '07:00:00', '08:00:00', 1, 2, 31, 61),
+  ('2026-11-05', '07:00:00', '09:00:00', 2, 2, 7, 81),
+  ('2026-11-07', '07:00:00', '08:00:00', 6, 2, 31, 108);
+-- Eventos adicionales (misas, retiros, jornadas) con su reserva recién creada arriba.
+-- Un tercio queda publico=1 para que la agenda pública tenga contenido real.
+INSERT INTO `evento` (`titulo`, `encargado_id`, `reserva_id`, `descripcion`, `publico`) VALUES
+  ('Misa dominical de las 8am', 3, 32, 'Celebración parroquial: misa dominical de las 8am.', 1),
+  ('Misa dominical del mediodía', 7, 33, 'Celebración parroquial: misa dominical del mediodía.', 0),
+  ('Misa de acción de gracias', 5, 34, 'Celebración parroquial: misa de acción de gracias.', 0),
+  ('Novena a la Virgen de la Merced', 3, 35, 'Celebración parroquial: novena a la virgen de la merced.', 1),
+  ('Vigilia de oración', 13, 36, 'Celebración parroquial: vigilia de oración.', 0),
+  ('Misa de sanación', 31, 37, 'Celebración parroquial: misa de sanación.', 0),
+  ('Celebración de la Palabra', 4, 38, 'Celebración parroquial: celebración de la palabra.', 1),
+  ('Misa de difuntos', 1, 39, 'Celebración parroquial: misa de difuntos.', 0),
+  ('Misa de Primera Comunión', 5, 40, 'Celebración parroquial: misa de primera comunión.', 1),
+  ('Confirmaciones del sector sur', 6, 41, 'Celebración parroquial: confirmaciones del sector sur.', 1),
+  ('Retiro de Adviento', 30, 42, 'Celebración parroquial: retiro de adviento.', 0),
+  ('Jornada de catequistas', 13, 43, 'Celebración parroquial: jornada de catequistas.', 0),
+  ('Encuentro de pastoral juvenil', 32, 44, 'Celebración parroquial: encuentro de pastoral juvenil.', 1),
+  ('Misa de quinceañeros', 30, 45, 'Celebración parroquial: misa de quinceañeros.', 0),
+  ('Procesión mariana', 32, 46, 'Celebración parroquial: procesión mariana.', 0),
+  ('Misa de bautizos comunitaria', 6, 47, 'Celebración parroquial: misa de bautizos comunitaria.', 0),
+  ('Convivencia de ministros', 13, 48, 'Celebración parroquial: convivencia de ministros.', 0),
+  ('Taller de liturgia', 8, 49, 'Celebración parroquial: taller de liturgia.', 0);
+
+-- Tareas de los 18 eventos nuevos (ids 16-51): 2 por evento (Lectura + Ministro de
+-- comunión), dentro del horario de la reserva de su evento. Cada evento cae en una
+-- fecha distinta de todas las demás tareas del seed, así que repetir ministro entre
+-- eventos nunca produce un solape real de horario para esa persona.
+INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `titulo`, `descripcion`) VALUES
+  ('2026-09-23', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-09-23', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-09-26', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-09-26', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-09-28', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-09-28', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-01', '11:00:00', '11:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-01', '11:15:00', '11:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-05', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-05', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-07', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-07', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-09', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-09', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-12', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-12', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-15', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-15', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-19', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-19', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-22', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-22', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-24', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-24', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-27', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-27', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-29', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-29', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-10-31', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-10-31', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-11-03', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-11-03', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-11-05', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-11-05', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.'),
+  ('2026-11-07', '07:00:00', '07:15:00', 'Lectura',               'Proclamar la lectura en la misa.'),
+  ('2026-11-07', '07:15:00', '07:45:00', 'Ministro de comunión',  'Distribuir la comunión durante la misa.');
+
+-- Asignaciones: 2 ministros distintos por evento, rotando por los 20 ministros
+-- disponibles (9,10,11,12,14-21,22-29). Nunca se repite un ministro en el mismo día.
+INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
+  (16, 9),  (17, 10),
+  (18, 11), (19, 12),
+  (20, 14), (21, 15),
+  (22, 16), (23, 17),
+  (24, 18), (25, 19),
+  (26, 20), (27, 21),
+  (28, 22), (29, 23),
+  (30, 24), (31, 25),
+  (32, 26), (33, 27),
+  (34, 28), (35, 29),
+  (36, 9),  (37, 10),
+  (38, 11), (39, 12),
+  (40, 14), (41, 15),
+  (42, 16), (43, 17),
+  (44, 18), (45, 19),
+  (46, 20), (47, 21),
+  (48, 22), (49, 23),
+  (50, 24), (51, 25);
+
+-- Vincula cada par de tareas a su evento correspondiente.
+UPDATE `tarea` SET `evento_id` = 8  WHERE `id` IN (16, 17);
+UPDATE `tarea` SET `evento_id` = 9  WHERE `id` IN (18, 19);
+UPDATE `tarea` SET `evento_id` = 10 WHERE `id` IN (20, 21);
+UPDATE `tarea` SET `evento_id` = 11 WHERE `id` IN (22, 23);
+UPDATE `tarea` SET `evento_id` = 12 WHERE `id` IN (24, 25);
+UPDATE `tarea` SET `evento_id` = 13 WHERE `id` IN (26, 27);
+UPDATE `tarea` SET `evento_id` = 14 WHERE `id` IN (28, 29);
+UPDATE `tarea` SET `evento_id` = 15 WHERE `id` IN (30, 31);
+UPDATE `tarea` SET `evento_id` = 16 WHERE `id` IN (32, 33);
+UPDATE `tarea` SET `evento_id` = 17 WHERE `id` IN (34, 35);
+UPDATE `tarea` SET `evento_id` = 18 WHERE `id` IN (36, 37);
+UPDATE `tarea` SET `evento_id` = 19 WHERE `id` IN (38, 39);
+UPDATE `tarea` SET `evento_id` = 20 WHERE `id` IN (40, 41);
+UPDATE `tarea` SET `evento_id` = 21 WHERE `id` IN (42, 43);
+UPDATE `tarea` SET `evento_id` = 22 WHERE `id` IN (44, 45);
+UPDATE `tarea` SET `evento_id` = 23 WHERE `id` IN (46, 47);
+UPDATE `tarea` SET `evento_id` = 24 WHERE `id` IN (48, 49);
+UPDATE `tarea` SET `evento_id` = 25 WHERE `id` IN (50, 51);
+
+-- Días con varias reservas simultáneas (distintos espacios, sin solaparse entre sí): hasta
+-- ahora cada fecha del seed tenía como máximo 1 reserva, lo cual no refleja un fin de semana
+-- real de la parroquia con varios grupos/salones ocupados el mismo día. Sábado 14-nov queda
+-- con 3 reservas nuevas; domingo 15-nov ya tenía 1 (Capilla Lateral 09:00-09:30) y se le
+-- agregan 2 más, para un total de 3 ese día también.
+INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado_reserva_id`, `solicitante_id`, `cantidad_personas`) VALUES
+  ('2026-11-14', '08:00:00', '09:00:00', 5, 2, 39, 15),  -- Sala de Reuniones, Confirmada, Pastoral Familiar
+  ('2026-11-14', '09:00:00', '11:00:00', 2, 2, 7,  60),  -- Salón Parroquial, Confirmada, Coord Ministros
+  ('2026-11-14', '15:00:00', '18:00:00', 6, 1, 31, 120), -- Patio Central, Pendiente, Pastoral Juvenil
+  ('2026-11-15', '10:00:00', '11:00:00', 4, 1, 42, 25),  -- Sala de Catequesis B, Pendiente, Catequesis de Confirmación
+  ('2026-11-15', '17:00:00', '19:00:00', 1, 2, 6,  300); -- Templo Principal, Confirmada, misa vespertina (Sacerdote)
+
+-- Tareas con varios ministros asignados a la MISMA tarea (no solo varias tareas del mismo
+-- evento): hasta ahora cada tarea tenía exactamente 1 ministro. Fechas y ministros nuevos,
+-- sin solaparse con ningún compromiso ya sembrado de esos mismos ministros.
+INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `titulo`, `descripcion`) VALUES
+  ('2026-11-21', '08:00:00', '08:30:00', 'Equipo de bienvenida',  'Recibir y acomodar a los fieles antes de la misa.'),
+  ('2026-11-21', '09:00:00', '09:15:00', 'Procesión de ofrendas', 'Llevar las ofrendas al altar durante la misa.'),
+  ('2026-11-29', '07:00:00', '07:30:00', 'Montaje del altar',     'Preparar el altar y los elementos litúrgicos antes de la misa.'),
+  ('2026-12-05', '09:00:00', '09:20:00', 'Coro ampliado',         'Acompañar musicalmente la celebración con refuerzo del coro.'),
+  ('2026-12-06', '08:00:00', '08:15:00', 'Ujieres',               'Acomodar a los fieles y orientar durante la celebración.');
+
+INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
+  (52, 14), (52, 15), (52, 16),       -- Equipo de bienvenida: 3 ministros
+  (53, 17), (53, 18),                 -- Procesión de ofrendas: 2 ministros
+  (54, 19), (54, 20), (54, 21), (54, 22), -- Montaje del altar: 4 ministros
+  (55, 23), (55, 24), (55, 25),       -- Coro ampliado: 3 ministros
+  (56, 26), (56, 27);                 -- Ujieres: 2 ministros
+
+-- Teléfonos de los ministros (ids 9,10,11,12,14-29) — ficticios, para que el directorio
+-- de ministros muestre un dato de contacto real en vez de quedar siempre vacío.
+INSERT INTO `telefono` (`numero`, `persona_id`) VALUES
+  ('55010001', 9),  ('55010002', 10), ('55010003', 11), ('55010004', 12),
+  ('55010005', 14), ('55010006', 15), ('55010007', 16), ('55010008', 17),
+  ('55010009', 18), ('55010010', 19), ('55010011', 20), ('55010012', 21),
+  ('55010013', 22), ('55010014', 23), ('55010015', 24), ('55010016', 25),
+  ('55010017', 26), ('55010018', 27), ('55010019', 28), ('55010020', 29);

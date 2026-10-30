@@ -125,3 +125,13 @@ export function restaurarPreferenciasUI() {
   escribir(TEMA_APLICACION_KEY, 'claro');
   notificarCambioDePreferencias();
 }
+
+// ── Sincronización de notificaciones entre TopBar y /notificaciones ──
+// Ninguna de las dos pantallas comparte estado; este evento le avisa al TopBar
+// que debe refrescar su insignia de inmediato tras una acción en /notificaciones,
+// en vez de esperar al siguiente ciclo de sondeo (hasta 5 minutos).
+export const NOTIFICACIONES_EVENT = 'notificaciones-changed';
+
+export function notificarCambioDeNotificaciones() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(NOTIFICACIONES_EVENT));
+}

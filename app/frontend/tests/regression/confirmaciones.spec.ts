@@ -15,7 +15,7 @@ async function preparar(page: Page) {
     const req = route.request();
     const path = new URL(req.url()).pathname;
     if (req.method() !== 'GET') { mutaciones.push(`${req.method()} ${path}`); await route.fulfill({ json: {} }); return; }
-    const data = path === '/api/grupos' ? [{ id: 3, nombre: 'Coro', coordinador_id: 7, nombre_coordinador: 'Coordinador' }]
+    const data = path === '/api/grupos' ? [{ id: 3, nombre: 'Coro', coordinadores: [{ id: 7, nombre: 'Coordinador' }] }]
       : path === '/api/personas/coordinadores-grupo' || path === '/api/personas/encargados-evento' ? [{ id: 7, nombre: 'Coordinador' }]
       : path === '/api/eventos' ? [{ id: 7, titulo: 'Misa mayor', descripcion: 'Celebración', encargado_id: 7, reserva_id: 7, fecha: '2099-11-01', hora_inicio: '10:00', hora_fin: '11:00' }]
       : path === '/api/reservas' || path === '/api/reservas/mis-reservas' ? [reserva]
@@ -44,9 +44,12 @@ const casos = [
 
 async function abrir(page: Page, caso: typeof casos[number]) {
   await page.goto(caso.ruta);
-  if (caso.nombre === 'eventos' || caso.nombre === 'grupos') {
+  if (caso.nombre === 'eventos') {
     await page.getByRole('button', { name: 'Editar', exact: true }).click();
     await page.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  } else if (caso.nombre === 'grupos') {
+    await page.getByRole('button', { name: 'Coro', exact: true }).click(); // abre el detalle
+    await page.getByRole('dialog').getByRole('button', { name: 'Eliminar grupo', exact: true }).click();
   } else if (caso.nombre === 'mis reservas') await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   else if (caso.nombre === 'edición de reservas') {
     await page.getByRole('button', { name: 'Editar', exact: true }).click();
@@ -84,18 +87,6 @@ for (const caso of casos) {
     expect(estado.nativos()).toBe(0);
   });
 }
-
-test('el marcador de coordinador es tenue y no aparece como opción elegible', async ({ page }) => {
-  await preparar(page);
-  await page.goto('/grupos');
-  const select = page.getByLabel('Coordinador:', { exact: true });
-  await expect(select).toHaveValue('');
-  await expect(select.locator('option[value=""]')).toBeDisabled();
-  await expect(select.locator('option[value=""]')).toHaveAttribute('hidden', '');
-  const tenue = await select.evaluate(element => getComputedStyle(element).color);
-  await select.selectOption('7');
-  expect(await select.evaluate(element => getComputedStyle(element).color)).not.toBe(tenue);
-});
 
 test('la confirmación bloquea cierres y duplicados mientras espera la respuesta', async ({ page }) => {
   await preparar(page);

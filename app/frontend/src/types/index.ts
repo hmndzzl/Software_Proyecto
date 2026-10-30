@@ -1,8 +1,12 @@
+export interface CoordinadorGrupoInfo {
+  id: number;
+  nombre: string;
+}
+
 export interface Grupo {
   id: number;
   nombre: string;
-  coordinador_id: number;
-  nombre_coordinador: string;
+  coordinadores: CoordinadorGrupoInfo[];
 }
 
 export interface Persona {

@@ -6,7 +6,7 @@ import { fechaNotificacion } from '../../modules/notificaciones/utils/fechaNotif
 import type { Notificacion } from '../../types';
 import styles from './TopBar.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
-import { leerIntervaloNotificaciones, UI_PREFERENCES_EVENT } from '../../auth/sessionStore';
+import { leerIntervaloNotificaciones, NOTIFICACIONES_EVENT, UI_PREFERENCES_EVENT } from '../../auth/sessionStore';
 
 const ROL_LABEL: Record<number, string> = {
   1: 'Sacerdote',
@@ -60,6 +60,13 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
     const sincronizarPreferencias = () => setIntervaloNotificaciones(leerIntervaloNotificaciones());
     window.addEventListener(UI_PREFERENCES_EVENT, sincronizarPreferencias);
     return () => window.removeEventListener(UI_PREFERENCES_EVENT, sincronizarPreferencias);
+  }, []);
+
+  // Refresca la insignia de inmediato ante una acción en /notificaciones, en vez de
+  // esperar al siguiente ciclo de sondeo (hasta 5 minutos con el intervalo largo).
+  useEffect(() => {
+    window.addEventListener(NOTIFICACIONES_EVENT, fetchNotifs);
+    return () => window.removeEventListener(NOTIFICACIONES_EVENT, fetchNotifs);
   }, []);
 
   useEffect(() => {

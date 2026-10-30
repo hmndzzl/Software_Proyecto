@@ -155,7 +155,7 @@ test('una solicitud de reserva válida envía todos los datos y confirma el resu
   });
 
   await page.goto('/reservas?nueva=1');
-  await page.locator('#espacio_id').selectOption('2');
+  await page.getByRole('button', { name: /^Salón Parroquial, capacidad/ }).click();
   await page.getByLabel('Cantidad de personas esperadas').fill('100');
   await page.locator('#fecha').fill('2099-10-20');
   await page.locator('#hora_inicio').fill('14:00');

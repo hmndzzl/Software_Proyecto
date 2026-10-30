@@ -7,11 +7,12 @@ interface BadgeProps {
   kind: BadgeKind;
   children: ReactNode;
   title?: string;
+  className?: string;
 }
 
-export default function Badge({ kind, children, title }: BadgeProps) {
+export default function Badge({ kind, children, title, className }: BadgeProps) {
   return (
-    <span className={`${styles.badge} ${styles[kind]}`} title={title}>
+    <span className={`${styles.badge} ${styles[kind]}${className ? ` ${className}` : ''}`} title={title}>
       {children}
     </span>
   );

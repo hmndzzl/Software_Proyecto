@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import apiClient from '../../../api/client';
+import { notificarCambioDeNotificaciones } from '../../../auth/sessionStore';
 import type { Notificacion } from '../../../types';
 
 interface UseNotificacionesReturn {
@@ -45,6 +46,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
       setNotificaciones((prev) =>
         prev.map((n) => (n.id === id ? { ...n, leida: true } : n))
       );
+      notificarCambioDeNotificaciones();
     } catch {
       // no interrumpir UI — notif sigue visible
     }
@@ -56,6 +58,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
       setNotificaciones((prev) =>
         prev.map((n) => (n.id === id ? { ...n, leida: false } : n))
       );
+      notificarCambioDeNotificaciones();
     } catch {
       // no interrumpir UI — notif sigue visible
     }
@@ -64,6 +67,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
   const eliminar = useCallback(async (id: number) => {
     await apiClient.put(`/api/notificaciones/${id}/papelera`);
     setNotificaciones((prev) => prev.filter((n) => n.id !== id));
+    notificarCambioDeNotificaciones();
   }, []);
 
   const marcarTodasLeidas = useCallback(async () => {
@@ -72,6 +76,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
       noLeidas.map((n) => apiClient.put(`/api/notificaciones/${n.id}/leida`))
     );
     setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
+    notificarCambioDeNotificaciones();
   }, [notificaciones]);
 
   const confirmarAsistencia = useCallback(async (id: number) => {
@@ -80,6 +85,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
       setNotificaciones((prev) =>
         prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: true, leida: true, motivo_excusa: null } : n))
       );
+      notificarCambioDeNotificaciones();
     } catch {
       // no interrumpir UI — notif sigue visible para reintentar
     }
@@ -91,6 +97,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
       setNotificaciones((prev) =>
         prev.map((n) => (n.id === id ? { ...n, asistencia_confirmada: false } : n))
       );
+      notificarCambioDeNotificaciones();
     } catch {
       // no interrumpir UI — se conserva el estado confirmado si no se pudo cancelar
     }
@@ -102,6 +109,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
       setNotificaciones((prev) =>
         prev.map((n) => (n.id === id ? { ...n, motivo_excusa: null } : n))
       );
+      notificarCambioDeNotificaciones();
     } catch {
       // no interrumpir UI — se conserva el estado si no se pudo actualizar
     }
@@ -116,6 +124,7 @@ export function useNotificaciones(): UseNotificacionesReturn {
           : n
       )
     );
+    notificarCambioDeNotificaciones();
   }, []);
 
   return { notificaciones, cargando, error, marcarLeida, marcarNoLeida, eliminar, marcarTodasLeidas, confirmarAsistencia, cancelarAsistencia, cancelarInasistencia, excusarAsistencia, refetch };

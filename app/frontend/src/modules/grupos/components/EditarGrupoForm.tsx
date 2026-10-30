@@ -4,7 +4,7 @@ import apiClient from '../../../api/client';
 import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
-import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import SelectorCoordinadoresGrupo from './SelectorCoordinadoresGrupo';
 
 export default function EditarGrupoForm({
   grupo,
@@ -16,15 +16,14 @@ export default function EditarGrupoForm({
   onCancelar?: () => void;
 }) {
   const [nombre, setNombre] = useState(grupo.nombre);
-  const [coordinadorId, setCoordinadorId] = useState(String(grupo.coordinador_id));
+  const [coordinadorIds, setCoordinadorIds] = useState<number[]>(grupo.coordinadores.map((c) => c.id));
   const [personas, setPersonas] = useState<Persona[]>([]);
   const toast = useToast();
-  const [confirmando, setConfirmando] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     setNombre(grupo.nombre);
-    setCoordinadorId(String(grupo.coordinador_id));
+    setCoordinadorIds(grupo.coordinadores.map((c) => c.id));
   }, [grupo]);
 
   useEffect(() => {
@@ -35,88 +34,49 @@ export default function EditarGrupoForm({
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (eliminando) return;
+    if (guardando) return;
 
-    if (!nombre || !coordinadorId) {
+    if (!nombre || !coordinadorIds.length) {
       toast.error('Faltan datos', 'Por favor completa todos los campos.');
       return;
     }
 
+    setGuardando(true);
     try {
-      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_id: parseInt(coordinadorId) });
+      await apiClient.put(`/api/grupos/${grupo.id}`, { nombre, coordinador_ids: coordinadorIds });
       toast.success('Grupo actualizado', `Los cambios en "${nombre}" se guardaron.`);
       if (onGrupoActualizado) onGrupoActualizado();
     } catch (error: unknown) {
       toast.error('No se pudo actualizar el grupo', getApiErrorMessage(error, 'Error de red al intentar actualizar el grupo.'));
-    }
-  };
-
-  const handleDelete = async () => {
-    if (eliminando) return;
-    setEliminando(true);
-
-    try {
-      await apiClient.delete(`/api/grupos/${grupo.id}`);
-      toast.success('Grupo eliminado', `El grupo "${grupo.nombre}" fue eliminado.`);
-      setConfirmando(false);
-      if (onGrupoActualizado) onGrupoActualizado();
-    } catch (error: unknown) {
-      toast.error('No se pudo eliminar el grupo', getApiErrorMessage(error, 'Error de red al intentar eliminar el grupo.'));
-    } finally { setEliminando(false); }
+    } finally { setGuardando(false); }
   };
 
   return (
-    <div className={styles.editSection}>
+    <form onSubmit={handleUpdate} className={styles.form}>
+      <p className={styles.fieldNote}>Revisa el nombre y los coordinadores antes de guardar.</p>
+      <div className={styles.field}>
+        <label htmlFor="edit-nombre" className={styles.label}>Nombre del Grupo:</label>
+        <input
+          type="text"
+          id="edit-nombre"
+          className={styles.input} disabled={guardando}
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+      </div>
 
+      <SelectorCoordinadoresGrupo personas={personas} seleccionados={coordinadorIds} onChange={setCoordinadorIds} disabled={guardando} />
 
-      <form onSubmit={handleUpdate} className={styles.form}>
-        <p className={styles.fieldNote}>Revisa el nombre y el coordinador antes de guardar. Eliminar el grupo es una acción independiente.</p>
-        <div className={styles.field}>
-          <label htmlFor="edit-nombre" className={styles.label}>Nombre del Grupo:</label>
-          <input
-            type="text"
-            id="edit-nombre"
-            className={styles.input} disabled={eliminando}
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="edit-coordinador" className={styles.label}>Coordinador:</label>
-          <select
-            id="edit-coordinador"
-            className={styles.input} disabled={eliminando}
-            data-placeholder={coordinadorId === '' ? 'true' : undefined}
-            value={coordinadorId}
-            onChange={(e) => setCoordinadorId(e.target.value)}
-          >
-            <option value="" disabled hidden>Selecciona un coordinador</option>
-            {personas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.buttonRow}>
-          <button type="submit" className="btn-primary" disabled={eliminando}>
-            Guardar Cambios
+      <div className={styles.buttonRow}>
+        <button type="submit" className="btn-primary" disabled={guardando}>
+          {guardando ? 'Guardando...' : 'Guardar Cambios'}
+        </button>
+        {onCancelar && (
+          <button type="button" onClick={onCancelar} className={styles.btnSecondary} disabled={guardando}>
+            Cancelar
           </button>
-          <button type="button" onClick={() => setConfirmando(true)} className={styles.btnDanger} disabled={eliminando}>
-            Eliminar
-          </button>
-          {onCancelar && (
-            <button type="button" onClick={onCancelar} className={styles.btnSecondary} disabled={eliminando}>
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
-      <ConfirmDialog open={confirmando} title="Eliminar grupo" confirmLabel="Eliminar grupo"
-        description={`¿Estás seguro de que deseas eliminar el grupo "${grupo.nombre}"?`} busy={eliminando}
-        onCancel={() => setConfirmando(false)} onConfirm={handleDelete} />
-    </div>
+        )}
+      </div>
+    </form>
   );
 }
