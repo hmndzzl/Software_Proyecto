@@ -44,4 +44,15 @@ describe('SelectorCoordinadoresGrupo', () => {
     render(<SelectorCoordinadoresGrupo personas={personas} seleccionados={[]} onChange={vi.fn()} disabled />);
     expect(screen.getByRole('checkbox', { name: 'Ana' })).toBeDisabled();
   });
+
+  it('avisa si la búsqueda no encuentra coincidencias entre personas existentes', () => {
+    render(<SelectorCoordinadoresGrupo personas={personas} seleccionados={[]} onChange={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Buscar coordinador'), { target: { value: 'zzz' } });
+    expect(screen.getByText('No hay coordinadores que coincidan con la búsqueda.')).toBeInTheDocument();
+  });
+
+  it('usa el singular cuando hay exactamente un coordinador seleccionado', () => {
+    render(<SelectorCoordinadoresGrupo personas={personas} seleccionados={[1]} onChange={vi.fn()} />);
+    expect(screen.getByText('1 coordinador seleccionado.')).toBeInTheDocument();
+  });
 });
