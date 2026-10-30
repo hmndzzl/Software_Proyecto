@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import BuscadorPersonas from '../BuscadorPersonas';
@@ -41,5 +41,32 @@ describe('BuscadorPersonas', () => {
     await userEvent.type(input, 'algo que no existe');
     await userEvent.click(screen.getByRole('button', { name: 'Fuera' }));
     expect(input).toHaveValue('Padre Pedro');
+  });
+
+  it('Escape cierra la lista y restablece el texto a la selección actual', async () => {
+    render(<BuscadorPersonas id="encargado" label="Encargado:" personas={personas} valor="1" onChange={vi.fn()} />);
+    const input = screen.getByRole('combobox', { name: 'Encargado:' });
+    await userEvent.clear(input);
+    await userEvent.type(input, 'algo');
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(input).toHaveValue('Padre Pedro');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('Enter elige la única coincidencia visible y limpia el filtro', async () => {
+    const onChange = vi.fn();
+    render(<BuscadorPersonas id="encargado" label="Encargado:" personas={personas} valor="" onChange={onChange} />);
+    const input = screen.getByRole('combobox', { name: 'Encargado:' });
+    await userEvent.type(input, 'ana');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('2');
+    expect(input).toHaveValue('Ana Xitumul');
+  });
+
+  it('borrar el texto limpia la selección', async () => {
+    const onChange = vi.fn();
+    render(<BuscadorPersonas id="encargado" label="Encargado:" personas={personas} valor="1" onChange={onChange} />);
+    await userEvent.clear(screen.getByRole('combobox', { name: 'Encargado:' }));
+    expect(onChange).toHaveBeenCalledWith('');
   });
 });
