@@ -67,10 +67,12 @@ for (const width of [320, 1440]) {
     await historia.locator('.qmodal').evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
     expect((await new AxeBuilder({ page }).include('[role="dialog"]').withRules(['color-contrast']).analyze()).violations).toEqual([]);
     await page.screenshot({ path: test.info().outputPath(`historia-clara-${width}.png`) });
-    await page.keyboard.press('Escape');
+    await historia.getByRole('button', { name: 'Volver a nuestra historia', exact: true }).click();
+    await expect(historia).toHaveCount(0);
     await page.locator('button.oracion').click();
     await expect(page.getByRole('dialog')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Volver a devoción', exact: true }).click();
+    await expect(page.locator('button.oracion')).toBeFocused();
     await page.getByRole('button', { name: 'Ampliar imagen: Vista exterior de la parroquia' }).click();
     const visor = page.getByRole('dialog', { name: 'Imagen ampliada' });
     await expect(visor).toHaveCSS('background-color', 'rgb(250, 248, 243)');
