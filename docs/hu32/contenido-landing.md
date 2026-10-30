@@ -128,7 +128,7 @@ Cantidades mostradas:
 Contacto:
 
 ```json
-{ "contacto": { "direccion": "Ciudad de Guatemala", "correo": "contacto@sanpedronolasco.gt", "telefono": "+502 5555 1234" } }
+{ "contacto": { "direccion": "Ciudad de Guatemala", "correo": "parroquiasanpedronolascocsc@gmail.com", "telefono": "+502 5555 1234" } }
 ```
 
 Presentación principal:

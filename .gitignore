@@ -23,6 +23,10 @@ Thumbs.db
 .idea/
 CLAUDE.md
 .claude/
+.agents/
+skills-lock.json
+.codex
+.impeccable
 
 # Temp
 *.tmp

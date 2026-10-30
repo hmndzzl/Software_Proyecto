@@ -48,7 +48,7 @@ const CONTENIDO_INICIAL: ContenidoLanding = {
   valores: VALORES.map(({ titulo, texto }) => ({ titulo, descripcion: texto })),
   horarios_misa: [{ dias: 'Domingo', horas: ['08:00', '10:00', '12:00', '18:00'] }, { dias: 'Lunes a viernes', horas: ['07:00', '18:00'] }],
   horarios_oficina: [{ dias: 'Lunes a viernes', horario: '09:00 a 12:00' }, { dias: 'Sábados y Domingos', horario: 'Cerrado' }],
-  contacto: { titulo: 'Estamos aquí para acompañarte', direccion: '9a Calle A 9-34, Ciudad San Cristóbal, Mixco', correo: 'contacto@sanpedronolasco.gt', telefono: '+502 2443 3174' },
+  contacto: { titulo: 'Estamos aquí para acompañarte', direccion: '9a Calle A 9-34, Ciudad San Cristóbal, Mixco', correo: 'parroquiasanpedronolascocsc@gmail.com', telefono: '+502 2443 3174' },
   devocion: {
     titulo: 'Devoción a Nuestra Santísima Madre de la Merced',
     descripcion: 'Cómo honramos a la Madre de Dios y a los santos de la Orden.',

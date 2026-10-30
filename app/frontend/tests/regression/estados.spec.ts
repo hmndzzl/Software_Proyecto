@@ -15,7 +15,10 @@ for (const tema of ['claro', 'oscuro']) {
       ] : path === '/api/reservas/mis-reservas' ? [1, 2, 3, 4].map(estado => ({
         id: estado, espacio_id: 1, espacio_nombre: 'Salón parroquial', fecha: '2099-11-01', hora_inicio: '10:00', hora_fin: '11:00',
         estado_reserva_id: estado, solicitante_id: 1, evento_titulo: `Actividad ${estado}`, evento_descripcion: 'Celebración',
-      })) : [] });
+      })) : path === '/api/notificaciones' ? [
+        { id: 1, mensaje: 'La reserva del coro ha sido confirmada.', leida: false, fecha: '2026-10-29T10:00:00', tipo: 'individual', requiere_confirmacion: false },
+        { id: 2, mensaje: 'Recordatorio de servicio parroquial.', leida: true, fecha: '2026-10-28T10:00:00', tipo: 'individual', requiere_confirmacion: false },
+      ] : [] });
     });
     await page.goto('/espacios');
     await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
@@ -35,5 +38,11 @@ for (const tema of ['claro', 'oscuro']) {
       await expect(page.locator(selector).filter({ hasText: new RegExp(`^${texto}$`) })).toHaveCSS('border-radius', '4px');
     }
     expect((await new AxeBuilder({ page }).include(selector).withRules(['color-contrast']).analyze()).violations).toEqual([]);
+    await page.goto('/notificaciones');
+    await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
+    await expect(page.getByText('La reserva del coro ha sido confirmada.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Recordatorio de servicio parroquial.', { exact: true })).toBeVisible();
+    // Las filas sin leer y las acciones deben conservar contraste sobre su propia superficie.
+    expect((await new AxeBuilder({ page }).withRules(['color-contrast']).analyze()).violations).toEqual([]);
   });
 }
