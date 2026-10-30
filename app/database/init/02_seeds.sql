@@ -462,3 +462,20 @@ INSERT INTO `reserva` (`fecha`, `hora_inicio`, `hora_fin`, `espacio_id`, `estado
   ('2026-11-14', '15:00:00', '18:00:00', 6, 1, 31, 120), -- Patio Central, Pendiente, Pastoral Juvenil
   ('2026-11-15', '10:00:00', '11:00:00', 4, 1, 42, 25),  -- Sala de Catequesis B, Pendiente, Catequesis de Confirmación
   ('2026-11-15', '17:00:00', '19:00:00', 1, 2, 6,  300); -- Templo Principal, Confirmada, misa vespertina (Sacerdote)
+
+-- Tareas con varios ministros asignados a la MISMA tarea (no solo varias tareas del mismo
+-- evento): hasta ahora cada tarea tenía exactamente 1 ministro. Fechas y ministros nuevos,
+-- sin solaparse con ningún compromiso ya sembrado de esos mismos ministros.
+INSERT INTO `tarea` (`fecha`, `hora_inicio`, `hora_fin`, `titulo`, `descripcion`) VALUES
+  ('2026-11-21', '08:00:00', '08:30:00', 'Equipo de bienvenida',  'Recibir y acomodar a los fieles antes de la misa.'),
+  ('2026-11-21', '09:00:00', '09:15:00', 'Procesión de ofrendas', 'Llevar las ofrendas al altar durante la misa.'),
+  ('2026-11-29', '07:00:00', '07:30:00', 'Montaje del altar',     'Preparar el altar y los elementos litúrgicos antes de la misa.'),
+  ('2026-12-05', '09:00:00', '09:20:00', 'Coro ampliado',         'Acompañar musicalmente la celebración con refuerzo del coro.'),
+  ('2026-12-06', '08:00:00', '08:15:00', 'Ujieres',               'Acomodar a los fieles y orientar durante la celebración.');
+
+INSERT INTO `asignacion_tarea` (`tarea_id`, `persona_id`) VALUES
+  (52, 14), (52, 15), (52, 16),       -- Equipo de bienvenida: 3 ministros
+  (53, 17), (53, 18),                 -- Procesión de ofrendas: 2 ministros
+  (54, 19), (54, 20), (54, 21), (54, 22), -- Montaje del altar: 4 ministros
+  (55, 23), (55, 24), (55, 25),       -- Coro ampliado: 3 ministros
+  (56, 26), (56, 27);                 -- Ujieres: 2 ministros
