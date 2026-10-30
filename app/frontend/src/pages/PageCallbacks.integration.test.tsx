@@ -11,7 +11,7 @@ import { authValue } from '../test/authValue';
 import { ROLES } from '../utils/roles';
 
 const evento = { id: 7, descripcion: 'Misa', encargado_id: 2, fecha: '2099-10-20', hora_inicio: '10:00', hora_fin: '11:00' };
-const grupo = { id: 3, nombre: 'Coro', coordinador_id: 2 };
+const grupo = { id: 3, nombre: 'Coro', coordinadores: [{ id: 2, nombre: 'Ana' }] };
 
 vi.mock('../context/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../modules/eventos/components/ListaEventos', () => ({ default: ({ refreshKey, onEditar }: any) => <><span>eventos-{refreshKey}</span>{onEditar && <button onClick={() => onEditar(evento)}>seleccionar-evento</button>}</> }));

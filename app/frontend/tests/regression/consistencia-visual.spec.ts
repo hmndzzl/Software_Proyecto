@@ -10,7 +10,7 @@ async function preparar(page: Page) {
   await page.route('http://api.test/**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     const data = pathname === '/api/eventos' || pathname === '/api/public/agenda' ? [evento]
-      : pathname === '/api/grupos' ? [{ id: 3, nombre: 'Coro', coordinador_id: 1, nombre_coordinador: 'Ana' }]
+      : pathname === '/api/grupos' ? [{ id: 3, nombre: 'Coro', coordinadores: [{ id: 1, nombre: 'Ana' }] }]
       : pathname === '/api/personas/coordinadores-grupo' || pathname === '/api/personas/encargados-evento' ? [{ id: 1, nombre: 'Ana' }]
       : [];
     await route.fulfill({ json: data });
