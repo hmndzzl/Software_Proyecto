@@ -142,28 +142,22 @@
 }
 
 .buttons .todayButton {
-  background: var(--color-rojo);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
   border-color: var(--color-rojoDk);
   box-shadow: var(--shadow-btn-primary);
 }
 
 .buttons .todayButton:hover {
-  background: var(--color-rojoDk);
+  background: var(--color-primary-hover);
   color: var(--color-on-primary);
 }
 
 .buttons button[aria-pressed='true'] {
-  background: var(--color-rojo);
+  background: var(--color-primary-bg);
   border-color: var(--color-rojoDk);
   color: var(--color-on-primary);
   font-weight: 700;
-}
-
-/* El rojo de acento del tema oscuro no alcanza contraste sobre texto crema. */
-:global(html[data-tema='oscuro']) .buttons .todayButton,
-:global(html[data-tema='oscuro']) .buttons button[aria-pressed='true'] {
-  background: var(--color-rojoDk);
 }
 
 .page button:focus-visible, .page select:focus-visible {
@@ -265,7 +259,7 @@
   flex-direction: column;
   gap: 10px;
   flex-grow: 1;
-  background: rgba(243, 241, 233, .15);
+  background: color-mix(in srgb, var(--color-crema) 15%, transparent);
 }
 
 @media (max-width: 650px) {
