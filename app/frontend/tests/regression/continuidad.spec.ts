@@ -19,7 +19,7 @@ test('volver a espacios conserva disponibilidad y posición de la lista', async 
   await expect.poll(() => page.locator('main').evaluate(el => el.parentElement!.scrollTop)).toBe(600);
   await page.waitForTimeout(100);
   await page.goto('/espacios/1');
-  await page.getByRole('button', { name: 'Espacios', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a espacios', exact: true }).click();
   await expect(page.getByLabel('Fecha', { exact: true })).toHaveValue('2099-11-01');
   await expect(page.getByLabel('Hora inicio', { exact: true })).toHaveValue('10:00');
   await expect.poll(() => page.locator('main').evaluate(el => el.parentElement!.scrollTop)).toBe(600);
