@@ -21,9 +21,12 @@ async function adjuntarCoordinadores(grupos: RowDataPacket[]): Promise<GrupoConC
   );
 }
 
-// Valida que coordinador_ids venga como arreglo no vacío (400 si no) y que todos los ids
-// existan y estén activos (404 si no). Retorna los ids sin duplicados.
-async function validarCoordinadorIds(coordinadorIds: unknown): Promise<
+// Valida que coordinador_ids venga como arreglo no vacío (400 si no), que todos los ids
+// existan y estén activos (404 si no), y que ninguno coordine ya otro grupo (400 si no —
+// un coordinador solo puede estar a cargo de un grupo a la vez). `grupoIdActual` excluye
+// al propio grupo de esa última verificación cuando se está editando uno existente.
+// Retorna los ids sin duplicados.
+async function validarCoordinadorIds(coordinadorIds: unknown, grupoIdActual?: number): Promise<
   { ids: number[] } | { status: typeof HttpStatus.BAD_REQUEST | typeof HttpStatus.NOT_FOUND; mensaje: string }
 > {
   if (!Array.isArray(coordinadorIds) || coordinadorIds.length === 0) {
@@ -37,6 +40,17 @@ async function validarCoordinadorIds(coordinadorIds: unknown): Promise<
   if (personas.length !== ids.length) {
     return { status: HttpStatus.NOT_FOUND, mensaje: 'Alguno de los coordinadores indicados no existe' };
   }
+
+  const placeholders = ids.map(() => '?').join(',');
+  const ocupadosQuery = grupoIdActual != null
+    ? `SELECT coordinador_id FROM grupo_coordinador WHERE coordinador_id IN (${placeholders}) AND grupo_id <> ?`
+    : `SELECT coordinador_id FROM grupo_coordinador WHERE coordinador_id IN (${placeholders})`;
+  const ocupadosParams = grupoIdActual != null ? [...ids, grupoIdActual] : ids;
+  const [ocupados] = await pool.execute<RowDataPacket[]>(ocupadosQuery, ocupadosParams);
+  if (ocupados.length > 0) {
+    return { status: HttpStatus.BAD_REQUEST, mensaje: 'Alguno de los coordinadores ya está a cargo de otro grupo' };
+  }
+
   return { ids };
 }
 
@@ -136,7 +150,7 @@ export const updateGrupo = async (req: Request, res: Response): Promise<void> =>
   }
 
   try {
-    const validacion = await validarCoordinadorIds(coordinador_ids);
+    const validacion = await validarCoordinadorIds(coordinador_ids, Number(id));
     if ('status' in validacion) {
       res.status(validacion.status).json({ mensaje: validacion.mensaje });
       return;

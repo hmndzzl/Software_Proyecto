@@ -155,9 +155,21 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Alguno de los coordinadores indicados no existe' });
     });
 
+    it('debería retornar 400 si alguno de los coordinadores ya está a cargo de otro grupo', async () => {
+      req.body = { nombre: 'Grupo A', coordinador_ids: [1] };
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // validar coordinador
+      (pool.execute as any).mockResolvedValueOnce([[{ coordinador_id: 1 }]]); // ya coordina otro grupo
+
+      await createGrupo(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Alguno de los coordinadores ya está a cargo de otro grupo' });
+    });
+
     it('debería retornar 201 y crear el grupo con un coordinador', async () => {
       req.body = { nombre: 'Grupo A', coordinador_ids: [1] };
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // validar coordinador
+      (pool.execute as any).mockResolvedValueOnce([[]]); // ningún coordinador ocupado
       (pool.execute as any).mockResolvedValueOnce([{ insertId: 5 }]); // insert grupo
       (pool.execute as any).mockResolvedValueOnce([{}]); // insert grupo_coordinador
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1, nombre: 'Ana' }]]); // coordinadores final
@@ -174,6 +186,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
     it('debería retornar 201 y crear el grupo con varios coordinadores', async () => {
       req.body = { nombre: 'Grupo A', coordinador_ids: [1, 2] };
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }, { id: 2 }]]); // validar coordinadores
+      (pool.execute as any).mockResolvedValueOnce([[]]); // ningún coordinador ocupado
       (pool.execute as any).mockResolvedValueOnce([{ insertId: 6 }]); // insert grupo
       (pool.execute as any).mockResolvedValueOnce([{}]); // insert grupo_coordinador #1
       (pool.execute as any).mockResolvedValueOnce([{}]); // insert grupo_coordinador #2
@@ -191,6 +204,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
     it('debería retornar 400 si hay error ER_DUP_ENTRY por nombre', async () => {
       req.body = { nombre: 'Grupo A', coordinador_ids: [1] };
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // validar coordinador
+      (pool.execute as any).mockResolvedValueOnce([[]]); // ningún coordinador ocupado
 
       const dupError: any = new Error('Duplicate entry uq_grupo_nombre');
       dupError.code = 'ER_DUP_ENTRY';
@@ -244,10 +258,26 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
       expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Alguno de los coordinadores indicados no existe' });
     });
 
+    it('debería retornar 400 si alguno de los coordinadores ya está a cargo de otro grupo', async () => {
+      req.params = { id: '1' };
+      req.body = { nombre: 'Grupo B', coordinador_ids: [2] };
+      (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); // validar coordinador
+      (pool.execute as any).mockResolvedValueOnce([[{ coordinador_id: 2 }]]); // ocupado en otro grupo
+
+      await updateGrupo(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'Alguno de los coordinadores ya está a cargo de otro grupo' });
+      // La verificación de "ocupado" debe excluir al propio grupo que se está editando.
+      expect((pool.execute as any).mock.calls[1][0]).toContain('grupo_id <> ?');
+      expect((pool.execute as any).mock.calls[1][1]).toEqual([2, 1]);
+    });
+
     it('debería retornar 200 al actualizar un grupo con varios coordinadores (reemplaza el set anterior)', async () => {
       req.params = { id: '1' };
       req.body = { nombre: 'Grupo B', coordinador_ids: [2, 3] };
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }, { id: 3 }]]); // validar coordinadores
+      (pool.execute as any).mockResolvedValueOnce([[]]); // ningún coordinador ocupado en otro grupo
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // el grupo existe
       (pool.execute as any).mockResolvedValueOnce([{}]); // update nombre
       (pool.execute as any).mockResolvedValueOnce([{}]); // delete grupo_coordinador
@@ -268,6 +298,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
       req.params = { id: '99' };
       req.body = { nombre: 'Grupo B', coordinador_ids: [2] };
       (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); // validar coordinador
+      (pool.execute as any).mockResolvedValueOnce([[]]); // ningún coordinador ocupado
       (pool.execute as any).mockResolvedValueOnce([[]]); // el grupo no existe
 
       await updateGrupo(req as Request, res as Response);
@@ -280,6 +311,7 @@ describe('Grupo Controller - Pruebas Unitarias', () => {
       req.params = { id: '1' };
       req.body = { nombre: 'Grupo A', coordinador_ids: [1] };
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // validar coordinador
+      (pool.execute as any).mockResolvedValueOnce([[]]); // ningún coordinador ocupado
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // el grupo existe
 
       const dupError: any = new Error('Duplicate entry uq_grupo_nombre');

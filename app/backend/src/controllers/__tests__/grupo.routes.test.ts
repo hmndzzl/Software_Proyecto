@@ -27,10 +27,14 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   // Estas pruebas solo verifican el status code por rol (RBAC), no el cuerpo de la
-  // respuesta — un mock genérico que siempre resuelve una fila sirve para los 3 flujos
-  // (validar coordinador, el grupo existe, selects finales) sin tener que encolar una
-  // secuencia distinta por cada endpoint.
-  (pool.execute as any).mockResolvedValue([[{ id: 7 }]]);
+  // respuesta. Pero a diferencia de antes, ya no todas las consultas pueden resolver lo
+  // mismo: la verificación de "¿ya coordina otro grupo?" necesita un resultado vacío
+  // (si no, todo POST/PUT fallaría con 400), así que el mock decide por el texto de la
+  // consulta en vez de usar un único valor fijo para todas.
+  (pool.execute as any).mockImplementation(async (sql: string) => {
+    if (sql.includes('FROM grupo_coordinador WHERE coordinador_id IN')) return [[]];
+    return [[{ id: 7, nombre: 'Test', insertId: 1, affectedRows: 1 }]];
+  });
   vi.mocked(pool.getConnection).mockResolvedValue({
     execute: pool.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),
   } as never);
