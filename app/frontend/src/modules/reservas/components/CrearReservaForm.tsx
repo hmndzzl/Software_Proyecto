@@ -34,7 +34,11 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const [cantidad, setCantidad] = useState('');
   const [publico, setPublico] = useState(false);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
+  const [errorCatalogo, setErrorCatalogo] = useState(false);
+  const [revisionCatalogo, setRevisionCatalogo] = useState(0);
   const [espaciosCargados, setEspaciosCargados] = useState(false);
+  const [consultaDisponibilidad, setConsultaDisponibilidad] = useState<{ espacioId: string; estado: 'cargando' | 'lista' | 'error' }>({ espacioId: '', estado: 'cargando' });
+  const [revisionDisponibilidad, setRevisionDisponibilidad] = useState(0);
   const [reservasEspacio, setReservasEspacio] = useState<Reserva[]>([]);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -63,18 +67,15 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   }, [autoFocus, espacioInicial, espaciosCargados, espacios]);
 
   useEffect(() => {
-    const fetchEspacios = async () => {
-      try {
-        const response = await apiClient.get<Espacio[]>('/api/espacios');
-        setEspacios(response.data);
-      } catch {
-        // silencioso, el select quedará vacío
-      } finally {
-        setEspaciosCargados(true);
-      }
-    };
-    fetchEspacios();
-  }, []);
+    let vigente = true;
+    setEspaciosCargados(false);
+    setErrorCatalogo(false);
+    apiClient.get<Espacio[]>('/api/espacios')
+      .then(response => { if (vigente) setEspacios(response.data); })
+      .catch(() => { if (vigente) setErrorCatalogo(true); })
+      .finally(() => { if (vigente) setEspaciosCargados(true); });
+    return () => { vigente = false; };
+  }, [revisionCatalogo]);
 
   // Preselecciona el espacio del QR solo si existe en el catálogo cargado del backend.
   useEffect(() => {
@@ -90,15 +91,18 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   useEffect(() => {
     if (!espacioId) { setReservasEspacio([]); return; }
     let cancelado = false;
+    setConsultaDisponibilidad({ espacioId, estado: 'cargando' });
+    setReservasEspacio([]);
     apiClient.get<Reserva[]>(`/api/reservas?espacio_id=${espacioId}`)
-      .then((response) => { if (!cancelado) setReservasEspacio(response.data); })
-      .catch(() => { if (!cancelado) setReservasEspacio([]); });
+      .then((response) => { if (!cancelado) { setReservasEspacio(response.data); setConsultaDisponibilidad({ espacioId, estado: 'lista' }); } })
+      .catch(() => { if (!cancelado) setConsultaDisponibilidad({ espacioId, estado: 'error' }); });
     return () => { cancelado = true; };
-  }, [espacioId]);
+  }, [espacioId, revisionDisponibilidad]);
 
   // Mismo criterio de solape que el backend usa al aprobar (reserva.controller.ts): solo las
   // reservas ya Confirmadas bloquean de verdad el horario.
-  const conflicto = fecha && horaInicio && horaFin && horaInicio < horaFin
+  const estadoDisponibilidad = consultaDisponibilidad.espacioId === espacioId ? consultaDisponibilidad.estado : 'cargando';
+  const conflicto = estadoDisponibilidad === 'lista' && fecha && horaInicio && horaFin && horaInicio < horaFin
     ? reservasEspacio.find((r) => r.fecha === fecha
         && r.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA
         && r.hora_inicio < horaFin && r.hora_fin > horaInicio)
@@ -202,6 +206,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
 
   const espacioInicialNoEncontrado = Boolean(espacioInicial)
     && espaciosCargados
+    && !errorCatalogo
     && !espacios.some((esp) => String(esp.id) === espacioInicial);
 
   return (
@@ -227,13 +232,24 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         </div>
       )}
 
-      {espacioSeleccionado && (
+      {espacioSeleccionado && estadoDisponibilidad !== 'lista' && (
+        estadoDisponibilidad === 'cargando' ? (
+          <p className={styles.fieldNote} role="status">Comprobando disponibilidad…</p>
+        ) : (
+          <div className={styles.warningBox} role="status">
+            No se pudo comprobar la disponibilidad. La solicitud quedará pendiente de revisión.
+            {' '}<button type="button" className={styles.btnSecondary} disabled={loading} onClick={() => setRevisionDisponibilidad(value => value + 1)}>Reintentar disponibilidad</button>
+          </div>
+        )
+      )}
+
+      {espacioSeleccionado && estadoDisponibilidad === 'lista' && (
         <div className={styles.infoBoxMargin}>
           <SelectorSemanaEspacio reservas={reservasEspacio} fechaSeleccionada={fecha} onSeleccionarDia={setFecha} />
         </div>
       )}
 
-      {espacioSeleccionado && fecha && (
+      {espacioSeleccionado && estadoDisponibilidad === 'lista' && fecha && (
         <div className={styles.infoBoxMargin}>
           <DisponibilidadEspacioDia
             fecha={fecha}
@@ -246,12 +262,13 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       )}
 
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        <fieldset className={styles.form} disabled={loading} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <h3 className={styles.sectionTitle}>Espacio y asistencia</h3>
         <p className={styles.fieldNote}>Selecciona el espacio, indica cuántas personas asistirán y completa la fecha, el horario y los datos de la actividad. La solicitud quedará pendiente de aprobación.</p>
         <div className={styles.field}>
           <span id="espacio_id-label" className={`${styles.label} ${styles.required}`}>Espacio:</span>
           <div ref={espacioRef} tabIndex={-1}>
-            <SelectorEspacios espacios={espacios} valor={espacioId} onChange={setEspacioId} labelId="espacio_id-label" cargando={!espaciosCargados} />
+            {errorCatalogo ? <p role="alert">No se pudieron cargar los espacios. <button type="button" className={styles.btnSecondary} onClick={() => setRevisionCatalogo(value => value + 1)}>Reintentar</button></p> : <SelectorEspacios espacios={espacios} valor={espacioId} onChange={setEspacioId} labelId="espacio_id-label" cargando={!espaciosCargados} disabled={loading} />}
           </div>
         </div>
 
@@ -302,7 +319,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         </div>
         </div>
 
-        {horarioVerificable && (
+        {horarioVerificable && estadoDisponibilidad === 'lista' && (
           conflicto ? (
             <div className={styles.warningBox} role="alert">
               Este horario se cruza con una reserva ya confirmada: {formatHorario(conflicto.hora_inicio, conflicto.hora_fin)}
@@ -358,6 +375,7 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         <button type="submit" className="btn-primary" disabled={loading || Boolean(conflicto)}>
           {loading ? 'Enviando...' : contexto === 'evento' ? 'Crear evento' : 'Solicitar Reserva'}
         </button>
+        </fieldset>
       </form>
     </div>
   );
