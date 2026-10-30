@@ -247,6 +247,8 @@ export default function ListaAsignaciones({ refreshKey, onCambio }: { refreshKey
         </>}
     </CardBody>
     <Modal open={Boolean(activa)} title={tituloModal} onClose={cerrar} closeDisabled={ocupado}
+      returnLabel={vista === 'detalle' ? 'Volver a tareas' : vista === 'listado' || vista === 'ministros' ? 'Volver al detalle de la tarea' : undefined}
+      onReturn={vista === 'detalle' ? cerrar : () => { setVista('detalle'); setReemplazando(null); }}
       width={vista === 'eliminar' || vista === 'quitar' ? 520 : 720}
       describedBy={vista === 'eliminar' || vista === 'quitar' ? `${id}-confirmacion` : undefined}
       initialFocusSelector={vista === 'eliminar' || vista === 'quitar' ? '[data-confirm-cancel]' : undefined}
