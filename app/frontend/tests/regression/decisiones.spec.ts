@@ -26,7 +26,9 @@ test('reservas y mis reservas muestran autores y horas de Guatemala sin desborda
   await preparar(page);
   for (const ruta of ['/reservas', '/mis-reservas']) {
     await page.goto(ruta);
-    const abrir = page.getByRole('button', { name: 'Ver detalle', exact: true });
+    const abrir = ruta === '/reservas'
+      ? page.getByRole('button', { name: '7', exact: true })
+      : page.getByRole('button', { name: 'Ver detalle', exact: true });
     await abrir.click();
     const dialog = page.getByRole('dialog', { name: 'Detalle de reserva #7' });
     await expect(dialog.getByText('Por Diego Calderon', { exact: true })).toBeVisible();

@@ -44,7 +44,7 @@ for (const width of [320, 1440]) {
       for (const [ruta, abrirLabel, volverLabel] of [
         ['/grupos', 'Coro parroquial', 'Volver a grupos'],
         ['/tareas', 'Preparar altar', 'Volver a tareas'],
-        ['/reservas', 'Ver detalle', 'Volver a reservas'],
+        ['/reservas', '7', 'Volver a reservas'],
         ['/mis-reservas', 'Ver detalle', 'Volver a mis reservas'],
         ['/cuentas', 'Ver detalle', 'Volver a cuentas'],
       ]) {

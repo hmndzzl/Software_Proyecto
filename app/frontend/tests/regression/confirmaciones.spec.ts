@@ -52,8 +52,8 @@ async function abrir(page: Page, caso: typeof casos[number]) {
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar grupo', exact: true }).click();
   } else if (caso.nombre === 'mis reservas') await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   else if (caso.nombre === 'edición de reservas') {
-    await page.getByRole('button', { name: 'Editar', exact: true }).click();
-    await page.getByRole('button', { name: 'Cancelar Reserva', exact: true }).click();
+    await page.getByRole('button', { name: '7', exact: true }).click(); // abre el detalle
+    await page.getByRole('button', { name: 'Cancelar reserva', exact: true }).click();
   } else if (caso.nombre === 'papelera') {
     await page.getByRole('button', { name: 'Papelera', exact: true }).click();
     await page.getByRole('button', { name: 'Vaciar papelera', exact: true }).click();
