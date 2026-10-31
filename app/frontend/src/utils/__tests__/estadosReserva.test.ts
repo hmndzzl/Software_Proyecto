@@ -14,6 +14,7 @@ describe('avisoCambioEstadoReserva', () => {
     [ESTADOS_RESERVA.RECHAZADA, 'Reserva rechazada'],
     [ESTADOS_RESERVA.CANCELADA, 'Reserva cancelada'],
     [ESTADOS_RESERVA.PENDIENTE, 'Solicitud reabierta'],
+    [999, 'Reserva actualizada'],
   ])('el estado %s se anuncia como "%s"', (estado, titulo) => {
     const aviso = avisoCambioEstadoReserva(estado);
 

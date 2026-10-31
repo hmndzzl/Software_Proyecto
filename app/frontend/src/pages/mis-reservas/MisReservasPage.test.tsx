@@ -148,6 +148,24 @@ describe('MisReservasPage — historial', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('avisa si falla la aprobación propia', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
+    vi.mocked(apiClient.put).mockRejectedValueOnce({ response: { data: { message: 'No permitido' } } });
+    mostrar(ROLES.SACERDOTE);
+    fireEvent.click(await screen.findByRole('button', { name: '7' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No permitido');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('abre el detalle al hacer clic en cualquier parte de la fila', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
+    mostrar(ROLES.COORDINADOR_GRUPOS);
+    const fila = (await screen.findByText('Ensayo del coro')).closest('tr')!;
+    fireEvent.click(within(fila).getByText('Ensayo del coro'));
+    expect(await screen.findByRole('dialog', { name: 'Detalle de reserva #7' })).toBeInTheDocument();
+  });
+
   it('no ofrece aprobar a quien no es sacerdote ni admin', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
     mostrar(ROLES.COORDINADOR_GRUPOS);
