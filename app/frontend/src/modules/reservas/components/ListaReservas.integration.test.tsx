@@ -215,7 +215,7 @@ describe('integración de reservas, estados y edición', () => {
   it('ofrece una pestaña de pendientes para aprobar o rechazar sin usar los filtros', async () => {
     mostrar();
     await screen.findByRole('cell', { name: 'Confirmada' });
-    await userEvent.click(screen.getByRole('tab', { name: /Pendientes de aprobación \(1\)/ }));
+    await userEvent.click(screen.getByRole('tab', { name: /Pendientes de aprobación/ }));
     const filas = within(screen.getByRole('table')).getAllByRole('row');
     expect(filas).toHaveLength(2);
     expect(screen.queryByText('Confirmada')).not.toBeInTheDocument();

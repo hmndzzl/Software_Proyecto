@@ -283,7 +283,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           <button type="button" role="tab" aria-selected={pestana === 'pendientes'}
             className={`${styles.tab}${pestana === 'pendientes' ? ` ${styles.tabActiva}` : ''}`}
             onClick={() => cambiarPestana('pendientes')}>
-            Pendientes de aprobación ({reservasPendientes.length})
+            Pendientes de aprobación
+            <span className={styles.tabContador}>{reservasPendientes.length}</span>
           </button>
         </div>
       )}
