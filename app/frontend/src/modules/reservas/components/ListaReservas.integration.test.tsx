@@ -215,7 +215,7 @@ describe('integración de reservas, estados y edición', () => {
   it('ofrece una pestaña de pendientes para aprobar o rechazar sin usar los filtros', async () => {
     mostrar();
     await screen.findByRole('cell', { name: 'Confirmada' });
-    await userEvent.click(screen.getByRole('tab', { name: /Pendientes de aprobación/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Pendientes de aprobación/ }));
     const filas = within(screen.getByRole('table')).getAllByRole('row');
     expect(filas).toHaveLength(2);
     expect(screen.queryByText('Confirmada')).not.toBeInTheDocument();
@@ -223,7 +223,7 @@ describe('integración de reservas, estados y edición', () => {
     expect(await screen.findByRole('button', { name: 'Aprobar' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Volver a reservas' }));
-    await userEvent.click(screen.getByRole('tab', { name: 'Todas' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Todas' }));
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(6);
   });
 
@@ -231,7 +231,7 @@ describe('integración de reservas, estados y edición', () => {
     vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Coordinador', correo: 'coord@test.com', rol_id: ROLES.COORDINADOR_MINISTROS }));
     mostrar();
     await screen.findByRole('cell', { name: 'Confirmada' });
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Todas' })).not.toBeInTheDocument();
   });
 
   it('resalta visualmente las reservas pendientes para que se detecten rápido', async () => {

@@ -274,18 +274,13 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       <CardHead title="Lista de Reservas" hint={!cargaInicial ? `${reservasBase.length} registradas` : undefined} />
 
       {esAdminOSacerdote && !cargaInicial && (
-        <div className={styles.tabs} role="tablist">
-          <button type="button" role="tab" aria-selected={pestana === 'todas'}
-            className={`${styles.tab}${pestana === 'todas' ? ` ${styles.tabActiva}` : ''}`}
-            onClick={() => cambiarPestana('todas')}>
+        <div className={styles.tabs}>
+          <Btn kind={pestana === 'todas' ? 'primary' : 'ghost'} size="sm" onClick={() => cambiarPestana('todas')}>
             Todas
-          </button>
-          <button type="button" role="tab" aria-selected={pestana === 'pendientes'}
-            className={`${styles.tab}${pestana === 'pendientes' ? ` ${styles.tabActiva}` : ''}`}
-            onClick={() => cambiarPestana('pendientes')}>
-            Pendientes de aprobación
-            <span className={styles.tabContador}>{reservasPendientes.length}</span>
-          </button>
+          </Btn>
+          <Btn kind={pestana === 'pendientes' ? 'primary' : 'ghost'} size="sm" onClick={() => cambiarPestana('pendientes')}>
+            Pendientes de aprobación ({reservasPendientes.length})
+          </Btn>
         </div>
       )}
 
