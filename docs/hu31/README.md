@@ -1,4 +1,4 @@
-# HU-31: backend de periodos de ausencia
+# HU-31 — Notificar periodos de ausencia
 
 `POST http://localhost:3001/api/ausencias` registra un periodo y envía una notificación individual a **todos y solo** los usuarios con rol Coordinador de Ministros (2) o Sacerdote (1). No utiliza herencia de roles: Admin, Coordinador de Grupos y Ministro no son destinatarios. No depende de la relación `coordinador_ministro`.
 
@@ -53,10 +53,18 @@ El periodo, la notificación y todos sus destinatarios se guardan en una única 
 
 Con los seeds, reciben la notificación únicamente las personas **6, 7 y 13**: `sacerdote@parroquia.com`, `coord.min@parroquia.com` y `coord.min2@parroquia.com` (contraseña `password123`). Iniciar sesión con cada cuenta y consultar `GET /api/notificaciones` permite comprobar nombre, correo, periodo y `remitente_id: 9`. La notificación no requiere confirmar asistencia. El frontend existente la recoge mediante su flujo habitual de notificaciones.
 
-La tabla conserva la relación al ministro y un índice por ministro/fechas para futuras consultas. Esta tarea no modifica la asignación de tareas ni implementa la página de ausencias.
+La tabla conserva la relación al ministro y un índice por ministro/fechas para futuras consultas. La ausencia no modifica la asignación de tareas.
+
+## Aplicación web
+
+La ruta `/ausencias` muestra **Notificar ausencia** a personas con rol Ministro o Administrador. Los demás roles no tienen acceso. El formulario toma el ID de la sesión y solicita fechas de inicio y fin inclusivas, razón (máximo 255 caracteres) y justificación (máximo 5000 caracteres). Acepta una ausencia de un día, señala rangos invertidos y recorta espacios exteriores antes de enviar `POST /api/ausencias`.
+
+Durante el envío bloquea los campos y evita solicitudes repetidas. Tras guardar, confirma el registro y limpia el formulario; si falla, conserva los datos para reintentar. La pantalla usa el encabezado, la tarjeta y los controles compartidos del panel; en móvil apila las fechas.
 
 ## Verificación automatizada
 
 Desde `app/backend`: `npm run build` y `npm test`. Las pruebas del endpoint cubren autenticación, roles exactos, identidad, fechas, destinatarios y reversión de escrituras.
 
 Verificación realizada: compilación correcta y 315 pruebas aprobadas (32 del endpoint de ausencias). Prueba HTTP con MariaDB local: login real, respuesta 201, fechas persistidas y consulta de notificaciones con las 9 cuentas existentes; solo las personas 6 y 7, los únicos usuarios locales con los roles destinatarios, pudieron ver la notificación. Esa base tenía seeds anteriores y no incluía todavía a la persona 13; las pruebas automatizadas sí incluyen ambos coordinadores del seed actual. También se comprobó por HTTP y SQL el guardado de título y justificación, su inclusión en el mensaje y el rechazo de justificación vacía con 400. Los registros de prueba se eliminaron al terminar, conservando la tabla y los datos previos.
+
+En frontend, `NotificarAusenciaForm.test.tsx` y `AusenciasPage.test.tsx` cubren envío, validaciones, errores y acceso por rol. La implementación inicial pasó build y lint; los resultados de 31 pruebas de aquella etapa son históricos y no representan el total actual de la suite.

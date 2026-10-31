@@ -54,6 +54,7 @@ describe('integración de reservas, estados y edición', () => {
     fireEvent.change(campo, { target: { value: '30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1', expect.objectContaining({ cantidad_personas: 30 })));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('permite completar el aforo faltante en una reserva histórica', async () => {
@@ -76,6 +77,7 @@ describe('integración de reservas, estados y edición', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     await waitFor(() => expect(apiClient.patch).toHaveBeenCalledWith('/api/eventos/25/publico', { publico: true }));
     expect(apiClient.put).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('conserva el formulario al fallar la visibilidad y reintenta sin repetir la edición', async () => {
@@ -155,6 +157,23 @@ describe('integración de reservas, estados y edición', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Conflicto de horario');
     expect(screen.getByText('Detalle de reserva #1')).toBeInTheDocument();
+  });
+
+  it('bloquea una segunda aprobación mientras se procesa la primera', async () => {
+    let terminar!: (value: { data: object }) => void;
+    vi.mocked(apiClient.put).mockImplementationOnce(() => new Promise(resolve => { terminar = resolve; }));
+    mostrar();
+    await abrirDetalle(1);
+    await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
+    const aprobar = screen.getByRole('button', { name: 'Aprobando…' });
+    expect(aprobar).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancelar reserva' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeDisabled();
+    await userEvent.click(aprobar);
+    expect(apiClient.put).toHaveBeenCalledTimes(1);
+    terminar({ data: {} });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('edita una reserva confirmada y advierte que volverá a pendiente', async () => {
@@ -269,6 +288,7 @@ describe('integración de reservas, estados y edición', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Reabrir solicitud' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/3/estado', { estado_id: 1 }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('permite reabrir una reserva cancelada desde la edición', async () => {
@@ -279,6 +299,19 @@ describe('integración de reservas, estados y edición', () => {
     expect(screen.getByText(/fue cancelada/)).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Reabrir solicitud' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/4/estado', { estado_id: 1 }));
+  });
+
+  it('bloquea la edición mientras se reabre una solicitud', async () => {
+    let terminar!: (value: { data: object }) => void;
+    vi.mocked(apiClient.put).mockImplementationOnce(() => new Promise(resolve => { terminar = resolve; }));
+    mostrar();
+    await abrirDetalle(3);
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Reabrir solicitud' }));
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+    expect(screen.getByLabelText('Título del Evento:')).toBeDisabled();
+    terminar({ data: {} });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('resalta la fila de la reserva al cerrar la tarjeta tras aplicar un cambio', async () => {

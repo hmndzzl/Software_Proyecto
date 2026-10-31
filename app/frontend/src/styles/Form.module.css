@@ -163,7 +163,6 @@
 .confirmBox {
   background-color: var(--color-okBg);
   border: 1px solid var(--color-ok);
-  border-left-width: 5px;
   border-radius: var(--radius-input);
   padding: 14px 18px;
   margin-bottom: 18px;
@@ -236,7 +235,7 @@
 
 .warningBox {
   background-color: var(--color-warnBg);
-  border-left: 4px solid var(--color-warn);
+  border: 1px solid var(--color-warn);
   border-radius: var(--radius-input);
   padding: 10px 14px;
   font-family: var(--font-body);
@@ -247,7 +246,7 @@
 
 .okBox {
   background-color: var(--color-okBg);
-  border-left: 4px solid var(--color-ok);
+  border: 1px solid var(--color-ok);
   border-radius: var(--radius-input);
   padding: 10px 14px;
   font-family: var(--font-body);
@@ -330,7 +329,7 @@
 
 .modalWarning {
   background-color: var(--color-warnBg);
-  border-left: 4px solid var(--color-warn);
+  border: 1px solid var(--color-warn);
   border-radius: var(--radius-input);
   padding: 10px 14px;
   font-family: var(--font-body);
