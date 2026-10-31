@@ -2,7 +2,7 @@
 
 Sistema web para la gestión operativa y la comunicación de la Parroquia San Pedro Nolasco, Guatemala. Centraliza reservas, espacios, agenda, tareas de ministros, grupos, notificaciones, cuentas y reportes; además ofrece un portal público con contenido editable, agenda y formulario de contacto.
 
-**Estado del proyecto:** Sprint 10 implementado. La validación previa a la entrega del 27 de octubre de 2026 se conserva como evidencia histórica; las cifras de cobertura más recientes figuran en [Pruebas](#pruebas).
+**Estado del proyecto:** Sprint 10 implementado. La validación previa a la entrega se conserva como evidencia histórica; las cifras de cobertura más recientes figuran en [Pruebas](#pruebas).
 
 **Producción:** [parroquiasanpedronolasco.org.gt](https://parroquiasanpedronolasco.org.gt/)
 
