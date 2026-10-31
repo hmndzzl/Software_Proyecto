@@ -212,6 +212,28 @@ describe('integración de reservas, estados y edición', () => {
     expect(await screen.findByText('No hay reservas registradas.')).toBeInTheDocument();
   });
 
+  it('ofrece una pestaña de pendientes para aprobar o rechazar sin usar los filtros', async () => {
+    mostrar();
+    await screen.findByRole('cell', { name: 'Confirmada' });
+    await userEvent.click(screen.getByRole('tab', { name: /Pendientes de aprobación \(1\)/ }));
+    const filas = within(screen.getByRole('table')).getAllByRole('row');
+    expect(filas).toHaveLength(2);
+    expect(screen.queryByText('Confirmada')).not.toBeInTheDocument();
+    await abrirDetalle(1);
+    expect(await screen.findByRole('button', { name: 'Aprobar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Volver a reservas' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Todas' }));
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(6);
+  });
+
+  it('no muestra pestañas a quien no puede aprobar reservas', async () => {
+    vi.mocked(useAuth).mockReturnValue(authValue({ id: 1, nombre: 'Coordinador', correo: 'coord@test.com', rol_id: ROLES.COORDINADOR_MINISTROS }));
+    mostrar();
+    await screen.findByRole('cell', { name: 'Confirmada' });
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+
   it('resalta visualmente las reservas pendientes para que se detecten rápido', async () => {
     mostrar();
     await screen.findByRole('cell', { name: 'Confirmada' });

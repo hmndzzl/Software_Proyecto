@@ -29,6 +29,7 @@ import AforoField, { errorAforo } from '../../../components/ui/AforoField';
 type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion' | 'aforo';
 type Vista = 'detalle' | 'editar' | 'confirmar';
 type AccionConfirmar = { estado: number; accion: 'cancelar' | 'rechazar' };
+type Pestana = 'todas' | 'pendientes';
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
@@ -75,7 +76,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN
   );
 
-  const filtros = useTableFilters(reservas, {
+  const [pestana, setPestana] = useState<Pestana>('todas');
+  const reservasPendientes = reservas.filter(r => r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE);
+  const reservasBase = esAdminOSacerdote && pestana === 'pendientes' ? reservasPendientes : reservas;
+
+  const filtros = useTableFilters(reservasBase, {
     persistenceKey: 'reservas',
     search: r => [r.id, r.espacio_nombre, r.evento_titulo, r.evento_descripcion, r.solicitante_nombre],
     date: r => r.fecha,
@@ -85,6 +90,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     ],
   });
   const { sortKey, sortDir, toggleSort, sortedData: reservasOrdenadas } = useSortableTable(filtros.filteredData, SORT_VALUE);
+
+  const cambiarPestana = (nueva: Pestana) => {
+    filtros.controls.clear();
+    setPestana(nueva);
+  };
 
   const fetchReservas = async () => {
     setLoading(true);
@@ -261,7 +271,23 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div>
-      <CardHead title="Lista de Reservas" hint={!cargaInicial ? `${reservas.length} registradas` : undefined} />
+      <CardHead title="Lista de Reservas" hint={!cargaInicial ? `${reservasBase.length} registradas` : undefined} />
+
+      {esAdminOSacerdote && !cargaInicial && (
+        <div className={styles.tabs} role="tablist">
+          <button type="button" role="tab" aria-selected={pestana === 'todas'}
+            className={`${styles.tab}${pestana === 'todas' ? ` ${styles.tabActiva}` : ''}`}
+            onClick={() => cambiarPestana('todas')}>
+            Todas
+          </button>
+          <button type="button" role="tab" aria-selected={pestana === 'pendientes'}
+            className={`${styles.tab}${pestana === 'pendientes' ? ` ${styles.tabActiva}` : ''}`}
+            onClick={() => cambiarPestana('pendientes')}>
+            Pendientes de aprobación ({reservasPendientes.length})
+          </button>
+        </div>
+      )}
+
       {!cargaInicial && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
 
       {activa && (
@@ -393,7 +419,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         <EmptyState message="No hay reservas registradas." action={<a className="btn-primary" href="/reservas?nueva=1">Solicitar primera reserva</a>} />
       )}
 
-      {!cargaInicial && reservas.length > 0 && (
+      {!cargaInicial && !error && reservas.length > 0 && reservasBase.length === 0 && (
+        <EmptyState message="No hay solicitudes pendientes de aprobación." />
+      )}
+
+      {!cargaInicial && reservasBase.length > 0 && (
         <div className="table-container">
           <table className="styled-table">
             <thead>
