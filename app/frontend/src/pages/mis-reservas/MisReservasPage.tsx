@@ -16,7 +16,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHorario } from '../../utils/date';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../utils/estadosReserva';
-import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
+import { ROLES, ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
 import { manejarClicFila } from '../../utils/filaClicable';
@@ -43,8 +43,9 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
 export default function MisReservasPage() {
   const [porCancelar, setPorCancelar] = useState<MiReserva | null>(null);
   const navigate = useNavigate();
-  const { tieneRol } = useAuth();
+  const { tieneRol, usuario } = useAuth();
   const puedeReservar = tieneRol(ROLES_RESERVAS);
+  const esAdminOSacerdote = usuario && (usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN);
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -86,6 +87,18 @@ export default function MisReservasPage() {
     }
   };
 
+  const aprobarPropia = async (id: number) => {
+    try {
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CONFIRMADA });
+      const aviso = avisoCambioEstadoReserva(ESTADOS_RESERVA.CONFIRMADA);
+      toast.success(aviso.titulo, aviso.mensaje);
+      setDetalle(null);
+      cargarReservas();
+    } catch (err: unknown) {
+      toast.error('No se pudo aprobar la reserva', getApiErrorMessage(err, 'Error al aprobar la reserva.', 'message'));
+    }
+  };
+
   return (
     <div className={styles.page}>
       <PageHeader
@@ -100,9 +113,14 @@ export default function MisReservasPage() {
       />
 
       {detalle && <DetalleReserva returnLabel="Volver a mis reservas" reserva={detalle} onClose={() => setDetalle(null)}
-        acciones={puedeCancelarReserva(detalle.estado_reserva_id) && (
-          <Btn kind="bad" onClick={() => { setDetalle(null); setPorCancelar(detalle); }}>Cancelar reserva</Btn>
-        )} />}
+        acciones={<>
+          {esAdminOSacerdote && detalle.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
+            <Btn kind="ok" onClick={() => { void aprobarPropia(detalle.id); }}>Aprobar</Btn>
+          )}
+          {puedeCancelarReserva(detalle.estado_reserva_id) && (
+            <Btn kind="bad" onClick={() => { setDetalle(null); setPorCancelar(detalle); }}>Cancelar reserva</Btn>
+          )}
+        </>} />}
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
         <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />

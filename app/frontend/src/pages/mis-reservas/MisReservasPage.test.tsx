@@ -137,4 +137,21 @@ describe('MisReservasPage — historial', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Cancelar reserva' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('¿Cancelar la reserva de Capilla');
   });
+
+  it('permite al sacerdote aprobar su propia solicitud pendiente desde el detalle', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
+    vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+    mostrar(ROLES.SACERDOTE);
+    fireEvent.click(await screen.findByRole('button', { name: '7' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/7/estado', { estado_id: 2 }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('no ofrece aprobar a quien no es sacerdote ni admin', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
+    mostrar(ROLES.COORDINADOR_GRUPOS);
+    fireEvent.click(await screen.findByRole('button', { name: '7' }));
+    expect(screen.queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument();
+  });
 });
