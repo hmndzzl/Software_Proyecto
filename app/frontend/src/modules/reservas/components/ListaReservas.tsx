@@ -8,8 +8,8 @@ import EmptyState from '../../../components/ui/EmptyState';
 import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import Btn from '../../../components/ui/Btn';
 import Modal from '../../../components/ui/Modal';
-import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import { ConfirmDialogContent } from '../../../components/ui/ConfirmDialog';
+import DecisionesPanel from '../../../components/ui/DecisionesPanel';
 import SortableTh from '../../../components/ui/SortableTh';
 import TableFilters from '../../../components/ui/TableFilters';
 import { useTableFilters } from '../../../hooks/useTableFilters';
@@ -18,15 +18,17 @@ import { useAuth } from '../../../context/AuthContext';
 import { ROLES } from '../../../utils/roles';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../../utils/estadosReserva';
 import { getApiErrorMessage } from '../../../utils/apiError';
-import { formatFecha, formatHora } from '../../../utils/date';
+import { formatFecha, formatHora, formatHorario } from '../../../utils/date';
+import { manejarClicFila } from '../../../utils/filaClicable';
 import type { Espacio } from '../../espacios/components/EspacioCard';
 import type { Reserva } from '../../../types';
 import styles from './ListaReservas.module.css';
 import formStyles from '../../../styles/Form.module.css';
 import AforoField, { errorAforo } from '../../../components/ui/AforoField';
-import DetalleReserva from './DetalleReserva';
 
 type SortKey = 'id' | 'espacio' | 'fecha' | 'estado' | 'solicitante' | 'inicio' | 'fin' | 'titulo' | 'descripcion' | 'aforo';
+type Vista = 'detalle' | 'editar' | 'confirmar';
+type AccionConfirmar = { estado: number; accion: 'cancelar' | 'rechazar' };
 
 const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
   id: (r) => r.id,
@@ -42,9 +44,7 @@ const SORT_VALUE: Record<SortKey, (r: Reserva) => string | number> = {
 };
 
 export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
-  const confirmacionId = useId();
-  const [estadoPorConfirmar, setEstadoPorConfirmar] = useState<{ reserva: Reserva; estado: number; accion: string } | null>(null);
-  const [confirmandoCancelacion, setConfirmandoCancelacion] = useState(false);
+  const id = useId();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +52,11 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const cargaInicial = loading && !cargada.current;
   const [error, setError] = useState('');
 
-  const [editando, setEditando] = useState<Reserva | null>(null);
-  const [detalle, setDetalle] = useState<Reserva | null>(null);
+  const [activa, setActiva] = useState<Reserva | null>(null);
+  const [vista, setVista] = useState<Vista>('detalle');
+  const [accionConfirmar, setAccionConfirmar] = useState<AccionConfirmar | null>(null);
+  const [accionOcupado, setAccionOcupado] = useState(false);
+
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
   const [editHoraFin, setEditHoraFin] = useState('');
@@ -103,9 +106,9 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
   const toast = useToast();
 
-  const cambiarEstado = async (id: number, nuevoEstado: number) => {
+  const cambiarEstado = async (reservaId: number, nuevoEstado: number) => {
     try {
-      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: nuevoEstado });
+      await apiClient.put(`/api/reservas/${reservaId}/estado`, { estado_id: nuevoEstado });
       const aviso = avisoCambioEstadoReserva(nuevoEstado);
       toast.success(aviso.titulo, aviso.mensaje);
       fetchReservas();
@@ -115,54 +118,74 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     }
   };
 
-  const confirmarCambioEstado = async () => {
-    if (!estadoPorConfirmar) return;
-    await cambiarEstado(estadoPorConfirmar.reserva.id, estadoPorConfirmar.estado);
-    setEstadoPorConfirmar(null);
+  const abrir = (r: Reserva, destino: Vista = 'detalle') => {
+    setActiva(r);
+    setVista(destino);
+    setAccionConfirmar(null);
+    setEditMensaje('');
+    if (destino === 'editar') {
+      setEditFecha(r.fecha.split('T')[0]);
+      setEditHoraInicio(r.hora_inicio.substring(0, 5));
+      setEditHoraFin(r.hora_fin.substring(0, 5));
+      setEditEspacioId(r.espacio_id ? String(r.espacio_id) : '');
+      setEditTitulo(r.evento_titulo ?? '');
+      setEditDescripcion(r.evento_descripcion ?? '');
+      setEditCantidad(r.cantidad_personas == null ? '' : String(r.cantidad_personas));
+      setEditPublico(Boolean(r.evento_publico));
+      datosPersistidos.current = JSON.stringify({
+        fecha: r.fecha.split('T')[0], hora_inicio: r.hora_inicio.substring(0, 5),
+        hora_fin: r.hora_fin.substring(0, 5), espacio_id: Number(r.espacio_id),
+        titulo: r.evento_titulo ?? '', descripcion: r.evento_descripcion ?? '',
+        ...(r.cantidad_personas != null ? { cantidad_personas: r.cantidad_personas } : {}),
+      });
+    }
   };
 
-  const abrirEdicion = (r: Reserva) => {
-    setEditando(r);
-    setEditFecha(r.fecha.split('T')[0]);
-    setEditHoraInicio(r.hora_inicio.substring(0, 5));
-    setEditHoraFin(r.hora_fin.substring(0, 5));
-    setEditEspacioId(r.espacio_id ? String(r.espacio_id) : '');
-    setEditTitulo(r.evento_titulo ?? '');
-    setEditDescripcion(r.evento_descripcion ?? '');
-    setEditCantidad(r.cantidad_personas == null ? '' : String(r.cantidad_personas));
-    setEditPublico(Boolean(r.evento_publico));
-    datosPersistidos.current = JSON.stringify({
-      fecha: r.fecha.split('T')[0], hora_inicio: r.hora_inicio.substring(0, 5),
-      hora_fin: r.hora_fin.substring(0, 5), espacio_id: Number(r.espacio_id),
-      titulo: r.evento_titulo ?? '', descripcion: r.evento_descripcion ?? '',
-      ...(r.cantidad_personas != null ? { cantidad_personas: r.cantidad_personas } : {}),
-    });
+  const cerrar = () => {
+    if (editLoading || accionOcupado) return;
+    setActiva(null);
+    setVista('detalle');
+    setAccionConfirmar(null);
     setEditMensaje('');
   };
 
-  const cerrarEdicion = () => {
-    setConfirmandoCancelacion(false);
-    setEditando(null);
+  const volver = () => {
+    if (editLoading || accionOcupado) return;
+    setVista('detalle');
+    setAccionConfirmar(null);
     setEditMensaje('');
   };
 
-  const cancelarReservaDesdeEdicion = async () => {
-    if (!editando || editLoading) return;
-    setEditLoading(true);
-    setEditMensaje('');
+  const aprobar = async () => {
+    if (!activa) return;
     try {
-      await apiClient.put(`/api/reservas/${editando.id}/estado`, { estado_id: ESTADOS_RESERVA.CANCELADA });
-      cerrarEdicion();
-      fetchReservas();
-    } catch (err: unknown) {
-      setEditMensaje(getApiErrorMessage(err, 'Error al cancelar la reserva.', 'message'));
+      await cambiarEstado(activa.id, ESTADOS_RESERVA.CONFIRMADA);
+      cerrar();
+    } catch {
+      // El aviso de error ya se mostró en cambiarEstado; se deja la tarjeta abierta para reintentar.
+    }
+  };
+
+  const pedirConfirmacion = (accion: AccionConfirmar['accion']) => {
+    setAccionConfirmar({ accion, estado: accion === 'cancelar' ? ESTADOS_RESERVA.CANCELADA : ESTADOS_RESERVA.RECHAZADA });
+    setVista('confirmar');
+  };
+
+  const confirmarAccion = async () => {
+    if (!activa || !accionConfirmar || accionOcupado) return;
+    setAccionOcupado(true);
+    try {
+      await cambiarEstado(activa.id, accionConfirmar.estado);
+      cerrar();
+    } catch {
+      // El aviso de error ya se mostró en cambiarEstado; se deja la confirmación abierta para reintentar.
     } finally {
-      setEditLoading(false);
+      setAccionOcupado(false);
     }
   };
 
   const guardarEdicion = async () => {
-    if (!editando || editLoading) return;
+    if (!activa || editLoading) return;
     if (!editFecha || !editHoraInicio || !editHoraFin || !editEspacioId || !editTitulo || !editDescripcion) {
       setEditMensaje('Por favor completa todos los campos.');
       return;
@@ -171,7 +194,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       setEditMensaje('La hora de inicio debe ser menor que la hora de fin.');
       return;
     }
-    if (editCantidad || editando.cantidad_personas != null) {
+    if (editCantidad || activa.cantidad_personas != null) {
       const errorCantidad = errorAforo(editCantidad, espacios.find(e => String(e.id) === editEspacioId)?.capacidad);
       if (errorCantidad) { setEditMensaje(errorCantidad); return; }
     }
@@ -189,14 +212,14 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
         ...(editCantidad ? { cantidad_personas: Number(editCantidad) } : {}),
       };
       if (JSON.stringify(datos) !== datosPersistidos.current) {
-        await apiClient.put(`/api/reservas/${editando.id}`, datos);
+        await apiClient.put(`/api/reservas/${activa.id}`, datos);
         datosPersistidos.current = JSON.stringify(datos);
         datosGuardados = true;
       }
-      if (esAdminOSacerdote && editando.evento_id && editPublico !== Boolean(editando.evento_publico)) {
-        await apiClient.patch(`/api/eventos/${editando.evento_id}/publico`, { publico: editPublico });
+      if (esAdminOSacerdote && activa.evento_id && editPublico !== Boolean(activa.evento_publico)) {
+        await apiClient.patch(`/api/eventos/${activa.evento_id}/publico`, { publico: editPublico });
       }
-      cerrarEdicion();
+      cerrar();
       fetchReservas();
     } catch (err: unknown) {
       setEditMensaje(datosGuardados
@@ -207,25 +230,66 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     }
   };
 
+  const campos = (r: Reserva) => [
+    { etiqueta: 'Actividad', valor: r.evento_titulo ?? 'Sin título' },
+    { etiqueta: 'Descripción', valor: r.evento_descripcion ?? 'Sin descripción' },
+    { etiqueta: 'Espacio', valor: r.espacio_nombre ?? 'Sin espacio' },
+    { etiqueta: 'Fecha', valor: formatFecha(r.fecha) },
+    { etiqueta: 'Horario', valor: formatHorario(r.hora_inicio, r.hora_fin) },
+    { etiqueta: 'Solicitante', valor: r.solicitante_nombre ?? 'No disponible' },
+    { etiqueta: 'Personas esperadas', valor: r.cantidad_personas ?? 'No registrado' },
+    { etiqueta: 'Estado actual', valor: <ReservaEstadoBadge estadoId={r.estado_reserva_id} /> },
+  ];
+
+  const tituloModal = !activa ? '' : vista === 'editar' ? `Editar Reserva #${activa.id}`
+    : vista === 'confirmar' ? (accionConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva')
+    : `Detalle de reserva #${activa.id}`;
+
   return (
     <div>
       <CardHead title="Lista de Reservas" hint={!cargaInicial ? `${reservas.length} registradas` : undefined} />
       {!cargaInicial && !error && <TableFilters {...filtros.controls} label="Filtros de reservas" />}
 
-      {detalle && <DetalleReserva reserva={detalle} onClose={() => setDetalle(null)} />}
-      {editando && (
-        <Modal open title={confirmandoCancelacion ? 'Cancelar reserva' : `Editar Reserva #${editando.id}`}
-          closeDisabled={editLoading} describedBy={confirmandoCancelacion ? confirmacionId : undefined}
-          initialFocusSelector={confirmandoCancelacion ? '[data-confirm-cancel]' : undefined}
-          onClose={() => { if (!editLoading) { if (confirmandoCancelacion) { setConfirmandoCancelacion(false); setEditMensaje(''); } else cerrarEdicion(); } }}>
-          {confirmandoCancelacion ? <>
-            <ConfirmDialogContent descriptionId={confirmacionId} confirmLabel="Cancelar reserva" busy={editLoading}
-              description="¿Estás seguro de que deseas cancelar esta reserva? Se liberará el espacio reservado."
-              onConfirm={cancelarReservaDesdeEdicion} onCancel={() => { setConfirmandoCancelacion(false); setEditMensaje(''); }} />
-            {editMensaje && <p role="alert" className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>}
-          </> : <>
+      {activa && (
+        <Modal open title={tituloModal} width={vista === 'detalle' ? 640 : 520}
+          closeDisabled={editLoading || accionOcupado}
+          describedBy={vista === 'confirmar' ? `${id}-confirmacion` : undefined}
+          initialFocusSelector={vista === 'confirmar' ? '[data-confirm-cancel]' : undefined}
+          returnLabel={vista === 'detalle' ? 'Volver a reservas' : undefined}
+          onBack={vista !== 'detalle' ? volver : undefined}
+          onClose={cerrar}>
+          {vista === 'detalle' && (
+            <DecisionesPanel endpoint={`/api/reservas/${activa.id}/decisiones`} campos={campos(activa)} acciones={<>
+              {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
+                <Btn kind="ok" onClick={() => { void aprobar(); }}>Aprobar</Btn>
+              )}
+              {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && usuario?.id !== activa.solicitante_id && (
+                <Btn kind="bad" onClick={() => pedirConfirmacion('rechazar')}>Rechazar</Btn>
+              )}
+              {usuario && activa.solicitante_id === usuario.id && puedeCancelarReserva(activa.estado_reserva_id) && (
+                <Btn kind="bad" onClick={() => pedirConfirmacion('cancelar')}>Cancelar reserva</Btn>
+              )}
+              {usuario && (esAdminOSacerdote || activa.solicitante_id === usuario.id) && (
+                <Btn kind="ghost" onClick={() => abrir(activa, 'editar')}>Editar</Btn>
+              )}
+            </>} />
+          )}
 
-            {editando.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
+          {vista === 'confirmar' && accionConfirmar && (
+            <ConfirmDialogContent
+              descriptionId={`${id}-confirmacion`}
+              confirmLabel={accionConfirmar.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
+              busy={accionOcupado}
+              onConfirm={confirmarAccion}
+              onCancel={volver}
+              description={accionConfirmar.accion === 'cancelar'
+                ? `¿Cancelar la reserva de ${activa.evento_titulo ?? activa.espacio_nombre} del ${formatFecha(activa.fecha)}? Se liberará el espacio reservado.`
+                : `¿Rechazar la solicitud de ${activa.solicitante_nombre ?? 'esta persona'} para ${activa.evento_titulo ?? activa.espacio_nombre}?`}
+            />
+          )}
+
+          {vista === 'editar' && (<>
+            {activa.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
                 Si modificas los datos de la reserva, volverá a estado <strong>Pendiente</strong> para re-aprobación. Cambiar solo la visibilidad pública conserva su estado.
               </div>
@@ -246,7 +310,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 </select>
               </div>
 
-              <AforoField value={editCantidad} onChange={setEditCantidad} capacidad={espacios.find(e => String(e.id) === editEspacioId)?.capacidad} required={editando.cantidad_personas != null} />
+              <AforoField value={editCantidad} onChange={setEditCantidad} capacidad={espacios.find(e => String(e.id) === editEspacioId)?.capacidad} required={activa.cantidad_personas != null} />
               <div className={formStyles.field}>
                 <label htmlFor="editar-reserva-fecha" className={`${formStyles.label} ${formStyles.required}`}>Fecha:</label>
                 <input id="editar-reserva-fecha" type="date" className={formStyles.input} value={editFecha} onChange={e => setEditFecha(e.target.value)} />
@@ -271,7 +335,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <label htmlFor="editar-reserva-descripcion" className={`${formStyles.label} ${formStyles.required}`}>Descripción del Evento:</label>
                 <input id="editar-reserva-descripcion" type="text" className={formStyles.input} value={editDescripcion} onChange={e => setEditDescripcion(e.target.value)} />
               </div>
-              {esAdminOSacerdote && editando.evento_id && (
+              {esAdminOSacerdote && activa.evento_id && (
                 <div className={formStyles.field}>
                   <label className={formStyles.checkboxLabel}>
                     <input type="checkbox" checked={editPublico} onChange={e => setEditPublico(e.target.checked)} />
@@ -283,24 +347,14 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </fieldset>
 
             <div className={formStyles.modalActions}>
-              {usuario && editando.solicitante_id === usuario.id && puedeCancelarReserva(editando.estado_reserva_id) && (
-                <button
-                  type="button"
-                  className={`${formStyles.btnDanger} ${styles.btnCancelarReservaModal}`}
-                  onClick={() => { setEditMensaje(''); setConfirmandoCancelacion(true); }}
-                  disabled={editLoading}
-                >
-                  Cancelar Reserva
-                </button>
-              )}
-              <button className={formStyles.btnSecondary} onClick={cerrarEdicion} disabled={editLoading}>
+              <button className={formStyles.btnSecondary} onClick={volver} disabled={editLoading}>
                 Cancelar
               </button>
               <button className="btn-primary" onClick={guardarEdicion} disabled={editLoading}>
                 {editLoading ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
-          </>}
+          </>)}
         </Modal>
       )}
 
@@ -327,13 +381,12 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                 <SortableTh label="Registrado por" sortKey="solicitante" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {reservasOrdenadas.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.id}</td>
+                <tr key={r.id} className={styles.fila} onClick={manejarClicFila(() => abrir(r))}>
+                  <td><button type="button" className={styles.enlace} onClick={() => abrir(r)}>{r.id}</button></td>
                   <td>{r.espacio_nombre ?? '—'}</td>
                   <td>{formatFecha(r.fecha)}</td>
                   <td className={styles.horaCell}>{formatHora(r.hora_inicio)}</td>
@@ -345,45 +398,12 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
                     <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                   </td>
                   <td>{r.cantidad_personas ?? 'No registrado'}</td>
-                  <td>
-                    <div className={styles.acciones}>
-                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
-                      {esAdminOSacerdote && r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
-                        <>
-                          <Btn kind="ok" size="sm" onClick={() => { void cambiarEstado(r.id, ESTADOS_RESERVA.CONFIRMADA).catch(() => {}); }}>
-                            Aprobar
-                          </Btn>
-                          {usuario && r.solicitante_id === usuario.id ? (
-                            <Btn kind="bad" size="sm" onClick={() => setEstadoPorConfirmar({ reserva: r, estado: ESTADOS_RESERVA.CANCELADA, accion: 'cancelar' })}>
-                              Cancelar
-                            </Btn>
-                          ) : (
-                            <Btn kind="bad" size="sm" onClick={() => setEstadoPorConfirmar({ reserva: r, estado: ESTADOS_RESERVA.RECHAZADA, accion: 'rechazar' })}>
-                              Rechazar
-                            </Btn>
-                          )}
-                        </>
-                      )}
-                      {usuario && (esAdminOSacerdote || r.solicitante_id === usuario.id) && (
-                        <Btn kind="ghost" size="sm" onClick={() => abrirEdicion(r)}>
-                          Editar
-                        </Btn>
-                      )}
-                    </div>
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <ConfirmDialog open={estadoPorConfirmar !== null}
-        title={estadoPorConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
-        confirmLabel={estadoPorConfirmar?.accion === 'cancelar' ? 'Cancelar reserva' : 'Rechazar reserva'}
-        description={estadoPorConfirmar?.accion === 'cancelar'
-          ? `¿Cancelar la reserva de ${estadoPorConfirmar.reserva.evento_titulo ?? estadoPorConfirmar.reserva.espacio_nombre} del ${formatFecha(estadoPorConfirmar.reserva.fecha)}? Se liberará el espacio reservado.`
-          : `¿Rechazar la solicitud de ${estadoPorConfirmar?.reserva.solicitante_nombre ?? 'esta persona'} para ${estadoPorConfirmar?.reserva.evento_titulo ?? estadoPorConfirmar?.reserva.espacio_nombre}?`}
-        onCancel={() => setEstadoPorConfirmar(null)} onConfirm={confirmarCambioEstado} />
     </div>
   );
 }

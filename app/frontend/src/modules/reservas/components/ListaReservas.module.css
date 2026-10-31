@@ -2,15 +2,16 @@
 .textoInfo  { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; padding: 16px 24px; }
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 
-/* Acciones en tabla */
-.acciones {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
+.fila { cursor: pointer; }
+.enlace {
+  border: 0;
+  padding: 4px 0;
+  margin-right: 8px;
+  background: transparent;
+  color: var(--color-rojo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-
-/* Empuja el botón de cancelar reserva a la izquierda dentro del modal (acciones flex-end) */
-.btnCancelarReservaModal {
-  margin-right: auto;
-}
+.enlace:hover { text-decoration: underline; }
+.enlace:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 3px; }
