@@ -15,6 +15,11 @@
   border-left: 3px solid var(--color-oro);
 }
 .filaPendiente:hover { background: var(--color-unread-hover); }
+.filaResaltada { animation: resaltarFila 2.5s ease-out; }
+@keyframes resaltarFila {
+  0%, 40% { background: var(--color-highlight); }
+  100% { background: transparent; }
+}
 .enlace {
   border: 0;
   padding: 4px 0;

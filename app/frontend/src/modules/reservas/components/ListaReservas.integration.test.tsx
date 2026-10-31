@@ -253,6 +253,15 @@ describe('integración de reservas, estados y edición', () => {
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/2/estado', { estado_id: 3 }));
   });
 
+  it('muestra datos de respaldo al rechazar una aprobada sin título ni solicitante', async () => {
+    const reservaAprobadaIncompleta = { ...reservas[1], id: 12, solicitante_nombre: null, evento_titulo: null, espacio_nombre: 'Capilla' };
+    preparar([reservaAprobadaIncompleta]);
+    mostrar();
+    await abrirDetalle(12);
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByText(/¿Rechazar la reserva ya aprobada de esta persona para Capilla\?/)).toBeInTheDocument();
+  });
+
   it('permite reabrir una solicitud rechazada desde la edición', async () => {
     mostrar();
     const filaRechazada = (await screen.findByRole('cell', { name: 'Rechazada' })).closest('tr')!;
@@ -260,6 +269,26 @@ describe('integración de reservas, estados y edición', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Reabrir solicitud' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/3/estado', { estado_id: 1 }));
+  });
+
+  it('permite reabrir una reserva cancelada desde la edición', async () => {
+    mostrar();
+    const filaCancelada = (await screen.findByRole('cell', { name: 'Cancelada' })).closest('tr')!;
+    await userEvent.click(within(filaCancelada).getByRole('button'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    expect(screen.getByText(/fue cancelada/)).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Reabrir solicitud' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/4/estado', { estado_id: 1 }));
+  });
+
+  it('resalta la fila de la reserva al cerrar la tarjeta tras aplicar un cambio', async () => {
+    mostrar();
+    await screen.findByRole('cell', { name: 'Confirmada' });
+    await abrirDetalle(1);
+    await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/1/estado', { estado_id: 2 }));
+    const filaAprobada = (await screen.findByRole('button', { name: '1' })).closest('tr')!;
+    expect(filaAprobada.className).toContain(styles.filaResaltada);
   });
 });
 

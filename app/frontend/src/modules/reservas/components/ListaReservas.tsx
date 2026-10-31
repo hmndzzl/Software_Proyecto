@@ -58,6 +58,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [accionConfirmar, setAccionConfirmar] = useState<AccionConfirmar | null>(null);
   const [accionOcupado, setAccionOcupado] = useState(false);
   const [reabriendo, setReabriendo] = useState(false);
+  const [resaltarId, setResaltarId] = useState<number | null>(null);
 
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
@@ -167,10 +168,18 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setEditMensaje('');
   };
 
+  /** Marca la fila con un destello breve al cerrar la tarjeta tras aplicar un cambio,
+   * para que no se pierda de vista en la tabla al volver. */
+  const marcarExito = (reservaId: number) => {
+    setResaltarId(reservaId);
+    window.setTimeout(() => setResaltarId(prev => (prev === reservaId ? null : prev)), 2600);
+  };
+
   const aprobar = async () => {
     if (!activa) return;
     try {
       await cambiarEstado(activa.id, ESTADOS_RESERVA.CONFIRMADA);
+      marcarExito(activa.id);
       cerrar();
     } catch {
       // El aviso de error ya se mostró en cambiarEstado; se deja la tarjeta abierta para reintentar.
@@ -187,6 +196,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setAccionOcupado(true);
     try {
       await cambiarEstado(activa.id, accionConfirmar.estado);
+      marcarExito(activa.id);
       cerrar();
     } catch {
       // El aviso de error ya se mostró en cambiarEstado; se deja la confirmación abierta para reintentar.
@@ -200,6 +210,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
     setReabriendo(true);
     try {
       await cambiarEstado(activa.id, ESTADOS_RESERVA.PENDIENTE);
+      marcarExito(activa.id);
       cerrar();
     } catch {
       // El aviso de error ya se mostró en cambiarEstado; se deja la tarjeta abierta para reintentar.
@@ -243,6 +254,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       if (esAdminOSacerdote && activa.evento_id && editPublico !== Boolean(activa.evento_publico)) {
         await apiClient.patch(`/api/eventos/${activa.evento_id}/publico`, { publico: editPublico });
       }
+      marcarExito(activa.id);
       cerrar();
       fetchReservas();
     } catch (err: unknown) {
@@ -329,9 +341,10 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           )}
 
           {vista === 'editar' && (<>
-            {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.RECHAZADA && (
+            {esAdminOSacerdote
+              && (activa.estado_reserva_id === ESTADOS_RESERVA.RECHAZADA || activa.estado_reserva_id === ESTADOS_RESERVA.CANCELADA) && (
               <div className={styles.avisoReabrir}>
-                <span>Esta solicitud fue rechazada.</span>
+                <span>Esta solicitud {activa.estado_reserva_id === ESTADOS_RESERVA.RECHAZADA ? 'fue rechazada' : 'fue cancelada'}.</span>
                 <Btn type="button" kind="ghost" size="sm" disabled={reabriendo} onClick={() => { void reabrirSolicitud(); }}>
                   {reabriendo ? 'Reabriendo...' : 'Reabrir solicitud'}
                 </Btn>
@@ -439,7 +452,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             <tbody>
               {reservasOrdenadas.map((r) => (
                 <tr key={r.id}
-                  className={`${styles.fila}${r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE ? ` ${styles.filaPendiente}` : ''}`}
+                  className={`${styles.fila}${r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE ? ` ${styles.filaPendiente}` : ''}${r.id === resaltarId ? ` ${styles.filaResaltada}` : ''}`}
                   onClick={manejarClicFila(() => abrir(r))}>
                   <td><button type="button" className={styles.enlace} onClick={() => abrir(r)}>{r.id}</button></td>
                   <td>{r.espacio_nombre ?? '—'}</td>
