@@ -56,6 +56,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   const [vista, setVista] = useState<Vista>('detalle');
   const [accionConfirmar, setAccionConfirmar] = useState<AccionConfirmar | null>(null);
   const [accionOcupado, setAccionOcupado] = useState(false);
+  const [reabriendo, setReabriendo] = useState(false);
 
   const [editFecha, setEditFecha] = useState('');
   const [editHoraInicio, setEditHoraInicio] = useState('');
@@ -142,7 +143,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   };
 
   const cerrar = () => {
-    if (editLoading || accionOcupado) return;
+    if (editLoading || accionOcupado || reabriendo) return;
     setActiva(null);
     setVista('detalle');
     setAccionConfirmar(null);
@@ -150,7 +151,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   };
 
   const volver = () => {
-    if (editLoading || accionOcupado) return;
+    if (editLoading || accionOcupado || reabriendo) return;
     setVista('detalle');
     setAccionConfirmar(null);
     setEditMensaje('');
@@ -181,6 +182,19 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
       // El aviso de error ya se mostró en cambiarEstado; se deja la confirmación abierta para reintentar.
     } finally {
       setAccionOcupado(false);
+    }
+  };
+
+  const reabrirSolicitud = async () => {
+    if (!activa || reabriendo) return;
+    setReabriendo(true);
+    try {
+      await cambiarEstado(activa.id, ESTADOS_RESERVA.PENDIENTE);
+      cerrar();
+    } catch {
+      // El aviso de error ya se mostró en cambiarEstado; se deja la tarjeta abierta para reintentar.
+    } finally {
+      setReabriendo(false);
     }
   };
 
@@ -252,7 +266,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
 
       {activa && (
         <Modal open title={tituloModal} width={vista === 'detalle' ? 640 : 520}
-          closeDisabled={editLoading || accionOcupado}
+          closeDisabled={editLoading || accionOcupado || reabriendo}
           describedBy={vista === 'confirmar' ? `${id}-confirmacion` : undefined}
           initialFocusSelector={vista === 'confirmar' ? '[data-confirm-cancel]' : undefined}
           returnLabel={vista === 'detalle' ? 'Volver a reservas' : undefined}
@@ -263,7 +277,9 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
               {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
                 <Btn kind="ok" onClick={() => { void aprobar(); }}>Aprobar</Btn>
               )}
-              {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && usuario?.id !== activa.solicitante_id && (
+              {esAdminOSacerdote
+                && (activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE || activa.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA)
+                && usuario?.id !== activa.solicitante_id && (
                 <Btn kind="bad" onClick={() => pedirConfirmacion('rechazar')}>Rechazar</Btn>
               )}
               {usuario && activa.solicitante_id === usuario.id && puedeCancelarReserva(activa.estado_reserva_id) && (
@@ -284,11 +300,22 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
               onCancel={volver}
               description={accionConfirmar.accion === 'cancelar'
                 ? `¿Cancelar la reserva de ${activa.evento_titulo ?? activa.espacio_nombre} del ${formatFecha(activa.fecha)}? Se liberará el espacio reservado.`
-                : `¿Rechazar la solicitud de ${activa.solicitante_nombre ?? 'esta persona'} para ${activa.evento_titulo ?? activa.espacio_nombre}?`}
+                : activa.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA
+                  ? `¿Rechazar la reserva ya aprobada de ${activa.solicitante_nombre ?? 'esta persona'} para ${activa.evento_titulo ?? activa.espacio_nombre}? Se liberará el espacio reservado.`
+                  : `¿Rechazar la solicitud de ${activa.solicitante_nombre ?? 'esta persona'} para ${activa.evento_titulo ?? activa.espacio_nombre}?`}
             />
           )}
 
           {vista === 'editar' && (<>
+            {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.RECHAZADA && (
+              <div className={styles.avisoReabrir}>
+                <span>Esta solicitud fue rechazada.</span>
+                <Btn type="button" kind="ghost" size="sm" disabled={reabriendo} onClick={() => { void reabrirSolicitud(); }}>
+                  {reabriendo ? 'Reabriendo...' : 'Reabrir solicitud'}
+                </Btn>
+              </div>
+            )}
+
             {activa.estado_reserva_id !== ESTADOS_RESERVA.PENDIENTE && (
               <div className={formStyles.modalWarning}>
                 Si modificas los datos de la reserva, volverá a estado <strong>Pendiente</strong> para re-aprobación. Cambiar solo la visibilidad pública conserva su estado.
@@ -385,7 +412,9 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </thead>
             <tbody>
               {reservasOrdenadas.map((r) => (
-                <tr key={r.id} className={styles.fila} onClick={manejarClicFila(() => abrir(r))}>
+                <tr key={r.id}
+                  className={`${styles.fila}${r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE ? ` ${styles.filaPendiente}` : ''}`}
+                  onClick={manejarClicFila(() => abrir(r))}>
                   <td><button type="button" className={styles.enlace} onClick={() => abrir(r)}>{r.id}</button></td>
                   <td>{r.espacio_nombre ?? '—'}</td>
                   <td>{formatFecha(r.fecha)}</td>

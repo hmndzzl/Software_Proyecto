@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ListaReservas from './ListaReservas';
+import styles from './ListaReservas.module.css';
 import apiClient from '../../../api/client';
 import { ToastProvider } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -209,6 +210,34 @@ describe('integración de reservas, estados y edición', () => {
     expect(await screen.findByText('Error de red al obtener las reservas.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));
     expect(await screen.findByText('No hay reservas registradas.')).toBeInTheDocument();
+  });
+
+  it('resalta visualmente las reservas pendientes para que se detecten rápido', async () => {
+    mostrar();
+    await screen.findByRole('cell', { name: 'Confirmada' });
+    const filaPendiente = (await screen.findByRole('button', { name: '1' })).closest('tr')!;
+    expect(filaPendiente.className).toContain(styles.filaPendiente);
+    const filaConfirmada = screen.getByRole('cell', { name: 'Confirmada' }).closest('tr')!;
+    expect(filaConfirmada.className).not.toContain(styles.filaPendiente);
+  });
+
+  it('permite rechazar una reserva ajena ya aprobada', async () => {
+    mostrar();
+    await screen.findByRole('cell', { name: 'Confirmada' });
+    await abrirDetalle(2);
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByText(/reserva ya aprobada/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar reserva' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/2/estado', { estado_id: 3 }));
+  });
+
+  it('permite reabrir una solicitud rechazada desde la edición', async () => {
+    mostrar();
+    const filaRechazada = (await screen.findByRole('cell', { name: 'Rechazada' })).closest('tr')!;
+    await userEvent.click(within(filaRechazada).getByRole('button'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Reabrir solicitud' }));
+    await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/3/estado', { estado_id: 1 }));
   });
 });
 

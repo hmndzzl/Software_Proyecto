@@ -3,6 +3,11 @@
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 
 .fila { cursor: pointer; }
+.filaPendiente {
+  background: var(--color-unread-bg);
+  border-left: 3px solid var(--color-oro);
+}
+.filaPendiente:hover { background: var(--color-unread-hover); }
 .enlace {
   border: 0;
   padding: 4px 0;
@@ -15,3 +20,20 @@
 }
 .enlace:hover { text-decoration: underline; }
 .enlace:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 3px; }
+
+.avisoReabrir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  background-color: var(--color-badBg);
+  border-left: 4px solid var(--color-bad);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-bad);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
