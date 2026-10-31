@@ -19,6 +19,7 @@ import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puede
 import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
+import { manejarClicFila } from '../../utils/filaClicable';
 import type { Reserva } from '../../types';
 import DetalleReserva from '../../modules/reservas/components/DetalleReserva';
 import styles from './MisReservasPage.module.css';
@@ -98,7 +99,10 @@ export default function MisReservasPage() {
         )}
       />
 
-      {detalle && <DetalleReserva returnLabel="Volver a mis reservas" reserva={detalle} onClose={() => setDetalle(null)} />}
+      {detalle && <DetalleReserva returnLabel="Volver a mis reservas" reserva={detalle} onClose={() => setDetalle(null)}
+        acciones={puedeCancelarReserva(detalle.estado_reserva_id) && (
+          <Btn kind="bad" onClick={() => { setDetalle(null); setPorCancelar(detalle); }}>Cancelar reserva</Btn>
+        )} />}
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
         <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />
@@ -139,13 +143,14 @@ export default function MisReservasPage() {
                   <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {reservasOrdenadas.map(r => (
-                  <tr key={r.id}>
-                    <td className={styles.mono}>{r.id}</td>
+                  <tr key={r.id}
+                    className={`${styles.fila}${r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE ? ` ${styles.filaPendiente}` : ''}`}
+                    onClick={manejarClicFila(() => setDetalle(r))}>
+                    <td className={styles.mono}><button type="button" className={styles.enlace} onClick={() => setDetalle(r)}>{r.id}</button></td>
                     <td className={styles.mono}>{r.evento_titulo ?? <span className={styles.muted}>Sin título</span>}</td>
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
@@ -155,12 +160,6 @@ export default function MisReservasPage() {
                       <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
                     <td>{r.cantidad_personas ?? 'No registrado'}</td>
-                    <td>
-                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
-                      {puedeCancelarReserva(r.estado_reserva_id) && (
-                        <Btn kind="bad" size="sm" onClick={() => setPorCancelar(r)}>Cancelar</Btn>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>

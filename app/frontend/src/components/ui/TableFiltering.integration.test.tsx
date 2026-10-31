@@ -76,7 +76,7 @@ describe('filtros reales en las tablas principales', () => {
     });
     mostrar(component);
     const table = await screen.findByRole('table');
-    const abrirDetalle = nombre === 'reservas'
+    const abrirDetalle = nombre === 'reservas' || nombre === 'mis reservas'
       ? within(table).getAllByRole('button', { name: '1' })[0]
       : within(table).getAllByRole('button', { name: 'Ver detalle' })[0];
     await userEvent.click(abrirDetalle);

@@ -81,7 +81,6 @@ describe('MisReservasPage — historial', () => {
     fireEvent.click(screen.getByRole('columnheader', { name: 'Evento' }));
     fireEvent.click(screen.getByRole('columnheader', { name: 'Horario' }));
     fireEvent.click(screen.getByRole('columnheader', { name: 'Personas esperadas' }));
-    expect(screen.getAllByRole('button', { name: 'Cancelar' })).toHaveLength(1);
   });
 
   it('muestra error y reintenta la carga', async () => {
@@ -96,16 +95,17 @@ describe('MisReservasPage — historial', () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: reservas });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
     mostrar(ROLES.COORDINADOR_GRUPOS);
-    const fila = (await screen.findByText('Ensayo del coro')).closest('tr')!;
 
-    fireEvent.click(within(fila).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(await screen.findByRole('button', { name: '7' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar reserva' }));
     expect(apiClient.put).not.toHaveBeenCalled();
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
 
-    fireEvent.click(within(fila).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(await screen.findByRole('button', { name: '7' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar reserva' }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar reserva' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/api/reservas/7/estado', { estado_id: 4 }));
-    await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(vi.mocked(apiClient.get).mock.calls.filter(([url]) => url === '/api/reservas/mis-reservas')).toHaveLength(2));
   });
 
   it('avisa si falla la cancelación', async () => {
@@ -114,9 +114,9 @@ describe('MisReservasPage — historial', () => {
       .mockRejectedValueOnce({ response: { data: { message: 'No permitido' } } })
       .mockRejectedValueOnce(new Error('red'));
     mostrar(ROLES.COORDINADOR_GRUPOS);
-    const boton = await screen.findByRole('button', { name: 'Cancelar' });
 
-    fireEvent.click(boton);
+    fireEvent.click(await screen.findByRole('button', { name: '7' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar reserva' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar reserva' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cancelar la reserva');
     expect(screen.getByRole('alert')).toHaveTextContent('No permitido');
@@ -133,8 +133,8 @@ describe('MisReservasPage — historial', () => {
     ];
     vi.mocked(apiClient.get).mockResolvedValue({ data: reservasSinTitulo });
     mostrar(ROLES.COORDINADOR_GRUPOS);
-    const boton = await screen.findByRole('button', { name: 'Cancelar' });
-    fireEvent.click(boton);
+    fireEvent.click(await screen.findByRole('button', { name: '9' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar reserva' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('¿Cancelar la reserva de Capilla');
   });
 });
