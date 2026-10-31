@@ -176,13 +176,16 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   };
 
   const aprobar = async () => {
-    if (!activa) return;
+    if (!activa || accionOcupado) return;
+    setAccionOcupado(true);
     try {
       await cambiarEstado(activa.id, ESTADOS_RESERVA.CONFIRMADA);
       marcarExito(activa.id);
       cerrar();
     } catch {
       // El aviso de error ya se mostró en cambiarEstado; se deja la tarjeta abierta para reintentar.
+    } finally {
+      setAccionOcupado(false);
     }
   };
 
@@ -220,7 +223,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
   };
 
   const guardarEdicion = async () => {
-    if (!activa || editLoading) return;
+    if (!activa || editLoading || reabriendo) return;
     if (!editFecha || !editHoraInicio || !editHoraFin || !editEspacioId || !editTitulo || !editDescripcion) {
       setEditMensaje('Por favor completa todos los campos.');
       return;
@@ -309,18 +312,18 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
           {vista === 'detalle' && (
             <DecisionesPanel endpoint={`/api/reservas/${activa.id}/decisiones`} campos={campos(activa)} acciones={<>
               {esAdminOSacerdote && activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
-                <Btn kind="ok" onClick={() => { void aprobar(); }}>Aprobar</Btn>
+                <Btn kind="ok" disabled={accionOcupado} onClick={() => { void aprobar(); }}>{accionOcupado ? 'Aprobando…' : 'Aprobar'}</Btn>
               )}
               {esAdminOSacerdote
                 && (activa.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE || activa.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA)
                 && usuario?.id !== activa.solicitante_id && (
-                <Btn kind="bad" onClick={() => pedirConfirmacion('rechazar')}>Rechazar</Btn>
+                <Btn kind="bad" disabled={accionOcupado} onClick={() => pedirConfirmacion('rechazar')}>Rechazar</Btn>
               )}
               {usuario && activa.solicitante_id === usuario.id && puedeCancelarReserva(activa.estado_reserva_id) && (
-                <Btn kind="bad" onClick={() => pedirConfirmacion('cancelar')}>Cancelar reserva</Btn>
+                <Btn kind="bad" disabled={accionOcupado} onClick={() => pedirConfirmacion('cancelar')}>Cancelar reserva</Btn>
               )}
               {usuario && (esAdminOSacerdote || activa.solicitante_id === usuario.id) && (
-                <Btn kind="ghost" onClick={() => abrir(activa, 'editar')}>Editar</Btn>
+                <Btn kind="ghost" disabled={accionOcupado} onClick={() => abrir(activa, 'editar')}>Editar</Btn>
               )}
             </>} />
           )}
@@ -345,8 +348,8 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
               && (activa.estado_reserva_id === ESTADOS_RESERVA.RECHAZADA || activa.estado_reserva_id === ESTADOS_RESERVA.CANCELADA) && (
               <div className={styles.avisoReabrir}>
                 <span>Esta solicitud {activa.estado_reserva_id === ESTADOS_RESERVA.RECHAZADA ? 'fue rechazada' : 'fue cancelada'}.</span>
-                <Btn type="button" kind="ghost" size="sm" disabled={reabriendo} onClick={() => { void reabrirSolicitud(); }}>
-                  {reabriendo ? 'Reabriendo...' : 'Reabrir solicitud'}
+                <Btn type="button" kind="ghost" disabled={reabriendo} onClick={() => { void reabrirSolicitud(); }}>
+                  {reabriendo ? 'Reabriendo…' : 'Reabrir solicitud'}
                 </Btn>
               </div>
             )}
@@ -361,7 +364,7 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
               <p className={`${formStyles.message} ${formStyles.messageError}`}>{editMensaje}</p>
             )}
 
-            <fieldset className={formStyles.form} disabled={editLoading} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+            <fieldset className={formStyles.form} disabled={editLoading || reabriendo} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
               <div className={formStyles.field}>
                 <label htmlFor="editar-reserva-espacio" className={`${formStyles.label} ${formStyles.required}`}>Espacio:</label>
                 <select id="editar-reserva-espacio" className={formStyles.input} value={editEspacioId} onChange={e => setEditEspacioId(e.target.value)}>
@@ -409,12 +412,12 @@ export default function ListaReservas({ refreshKey }: { refreshKey?: number }) {
             </fieldset>
 
             <div className={formStyles.modalActions}>
-              <button className={formStyles.btnSecondary} onClick={volver} disabled={editLoading}>
+              <Btn kind="ghost" onClick={volver} disabled={editLoading || reabriendo}>
                 Cancelar
-              </button>
-              <button className="btn-primary" onClick={guardarEdicion} disabled={editLoading}>
-                {editLoading ? 'Guardando...' : 'Guardar cambios'}
-              </button>
+              </Btn>
+              <Btn onClick={guardarEdicion} disabled={editLoading || reabriendo}>
+                {editLoading ? 'Guardando…' : 'Guardar cambios'}
+              </Btn>
             </div>
           </>)}
         </Modal>
