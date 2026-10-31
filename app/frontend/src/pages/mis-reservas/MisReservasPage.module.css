@@ -20,7 +20,6 @@
 .fila { cursor: pointer; }
 .filaPendiente {
   background: var(--color-unread-bg);
-  border-left: 3px solid var(--color-oro);
 }
 .filaPendiente:hover { background: var(--color-unread-hover); }
 .enlace {
