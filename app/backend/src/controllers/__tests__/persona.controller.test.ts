@@ -16,6 +16,7 @@ import {
 vi.mock('../../config/db', () => ({
   default: {
     execute: vi.fn(),
+    getConnection: vi.fn(),
   },
 }));
 
@@ -339,6 +340,80 @@ describe('Persona Controller - Pruebas Unitarias', () => {
       await editarPerfil(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    });
+
+    describe('con teléfono', () => {
+      const conn = { execute: vi.fn(), beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn() };
+      beforeEach(() => {
+        conn.execute.mockReset(); conn.beginTransaction.mockReset(); conn.commit.mockReset();
+        conn.rollback.mockReset(); conn.release.mockReset();
+        (pool.getConnection as any).mockResolvedValue(conn);
+      });
+
+      it('actualiza solo el teléfono, sin tocar otros campos de persona', async () => {
+        req.params = { id: '1' };
+        req.body = { telefono: '55551234' };
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // SELECT user => found
+        (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT duplicados teléfono => ninguno
+        conn.execute.mockResolvedValueOnce([[{ id: 1 }]]); // SELECT persona FOR UPDATE
+        conn.execute.mockResolvedValueOnce([[{ id: 3 }]]); // SELECT telefono actual => existe
+        conn.execute.mockResolvedValueOnce([{}]); // UPDATE telefono
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 1, telefono: '+50255551234' }]]); // SELECT updated
+
+        await editarPerfil(req as Request, res as Response);
+
+        expect(conn.beginTransaction).toHaveBeenCalledOnce();
+        expect(conn.execute).toHaveBeenCalledTimes(3);
+        expect(conn.execute).toHaveBeenLastCalledWith('UPDATE telefono SET numero = ? WHERE id = ?', ['+50255551234', 3]);
+        expect(conn.commit).toHaveBeenCalledOnce();
+        expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+      });
+
+      it('actualiza el teléfono junto con otros campos en la misma transacción', async () => {
+        req.params = { id: '1' };
+        req.body = { nombre: 'Con teléfono', telefono: '55551234' };
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
+        (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT duplicados teléfono => ninguno
+        conn.execute.mockResolvedValueOnce([[{ id: 1 }]]); // SELECT persona FOR UPDATE
+        conn.execute.mockResolvedValueOnce([{}]); // UPDATE persona SET nombre...
+        conn.execute.mockResolvedValueOnce([[]]); // SELECT telefono actual => no existe
+        conn.execute.mockResolvedValueOnce([{}]); // INSERT telefono
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
+
+        await editarPerfil(req as Request, res as Response);
+
+        expect(conn.execute).toHaveBeenNthCalledWith(2, expect.stringContaining('UPDATE persona SET nombre = ?'), ['Con teléfono', 1]);
+        expect(conn.commit).toHaveBeenCalledOnce();
+      });
+
+      it('rechaza un teléfono ya usado por otra cuenta', async () => {
+        req.params = { id: '1' };
+        req.body = { telefono: '55551234' };
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 2 }]]); // SELECT duplicados => existe
+
+        await editarPerfil(req as Request, res as Response);
+
+        expect(statusMock).toHaveBeenCalledWith(409);
+        expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El teléfono ya está registrado en otra cuenta' });
+        expect(pool.getConnection).not.toHaveBeenCalled();
+      });
+
+      it('traduce una colisión de clave única de teléfono detectada tarde a 409', async () => {
+        req.params = { id: '1' };
+        req.body = { telefono: '55551234' };
+        (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]);
+        (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT duplicados teléfono => ninguno
+        conn.execute.mockResolvedValueOnce([[{ id: 1 }]]); // SELECT persona FOR UPDATE
+        conn.execute.mockResolvedValueOnce([[{ id: 3 }]]);
+        conn.execute.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 'ER_DUP_ENTRY', sqlMessage: 'Duplicate entry for key uq_telefono_numero' }));
+
+        await editarPerfil(req as Request, res as Response);
+
+        expect(conn.rollback).toHaveBeenCalledOnce();
+        expect(statusMock).toHaveBeenCalledWith(409);
+        expect(jsonMock).toHaveBeenCalledWith({ mensaje: 'El teléfono ya está registrado en otra cuenta' });
+      });
     });
   });
 });

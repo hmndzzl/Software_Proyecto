@@ -255,6 +255,31 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       expect(statusMock).not.toHaveBeenCalledWith(200);
       expect(conn.rollback).toHaveBeenCalledOnce();
     });
+
+    it('rechaza quitar_imagen con un valor que no es booleano', async () => {
+      req.body = { nombre: 'Salón', capacidad: 50, quitar_imagen: 'tal vez' };
+      await crearEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(pool.execute).not.toHaveBeenCalled();
+    });
+
+    it('rechaza subir una imagen y pedir quitarla a la vez, al crear y al editar', async () => {
+      req.body = { nombre: 'Salón', capacidad: 50, quitar_imagen: true }; req.file = {} as Express.Multer.File;
+      await crearEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+
+      req.params = { id: '1' };
+      await actualizarEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenLastCalledWith(400);
+      expect(conn.beginTransaction).not.toHaveBeenCalled();
+    });
+
+    it('rechaza un identificador de espacio inválido', async () => {
+      req.params = { id: 'abc' };
+      await actualizarEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({ message: 'El identificador del espacio no es válido' });
+    });
   });
 
   describe('eliminarEspacio', () => {
@@ -328,6 +353,40 @@ describe('Espacio Controller - Pruebas Unitarias', () => {
       await eliminarEspacio(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(404);
       expect(conn.rollback).toHaveBeenCalledOnce();
+    });
+
+    it('devuelve 500 si falla la consulta de impacto por un error que no es de validación', async () => {
+      vi.mocked(pool.execute).mockResolvedValueOnce([[espacio]] as any).mockRejectedValueOnce(new Error('DB'));
+      await obtenerImpactoEliminacion(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+    });
+
+    it.each([
+      [{ cancelar_reservas: 'si' }, 'cancelar_reservas debe ser booleano'],
+      [{ cancelar_reservas: true, reserva_ids: [7, 7] }, 'Debes confirmar las reservas mostradas antes de cancelar'],
+      [{ cancelar_reservas: true, reserva_ids: 'no-es-arreglo' }, 'Debes confirmar las reservas mostradas antes de cancelar'],
+    ])('rechaza un cuerpo inválido: %j', async (body, _motivo) => {
+      req.body = body;
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[reserva]]);
+      await eliminarEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+    });
+
+    it('no notifica al solicitante cuando cancela su propia reserva', async () => {
+      req.body = { cancelar_reservas: true, reserva_ids: [7] };
+      const reservaPropia = { ...reserva, solicitante_id: 1 };
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockResolvedValueOnce([[reservaPropia]])
+        .mockResolvedValue([{ affectedRows: 1, insertId: 20 }]);
+      await eliminarEspacio(req as Request, res as Response);
+      expect(conn.execute.mock.calls.some(([sql]) => sql.includes('INSERT INTO notificacion'))).toBe(false);
+      expect(conn.commit).toHaveBeenCalledOnce();
+    });
+
+    it('responde 409 si la eliminación choca con un bloqueo concurrente', async () => {
+      conn.execute.mockResolvedValueOnce([[espacio]]).mockRejectedValueOnce(Object.assign(new Error('lock'), { code: 'ER_LOCK_WAIT_TIMEOUT' }));
+      await eliminarEspacio(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(409);
+      expect(jsonMock).toHaveBeenCalledWith({ message: 'Las reservas están cambiando. Vuelve a consultar antes de eliminar el espacio' });
     });
   });
 });
