@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import DetalleConDecisiones from '../../../components/ui/DetalleConDecisiones';
 import ReservaEstadoBadge from '../../../components/ui/ReservaEstadoBadge';
 import type { Reserva } from '../../../types';
 import { formatFecha, formatHorario } from '../../../utils/date';
 
-export default function DetalleReserva({ reserva, onClose, returnLabel = 'Volver a reservas' }: { reserva: Reserva; onClose: () => void; returnLabel?: string }) {
-  return <DetalleConDecisiones titulo={`Detalle de reserva #${reserva.id}`} endpoint={`/api/reservas/${reserva.id}/decisiones`} onClose={onClose} returnLabel={returnLabel}
+export default function DetalleReserva({ reserva, onClose, returnLabel = 'Volver a reservas', acciones }: { reserva: Reserva; onClose: () => void; returnLabel?: string; acciones?: ReactNode }) {
+  return <DetalleConDecisiones titulo={`Detalle de reserva #${reserva.id}`} endpoint={`/api/reservas/${reserva.id}/decisiones`} onClose={onClose} returnLabel={returnLabel} acciones={acciones}
     campos={[
       { etiqueta: 'Actividad', valor: reserva.evento_titulo ?? 'Sin título' },
       { etiqueta: 'Descripción', valor: reserva.evento_descripcion ?? 'Sin descripción' },

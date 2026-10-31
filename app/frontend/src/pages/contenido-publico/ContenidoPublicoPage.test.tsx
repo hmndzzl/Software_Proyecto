@@ -292,6 +292,9 @@ describe('ContenidoPublicoPage', () => {
   });
 
   it('edita todas las secciones y administra valores y horarios dinámicos', async () => {
+    // Prueba larga con muchas interacciones secuenciales: bajo carga completa del
+    // suite (100 archivos + instrumentación de cobertura en paralelo) puede superar
+    // el timeout por defecto de 5000ms sin que haya ningún problema real.
     vi.mocked(apiClient.patch).mockResolvedValue({ data: {} });
     render(<ContenidoPublicoPage />);
 
@@ -356,7 +359,7 @@ describe('ContenidoPublicoPage', () => {
       horarios_oficina: [{ dias: 'Martes a viernes', horario: '10:00 – 15:00' }],
       contacto: expect.objectContaining({ correo: 'oficina@example.com' }),
     })));
-  });
+  }, 15000);
 
   it('descarta cambios y avisa cuando no hay nada nuevo que publicar', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: contenido });

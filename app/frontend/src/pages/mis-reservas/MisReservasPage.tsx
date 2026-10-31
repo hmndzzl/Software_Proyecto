@@ -16,9 +16,10 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import { formatFecha, formatHorario } from '../../utils/date';
 import { ESTADOS_RESERVA, avisoCambioEstadoReserva, etiquetaEstadoReserva, puedeCancelarReserva } from '../../utils/estadosReserva';
-import { ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
+import { ROLES, ROLES_RESERVAS, RUTA_NUEVA_RESERVA } from '../../utils/roles';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { useAuth } from '../../context/AuthContext';
+import { manejarClicFila } from '../../utils/filaClicable';
 import type { Reserva } from '../../types';
 import DetalleReserva from '../../modules/reservas/components/DetalleReserva';
 import styles from './MisReservasPage.module.css';
@@ -42,8 +43,9 @@ const SORT_VALUE: Record<SortKey, (r: MiReserva) => string | number> = {
 export default function MisReservasPage() {
   const [porCancelar, setPorCancelar] = useState<MiReserva | null>(null);
   const navigate = useNavigate();
-  const { tieneRol } = useAuth();
+  const { tieneRol, usuario } = useAuth();
   const puedeReservar = tieneRol(ROLES_RESERVAS);
+  const esAdminOSacerdote = usuario && (usuario.rol_id === ROLES.SACERDOTE || usuario.rol_id === ROLES.ADMIN);
   const [reservas, setReservas] = useState<MiReserva[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -85,6 +87,18 @@ export default function MisReservasPage() {
     }
   };
 
+  const aprobarPropia = async (id: number) => {
+    try {
+      await apiClient.put(`/api/reservas/${id}/estado`, { estado_id: ESTADOS_RESERVA.CONFIRMADA });
+      const aviso = avisoCambioEstadoReserva(ESTADOS_RESERVA.CONFIRMADA);
+      toast.success(aviso.titulo, aviso.mensaje);
+      setDetalle(null);
+      cargarReservas();
+    } catch (err: unknown) {
+      toast.error('No se pudo aprobar la reserva', getApiErrorMessage(err, 'Error al aprobar la reserva.', 'message'));
+    }
+  };
+
   return (
     <div className={styles.page}>
       <PageHeader
@@ -98,7 +112,15 @@ export default function MisReservasPage() {
         )}
       />
 
-      {detalle && <DetalleReserva returnLabel="Volver a mis reservas" reserva={detalle} onClose={() => setDetalle(null)} />}
+      {detalle && <DetalleReserva returnLabel="Volver a mis reservas" reserva={detalle} onClose={() => setDetalle(null)}
+        acciones={<>
+          {esAdminOSacerdote && detalle.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE && (
+            <Btn kind="ok" onClick={() => { void aprobarPropia(detalle.id); }}>Aprobar</Btn>
+          )}
+          {puedeCancelarReserva(detalle.estado_reserva_id) && (
+            <Btn kind="bad" onClick={() => { setDetalle(null); setPorCancelar(detalle); }}>Cancelar reserva</Btn>
+          )}
+        </>} />}
       {/* KPI chips */}
       {!loading && !error && reservas.length > 0 && (
         <ResumenEstadosReserva estadoIds={reservas.map((reserva) => reserva.estado_reserva_id)} />
@@ -139,13 +161,14 @@ export default function MisReservasPage() {
                   <SortableTh label="Horario" sortKey="horario" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Estado" sortKey="estado" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableTh label="Personas esperadas" sortKey="aforo" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
-                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {reservasOrdenadas.map(r => (
-                  <tr key={r.id}>
-                    <td className={styles.mono}>{r.id}</td>
+                  <tr key={r.id}
+                    className={`${styles.fila}${r.estado_reserva_id === ESTADOS_RESERVA.PENDIENTE ? ` ${styles.filaPendiente}` : ''}`}
+                    onClick={manejarClicFila(() => setDetalle(r))}>
+                    <td className={styles.mono}><button type="button" className={styles.enlace} onClick={() => setDetalle(r)}>{r.id}</button></td>
                     <td className={styles.mono}>{r.evento_titulo ?? <span className={styles.muted}>Sin título</span>}</td>
                     <td className={styles.bold}>{r.evento_descripcion ?? <span className={styles.muted}>Sin evento</span>}</td>
                     <td>{r.espacio_nombre ?? '—'}</td>
@@ -155,12 +178,6 @@ export default function MisReservasPage() {
                       <ReservaEstadoBadge estadoId={r.estado_reserva_id} />
                     </td>
                     <td>{r.cantidad_personas ?? 'No registrado'}</td>
-                    <td>
-                      <Btn kind="ghost" size="sm" onClick={() => setDetalle(r)}>Ver detalle</Btn>
-                      {puedeCancelarReserva(r.estado_reserva_id) && (
-                        <Btn kind="bad" size="sm" onClick={() => setPorCancelar(r)}>Cancelar</Btn>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>

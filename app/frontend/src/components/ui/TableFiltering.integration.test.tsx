@@ -68,7 +68,7 @@ function revisarColumnas(table: HTMLElement) {
 describe('filtros reales en las tablas principales', () => {
   it.each([
     ['reservas', <ListaReservas />], ['mis reservas', <MisReservasPage />], ['cuentas', <CuentasPage />],
-  ])('abre y cierra el historial desde %s sin modificar los datos', async (_nombre, component) => {
+  ])('abre y cierra el historial desde %s sin modificar los datos', async (nombre, component) => {
     const anterior = vi.mocked(apiClient.get).getMockImplementation()!;
     vi.mocked(apiClient.get).mockImplementation(async (url, config) => {
       if (url.endsWith('/decisiones')) return { data: [{ id: 1, resultado: 'aprobada', actor_id: 1, actor_nombre: 'Padre Luis', fecha: '2026-10-25T14:00:00Z' }] };
@@ -76,7 +76,10 @@ describe('filtros reales en las tablas principales', () => {
     });
     mostrar(component);
     const table = await screen.findByRole('table');
-    await userEvent.click(within(table).getAllByRole('button', { name: 'Ver detalle' })[0]);
+    const abrirDetalle = nombre === 'reservas' || nombre === 'mis reservas'
+      ? within(table).getAllByRole('button', { name: '1' })[0]
+      : within(table).getAllByRole('button', { name: 'Ver detalle' })[0];
+    await userEvent.click(abrirDetalle);
     const dialog = screen.getByRole('dialog');
     expect(await within(dialog).findByText('Por Padre Luis')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }));

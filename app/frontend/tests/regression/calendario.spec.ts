@@ -93,7 +93,11 @@ test('las flechas de los filtros guardan separación del borde en ambos temas y 
         const select = page.getByLabel(label, { exact: true });
         const caja = (await select.boundingBox())!;
         const flecha = (await select.locator('..').locator('svg').boundingBox())!;
-        expect(Math.round(caja.x + caja.width - flecha.x - flecha.width)).toBe(14);
+        // Tolerancia de 1px: el <select> nativo redondea su boundingBox de forma distinta al
+        // svg posicionado en valign absoluto en anchos fraccionarios (p. ej. 1440px), sin que
+        // haya diferencia visual real. El valor base de separación sigue siendo 14px (inset-inline-end).
+        expect(Math.round(caja.x + caja.width - flecha.x - flecha.width)).toBeGreaterThanOrEqual(13);
+        expect(Math.round(caja.x + caja.width - flecha.x - flecha.width)).toBeLessThanOrEqual(15);
         expect(await select.evaluate(el => parseFloat(getComputedStyle(el).paddingRight))).toBeGreaterThanOrEqual(42);
       }
       await page.getByLabel('Ver horario de un ministro').selectOption('9');

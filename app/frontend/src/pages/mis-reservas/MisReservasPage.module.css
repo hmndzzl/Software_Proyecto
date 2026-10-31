@@ -16,3 +16,22 @@
 
 /* CTA de estado vacío */
 .emptyCta { display: flex; justify-content: center; padding: 0 24px 24px; }
+
+.fila { cursor: pointer; }
+.filaPendiente {
+  background: var(--color-unread-bg);
+  border-left: 3px solid var(--color-oro);
+}
+.filaPendiente:hover { background: var(--color-unread-hover); }
+.enlace {
+  border: 0;
+  padding: 4px 0;
+  margin-right: 8px;
+  background: transparent;
+  color: var(--color-rojo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.enlace:hover { text-decoration: underline; }
+.enlace:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 3px; }

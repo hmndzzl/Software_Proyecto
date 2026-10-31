@@ -2,15 +2,50 @@
 .textoInfo  { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; padding: 16px 24px; }
 .textoVacio { font-family: var(--font-body); color: var(--color-muted); font-size: 14px; font-style: italic; padding: 16px 24px; }
 
-/* Acciones en tabla */
-.acciones {
+.tabs {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
-  align-items: center;
+  gap: 8px;
+  padding: 16px 24px 0;
 }
 
-/* Empuja el botón de cancelar reserva a la izquierda dentro del modal (acciones flex-end) */
-.btnCancelarReservaModal {
-  margin-right: auto;
+.fila { cursor: pointer; }
+.filaPendiente {
+  background: var(--color-unread-bg);
+  border-left: 3px solid var(--color-oro);
+}
+.filaPendiente:hover { background: var(--color-unread-hover); }
+.filaResaltada { animation: resaltarFila 2.5s ease-out; }
+@keyframes resaltarFila {
+  0%, 40% { background: var(--color-highlight); }
+  100% { background: transparent; }
+}
+.enlace {
+  border: 0;
+  padding: 4px 0;
+  margin-right: 8px;
+  background: transparent;
+  color: var(--color-rojo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.enlace:hover { text-decoration: underline; }
+.enlace:focus-visible { outline: 2px solid var(--color-rojo); outline-offset: 3px; }
+
+.avisoReabrir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  background-color: var(--color-badBg);
+  border-left: 4px solid var(--color-bad);
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-bad);
+  font-weight: 600;
+  margin-bottom: 16px;
 }
