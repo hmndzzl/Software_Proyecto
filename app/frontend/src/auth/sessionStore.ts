@@ -6,6 +6,7 @@ export interface Usuario {
   nombre: string;
   correo: string;
   rol_id: number;
+  foto_url?: string | null;
 }
 
 const TOKEN_KEY = 'token';
