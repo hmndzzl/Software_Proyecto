@@ -6,6 +6,7 @@ import { fechaNotificacion } from '../../modules/notificaciones/utils/fechaNotif
 import type { Notificacion } from '../../types';
 import styles from './TopBar.module.css';
 import logoImg from '../../assets/logo-parroquia.jpeg';
+import Avatar from '../ui/Avatar';
 import { leerIntervaloNotificaciones, NOTIFICACIONES_EVENT, UI_PREFERENCES_EVENT } from '../../auth/sessionStore';
 
 const ROL_LABEL: Record<number, string> = {
@@ -16,15 +17,6 @@ const ROL_LABEL: Record<number, string> = {
   5: 'Administrador',
 };
 
-function getInitials(nombre: string): string {
-  return nombre
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('');
-}
-
 interface TopBarProps {
   onAbrirMenu?: () => void;
 }
@@ -33,7 +25,6 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
-  const initials = usuario?.nombre ? getInitials(usuario.nombre) : '—';
   const rolLabel = usuario?.rol_id ? (ROL_LABEL[usuario.rol_id] ?? 'Usuario') : 'Usuario';
 
   const [notifs, setNotifs] = useState<Notificacion[]>([]);
@@ -157,7 +148,7 @@ export default function TopBar({ onAbrirMenu }: TopBarProps) {
 
         {/* Usuario — clic navega a /perfil */}
         <Link to="/perfil" className={styles.userLink}>
-          <div className={styles.avatar}>{initials}</div>
+          <Avatar className={styles.avatar} nombre={usuario?.nombre ?? ''} fotoUrl={usuario?.foto_url} />
           {usuario?.nombre && (
             <div className={styles.userInfo}>
               <span className={styles.userName}>{usuario.nombre}</span>
