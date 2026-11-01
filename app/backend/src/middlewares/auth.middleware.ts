@@ -11,6 +11,8 @@ import { ESTADOS_CUENTA, respuestaCuentaNoActiva } from '../config/cuentas';
 export interface JwtPayload {
   id: number;
   rol_id: number;
+  sid?: string;
+  token_use?: string;
 }
 
 declare global {
@@ -54,7 +56,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
     void authenticateWithJwt(decoded, req, res, next);
     return;
   } catch {
@@ -75,9 +77,9 @@ async function authenticateWithJwt(decoded: JwtPayload, req: Request, res: Respo
     return;
   }
   try {
-    const persona = await obtenerPersonaSesion(decoded.id);
+    const persona = await obtenerPersonaSesion(decoded.id, decoded.sid, decoded.token_use);
     if (!persona) {
-      res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'La cuenta ya no existe' });
+      res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'La cuenta ya no existe o la sesión fue cerrada' });
       return;
     }
     if (persona.estado_cuenta !== ESTADOS_CUENTA.ACTIVA) {

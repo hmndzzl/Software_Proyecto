@@ -58,7 +58,7 @@ export default function FotoPerfilForm() {
         <div className={styles.controls}>
           <label htmlFor="perfil-foto">Subir o cambiar foto</label>
           <p id="perfil-foto-ayuda">JPEG, PNG o WebP, hasta 10 MB. Se guardará en formato cuadrado.</p>
-          <input ref={input} id="perfil-foto" type="file" accept="image/jpeg,image/png,image/webp" disabled={guardando}
+          <input ref={input} id="perfil-foto" type="file" accept="image/jpeg,image/png,image/webp" disabled={guardando} hidden
             aria-describedby="perfil-foto-ayuda" onChange={event => {
               const foto = event.target.files?.[0] ?? null;
               setError(''); setMensaje(''); setArchivo(null);
@@ -68,6 +68,15 @@ export default function FotoPerfilForm() {
               }
               setArchivo(foto);
             }} />
+          <div className={styles.filePicker}>
+            <Btn type="button" kind="cream" disabled={guardando} aria-describedby="perfil-foto-ayuda perfil-foto-nombre"
+              onClick={() => input.current?.click()}>
+              Seleccionar imagen
+            </Btn>
+            <span id="perfil-foto-nombre" className={styles.fileName} aria-live="polite">
+              {archivo?.name ?? 'Ninguna imagen seleccionada'}
+            </span>
+          </div>
           <Btn type="submit" kind="primary" disabled={!archivo || guardando}>{guardando ? 'Guardando foto…' : 'Guardar foto'}</Btn>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           {mensaje && <p role="status">{mensaje}</p>}

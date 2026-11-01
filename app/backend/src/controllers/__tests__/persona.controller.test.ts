@@ -51,6 +51,8 @@ describe('Persona Controller - Pruebas Unitarias', () => {
     };
 
     vi.clearAllMocks();
+    vi.mocked(pool.execute).mockReset();
+    vi.mocked(pool.getConnection).mockReset();
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -299,16 +301,19 @@ describe('Persona Controller - Pruebas Unitarias', () => {
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1 }]]); // SELECT user => found
       (pool.execute as any).mockResolvedValueOnce([[]]); // SELECT correo => not used by others
       (bcrypt.hash as any).mockResolvedValue('hashedpass');
-      (pool.execute as any).mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE
+      const conn = { execute: vi.fn().mockResolvedValue([{}]), beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn() };
+      vi.mocked(pool.getConnection).mockResolvedValue(conn as never);
       (pool.execute as any).mockResolvedValueOnce([[{ id: 1, nombre: 'Nuevo', correo: 'nuevo@test.com', rol_id: 2 }]]); // SELECT updated
 
       await editarPerfil(req as Request, res as Response);
 
       expect(bcrypt.hash).toHaveBeenCalledWith('123', 10);
-      expect(pool.execute).toHaveBeenCalledWith(
+      expect(conn.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE persona SET nombre = ?, correo = ?, password = ?, rol_id = ? WHERE id = ?'),
         ['Nuevo', 'nuevo@test.com', 'hashedpass', 2, 1]
       );
+      expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('UPDATE sesion_jwt SET revocada_en'), [1]);
+      expect(conn.commit).toHaveBeenCalledOnce();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ mensaje: 'Perfil actualizado correctamente' }));
     });
