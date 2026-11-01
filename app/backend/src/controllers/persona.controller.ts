@@ -81,7 +81,7 @@ export const getPersonaById = async (req: Request, res: Response): Promise<void>
   const { id } = req.params;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, p.foto_url, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p
        JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
@@ -251,7 +251,7 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
 
     // Devolver datos actualizados (sin password)
     const [updated] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.foto_url, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
       [targetId]
