@@ -26,10 +26,16 @@ for (const viewport of [{ width: 320, height: 720 }, { width: 768, height: 1024 
     await expect(page.locator('aside a[href="/perfil"]')).toHaveCount(0);
     await page.locator('header a[href="/perfil"]').click();
     await expect(page.getByRole('heading', { name: 'Mi Perfil', exact: true })).toBeVisible();
-    await page.getByLabel('Subir o cambiar foto').setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: imagen });
+    const nombreArchivo = `foto-de-perfil-${'parroquia-'.repeat(12)}.png`;
+    const selector = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Seleccionar imagen', exact: true }).click();
+    await (await selector).setFiles({ name: nombreArchivo, mimeType: 'image/png', buffer: imagen });
+    await expect(page.locator('#perfil-foto-nombre')).toHaveText(nombreArchivo);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
     await expect(page.getByRole('img', { name: 'Vista previa de tu nueva foto' })).toBeVisible();
     await page.getByRole('button', { name: 'Guardar foto', exact: true }).click();
     await expect(page.getByRole('status')).toHaveText('Tu foto de perfil se actualizó correctamente.');
+    await expect(page.locator('#perfil-foto-nombre')).toHaveText('Ninguna imagen seleccionada');
     const avatar = page.locator('header a[href="/perfil"] img');
     await expect(avatar).toHaveAttribute('src', fotoUrl);
     await page.reload();
