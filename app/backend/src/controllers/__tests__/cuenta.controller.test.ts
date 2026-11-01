@@ -4,6 +4,7 @@ import pool from '../../config/db';
 import { HttpStatus } from '../../utils/httpStatus';
 import { ROLES } from '../../config/roles';
 import { enviarCorreoCuenta } from '../../services/email.service';
+import { revocarSesionesJwt } from '../../services/jwtSesion.service';
 import { listarCuentas, aprobarCuenta, rechazarCuenta, darDeBajaCuenta } from '../cuenta.controller';
 
 vi.mock('../../config/db', () => ({
@@ -13,6 +14,7 @@ vi.mock('../../config/db', () => ({
 vi.mock('../../services/email.service', () => ({
   enviarCorreoCuenta: vi.fn().mockResolvedValue(true),
 }));
+vi.mock('../../services/jwtSesion.service', () => ({ revocarSesionesJwt: vi.fn().mockResolvedValue(undefined) }));
 
 describe('Cuenta Controller - aprobación de cuentas', () => {
   let req: Partial<Request>;
@@ -327,6 +329,7 @@ describe('Cuenta Controller - aprobación de cuentas', () => {
       await darDeBajaCuenta(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(pool.execute).toHaveBeenCalledWith('UPDATE persona SET estado_cuenta = ? WHERE id = ?', ['baja', 12]);
+      expect(revocarSesionesJwt).toHaveBeenCalledWith(expect.objectContaining({ execute: pool.execute }), 12);
       expect(pool.execute).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO cuenta_decision'), [12, 'baja', 1]);
       expect(vi.mocked(pool.execute).mock.calls.some(([sql]) => /DELETE/i.test(String(sql)))).toBe(false);
       await vi.waitFor(() => expect(enviarCorreoCuenta).toHaveBeenCalledWith('ana@example.com', 'Ana', 'desactivada'));

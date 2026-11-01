@@ -8,6 +8,7 @@ import { enviarCorreoCuenta, EstadoCuentaCorreo } from '../services/email.servic
 
 import type { PoolConnection } from 'mysql2/promise';
 import { withTransaction } from '../utils/withTransaction';
+import { revocarSesionesJwt } from '../services/jwtSesion.service';
 import { registrarDecision } from '../services/decisiones.service';
 import { AHORA_GUATEMALA_SQL } from '../utils/horaGuatemala';
 import { ESTADOS_RESERVA } from '../config/estadosReserva';
@@ -184,6 +185,7 @@ export const darDeBajaCuenta = async (req: Request, res: Response): Promise<void
       }
       await notificarCompromisosHuerfanos(conn, id, cuentas[0].rol_id, cuentas[0].nombre, req.user!.id);
       await conn.execute('UPDATE persona SET estado_cuenta = ? WHERE id = ?', [ESTADOS_CUENTA.BAJA, id]);
+      await revocarSesionesJwt(conn, id);
       await registrarDecision(conn, 'cuenta', id, 'baja', req.user!.id);
       aplicada = true;
       return 'commit';
