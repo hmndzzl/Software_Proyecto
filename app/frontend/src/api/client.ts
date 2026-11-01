@@ -39,6 +39,26 @@ const drainQueue = (err: unknown, token: string | null) => {
   queue = [];
 };
 
+async function renovarTokenCompartido(tokenFallido: string | null): Promise<string> {
+  const renovar = async () => {
+    const actual = readToken();
+    // Otra pestaña ya renovó la cookie compartida: reutilizar su access token.
+    if (actual && actual !== tokenFallido) return actual;
+    if (tokenFallido && !actual) throw new Error('La sesión fue cerrada en otra pestaña');
+    const { data } = await axios.post<{ token: string }>(
+      `${BASE_URL}/api/auth/refresh`, {}, { withCredentials: true }
+    );
+    // No restaurar una sesión cerrada o sustituida mientras la petición estaba en vuelo.
+    if (readToken() !== actual) throw new Error('La sesión cambió durante la renovación');
+    saveToken(data.token);
+    return data.token;
+  };
+  // Evita consumir dos veces el mismo refresh desde pestañas del mismo origen.
+  return navigator.locks
+    ? navigator.locks.request('parroquia:jwt-refresh', renovar)
+    : renovar();
+}
+
 apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -67,21 +87,20 @@ apiClient.interceptors.response.use(
 
     original._retry = true;
     isRefreshing = true;
+    const tokenAlIniciar = readToken();
 
     try {
-      const { data } = await axios.post(
-        `${BASE_URL}/api/auth/refresh`,
-        {},
-        { withCredentials: true }
-      );
-      saveToken(data.token);
-      drainQueue(null, data.token);
-      original.headers.Authorization = `Bearer ${data.token}`;
+      const authorization = original.headers.Authorization;
+      const tokenFallido = typeof authorization === 'string' && authorization.startsWith('Bearer ')
+        ? authorization.slice(7) : readToken();
+      const token = await renovarTokenCompartido(tokenFallido);
+      drainQueue(null, token);
+      original.headers.Authorization = `Bearer ${token}`;
       return apiClient(original);
     } catch (refreshError) {
       drainQueue(refreshError, null);
-      clearSession();
-      window.location.href = '/login';
+      if (readToken() === tokenAlIniciar) clearSession();
+      if (!readToken()) window.location.href = '/login';
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
