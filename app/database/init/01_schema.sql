@@ -60,6 +60,7 @@ CREATE TABLE `tarea` (
 -- Persona (depende de rol)
 -- ----------------------------
 
+DROP TABLE IF EXISTS `sesion_jwt`;
 DROP TABLE IF EXISTS `persona`;
 CREATE TABLE `persona` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -77,6 +78,18 @@ CREATE TABLE `persona` (
   KEY `fk_persona_rol_idx` (`rol_id`),
   CONSTRAINT `fk_persona_rol` FOREIGN KEY (`rol_id`) REFERENCES `rol` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE `sesion_jwt` (
+  `id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `persona_id` int(11) NOT NULL,
+  `refresh_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `expira_en` bigint unsigned NOT NULL COMMENT 'Unix timestamp UTC, segundos',
+  `revocada_en` datetime(3) DEFAULT NULL COMMENT 'UTC',
+  PRIMARY KEY (`id`),
+  KEY `idx_sesion_persona` (`persona_id`),
+  KEY `idx_sesion_expira` (`expira_en`),
+  CONSTRAINT `fk_sesion_jwt_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
 
 -- ----------------------------
 -- Tablas que dependen de persona
