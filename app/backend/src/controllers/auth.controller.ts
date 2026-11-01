@@ -2,38 +2,21 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import bcrypt from 'bcryptjs';
 import bcryptNative from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { HttpStatus } from '../utils/httpStatus';
-import { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN } from '../config/env';
 import { isClerkEnabled, getClerkClient } from '../config/clerk';
 import { ESTADOS_CUENTA, respuestaCuentaNoActiva } from '../config/cuentas';
 import { ROLES } from '../config/roles';
 import { withTransaction } from '../utils/withTransaction';
 import { normalizarTelefono, ErrorTelefono, esTelefonoDuplicado } from '../utils/telefono';
+import { crearSesionJwt, renovarSesionJwt, cerrarSesionJwt, ErrorSesionJwt } from '../services/jwtSesion.service';
 
-const REFRESH_MAX_AGE = 15 * 24 * 60 * 60 * 1000;
-
-function generateTokens(userId: number, rolId: number) {
-  const accessToken = jwt.sign(
-    { id: userId, rol_id: rolId },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
-  );
-  const refreshToken = jwt.sign(
-    { id: userId, rol_id: rolId },
-    JWT_REFRESH_SECRET,
-    { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
-  );
-  return { accessToken, refreshToken };
-}
-
-function setRefreshCookie(res: Response, token: string) {
+function setRefreshCookie(res: Response, token: string, expiresAt: number) {
   res.cookie('refreshToken', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: REFRESH_MAX_AGE,
+    maxAge: Math.max(0, expiresAt * 1000 - Date.now()),
   });
 }
 
@@ -70,8 +53,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { accessToken, refreshToken } = generateTokens(usuario.id, usuario.rol_id);
-    setRefreshCookie(res, refreshToken);
+    const { accessToken, refreshToken, refreshExpiresAt } = await crearSesionJwt(usuario.id, usuario.password);
+    setRefreshCookie(res, refreshToken, refreshExpiresAt);
 
     res.status(HttpStatus.OK).json({
       mensaje: 'Autenticación exitosa',
@@ -85,6 +68,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error) {
+    if (error instanceof ErrorSesionJwt) { res.status(error.status).json({ mensaje: error.message }); return; }
     console.error('Error en el controlador de login:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
   }
@@ -98,23 +82,9 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  let decoded: { id: number; rol_id: number };
   try {
-    decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { id: number; rol_id: number };
-  } catch {
-    res.status(HttpStatus.UNAUTHORIZED).json({ mensaje: 'Sesión expirada, inicia sesión nuevamente' });
-    return;
-  }
-
-  try {
-    // El refresh dura días: se consulta la BD para que una cuenta rechazada no pueda seguir
-    // renovando su sesión, y para que un cambio de rol se refleje en el nuevo token.
-    const [rows] = await pool.execute<RowDataPacket[]>(
-      'SELECT rol_id, estado_cuenta FROM persona WHERE id = ?',
-      [decoded.id]
-    );
-
-    if (rows.length === 0 || rows[0].estado_cuenta !== ESTADOS_CUENTA.ACTIVA) {
+    const tokens = await renovarSesionJwt(token);
+    if (!tokens) {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -124,23 +94,28 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { accessToken, refreshToken } = generateTokens(decoded.id, rows[0].rol_id);
-    setRefreshCookie(res, refreshToken);
-
-    res.status(HttpStatus.OK).json({ token: accessToken });
+    setRefreshCookie(res, tokens.refreshToken, tokens.refreshExpiresAt);
+    res.status(HttpStatus.OK).json({ token: tokens.accessToken });
   } catch (error) {
     console.error('Error en el controlador de refresh:', error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'Error interno del servidor' });
   }
 };
 
-export const logout = (_req: Request, res: Response): void => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   res.clearCookie('refreshToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
   });
-  res.status(HttpStatus.OK).json({ mensaje: 'Sesión cerrada correctamente' });
+  try {
+    const bearer = req.headers?.authorization;
+    await cerrarSesionJwt(req.cookies?.refreshToken, bearer?.startsWith('Bearer ') ? bearer.slice(7) : undefined);
+    res.status(HttpStatus.OK).json({ mensaje: 'Sesión cerrada correctamente' });
+  } catch (error) {
+    console.error('No se pudo revocar la sesión JWT:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ mensaje: 'No se pudo confirmar el cierre de sesión en el servidor' });
+  }
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
