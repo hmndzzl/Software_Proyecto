@@ -37,7 +37,7 @@ it('rechaza formatos y tamaños inválidos y permite cancelar la selección', ()
   elegir(new File(['svg'], 'foto.svg', { type: 'image/svg+xml' }));
   expect(screen.getByRole('alert')).toHaveTextContent('hasta 10 MB');
   const grande = foto(); Object.defineProperty(grande, 'size', { value: 10 * 1024 * 1024 + 1 }); elegir(grande);
-  expect(screen.getByRole('button')).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Guardar foto' })).toBeDisabled();
   elegir(); fireEvent.submit(screen.getByRole('form'));
   expect(apiClient.put).not.toHaveBeenCalled();
 });

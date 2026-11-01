@@ -3,6 +3,13 @@
 .controls { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
 .controls label { font-weight: 700; }
 .controls p { margin: 0; overflow-wrap: anywhere; }
-.controls input { width: 100%; max-width: 100%; }
+.filePicker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%; min-width: 0; }
+.fileName { flex: 1 1 160px; min-width: 0; font-family: var(--font-body); color: var(--color-muted); overflow-wrap: anywhere; }
 .error { color: var(--color-bad); }
-@media (max-width: 600px) { .form { flex-direction: column; } .controls { width: 100%; } }
+@media (max-width: 600px) {
+  .form { flex-direction: column; }
+  .controls { width: 100%; }
+  .filePicker { flex-direction: column; align-items: stretch; }
+  .filePicker button { width: 100%; }
+  .fileName { flex-basis: auto; }
+}
