@@ -47,7 +47,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const [rows] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, nombre, correo, password, rol_id, estado_cuenta FROM persona WHERE correo = ?',
+      'SELECT id, nombre, correo, password, rol_id, estado_cuenta, foto_url FROM persona WHERE correo = ?',
       [correo]
     );
 
@@ -81,6 +81,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         nombre: usuario.nombre,
         correo: usuario.correo,
         rol_id: usuario.rol_id,
+        ...(usuario.foto_url !== undefined ? { foto_url: usuario.foto_url } : {}),
       },
     });
   } catch (error) {
@@ -249,7 +250,7 @@ async function crearUsuarioEnClerk(
 export const me = async (req: Request, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      'SELECT id, nombre, correo, rol_id FROM persona WHERE id = ?',
+      'SELECT id, nombre, correo, rol_id, foto_url FROM persona WHERE id = ?',
       [req.user!.id]
     );
 
@@ -265,6 +266,7 @@ export const me = async (req: Request, res: Response): Promise<void> => {
         nombre: usuario.nombre,
         correo: usuario.correo,
         rol_id: usuario.rol_id,
+        ...(usuario.foto_url !== undefined ? { foto_url: usuario.foto_url } : {}),
       },
     });
   } catch (error) {

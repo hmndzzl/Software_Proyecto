@@ -89,7 +89,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
   describe('login', () => {
     it('debería hacer login exitoso con credenciales correctas', async () => {
       req.body = { correo: 'test@test.com', password: 'password123' };
-      const userFromDb = { id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 2, estado_cuenta: 'activa' };
+      const userFromDb = { id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 2, estado_cuenta: 'activa', foto_url: '/uploads/perfiles/subidas/00000000-0000-0000-0000-000000000001.webp' };
 
       (pool.execute as any).mockResolvedValue([[userFromDb]]);
       (bcryptNative.compare as any).mockResolvedValue(true);
@@ -97,7 +97,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       await login(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalledWith(
-        'SELECT id, nombre, correo, password, rol_id, estado_cuenta FROM persona WHERE correo = ?',
+        'SELECT id, nombre, correo, password, rol_id, estado_cuenta, foto_url FROM persona WHERE correo = ?',
         ['test@test.com']
       );
       expect(bcryptNative.compare).toHaveBeenCalledWith('password123', 'hashedpassword');
@@ -105,7 +105,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
         mensaje: 'Autenticación exitosa',
-        usuario: { id: 1, nombre: 'Test', correo: 'test@test.com', rol_id: 2 }
+        usuario: { id: 1, nombre: 'Test', correo: 'test@test.com', rol_id: 2, foto_url: userFromDb.foto_url }
       }));
     });
 

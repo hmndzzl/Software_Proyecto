@@ -4,6 +4,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { MariaDbContainer, type StartedMariaDbContainer } from '@testcontainers/mariadb';
+import sharp from 'sharp';
 
 describe('integración API y MariaDB', () => {
   let container: StartedMariaDbContainer;
@@ -65,6 +66,39 @@ describe('integración API y MariaDB', () => {
       expect(despues).toEqual(antes);
       expect(asignacionesDespues).toEqual(asignaciones);
     } finally { conn.release(); }
+  });
+
+  it('persiste la foto propia, la devuelve en la sesión y reemplaza el archivo anterior', async () => {
+    const conn = await pool.getConnection();
+    const migracion = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261103_persona_foto.sql'), 'utf8');
+    try {
+      await conn.query(migracion);
+      await conn.query(migracion);
+    } finally { conn.release(); }
+    const { JWT_SECRET } = await import('../../src/config/env');
+    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const png = await sharp({ create: { width: 10, height: 20, channels: 3, background: 'red' } }).png().toBuffer();
+    const { eliminarFotoPerfil } = await import('../../src/services/perfilFoto.service');
+    let ultima: string | null = null;
+    try {
+      const subir = () => request(app).put('/api/personas/1/foto').auth(token, { type: 'bearer' })
+        .attach('imagen', png, { filename: 'perfil.png', contentType: 'image/png' });
+      const primera = await subir().expect(200);
+      ultima = primera.body.foto_url;
+      const respuesta = await request(app).get(ultima!).expect(200).expect('Content-Type', /image\/webp/);
+      expect(await sharp(respuesta.body).metadata()).toMatchObject({ width: 512, height: 512, format: 'webp' });
+      const segunda = await subir().expect(200);
+      ultima = segunda.body.foto_url;
+      expect(ultima).not.toBe(primera.body.foto_url);
+      await request(app).get(primera.body.foto_url).expect(404);
+      const me = await request(app).get('/api/auth/me').auth(token, { type: 'bearer' }).expect(200);
+      expect(me.body.usuario.foto_url).toBe(ultima);
+      const perfil = await request(app).get('/api/personas/1').auth(token, { type: 'bearer' }).expect(200);
+      expect(perfil.body.foto_url).toBe(ultima);
+    } finally {
+      await pool.execute('UPDATE persona SET foto_url = NULL WHERE id = 1');
+      await eliminarFotoPerfil(ultima);
+    }
   });
 
   it('autentica con credenciales persistidas y devuelve un JWT utilizable', async () => {

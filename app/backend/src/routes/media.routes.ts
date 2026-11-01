@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ESPACIOS_MEDIA_DIR } from '../services/espacioFoto.service';
 import { LANDING_MEDIA_DIR } from '../services/landingImagen.service';
 import express from 'express';
+import { PERFILES_MEDIA_DIR } from '../services/perfilFoto.service';
 
 const router = Router();
 const espaciosDir = ESPACIOS_MEDIA_DIR;
@@ -34,6 +35,15 @@ router.use('/landing', express.static(LANDING_MEDIA_DIR, {
   index: false,
   immutable: true,
   maxAge: '30d',
+}));
+
+// Solo fotos optimizadas con nombres generados por el servidor.
+router.use('/perfiles', (req, res, next) => {
+  if (!/^\/subidas\/[a-f0-9-]{36}\.webp$/.test(req.path)) { res.sendStatus(404); return; }
+  next();
+});
+router.use('/perfiles', express.static(PERFILES_MEDIA_DIR, {
+  dotfiles: 'deny', index: false, immutable: true, maxAge: '30d',
 }));
 
 export default router;

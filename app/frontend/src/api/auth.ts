@@ -5,6 +5,7 @@ export interface UsuarioAuth {
   nombre: string;
   correo: string;
   rol_id: number;
+  foto_url?: string | null;
 }
 
 export async function logoutApi(): Promise<void> {

@@ -40,6 +40,7 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('Notificaciones')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Configuración' })).toHaveAttribute('href', '/configuracion');
     expect(screen.queryByText('Ayuda y Soporte')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Mi Perfil' })).not.toBeInTheDocument();
   });
 
   it('renderiza botón "Nueva Reserva" si el usuario tiene rol para reservas y navega al hacer click', () => {
