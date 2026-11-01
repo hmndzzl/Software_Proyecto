@@ -25,6 +25,7 @@ services:
       - ./backend/src:/app/src
       - espacios_imagenes:/app/media/espacios/subidas
       - landing_imagenes:/app/media/landing/subidas
+      - perfiles_imagenes:/app/media/perfiles/subidas
     environment:
       - PORT=${PORT}
       - DB_HOST=${DB_HOST}
@@ -78,3 +79,4 @@ volumes:
   mariadb_data:
   espacios_imagenes:
   landing_imagenes:
+  perfiles_imagenes:
