@@ -1,14 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { MariaDbContainer, type StartedMariaDbContainer } from '@testcontainers/mariadb';
+import sharp from 'sharp';
 
 describe('integración API y MariaDB', () => {
   let container: StartedMariaDbContainer;
   let pool: Pool;
   let app: Awaited<typeof import('../../src/app')>['app'];
+
+  async function acceso(id: number) {
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT password FROM persona WHERE id = ?', [id]);
+    const { crearSesionJwt } = await import('../../src/services/jwtSesion.service');
+    return (await crearSesionJwt(id, rows[0].password)).accessToken;
+  }
 
   beforeAll(async () => {
     container = await new MariaDbContainer('mariadb:11')
@@ -65,6 +71,38 @@ describe('integración API y MariaDB', () => {
       expect(despues).toEqual(antes);
       expect(asignacionesDespues).toEqual(asignaciones);
     } finally { conn.release(); }
+  });
+
+  it('persiste la foto propia, la devuelve en la sesión y reemplaza el archivo anterior', async () => {
+    const conn = await pool.getConnection();
+    const migracion = fs.readFileSync(path.resolve(__dirname, '../../../database/migrations/20261103_persona_foto.sql'), 'utf8');
+    try {
+      await conn.query(migracion);
+      await conn.query(migracion);
+    } finally { conn.release(); }
+    const token = await acceso(1);
+    const png = await sharp({ create: { width: 10, height: 20, channels: 3, background: 'red' } }).png().toBuffer();
+    const { eliminarFotoPerfil } = await import('../../src/services/perfilFoto.service');
+    let ultima: string | null = null;
+    try {
+      const subir = () => request(app).put('/api/personas/1/foto').auth(token, { type: 'bearer' })
+        .attach('imagen', png, { filename: 'perfil.png', contentType: 'image/png' });
+      const primera = await subir().expect(200);
+      ultima = primera.body.foto_url;
+      const respuesta = await request(app).get(ultima!).expect(200).expect('Content-Type', /image\/webp/);
+      expect(await sharp(respuesta.body).metadata()).toMatchObject({ width: 512, height: 512, format: 'webp' });
+      const segunda = await subir().expect(200);
+      ultima = segunda.body.foto_url;
+      expect(ultima).not.toBe(primera.body.foto_url);
+      await request(app).get(primera.body.foto_url).expect(404);
+      const me = await request(app).get('/api/auth/me').auth(token, { type: 'bearer' }).expect(200);
+      expect(me.body.usuario.foto_url).toBe(ultima);
+      const perfil = await request(app).get('/api/personas/1').auth(token, { type: 'bearer' }).expect(200);
+      expect(perfil.body.foto_url).toBe(ultima);
+    } finally {
+      await pool.execute('UPDATE persona SET foto_url = NULL WHERE id = 1');
+      await eliminarFotoPerfil(ultima);
+    }
   });
 
   it('autentica con credenciales persistidas y devuelve un JWT utilizable', async () => {
@@ -254,10 +292,9 @@ describe('integración API y MariaDB', () => {
   });
 
   it('limita creación, asignación individual y múltiple, reasignación y retiro a ministros propios', async () => {
-    const { JWT_SECRET } = await import('../../src/config/env');
-    const norte = jwt.sign({ id: 7, rol_id: 2 }, JWT_SECRET);
-    const sur = jwt.sign({ id: 13, rol_id: 2 }, JWT_SECRET);
-    const admin = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const norte = await acceso(7);
+    const sur = await acceso(13);
+    const admin = await acceso(1);
     const propios = await request(app).get('/api/personas').auth(norte, { type: 'bearer' }).expect(200);
     const ajenos = await request(app).get('/api/personas').auth(sur, { type: 'bearer' }).expect(200);
     const idsPropios = propios.body.map((p: { id: number }) => p.id).sort((a: number, b: number) => a - b);
@@ -422,9 +459,8 @@ describe('integración API y MariaDB', () => {
   it('conserva autores, fechas y decisiones sucesivas de cuentas y reservas', async () => {
     // Aquí se prueba auditoría, no login: JWT locales evitan consumir el límite por IP.
     const { default: jwt } = await import('jsonwebtoken');
-    const { JWT_SECRET } = await import('../../src/config/env');
-    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
-    const segundo = jwt.sign({ id: 2, rol_id: 5 }, JWT_SECRET);
+    const token = await acceso(1);
+    const segundo = await acceso(2);
     // Solicitud de prueba: rechazar solo aplica a cuentas pendientes.
     await pool.query("UPDATE persona SET estado_cuenta = 'pendiente' WHERE id = 3");
     // No se inventan decisiones de las cuentas preexistentes.
@@ -469,8 +505,7 @@ describe('integración API y MariaDB', () => {
 
   it('revierte el estado y la notificación si falla el registro del historial', async () => {
     const { default: jwt } = await import('jsonwebtoken');
-    const { JWT_SECRET } = await import('../../src/config/env');
-    const token = jwt.sign({ id: 1, rol_id: 5 }, JWT_SECRET);
+    const token = await acceso(1);
     const [avisosAntes] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) AS total FROM notificacion');
     await pool.query("CREATE TRIGGER fallo_historial_cuenta BEFORE INSERT ON cuenta_decision FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fallo de historial de prueba'");
     try {
@@ -490,7 +525,7 @@ describe('integración API y MariaDB', () => {
     } finally { await pool.query('DROP TRIGGER fallo_historial_reserva'); }
     await request(app).get('/api/cuentas/1/decisiones').expect(401);
     await request(app).get('/api/reservas/1/decisiones').expect(401);
-    const tokenMinistro = jwt.sign({ id: 9, rol_id: 4 }, JWT_SECRET);
+    const tokenMinistro = await acceso(9);
     await request(app).get('/api/cuentas/1/decisiones').auth(tokenMinistro, { type: 'bearer' }).expect(403);
     await request(app).get('/api/reservas/1/decisiones').auth(tokenMinistro, { type: 'bearer' }).expect(403);
   });

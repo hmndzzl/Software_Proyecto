@@ -5,8 +5,12 @@ import { HttpStatus } from '../../utils/httpStatus';
 import pool from '../../config/db';
 import bcrypt from 'bcryptjs';
 import bcryptNative from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { ROLES } from '../../config/roles';
+import { crearSesionJwt, renovarSesionJwt, cerrarSesionJwt, ErrorSesionJwt } from '../../services/jwtSesion.service';
+vi.mock('../../services/jwtSesion.service', async original => ({
+  ...await original<typeof import('../../services/jwtSesion.service')>(),
+  crearSesionJwt: vi.fn(), renovarSesionJwt: vi.fn(), cerrarSesionJwt: vi.fn(),
+}));
 
 // Mocks de dependencias externas
 vi.mock('../../config/db', () => ({
@@ -26,12 +30,6 @@ vi.mock('bcrypt', () => ({
   default: { compare: vi.fn() },
 }));
 
-vi.mock('jsonwebtoken', () => ({
-  default: {
-    sign: vi.fn().mockReturnValue('mocked-token'),
-    verify: vi.fn(),
-  },
-}));
 
 describe('Auth Controller - Pruebas Unitarias', () => {
   let req: Partial<Request>;
@@ -61,6 +59,10 @@ describe('Auth Controller - Pruebas Unitarias', () => {
 
     process.env.NODE_ENV = 'development';
     vi.clearAllMocks();
+    vi.mocked(pool.execute).mockReset();
+    vi.mocked(crearSesionJwt).mockReset().mockResolvedValue({ accessToken: 'mocked-token', refreshToken: 'mocked-refresh', refreshExpiresAt: Math.floor(Date.now() / 1000) + 900 });
+    vi.mocked(renovarSesionJwt).mockReset().mockResolvedValue(null);
+    vi.mocked(cerrarSesionJwt).mockReset().mockResolvedValue(undefined);
     
     // Silenciamos el console.error para que no ensucie la salida de las pruebas
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -70,8 +72,19 @@ describe('Auth Controller - Pruebas Unitarias', () => {
   // 1. Prueba Logout
   // ----------------------------------------------------
   describe('logout', () => {
-    it('debería limpiar la cookie refreshToken y devolver status 200 (OK)', () => {
-      logout(req as Request, res as Response);
+    it('envía la cookie y el bearer al servicio que revoca la sesión', async () => {
+      req.cookies = { refreshToken: 'cookie-firmada' };
+      req.headers = { authorization: 'Bearer acceso-firmado' };
+      await logout(req as Request, res as Response);
+      expect(cerrarSesionJwt).toHaveBeenCalledWith('cookie-firmada', 'acceso-firmado');
+    });
+    it('no afirma que la sesión se cerró si la base de datos falla', async () => {
+      vi.mocked(cerrarSesionJwt).mockRejectedValueOnce(new Error('BD no disponible'));
+      await logout(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+    });
+    it('debería limpiar la cookie refreshToken y devolver status 200 (OK)', async () => {
+      await logout(req as Request, res as Response);
 
       expect(clearCookieMock).toHaveBeenCalledWith('refreshToken', {
         httpOnly: true,
@@ -87,9 +100,18 @@ describe('Auth Controller - Pruebas Unitarias', () => {
   // 2. Prueba Login
   // ----------------------------------------------------
   describe('login', () => {
+    it('rechaza un cambio de credenciales detectado durante el login', async () => {
+      req.body = { correo: 'test@test.com', password: 'password123' };
+      vi.mocked(pool.execute).mockResolvedValue([[{ id: 1, password: 'hash', estado_cuenta: 'activa' }]] as never);
+      vi.mocked(bcryptNative.compare).mockImplementation(async () => true);
+      vi.mocked(crearSesionJwt).mockRejectedValueOnce(new ErrorSesionJwt(401, 'Las credenciales cambiaron'));
+      await login(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(401);
+      expect(cookieMock).not.toHaveBeenCalled();
+    });
     it('debería hacer login exitoso con credenciales correctas', async () => {
       req.body = { correo: 'test@test.com', password: 'password123' };
-      const userFromDb = { id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 2, estado_cuenta: 'activa' };
+      const userFromDb = { id: 1, nombre: 'Test', correo: 'test@test.com', password: 'hashedpassword', rol_id: 2, estado_cuenta: 'activa', foto_url: '/uploads/perfiles/subidas/00000000-0000-0000-0000-000000000001.webp' };
 
       (pool.execute as any).mockResolvedValue([[userFromDb]]);
       (bcryptNative.compare as any).mockResolvedValue(true);
@@ -97,7 +119,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       await login(req as Request, res as Response);
 
       expect(pool.execute).toHaveBeenCalledWith(
-        'SELECT id, nombre, correo, password, rol_id, estado_cuenta FROM persona WHERE correo = ?',
+        'SELECT id, nombre, correo, password, rol_id, estado_cuenta, foto_url FROM persona WHERE correo = ?',
         ['test@test.com']
       );
       expect(bcryptNative.compare).toHaveBeenCalledWith('password123', 'hashedpassword');
@@ -105,7 +127,7 @@ describe('Auth Controller - Pruebas Unitarias', () => {
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
         mensaje: 'Autenticación exitosa',
-        usuario: { id: 1, nombre: 'Test', correo: 'test@test.com', rol_id: 2 }
+        usuario: { id: 1, nombre: 'Test', correo: 'test@test.com', rol_id: 2, foto_url: userFromDb.foto_url }
       }));
     });
 
@@ -294,56 +316,39 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it('debería refrescar el token si es válido', async () => {
       req.cookies = { refreshToken: 'valid-token' };
       
-      // Simulamos que jwt.verify funciona y devuelve los datos del usuario
-      (jwt.verify as any).mockReturnValue({ id: 1, rol_id: 2 });
-      (pool.execute as any).mockResolvedValueOnce([[{ rol_id: 2, estado_cuenta: 'activa' }]]);
-      // jwt.sign ya está mockeado globalmente para retornar 'mocked-token'
+      vi.mocked(renovarSesionJwt).mockResolvedValue({ accessToken: 'mocked-token', refreshToken: 'nuevo-refresh', refreshExpiresAt: Math.floor(Date.now() / 1000) + 900 });
 
       await refresh(req as Request, res as Response);
 
-      expect(jwt.verify).toHaveBeenCalledWith('valid-token', expect.any(String));
-      expect(jwt.sign).toHaveBeenCalledTimes(2); // accessToken y refreshToken
+      expect(renovarSesionJwt).toHaveBeenCalledWith('valid-token');
       expect(cookieMock).toHaveBeenCalled();
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
       expect(jsonMock).toHaveBeenCalledWith({ token: 'mocked-token' });
     });
 
-    it('el nuevo token usa el rol actual de la BD, no el del refresh token', async () => {
+    it('entrega únicamente el access token del servicio de sesiones y renueva la cookie', async () => {
       req.cookies = { refreshToken: 'valid-token' };
-      (jwt.verify as any).mockReturnValue({ id: 1, rol_id: 4 });
-      (pool.execute as any).mockResolvedValueOnce([[{ rol_id: 2, estado_cuenta: 'activa' }]]);
+      vi.mocked(renovarSesionJwt).mockResolvedValue({ accessToken: 'acceso-actualizado', refreshToken: 'nuevo-refresh', refreshExpiresAt: Math.floor(Date.now() / 1000) + 900 });
 
       await refresh(req as Request, res as Response);
 
-      expect((jwt.sign as any).mock.calls[0][0]).toEqual({ id: 1, rol_id: 2 });
+      expect(jsonMock).toHaveBeenCalledWith({ token: 'acceso-actualizado' });
+      expect(cookieMock).toHaveBeenCalledWith('refreshToken', 'nuevo-refresh', expect.any(Object));
     });
 
-    it.each(['rechazada', 'pendiente', 'baja'])('retorna 401 y limpia la cookie si la cuenta está %s', async (estado) => {
+    it('retorna 401 y limpia la cookie cuando el servicio rechaza la sesión', async () => {
       req.cookies = { refreshToken: 'valid-token' };
-      (jwt.verify as any).mockReturnValue({ id: 1, rol_id: 2 });
-      (pool.execute as any).mockResolvedValueOnce([[{ rol_id: 2, estado_cuenta: estado }]]);
 
       await refresh(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
       expect(clearCookieMock).toHaveBeenCalledWith('refreshToken', expect.any(Object));
-      expect(jwt.sign).not.toHaveBeenCalled();
     });
 
-    it('retorna 401 si la persona ya no existe', async () => {
-      req.cookies = { refreshToken: 'valid-token' };
-      (jwt.verify as any).mockReturnValue({ id: 99, rol_id: 2 });
-      (pool.execute as any).mockResolvedValueOnce([[]]);
-
-      await refresh(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
-    });
 
     it('retorna 500 (sin cerrar la sesión) si falla la BD', async () => {
       req.cookies = { refreshToken: 'valid-token' };
-      (jwt.verify as any).mockReturnValue({ id: 1, rol_id: 2 });
-      (pool.execute as any).mockRejectedValueOnce(new Error('BD caída'));
+      vi.mocked(renovarSesionJwt).mockRejectedValueOnce(new Error('BD caída'));
 
       await refresh(req as Request, res as Response);
 
@@ -354,9 +359,6 @@ describe('Auth Controller - Pruebas Unitarias', () => {
     it('debería retornar 401 si el token es inválido o expirado', async () => {
       req.cookies = { refreshToken: 'invalid-token' };
       
-      (jwt.verify as any).mockImplementation(() => {
-        throw new Error('Token expired');
-      });
 
       await refresh(req as Request, res as Response);
 

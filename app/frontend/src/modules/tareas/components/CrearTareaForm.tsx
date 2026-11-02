@@ -78,8 +78,19 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
   });
   const hayConflicto = avisos.some(aviso => aviso.conflictos.length > 0);
 
+  const [intentoEnvio, setIntentoEnvio] = useState(false);
+  const errores: Record<string, string> = intentoEnvio && !tareaId ? {
+    titulo: !titulo.trim() ? 'Escribe un título.' : '',
+    descripcion: !descripcion.trim() ? 'Describe la actividad.' : '',
+    fecha: !fecha ? 'Selecciona una fecha.' : '',
+    hora_inicio: !horaInicio ? 'Indica la hora de inicio.' : '',
+    hora_fin: !horaFin ? 'Indica la hora de fin.' : horaInicio >= horaFin ? 'La hora de fin debe ser posterior al inicio.' : '',
+  } : {};
+  const errorCampo = (campo: string) => errores[campo] ? <p id={`tarea-error-${campo}`} className={`${styles.message} ${styles.messageError}`}>{errores[campo]}</p> : null;
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setIntentoEnvio(true);
     if (guardando) return;
     if ((!tareaId && (!titulo.trim() || !descripcion.trim() || !fecha || !horaInicio || !horaFin)) || !seleccionados.length) {
       toast.error('Faltan datos', 'Completa los datos de la tarea y selecciona al menos un ministro.');
@@ -108,7 +119,8 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
       });
       setAdvertenciaGuardada(advertencias.join(' '));
       const notificar = advertencias.length ? toast.warning : toast.success;
-      notificar(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', advertencias.length ? advertencias.join(' ') : 'Las asignaciones se guardaron correctamente.');
+      notificar(tareaId ? 'Tarea asignada' : 'Tarea creada y asignada', advertencias.length ? advertencias.join(' ') : `Se guardó «${existente?.titulo ?? titulo.trim()}» con ${seleccionados.length} ministro${seleccionados.length === 1 ? '' : 's'}.`, { label: 'Ver calendario', href: '/calendario' });
+      setIntentoEnvio(false);
       setTitulo(''); setDescripcion(''); setFecha(''); setHoraInicio(''); setHoraFin('');
       setTareaId(''); setSeleccionados([]);
       setSelectorRevision(value => value + 1);
@@ -134,6 +146,7 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           </select>
         </div>
         {!tareaId && <>
+          <h3 className={styles.sectionTitle}>Actividad</h3>
           <EventoTareaSelect value={eventoId} disabled={guardando} onChange={(id, evento) => {
             setEventoId(id);
             if (evento) {
@@ -144,28 +157,31 @@ export default function CrearTareaForm({ refreshKey, onTareaCreada }: { refreshK
           }} />
           <div className={styles.field}>
             <label htmlFor="titulo" className={styles.label}>Título:</label>
-            <input id="titulo" className={styles.input} value={titulo} maxLength={255} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Lectura primera" />
-          </div>
+            <input id="titulo" aria-invalid={Boolean(errores.titulo)} aria-describedby={errores.titulo ? 'tarea-error-titulo' : undefined} className={styles.input} value={titulo} maxLength={255} onChange={e => setTitulo(e.target.value)} placeholder="Ej. Lectura primera" />
+          {errorCampo('titulo')}</div>
           <div className={styles.field}>
             <label htmlFor="descripcion" className={styles.label}>Descripción:</label>
-            <input id="descripcion" className={styles.input} value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Ej. Preparar la celebración" />
-          </div>
+            <input id="descripcion" aria-invalid={Boolean(errores.descripcion)} aria-describedby={errores.descripcion ? 'tarea-error-descripcion' : undefined} className={styles.input} value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Ej. Preparar la celebración" />
+          {errorCampo('descripcion')}</div>
           <div className={styles.field}>
+            <h3 className={styles.sectionTitle}>Fecha y horario</h3>
             <label htmlFor="fecha" className={styles.label}>Fecha:</label>
-            <input type="date" id="fecha" className={styles.input} value={fecha} onChange={e => setFecha(e.target.value)} />
-          </div>
+            <input type="date" id="fecha" aria-invalid={Boolean(errores.fecha)} aria-describedby={errores.fecha ? 'tarea-error-fecha' : undefined} className={styles.input} value={fecha} onChange={e => setFecha(e.target.value)} />
+          {errorCampo('fecha')}</div>
           <div className={styles.fieldRow}>
             <div className={styles.field}>
               <label htmlFor="hora_inicio" className={styles.label}>Hora de Inicio:</label>
-              <input type="time" id="hora_inicio" className={styles.input} value={horaInicio} onChange={e => setHoraInicio(e.target.value)} />
-            </div>
+              <input type="time" id="hora_inicio" aria-invalid={Boolean(errores.hora_inicio)} aria-describedby={errores.hora_inicio ? 'tarea-error-hora_inicio' : undefined} className={styles.input} value={horaInicio} onChange={e => setHoraInicio(e.target.value)} />
+            {errorCampo('hora_inicio')}</div>
             <div className={styles.field}>
               <label htmlFor="hora_fin" className={styles.label}>Hora de Fin:</label>
-              <input type="time" id="hora_fin" className={styles.input} value={horaFin} onChange={e => setHoraFin(e.target.value)} />
-            </div>
+              <input type="time" id="hora_fin" aria-invalid={Boolean(errores.hora_fin)} aria-describedby={errores.hora_fin ? 'tarea-error-hora_fin' : undefined} className={styles.input} value={horaFin} onChange={e => setHoraFin(e.target.value)} />
+            {errorCampo('hora_fin')}</div>
           </div>
         </>}
         {existente && <p>{existente.descripcion} · {dia} · {inicio}–{fin}</p>}
+        <h3 className={styles.sectionTitle}>Ministros responsables</h3>
+        {intentoEnvio && !seleccionados.length && <p className={styles.messageError}>Selecciona al menos un ministro.</p>}
         <SelectorMinistros key={`${tareaId}-${selectorRevision}`} ministros={ministros}
           seleccionados={seleccionados} yaAsignados={yaAsignados} onChange={setSeleccionados} disabled={guardando} />
         {consultandoPeriodos && <p role="status">Comprobando ausencias y periodos...</p>}

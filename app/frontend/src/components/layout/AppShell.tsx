@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useViewScroll } from '../../hooks/useViewScroll';
 import TopBar from './TopBar';
 import Sidebar from './Sidebar';
 import { leerSidebarColapsado, guardarSidebarColapsado, UI_PREFERENCES_EVENT } from '../../auth/sessionStore';
 import styles from './AppShell.module.css';
 
 export default function AppShell({ children }: { children: ReactNode }) {
+  const scrollRef = useViewScroll();
   const [colapsado, setColapsado] = useState(leerSidebarColapsado);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
 
@@ -38,7 +40,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <Sidebar colapsado={menuMovilAbierto ? false : colapsado} onAlternar={alternarMenu} onNavegar={cerrarMenuMovil} />
       </div>
       {menuMovilAbierto && <button type="button" className={styles.backdrop} aria-label="Cerrar menú" onClick={cerrarMenuMovil} />}
-      <div className={styles.main}>
+      <div ref={scrollRef} className={styles.main}>
         <TopBar onAbrirMenu={() => setMenuMovilAbierto(true)} />
         <main className={styles.content}>
           {children}

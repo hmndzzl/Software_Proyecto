@@ -7,7 +7,13 @@ import { ROLES } from '../../../utils/roles';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import { useAuth } from '../../../context/AuthContext';
 import type { Espacio } from '../../espacios/components/EspacioCard';
+import EspacioFoto from '../../espacios/components/EspacioFoto';
+import DisponibilidadEspacioDia from './DisponibilidadEspacioDia';
+import SelectorSemanaEspacio from './SelectorSemanaEspacio';
+import SelectorEspacios from './SelectorEspacios';
 import AforoField, { errorAforo } from '../../../components/ui/AforoField';
+import { ESTADOS_RESERVA } from '../../../utils/estadosReserva';
+import type { Reserva } from '../../../types';
 import styles from '../../../styles/Form.module.css';
 
 interface CrearReservaFormProps {
@@ -28,10 +34,15 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
   const [cantidad, setCantidad] = useState('');
   const [publico, setPublico] = useState(false);
   const [espacios, setEspacios] = useState<Espacio[]>([]);
+  const [errorCatalogo, setErrorCatalogo] = useState(false);
+  const [revisionCatalogo, setRevisionCatalogo] = useState(0);
   const [espaciosCargados, setEspaciosCargados] = useState(false);
+  const [consultaDisponibilidad, setConsultaDisponibilidad] = useState<{ espacioId: string; estado: 'cargando' | 'lista' | 'error' }>({ espacioId: '', estado: 'cargando' });
+  const [revisionDisponibilidad, setRevisionDisponibilidad] = useState(0);
+  const [reservasEspacio, setReservasEspacio] = useState<Reserva[]>([]);
   const toast = useToast();
   const [loading, setLoading] = useState(false);
-  const espacioRef = useRef<HTMLSelectElement>(null);
+  const espacioRef = useRef<HTMLDivElement>(null);
   const fechaRef = useRef<HTMLInputElement>(null);
   // Sacerdote y Admin aprueban reservas: su propia solicitud también queda pendiente y la aprueban ellos.
   const { tieneRol } = useAuth();
@@ -45,24 +56,26 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     if (espacioInicial && !espaciosCargados) return;
     const espacioResuelto = espacioInicial && espacios.some((esp) => String(esp.id) === espacioInicial);
     // Con el espacio ya resuelto, el salto útil es a la fecha; si no se pudo resolver, vuelve al selector.
-    const campo = espacioResuelto ? fechaRef.current : espacioRef.current;
-    campo?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-    campo?.focus();
+    if (espacioResuelto) {
+      fechaRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      fechaRef.current?.focus();
+      return;
+    }
+    espacioRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    // Enfoca la primera tarjeta seleccionable en vez del contenedor, para poder elegir con teclado de inmediato.
+    (espacioRef.current?.querySelector<HTMLElement>('[role="button"]') ?? espacioRef.current)?.focus();
   }, [autoFocus, espacioInicial, espaciosCargados, espacios]);
 
   useEffect(() => {
-    const fetchEspacios = async () => {
-      try {
-        const response = await apiClient.get<Espacio[]>('/api/espacios');
-        setEspacios(response.data);
-      } catch {
-        // silencioso, el select quedará vacío
-      } finally {
-        setEspaciosCargados(true);
-      }
-    };
-    fetchEspacios();
-  }, []);
+    let vigente = true;
+    setEspaciosCargados(false);
+    setErrorCatalogo(false);
+    apiClient.get<Espacio[]>('/api/espacios')
+      .then(response => { if (vigente) setEspacios(response.data); })
+      .catch(() => { if (vigente) setErrorCatalogo(true); })
+      .finally(() => { if (vigente) setEspaciosCargados(true); });
+    return () => { vigente = false; };
+  }, [revisionCatalogo]);
 
   // Preselecciona el espacio del QR solo si existe en el catálogo cargado del backend.
   useEffect(() => {
@@ -72,8 +85,43 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     }
   }, [espacioInicial, espacios]);
 
+  // Reservas del espacio elegido, para avisar disponibilidad en tiempo real mientras se llena
+  // fecha/horario — sin esto, el único aviso de conflicto llegaba al aprobar la reserva (o nunca,
+  // si quien la crea no es quien la aprueba).
+  useEffect(() => {
+    if (!espacioId) { setReservasEspacio([]); return; }
+    let cancelado = false;
+    setConsultaDisponibilidad({ espacioId, estado: 'cargando' });
+    setReservasEspacio([]);
+    apiClient.get<Reserva[]>(`/api/reservas?espacio_id=${espacioId}`)
+      .then((response) => { if (!cancelado) { setReservasEspacio(response.data); setConsultaDisponibilidad({ espacioId, estado: 'lista' }); } })
+      .catch(() => { if (!cancelado) setConsultaDisponibilidad({ espacioId, estado: 'error' }); });
+    return () => { cancelado = true; };
+  }, [espacioId, revisionDisponibilidad]);
+
+  // Mismo criterio de solape que el backend usa al aprobar (reserva.controller.ts): solo las
+  // reservas ya Confirmadas bloquean de verdad el horario.
+  const estadoDisponibilidad = consultaDisponibilidad.espacioId === espacioId ? consultaDisponibilidad.estado : 'cargando';
+  const conflicto = estadoDisponibilidad === 'lista' && fecha && horaInicio && horaFin && horaInicio < horaFin
+    ? reservasEspacio.find((r) => r.fecha === fecha
+        && r.estado_reserva_id === ESTADOS_RESERVA.CONFIRMADA
+        && r.hora_inicio < horaFin && r.hora_fin > horaInicio)
+    : undefined;
+  const horarioVerificable = Boolean(espacioId && fecha && horaInicio && horaFin && horaInicio < horaFin);
+
+  const [intentoEnvio, setIntentoEnvio] = useState(false);
+  const errores: Record<string, string> = intentoEnvio ? {
+    titulo: !titulo.trim() ? 'Escribe un título.' : '',
+    descripcion: !descripcion.trim() ? 'Describe la actividad.' : '',
+    fecha: !fecha ? 'Selecciona una fecha.' : '',
+    hora_inicio: !horaInicio ? 'Indica la hora de inicio.' : '',
+    hora_fin: !horaFin ? 'Indica la hora de fin.' : horaInicio >= horaFin ? 'La hora de fin debe ser posterior al inicio.' : '',
+  } : {};
+  const errorCampo = (campo: string) => errores[campo] ? <p id={`reserva-error-${campo}`} className={`${styles.message} ${styles.messageError}`}>{errores[campo]}</p> : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIntentoEnvio(true);
     if (loading) return;
 
     if (!fecha || !horaInicio || !horaFin || !espacioId || !titulo.trim() || !descripcion.trim() || !cantidad) {
@@ -110,6 +158,11 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
       return;
     }
 
+    if (conflicto) {
+      toast.error('Horario no disponible', 'Ese horario se cruza con una reserva ya confirmada en este espacio. Elige otro horario o espacio.');
+      return;
+    }
+
     setLoading(true);
     onGuardandoChange?.(true);
 
@@ -130,8 +183,10 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
         `Tu ${contexto === 'evento' ? 'evento en' : 'reserva de'} ${nombreEspacio} para «${titulo}» el ${formatFecha(fecha)}, ${formatHorario(horaInicio, horaFin)}, quedó pendiente de aprobación${puedeAprobar ? '' : ' del sacerdote'}. ` +
           (puedeAprobar
             ? contexto === 'evento' ? 'Puedes aprobar la reserva desde la pantalla Reservas.' : 'Puedes aprobarla tú mismo en la lista de solicitudes de esta página.'
-            : 'Puedes revisar su estado en Mis Reservas.')
+            : 'Puedes revisar su estado en Mis Reservas.'),
+        { label: puedeAprobar ? 'Ver reservas' : 'Ver mis reservas', href: puedeAprobar ? '/reservas' : '/mis-reservas' }
       );
+      setIntentoEnvio(false);
       setFecha('');
       setHoraInicio('');
       setHoraFin('');
@@ -149,68 +204,89 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
     }
   };
 
-  // Solo mientras la selección siga siendo la que trajo el QR: si la persona la cambia a mano, se oculta.
-  const nombreEspacioInicial = espacioId === espacioInicial
-    ? espacios.find((esp) => String(esp.id) === espacioId)?.nombre
-    : undefined;
-
   const espacioInicialNoEncontrado = Boolean(espacioInicial)
     && espaciosCargados
+    && !errorCatalogo
     && !espacios.some((esp) => String(esp.id) === espacioInicial);
 
   return (
     <div>
-
-
-      {nombreEspacioInicial && (
-        <div className={`${styles.infoBox} ${styles.infoBoxMargin}`}>
-          <span className={styles.infoBoxLabel}>Espacio seleccionado:</span>
-          {nombreEspacioInicial}
-        </div>
-      )}
-
       {espacioInicialNoEncontrado && (
         <div className={`${styles.warningBox} ${styles.infoBoxMargin}`}>
           El espacio del enlace ya no está disponible. Selecciona uno manualmente.
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <p className={styles.fieldNote}>Selecciona el espacio, indica cuántas personas asistirán y completa la fecha, el horario y los datos de la actividad. La solicitud quedará pendiente de aprobación.</p>
-        <div className={styles.field}>
-          <label htmlFor="espacio_id" className={`${styles.label} ${styles.required}`}>Espacio:</label>
-          <select
-            ref={espacioRef}
-            id="espacio_id"
-            className={styles.input}
-            value={espacioId}
-            onChange={(e) => setEspacioId(e.target.value)}
-          >
-            <option value="">-- Selecciona un espacio --</option>
-            {espacios.map((esp) => (
-              <option key={esp.id} value={esp.id}>
-                {esp.nombre}{esp.capacidad ? ` (cap. ${esp.capacidad})` : ''}
-              </option>
-            ))}
-          </select>
-          {espacioId && (
-            <Link to={`/espacios/${espacioId}`} className={styles.espacioDetalleLink}>
+      {espacioSeleccionado && (
+        <div className={`${styles.espacioHeader} ${styles.infoBoxMargin}`}>
+          <EspacioFoto className={styles.espacioHeaderFoto} nombre={espacioSeleccionado.nombre} fotoUrl={espacioSeleccionado.foto_url} />
+          <div className={styles.espacioHeaderInfo}>
+            <span className={styles.espacioHeaderNombre}>{espacioSeleccionado.nombre}</span>
+            <span className={styles.espacioHeaderCapacidad}>
+              {espacioSeleccionado.capacidad != null ? `Capacidad: ${espacioSeleccionado.capacidad} personas` : 'Capacidad sin definir'}
+            </span>
+            <Link to={`/espacios/${espacioSeleccionado.id}`} className={styles.espacioDetalleLink}>
               Ver detalle del espacio
             </Link>
-          )}
+          </div>
+        </div>
+      )}
+
+      {espacioSeleccionado && estadoDisponibilidad !== 'lista' && (
+        estadoDisponibilidad === 'cargando' ? (
+          <p className={styles.fieldNote} role="status">Comprobando disponibilidad…</p>
+        ) : (
+          <div className={styles.warningBox} role="status">
+            No se pudo comprobar la disponibilidad. La solicitud quedará pendiente de revisión.
+            {' '}<button type="button" className={styles.btnSecondary} disabled={loading} onClick={() => setRevisionDisponibilidad(value => value + 1)}>Reintentar disponibilidad</button>
+          </div>
+        )
+      )}
+
+      {espacioSeleccionado && estadoDisponibilidad === 'lista' && (
+        <div className={styles.infoBoxMargin}>
+          <SelectorSemanaEspacio reservas={reservasEspacio} fechaSeleccionada={fecha} onSeleccionarDia={setFecha} />
+        </div>
+      )}
+
+      {espacioSeleccionado && estadoDisponibilidad === 'lista' && fecha && (
+        <div className={styles.infoBoxMargin}>
+          <DisponibilidadEspacioDia
+            fecha={fecha}
+            reservas={reservasEspacio}
+            horaInicio={horaInicio}
+            horaFin={horaFin}
+            hayConflicto={Boolean(conflicto)}
+          />
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        <fieldset className={styles.form} disabled={loading} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <h3 className={styles.sectionTitle}>Espacio y asistencia</h3>
+        <p className={styles.fieldNote}>Selecciona el espacio, indica cuántas personas asistirán y completa la fecha, el horario y los datos de la actividad. La solicitud quedará pendiente de aprobación.</p>
+        <div className={styles.field}>
+          <span id="espacio_id-label" className={`${styles.label} ${styles.required}`}>Espacio:</span>
+          <div ref={espacioRef} tabIndex={-1}>
+            {errorCatalogo ? <p role="alert">No se pudieron cargar los espacios. <button type="button" className={styles.btnSecondary} onClick={() => setRevisionCatalogo(value => value + 1)}>Reintentar</button></p> : <SelectorEspacios espacios={espacios} valor={espacioId} onChange={setEspacioId} labelId="espacio_id-label" cargando={!espaciosCargados} disabled={loading} />}
+          </div>
         </div>
 
         <AforoField value={cantidad} onChange={setCantidad} capacidad={espacioSeleccionado ? espacioSeleccionado.capacidad ?? null : undefined} />
         <div className={styles.field}>
+          <h3 className={styles.sectionTitle}>Fecha y horario</h3>
           <label htmlFor="fecha" className={`${styles.label} ${styles.required}`}>Fecha:</label>
           <input
             ref={fechaRef}
             type="date"
             id="fecha"
+            aria-invalid={Boolean(errores.fecha)}
+            aria-describedby={errores.fecha ? 'reserva-error-fecha' : undefined}
             className={styles.input}
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
           />
+        {errorCampo('fecha')}
         </div>
 
         <div className={styles.fieldRow}>
@@ -219,34 +295,56 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
             <input
               type="time"
               id="hora_inicio"
+            aria-invalid={Boolean(errores.hora_inicio)}
+            aria-describedby={errores.hora_inicio ? 'reserva-error-hora_inicio' : undefined}
               className={styles.input}
               value={horaInicio}
               onChange={(e) => setHoraInicio(e.target.value)}
             />
-          </div>
+          {errorCampo('hora_inicio')}
+        </div>
 
           <div className={styles.field}>
             <label htmlFor="hora_fin" className={`${styles.label} ${styles.required}`}>Hora de Fin:</label>
             <input
               type="time"
               id="hora_fin"
+            aria-invalid={Boolean(errores.hora_fin)}
+            aria-describedby={errores.hora_fin ? 'reserva-error-hora_fin' : undefined}
               className={styles.input}
               value={horaFin}
               onChange={(e) => setHoraFin(e.target.value)}
             />
-          </div>
+          {errorCampo('hora_fin')}
+        </div>
         </div>
 
+        {horarioVerificable && estadoDisponibilidad === 'lista' && (
+          conflicto ? (
+            <div className={styles.warningBox} role="alert">
+              Este horario se cruza con una reserva ya confirmada: {formatHorario(conflicto.hora_inicio, conflicto.hora_fin)}
+              {conflicto.evento_titulo ? ` — ${conflicto.evento_titulo}` : ''}
+              {conflicto.solicitante_nombre ? ` (de ${conflicto.solicitante_nombre})` : ''}. Elige otro horario o espacio.
+            </div>
+          ) : (
+            <div className={styles.okBox}>Horario disponible para este espacio.</div>
+          )
+        )}
+
         <div className={styles.field}>
+          <h3 className={styles.sectionTitle}>Actividad</h3>
           <label htmlFor="titulo" className={`${styles.label} ${styles.required}`}>Título del Evento:</label>
           <input
             type="text"
             id="titulo"
+            aria-invalid={Boolean(errores.titulo)}
+            aria-describedby={errores.titulo ? 'reserva-error-titulo' : undefined}
             className={styles.input}
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             placeholder="Ej. Misa del Día de la Madre"
           />
+        {errorCampo('titulo')}
         </div>
 
         <div className={styles.field}>
@@ -254,11 +352,14 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
           <input
             type="text"
             id="descripcion"
+            aria-invalid={Boolean(errores.descripcion)}
+            aria-describedby={errores.descripcion ? 'reserva-error-descripcion' : undefined}
             className={styles.input}
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             placeholder="Ej. Celebración en honor a la Virgen, con coro y procesión"
           />
+        {errorCampo('descripcion')}
         </div>
 
         {puedePublicar && (
@@ -271,9 +372,10 @@ export default function CrearReservaForm({ onReservaCreada, autoFocus = false, e
           </div>
         )}
 
-        <button type="submit" className="btn-primary" disabled={loading}>
+        <button type="submit" className="btn-primary" disabled={loading || Boolean(conflicto)}>
           {loading ? 'Enviando...' : contexto === 'evento' ? 'Crear evento' : 'Solicitar Reserva'}
         </button>
+        </fieldset>
       </form>
     </div>
   );

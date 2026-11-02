@@ -6,6 +6,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import { Card, CardHead, CardBody } from '../../components/ui/Card';
 import Btn from '../../components/ui/Btn';
 import PasswordInput from '../../components/ui/PasswordInput';
+import FotoPerfilForm from './FotoPerfilForm';
 import { getApiErrorMessage, getApiErrorStatus } from '../../utils/apiError';
 import { normalizarTelefono } from '../../utils/telefono';
 import form from '../../styles/Form.module.css';
@@ -104,10 +105,12 @@ export default function PerfilPage() {
 
       // Actualizar la sesión para reflejar los cambios en toda la app
       actualizarUsuario({
+        ...usuario!,
         id:     actualizado.id,
         nombre: actualizado.nombre,
         correo: actualizado.correo,
         rol_id: actualizado.rol_id,
+        ...(actualizado.foto_url !== undefined ? { foto_url: actualizado.foto_url } : {}),
       });
 
       setFormData(prev => ({ ...prev, password: '', confirmar: '' }));
@@ -132,6 +135,7 @@ export default function PerfilPage() {
         subtitle="Consulta y actualiza tu información personal."
       />
 
+      <FotoPerfilForm key={usuario?.id} />
       {/* Información actual (de solo lectura) */}
       <Card>
         <CardHead title="Información Actual" />

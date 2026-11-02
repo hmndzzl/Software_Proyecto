@@ -8,12 +8,12 @@
 }
 
 .rowUnread {
-  background: #fef9ec;
+  background: var(--color-unread-bg);
   border-left: 3px solid var(--color-oro);
 }
 
 .rowUnread:hover {
-  background: #fdf3d0;
+  background: var(--color-unread-hover);
 }
 
 .rowResaltada {
@@ -21,7 +21,7 @@
 }
 
 @keyframes resaltarFila {
-  0%, 40% { background: #fdedb8; }
+  0%, 40% { background: var(--color-highlight); }
   100% { background: transparent; }
 }
 
@@ -94,4 +94,8 @@
   font-size: 11px;
   color: var(--color-tierra);
   margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rowResaltada { animation: none; background: var(--color-highlight); }
 }

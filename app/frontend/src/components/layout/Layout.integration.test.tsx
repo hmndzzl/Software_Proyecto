@@ -8,6 +8,7 @@ import AppShell from './AppShell';
 import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { authValue } from '../../test/authValue';
+import { NOTIFICACIONES_EVENT } from '../../auth/sessionStore';
 
 vi.mock('../../api/client', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }));
@@ -95,6 +96,15 @@ describe('layout integrado con sesión y notificaciones', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
     await userEvent.click(screen.getByTitle('Notificaciones'));
     expect(screen.getByText('Sin notificaciones')).toBeInTheDocument();
+  });
+
+  it('refresca la insignia de inmediato al recibir el evento de cambio de notificaciones', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, mensaje: 'Aviso', fecha: '2099-10-20', leida: false }] });
+    mostrar(<TopBar />);
+    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [{ id: 1, mensaje: 'Aviso', fecha: '2099-10-20', leida: true }] });
+    window.dispatchEvent(new Event(NOTIFICACIONES_EVENT));
+    await waitFor(() => expect(screen.queryByText('1')).not.toBeInTheDocument());
   });
 
   it('Navbar enlaza al panel y permite cerrar sesión', async () => {

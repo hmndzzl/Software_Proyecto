@@ -1,0 +1,9 @@
+.button {
+  align-self: flex-start;
+  max-width: 100%;
+  min-height: 44px;
+  height: auto;
+  padding-block: 10px;
+  white-space: normal;
+  text-align: start;
+}

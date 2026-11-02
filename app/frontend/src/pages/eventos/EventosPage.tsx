@@ -37,7 +37,7 @@ export default function EventosPage() {
       />
 
       {creando && <Modal open title="Crear evento" width={720} closeDisabled={guardando}
-        onClose={() => setCreando(false)} initialFocusSelector="#espacio_id">
+        onClose={() => setCreando(false)}>
         <CrearReservaForm contexto="evento" onReservaCreada={handleChanged} onGuardandoChange={setGuardando} />
       </Modal>}
 

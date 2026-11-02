@@ -10,7 +10,7 @@ async function preparar(page: Page) {
   await page.route('http://api.test/**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     const data = pathname === '/api/eventos' || pathname === '/api/public/agenda' ? [evento]
-      : pathname === '/api/grupos' ? [{ id: 3, nombre: 'Coro', coordinador_id: 1, nombre_coordinador: 'Ana' }]
+      : pathname === '/api/grupos' ? [{ id: 3, nombre: 'Coro', coordinadores: [{ id: 1, nombre: 'Ana' }] }]
       : pathname === '/api/personas/coordinadores-grupo' || pathname === '/api/personas/encargados-evento' ? [{ id: 1, nombre: 'Ana' }]
       : [];
     await route.fulfill({ json: data });
@@ -24,7 +24,7 @@ test('los formularios conservan un único título de tarjeta', async ({ page }) 
     await expect(page.getByRole('heading', { name: titulo, exact: true })).toHaveCount(1);
   }
   await page.getByRole('button', { name: 'Editar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Editar Grupo', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Editar Coro', exact: true })).toHaveCount(1);
   await page.goto('/eventos');
   await expect(page.getByRole('cell', { name: '14:00 – 15:00' })).toBeVisible();
   await page.getByRole('button', { name: 'Editar', exact: true }).click();

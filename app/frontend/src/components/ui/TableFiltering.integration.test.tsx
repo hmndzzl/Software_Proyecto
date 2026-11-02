@@ -37,7 +37,7 @@ beforeEach(() => {
     if (url === '/api/reservas' || url === '/api/reservas/mis-reservas') return { data: reservas };
     if (url === '/api/espacios') return { data: [] };
     if (url === '/api/eventos') return { data: reservas.map(r => ({ ...r, descripcion: r.evento_titulo, nombre_encargado: r.solicitante_nombre, nombre_espacio: r.espacio_nombre })) };
-    if (url === '/api/grupos') return { data: nombres.map((nombre, i) => ({ id: i + 1, nombre, nombre_coordinador: personas[i].nombre })) };
+    if (url === '/api/grupos') return { data: nombres.map((nombre, i) => ({ id: i + 1, nombre, coordinadores: [{ id: personas[i].id, nombre: personas[i].nombre }] })) };
     if (url === '/api/cambios-turno') return { data: [1, 2].flatMap(destinatario_id => nombres.map((nombre, i) => ({
       id: destinatario_id * 10 + i, tarea_titulo: nombre, tarea_descripcion: nombre,
       solicitante_nombre: personas[i].nombre, destinatario_nombre: personas[i].nombre,
@@ -68,7 +68,7 @@ function revisarColumnas(table: HTMLElement) {
 describe('filtros reales en las tablas principales', () => {
   it.each([
     ['reservas', <ListaReservas />], ['mis reservas', <MisReservasPage />], ['cuentas', <CuentasPage />],
-  ])('abre y cierra el historial desde %s sin modificar los datos', async (_nombre, component) => {
+  ])('abre y cierra el historial desde %s sin modificar los datos', async (nombre, component) => {
     const anterior = vi.mocked(apiClient.get).getMockImplementation()!;
     vi.mocked(apiClient.get).mockImplementation(async (url, config) => {
       if (url.endsWith('/decisiones')) return { data: [{ id: 1, resultado: 'aprobada', actor_id: 1, actor_nombre: 'Padre Luis', fecha: '2026-10-25T14:00:00Z' }] };
@@ -76,7 +76,10 @@ describe('filtros reales en las tablas principales', () => {
     });
     mostrar(component);
     const table = await screen.findByRole('table');
-    await userEvent.click(within(table).getAllByRole('button', { name: 'Ver detalle' })[0]);
+    const abrirDetalle = nombre === 'reservas' || nombre === 'mis reservas'
+      ? within(table).getAllByRole('button', { name: '1' })[0]
+      : within(table).getAllByRole('button', { name: 'Ver detalle' })[0];
+    await userEvent.click(abrirDetalle);
     const dialog = screen.getByRole('dialog');
     expect(await within(dialog).findByText('Por Padre Luis')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }));

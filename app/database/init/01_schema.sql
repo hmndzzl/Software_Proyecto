@@ -60,6 +60,7 @@ CREATE TABLE `tarea` (
 -- Persona (depende de rol)
 -- ----------------------------
 
+DROP TABLE IF EXISTS `sesion_jwt`;
 DROP TABLE IF EXISTS `persona`;
 CREATE TABLE `persona` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -69,6 +70,7 @@ CREATE TABLE `persona` (
   `rol_id` int(11) NOT NULL,
   `disponible` tinyint(1) NOT NULL DEFAULT 1,
   `clerk_user_id` varchar(64) DEFAULT NULL,
+  `foto_url` varchar(255) DEFAULT NULL,
   `estado_cuenta` enum('pendiente','activa','rechazada','baja') NOT NULL DEFAULT 'activa',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_persona_correo` (`correo`),
@@ -76,6 +78,18 @@ CREATE TABLE `persona` (
   KEY `fk_persona_rol_idx` (`rol_id`),
   CONSTRAINT `fk_persona_rol` FOREIGN KEY (`rol_id`) REFERENCES `rol` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+CREATE TABLE `sesion_jwt` (
+  `id` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `persona_id` int(11) NOT NULL,
+  `refresh_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `expira_en` bigint unsigned NOT NULL COMMENT 'Unix timestamp UTC, segundos',
+  `revocada_en` datetime(3) DEFAULT NULL COMMENT 'UTC',
+  PRIMARY KEY (`id`),
+  KEY `idx_sesion_persona` (`persona_id`),
+  KEY `idx_sesion_expira` (`expira_en`),
+  CONSTRAINT `fk_sesion_jwt_persona` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
 
 -- ----------------------------
 -- Tablas que dependen de persona
@@ -96,11 +110,8 @@ DROP TABLE IF EXISTS `grupo`;
 CREATE TABLE `grupo` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(200) NOT NULL,
-  `coordinador_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_grupo_nombre` (`nombre`),
-  UNIQUE KEY `uq_grupo_coordinador` (`coordinador_id`),
-  CONSTRAINT `fk_grupo_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`)
+  UNIQUE KEY `uq_grupo_nombre` (`nombre`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 DROP TABLE IF EXISTS `coordinador_ministro`;
@@ -111,6 +122,19 @@ CREATE TABLE `coordinador_ministro` (
   KEY `fk_coord_min_ministro_idx` (`ministro_id`),
   CONSTRAINT `fk_coord_min_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_coord_min_ministro` FOREIGN KEY (`ministro_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Un grupo pastoral puede tener varios coordinadores, pero cada coordinador solo puede
+-- estar a cargo de un grupo a la vez — por eso coordinador_id es UNIQUE aquí (no forma
+-- parte de la PK compuesta): evita que la misma persona quede asignada a dos grupos.
+DROP TABLE IF EXISTS `grupo_coordinador`;
+CREATE TABLE `grupo_coordinador` (
+  `grupo_id` int(11) NOT NULL,
+  `coordinador_id` int(11) NOT NULL,
+  PRIMARY KEY (`grupo_id`,`coordinador_id`),
+  UNIQUE KEY `uq_grupo_coord_coordinador` (`coordinador_id`),
+  CONSTRAINT `fk_grupo_coord_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupo` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_grupo_coord_coordinador` FOREIGN KEY (`coordinador_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 DROP TABLE IF EXISTS `asignacion_tarea`;

@@ -69,15 +69,16 @@ describe('Auth Middleware - Pruebas Unitarias', () => {
 
     it('debería llamar a next() y adjuntar el usuario si el token es válido', async () => {
       req.headers!.authorization = 'Bearer token_valido';
-      const mockPayload = { id: 1, rol_id: ROLES.ADMIN };
+      const mockPayload = { id: 1, rol_id: ROLES.ADMIN, sid: '00000000-0000-0000-0000-000000000001', token_use: 'access' };
       (jwt.verify as any).mockReturnValue(mockPayload);
       vi.mocked(obtenerPersonaSesion).mockResolvedValue({ ...mockPayload, estado_cuenta: 'activa' });
 
       authMiddleware(req as Request, res as Response, next);
 
-      expect(jwt.verify).toHaveBeenCalledWith('token_valido', expect.any(String));
+      expect(jwt.verify).toHaveBeenCalledWith('token_valido', expect.any(String), { algorithms: ['HS256'] });
+      expect(obtenerPersonaSesion).toHaveBeenCalledWith(1, mockPayload.sid, 'access');
       await vi.waitFor(() => expect(next).toHaveBeenCalled());
-      expect(req.user).toEqual(mockPayload);
+      expect(req.user).toEqual({ id: 1, rol_id: ROLES.ADMIN });
       expect(next).toHaveBeenCalled();
     });
   });

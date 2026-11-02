@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useViewState } from './useViewState';
 
 type SearchValue = string | number | null | undefined;
 export interface TableSelectFilter<T> {
@@ -7,6 +7,7 @@ export interface TableSelectFilter<T> {
   value: (item: T) => string | string[];
 }
 interface FilterConfig<T> {
+  persistenceKey?: string;
   search: (item: T) => SearchValue[];
   date?: (item: T) => string | null | undefined;
   selects?: TableSelectFilter<T>[];
@@ -18,10 +19,10 @@ export function normalizarBusqueda(value: SearchValue): string {
 
 /** Filtra solo los datos que la API ya autorizó; nunca modifica la lista original. */
 export function useTableFilters<T>(data: T[], config: FilterConfig<T>) {
-  const [query, setQuery] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [query, setQuery] = useViewState(config.persistenceKey && `${config.persistenceKey}:query`, '');
+  const [from, setFrom] = useViewState(config.persistenceKey && `${config.persistenceKey}:from`, '');
+  const [to, setTo] = useViewState(config.persistenceKey && `${config.persistenceKey}:to`, '');
+  const [selected, setSelected] = useViewState<Record<string, string>>(config.persistenceKey && `${config.persistenceKey}:selected`, {});
   const selects = config.selects ?? [];
   const invalidRange = Boolean(config.date && from && to && from > to);
   const terms = normalizarBusqueda(query).split(/\s+/).filter(Boolean);

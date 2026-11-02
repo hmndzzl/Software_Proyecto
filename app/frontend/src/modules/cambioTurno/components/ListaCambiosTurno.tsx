@@ -113,7 +113,7 @@ export default function ListaCambiosTurno({ refreshKey }: { refreshKey?: number 
   const recibidasSort = useSortableTable(recibidasFiltros.filteredData, SORT_VALUE_RECIBIDAS);
   const enviadasSort = useSortableTable(enviadasFiltros.filteredData, SORT_VALUE_ENVIADAS);
 
-  if (loading) return <LoadingState label="Cargando solicitudes de cambio de turno..." />;
+  if (loading) return <LoadingState variant="table" label="Cargando solicitudes de cambio de turno..." />;
   if (error) return <ErrorState message={error} onRetry={cargarCambios} />;
 
   return (

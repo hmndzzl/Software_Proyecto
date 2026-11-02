@@ -26,9 +26,9 @@ function mostrar() {
 async function abrirYLlenar() {
   await userEvent.click(screen.getByRole('button', { name: 'Nuevo evento' }));
   const modal = screen.getByRole('dialog', { name: 'Crear evento' });
-  await within(modal).findByRole('option', { name: /Salón/ });
+  fireEvent.click(await within(modal).findByRole('button', { name: /^Salón, capacidad/ }));
   for (const [label, value] of [
-    ['Espacio:', '2'], ['Fecha:', datos.fecha], ['Hora de Inicio:', datos.hora_inicio], ['Hora de Fin:', datos.hora_fin],
+    ['Fecha:', datos.fecha], ['Hora de Inicio:', datos.hora_inicio], ['Hora de Fin:', datos.hora_fin],
     ['Título del Evento:', datos.titulo], ['Descripción del Evento:', datos.descripcion],
   ]) fireEvent.change(within(modal).getByLabelText(label), { target: { value } });
   fireEvent.change(within(modal).getByLabelText(/Cantidad de personas esperadas/), { target: { value: '30' } });

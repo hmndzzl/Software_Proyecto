@@ -2,7 +2,7 @@
 
 Sistema web para la gestión operativa y la comunicación de la Parroquia San Pedro Nolasco, Guatemala. Centraliza reservas, espacios, agenda, tareas de ministros, grupos, notificaciones, cuentas y reportes; además ofrece un portal público con contenido editable, agenda y formulario de contacto.
 
-**Estado del proyecto:** Sprint 10 completado, con validación funcional, automatizada, de rendimiento y de seguridad realizada el 27 de octubre de 2026.
+**Estado del proyecto:** Sprint 10 implementado. La validación previa a la entrega se conserva como evidencia histórica; las cifras de cobertura más recientes figuran en [Pruebas](#pruebas).
 
 **Producción:** [parroquiasanpedronolasco.org.gt](https://parroquiasanpedronolasco.org.gt/)
 
@@ -60,6 +60,7 @@ Sistema web para la gestión operativa y la comunicación de la Parroquia San Pe
 git clone https://github.com/hmndzzl/Software_Proyecto.git
 cd Software_Proyecto/app
 cp .env.example .env
+cp docker-compose.example.yml docker-compose.yml
 ```
 
 Completar `app/.env` antes de iniciar. Para desarrollo local, `VITE_API_URL` suele ser `http://localhost:3001`, `CORS_ORIGIN` debe incluir `http://localhost:5173` y los secretos JWT deben ser valores largos y distintos.
@@ -158,7 +159,10 @@ app/
 │   ├── src/auth/            # Integración y sincronización con Clerk
 │   ├── src/components/      # Layout y componentes compartidos
 │   ├── src/context/         # Sesión, errores y mensajes
+│   ├── src/hooks/           # Estado y comportamiento reutilizable
+│   ├── src/modules/         # Formularios y listas por función
 │   ├── src/pages/           # Portal y módulos de la aplicación
+│   ├── src/styles/          # Tokens y estilos compartidos
 │   └── tests/regression/    # Playwright y accesibilidad
 ├── backend/
 │   ├── src/controllers/     # Reglas de negocio
@@ -168,10 +172,12 @@ app/
 │   └── tests/integration/   # Integración con MariaDB real temporal
 ├── database/
 │   ├── init/                # Instalaciones nuevas
-│   └── migrations/          # Actualización de bases existentes
+│   ├── migrations/          # Actualización de bases existentes
+│   └── scenarios/           # Datos para escenarios de prueba
 └── docker-compose*.yml
 
 tests/k6/                    # Carga, estrés, spike y soak
+tests/db-volume/             # Pruebas de volumen de base de datos
 docs/                        # Contratos y evidencia por historia/sprint
 ```
 
@@ -211,17 +217,16 @@ Las migraciones no se ejecutan otra vez por reconstruir contenedores con un volu
 
 ## Pruebas
 
-La validación previa a la entrega del 27 de octubre de 2026 registró:
+La ejecución local del **31 de octubre de 2026**, con los comandos `npm run coverage` de ambos paquetes, obtuvo:
 
-| Suite | Resultado |
-| --- | ---: |
-| Vitest frontend | 794/794 |
-| Vitest backend | 872/872 |
-| Integración backend con MariaDB | 39/39 |
-| Regresión Playwright y accesibilidad pública | 78/78 |
-| Escenarios Grafana k6 | 12/12 |
+| Paquete | Pruebas | Sentencias | Ramas | Funciones | Líneas |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Frontend | 936/936 | 97,27 % | 95,08 % | 95,76 % | 98,65 % |
+| Backend | 963/963 | 96,59 % | 95,18 % | 97,19 % | 96,92 % |
 
-La última medición documentada alcanzó 98,33 % de cobertura de líneas en frontend y 94,60 % en backend. El soak de 30 minutos completó 167 000 solicitudes medidas sin errores HTTP.
+El [umbral configurado](app/frontend/vite.config.mts) del frontend es 95 % en cada métrica; el [del backend](app/backend/vitest.config.ts) es 80 %. Las pruebas HTTP del backend necesitan poder abrir puertos locales. En esta misma revisión pasaron **50/50** pruebas de integración con MariaDB temporal y **96/96** regresiones de Chromium.
+
+La [validación del 27 de octubre](docs/sprint10/validacion-preentrega-2026-10-27.md) documenta por separado 39/39 pruebas de integración, 78/78 regresiones Playwright y 12/12 escenarios k6. Son resultados de ese corte, no de la versión actual. El soak de 30 minutos de aquel corte completó 167 000 solicitudes medidas sin errores HTTP.
 
 Para ejecutar carga y estrés sobre el stack efímero independiente:
 
@@ -253,7 +258,9 @@ main        ← producción
     └── feature/*, fix/*, test/*, docs/*
 ```
 
-## Documentación destacada
+## Guía de documentación
+
+`docs/` conserva contratos de funciones y evidencia fechada por historia o sprint. Los informes PDF de cortes y sprints son entregables académicos históricos; las migraciones en `app/database/migrations/` son necesarias para actualizar bases existentes. Para entrar al proyecto, empieza por el [inicio rápido](#inicio-rápido-con-docker), la [arquitectura](#arquitectura) y la [guía de pruebas](#pruebas); después consulta el documento del módulo que vayas a modificar.
 
 | Tema | Documento |
 | --- | --- |
@@ -265,6 +272,11 @@ main        ← producción
 | Disponibilidad por periodos | [docs/sprint10/disponibilidad-periodos.md](docs/sprint10/disponibilidad-periodos.md) |
 | Recordatorios de servicios | [docs/sprint10/recordatorios-servicios.md](docs/sprint10/recordatorios-servicios.md) |
 | Notificaciones por fecha | [docs/sprint10/notificaciones-hora.md](docs/sprint10/notificaciones-hora.md) |
+| Baja de cuentas | [docs/baja-cuentas.md](docs/baja-cuentas.md) |
+| Reservas y creación de eventos | [docs/creacion-eventos.md](docs/creacion-eventos.md) y [docs/sprint10/continuidad-ux.md](docs/sprint10/continuidad-ux.md) |
+| Espacios e imágenes | [docs/gestion-espacios.md](docs/gestion-espacios.md) y [docs/imagenes-fase1.md](docs/imagenes-fase1.md) |
+| Regreso desde detalles y visor | [docs/sprint10/regreso-vistas-detalle.md](docs/sprint10/regreso-vistas-detalle.md) y [docs/visor-imagenes.md](docs/visor-imagenes.md) |
+| Pruebas y seguridad | [docs/sprint10/pruebas-automatizadas.md](docs/sprint10/pruebas-automatizadas.md) y [docs/sprint10/pruebas-seguridad-despliegue.md](docs/sprint10/pruebas-seguridad-despliegue.md) |
 
 ## Equipo — Grupo 3
 

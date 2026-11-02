@@ -65,7 +65,7 @@ export default function MensajesContactoPage() {
       <Card>
         <CardHead title="Mensajes recibidos" hint={!loading && !error ? `${mensajes.length} mensajes` : undefined} />
 
-        {loading && <LoadingState label="Cargando mensajes..." />}
+        {loading && <LoadingState variant="table" label="Cargando mensajes..." />}
         {!loading && !error && mensajes.length > 0 && <TableFilters {...filtros.controls} label="Filtros de mensajes" />}
         {error && <ErrorState message={error} onRetry={cargar} />}
         {!loading && !error && mensajes.length === 0 && <EmptyState message="Aún no se han recibido mensajes de contacto." />}
@@ -105,7 +105,7 @@ export default function MensajesContactoPage() {
       </Card>
 
       {detalle && (
-        <Modal open title={`Mensaje de ${detalle.nombre}`} subtitle={detalle.motivo} onClose={() => setDetalle(null)} width={640}>
+        <Modal returnLabel="Volver a mensajes" open title={`Mensaje de ${detalle.nombre}`} subtitle={detalle.motivo} onClose={() => setDetalle(null)} width={640}>
           <dl className={styles.campos}>
             <div><dt>Recibido</dt><dd>{formatFechaHora(detalle.creado_en)}</dd></div>
             <div><dt>Nombre</dt><dd>{detalle.nombre}</dd></div>

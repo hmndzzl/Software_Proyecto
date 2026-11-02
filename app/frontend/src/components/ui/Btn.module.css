@@ -10,7 +10,11 @@
   white-space: nowrap;
   flex-shrink: 0;
   text-decoration: none;
+  line-height: 1.3;
+  touch-action: manipulation;
 }
+
+.btn:not(:disabled):active { box-shadow: none; }
 
 .btn:disabled {
   opacity: .5;
@@ -25,21 +29,21 @@
 
 /* ── Kinds ── */
 .primary {
-  background: var(--color-rojo);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: .14em;
+  letter-spacing: .1em;
   box-shadow: var(--shadow-btn-primary);
 }
-.primary:not(:disabled):hover { background: var(--color-rojoDk); }
+.primary:not(:disabled):hover { background: var(--color-primary-hover); }
 
 .gold {
   background: var(--color-oro);
   color: #3d2a05;
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: .14em;
+  letter-spacing: .1em;
   box-shadow: var(--shadow-btn-gold);
 }
 .gold:not(:disabled):hover { background: #d99e24; }
@@ -51,7 +55,7 @@
   font-weight: 600;
   letter-spacing: .04em;
 }
-.ok:not(:disabled):hover { background: #246040; }
+.ok:not(:disabled):hover { background: var(--color-okDk); }
 
 .bad {
   background: var(--color-bad);
@@ -60,7 +64,7 @@
   font-weight: 600;
   letter-spacing: .04em;
 }
-.bad:not(:disabled):hover { background: #7d2424; }
+.bad:not(:disabled):hover { background: var(--color-badDk); }
 
 .ghost {
   background: transparent;

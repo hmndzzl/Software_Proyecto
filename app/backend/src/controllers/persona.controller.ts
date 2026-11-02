@@ -8,6 +8,7 @@ import { ROLES } from '../config/roles';
 import { isClerkEnabled } from '../config/clerk';
 import { sincronizarPerfilEnClerk } from '../services/clerkProfile.service';
 import { withTransaction } from '../utils/withTransaction';
+import { revocarSesionesJwt } from '../services/jwtSesion.service';
 import { normalizarTelefono, guardarTelefono, TELEFONO_PRINCIPAL_SQL, ErrorTelefono, esTelefonoDuplicado } from '../utils/telefono';
 
 export const getCoordinadoresGrupo = async (_req: Request, res: Response): Promise<void> => {
@@ -81,7 +82,7 @@ export const getPersonaById = async (req: Request, res: Response): Promise<void>
   const { id } = req.params;
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.disponible, p.foto_url, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p
        JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
@@ -233,12 +234,13 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
 
     valores.push(targetId); // para el WHERE
 
-    if (req.body.telefono !== undefined) {
+    if (req.body.telefono !== undefined || password) {
       await withTransaction(async conn => {
-        // Bloquea la persona para serializar cambios del teléfono principal.
+        // Serializa cambios del teléfono y de credenciales con la creación/renovación de sesiones.
         await conn.execute('SELECT id FROM persona WHERE id = ? FOR UPDATE', [targetId]);
         if (campos.length) await conn.execute(`UPDATE persona SET ${campos.join(', ')} WHERE id = ?`, valores);
-        await guardarTelefono(conn, targetId, telefono);
+        if (req.body.telefono !== undefined) await guardarTelefono(conn, targetId, telefono);
+        if (password) await revocarSesionesJwt(conn, targetId);
         return 'commit';
       });
     } else {
@@ -251,7 +253,7 @@ export const editarPerfil = async (req: Request, res: Response): Promise<void> =
 
     // Devolver datos actualizados (sin password)
     const [updated] = await pool.execute<RowDataPacket[]>(
-      `SELECT p.id, p.nombre, p.correo, p.rol_id, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
+      `SELECT p.id, p.nombre, p.correo, p.rol_id, p.foto_url, r.detalle AS rol_nombre, ${TELEFONO_PRINCIPAL_SQL}
        FROM persona p JOIN rol r ON r.id = p.rol_id
        WHERE p.id = ?`,
       [targetId]

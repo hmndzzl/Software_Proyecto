@@ -46,7 +46,8 @@ test('la tarjeta mantiene cien ministros compactos y uniforma sus tres acciones'
       await expect(listaCompleta.getByRole('listitem')).toHaveCount(1);
       await expect(listaCompleta.getByText(asignados[99].nombre, { exact: true })).toBeVisible();
       await expect(listado.getByText('Página 1 de 1', { exact: true })).toBeVisible();
-      await listado.getByRole('button', { name: 'Volver a la tarjeta anterior' }).click();
+      await expect(listado.getByRole('button', { name: 'Volver a la tarjeta anterior' })).toHaveCount(0);
+      await listado.getByRole('button', { name: 'Volver al detalle de la tarea', exact: true }).click();
       await expect(tarjeta.getByRole('listitem')).toHaveCount(6);
       await tarjeta.getByRole('button', { name: 'Gestionar ministros', exact: true }).click();
       const gestion = page.getByRole('dialog', { name: 'Ministros de Servicio compartido' });

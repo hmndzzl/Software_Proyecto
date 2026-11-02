@@ -73,10 +73,24 @@
   color: var(--color-tierra);
 }
 
+.selectWrap { position: relative; }
+
+.selectWrap svg {
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-ink);
+  pointer-events: none;
+}
+
+.field select::picker-icon { display: none; }
+
 .field select {
+  appearance: none;
   width: 100%;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 42px 0 12px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-btn);
   color: var(--color-ink);
@@ -142,28 +156,22 @@
 }
 
 .buttons .todayButton {
-  background: var(--color-rojo);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
   border-color: var(--color-rojoDk);
   box-shadow: var(--shadow-btn-primary);
 }
 
 .buttons .todayButton:hover {
-  background: var(--color-rojoDk);
+  background: var(--color-primary-hover);
   color: var(--color-on-primary);
 }
 
 .buttons button[aria-pressed='true'] {
-  background: var(--color-rojo);
+  background: var(--color-primary-bg);
   border-color: var(--color-rojoDk);
   color: var(--color-on-primary);
   font-weight: 700;
-}
-
-/* El rojo de acento del tema oscuro no alcanza contraste sobre texto crema. */
-:global(html[data-tema='oscuro']) .buttons .todayButton,
-:global(html[data-tema='oscuro']) .buttons button[aria-pressed='true'] {
-  background: var(--color-rojoDk);
 }
 
 .page button:focus-visible, .page select:focus-visible {
@@ -265,7 +273,7 @@
   flex-direction: column;
   gap: 10px;
   flex-grow: 1;
-  background: rgba(243, 241, 233, .15);
+  background: color-mix(in srgb, var(--color-crema) 15%, transparent);
 }
 
 @media (max-width: 650px) {
@@ -311,6 +319,18 @@
   gap: 6px 10px;
 }
 
+/* RTF2-05 (continuación): el badge comparte .cardHeader con el rango de hora y,
+   en columnas angostas de la vista semanal, "Pendiente"/"Confirmada" no cabe
+   (se midió 85px de contenido en apenas 40px disponibles). .badge es de
+   components/ui/Badge.module.css — blindado a propósito con white-space:nowrap
+   porque lo usan muchas otras pantallas; esta clase solo se aplica aquí. */
+.cardBadge {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .timeRow {
   display: flex;
   align-items: center;
@@ -343,6 +363,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .placeRow svg, .assigneeRow svg {
@@ -350,11 +371,18 @@
   flex-shrink: 0;
 }
 
+/* RTF2-05: sin min-width/overflow aquí, un lugar o encargado con nombre largo
+   se salía de la tarjeta de evento entre ~1025 y 1190px de ancho (medido: 32px
+   de overflow real). Mismo tratamiento que .monthPreviewTitulo en la vista mensual. */
 .assignName {
   font-family: var(--font-body);
   font-size: 13.5px;
   color: var(--color-tierra);
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .unassignedBadge {

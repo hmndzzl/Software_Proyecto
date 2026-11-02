@@ -7,38 +7,6 @@
 .msg      { font-family: var(--font-body); font-size: 14px; color: var(--color-muted); font-style: italic; padding: 20px 24px; }
 .msgError { color: var(--color-bad); font-style: normal; font-weight: 600; }
 
-/* Breadcrumb */
-.breadcrumb {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  color: var(--color-muted);
-}
-
-.breadcrumbLink {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-muted);
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  padding: 0;
-  transition: color var(--transition);
-}
-.breadcrumbLink:hover { color: var(--color-ink); }
-
-.breadcrumbSep { color: var(--color-line); }
-
-.breadcrumbCurrent {
-  flex: 1;
-  overflow-wrap: anywhere;
-  color: var(--color-ink);
-  font-weight: 600;
-}
-
 /* Layout principal */
 .grid {
   display: grid;

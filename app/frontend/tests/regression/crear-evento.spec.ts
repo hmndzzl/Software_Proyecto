@@ -31,7 +31,7 @@ for (const width of [375, 1280]) {
     expect(envios).toHaveLength(0);
     await page.getByRole('button', { name: 'Nuevo evento' }).click();
     modal = page.getByRole('dialog', { name: 'Crear evento' });
-    await modal.getByLabel('Espacio:', { exact: true }).selectOption('2');
+    await modal.getByRole('button', { name: /^Salón, capacidad/ }).click();
     await modal.getByLabel(/Cantidad de personas esperadas/).fill('30');
     await modal.getByLabel('Fecha:', { exact: true }).fill('2099-12-12');
     await modal.getByLabel('Hora de Inicio:', { exact: true }).fill('09:00');

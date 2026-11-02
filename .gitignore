@@ -23,6 +23,10 @@ Thumbs.db
 .idea/
 CLAUDE.md
 .claude/
+.agents/
+skills-lock.json
+.codex
+.impeccable
 
 # Temp
 *.tmp
@@ -35,3 +39,4 @@ tests/db-volume/reports/
 # Fotografías cargadas desde la interfaz (persistidas por Docker)
 app/backend/media/espacios/subidas/
 app/backend/media/landing/subidas/
+app/backend/media/perfiles/subidas/

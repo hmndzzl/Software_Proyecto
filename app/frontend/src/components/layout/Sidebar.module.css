@@ -133,7 +133,7 @@
   margin: 10px 16px 14px;
   border-radius: 10px;
   border: none;
-  background-color: var(--color-rojo);
+  background-color: var(--color-primary-bg);
   color: var(--color-on-primary);
   font-family: var(--font-display);
   font-size: 13px;
@@ -154,7 +154,7 @@
 }
 
 .btnNuevo:hover {
-  background-color: var(--color-rojoDk);
+  background-color: var(--color-primary-hover);
 }
 
 /* ── Footer ── */

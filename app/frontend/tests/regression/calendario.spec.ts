@@ -1,5 +1,25 @@
 import { expect, test } from '@playwright/test';
 
+test('RTF2-05: la tarjeta de evento no se desborda entre 1025 y 1190px', async ({ page }) => {
+  const evento = { id: 2, titulo: 'Asamblea de catequistas', descripcion: 'Planificación', fecha: '2026-10-05', hora_inicio: '14:00', hora_fin: '16:00', encargado_id: 8, nombre_encargado: 'Coord Grupos Test', nombre_espacio: 'Salón Parroquial', estado_reserva_id: 1, tareas: [] };
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'jwt-de-regresion');
+    localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Diego Calderon', correo: 'diego@parroquia.com', rol_id: 5 }));
+  });
+  await page.clock.setFixedTime(new Date('2026-10-05T08:00:00'));
+  await page.route('http://api.test/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/api/calendario') await route.fulfill({ json: { eventos: [evento], tareas: [] } });
+    else await route.fulfill({ json: [] });
+  });
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto('/calendario');
+  const tarjeta = page.getByRole('button', { name: 'Ver detalle del evento Asamblea de catequistas' });
+  await expect(tarjeta).toBeVisible();
+  const { scrollWidth, clientWidth } = await tarjeta.evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }));
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1);
+});
+
 test('consulta semana y mes, filtra por ministro y conserva legibilidad en móvil', async ({ page }) => {
   const tarea = { id: 1, titulo: 'Preparar altar', descripcion: 'Preparación de la celebración', fecha: '2026-10-05', hora_inicio: '09:30', hora_fin: '10:00', evento_id: 8, asignados: [{ persona_id: 9, nombre: 'Ana Ministra' }, { persona_id: 10, nombre: 'Luis Ministro' }] };
   const evento = { id: 8, titulo: 'Misa del lunes', descripcion: 'Celebración', fecha: '2026-10-05', hora_inicio: '10:00', hora_fin: '11:00', encargado_id: 1, nombre_encargado: 'Padre Pedro', nombre_espacio: 'Templo', estado_reserva_id: 2, tareas: [tarea] };
@@ -52,5 +72,41 @@ test('consulta semana y mes, filtra por ministro y conserva legibilidad en móvi
     await page.setViewportSize(viewport);
     await expect(page.getByRole('region', { name: 'Agenda de octubre de 2026' }).getByText('Preparar altar')).toBeVisible();
     expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth))).toBeLessThanOrEqual(viewport.width + 1);
+  }
+});
+
+test('las flechas de los filtros guardan separación del borde en ambos temas y tamaños', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'jwt-de-regresion');
+    localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Ana', correo: 'ana@test.com', rol_id: 5 }));
+  });
+  await page.route('http://api.test/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    return route.fulfill({ json: path === '/api/calendario' ? { eventos: [], tareas: [] } : path === '/api/personas' ? [{ id: 9, nombre: 'Ana Ministra' }] : [] });
+  });
+  await page.goto('/calendario');
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const tema of ['claro', 'oscuro']) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-tema', value), tema);
+      for (const label of ['Qué deseas consultar', 'Ver horario de un ministro']) {
+        const select = page.getByLabel(label, { exact: true });
+        const caja = (await select.boundingBox())!;
+        const flecha = (await select.locator('..').locator('svg').boundingBox())!;
+        // Tolerancia de 1px: el <select> nativo redondea su boundingBox de forma distinta al
+        // svg posicionado en valign absoluto en anchos fraccionarios (p. ej. 1440px), sin que
+        // haya diferencia visual real. El valor base de separación sigue siendo 14px (inset-inline-end).
+        expect(Math.round(caja.x + caja.width - flecha.x - flecha.width)).toBeGreaterThanOrEqual(13);
+        expect(Math.round(caja.x + caja.width - flecha.x - flecha.width)).toBeLessThanOrEqual(15);
+        expect(await select.evaluate(el => parseFloat(getComputedStyle(el).paddingRight))).toBeGreaterThanOrEqual(42);
+      }
+      await page.getByLabel('Ver horario de un ministro').selectOption('9');
+      await expect(page.getByLabel('Ver horario de un ministro')).toHaveValue('9');
+      await page.getByLabel('Qué deseas consultar').selectOption('personal');
+      await expect(page.getByLabel('Ver horario de un ministro')).toHaveCount(0);
+      await page.getByLabel('Qué deseas consultar').selectOption('coordinacion');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: test.info().outputPath(`filtros-${width}-${tema}.png`) });
+    }
   }
 });

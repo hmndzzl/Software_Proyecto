@@ -33,6 +33,25 @@ body {
   line-height: 1.5;
 }
 
+::selection {
+  background: var(--color-oroSoft);
+  color: var(--color-carbon);
+}
+
+:where(a[href], button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-rojo);
+  outline-offset: 3px;
+}
+
+:where(input, textarea) { caret-color: var(--color-rojo); }
+:where(input[type='checkbox'], input[type='radio']) { accent-color: var(--color-rojo); }
+:where(table, time, input[type='date'], input[type='time']) { font-variant-numeric: tabular-nums; }
+:where(a, button) { text-underline-offset: .2em; }
+
+@media (hover: hover) and (pointer: fine) {
+  :where(*) { scrollbar-color: var(--color-muted) var(--color-cremaDk); }
+}
+
 button, input, select, textarea {
   font-family: inherit;
   font-size: inherit;
@@ -131,7 +150,7 @@ a {
   padding: 0 18px;
   border-radius: var(--radius-btn);
   border: none;
-  background-color: var(--color-rojo);
+  background-color: var(--color-primary-bg);
   color: var(--color-on-primary);
   font-family: var(--font-display);
   font-size: 14px;
@@ -142,7 +161,7 @@ a {
 }
 
 .btn-primary:hover {
-  background-color: var(--color-rojoDk);
+  background-color: var(--color-primary-hover);
 }
 
 .btn-primary:disabled {

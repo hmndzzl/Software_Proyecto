@@ -92,18 +92,24 @@ function CalendarioContenido() {
       <div className={styles.filters}>
         <div className={styles.field}>
           <label htmlFor="calendario-vista">Qué deseas consultar</label>
-          <select id="calendario-vista" value={vista} onChange={e => { setVista(e.target.value as VistaCalendario); setPersonaId(''); setHistorial([]); }}>
-            {puedeCoordinar && <option value="coordinacion">Calendario de coordinación</option>}
-            <option value="personal">Mis compromisos</option>
-            <option value="parroquial">Eventos de la parroquia</option>
-          </select>
+          <div className={styles.selectWrap}>
+            <select id="calendario-vista" value={vista} onChange={e => { setVista(e.target.value as VistaCalendario); setPersonaId(''); setHistorial([]); }}>
+              {puedeCoordinar && <option value="coordinacion">Calendario de coordinación</option>}
+              <option value="personal">Mis compromisos</option>
+              <option value="parroquial">Eventos de la parroquia</option>
+            </select>
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+          </div>
         </div>
         {puedeCoordinar && vista === 'coordinacion' && <div className={styles.field}>
           <label htmlFor="calendario-ministro">Ver horario de un ministro</label>
-          <select id="calendario-ministro" value={personaId} disabled={cargandoMinistros || errorMinistros} onChange={e => { setPersonaId(e.target.value); setHistorial([]); }}>
-            <option value="">{usuario?.rol_id === ROLES.COORDINADOR_MINISTROS ? 'Todos mis ministros' : 'Todos los ministros'}</option>
-            {ministros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-          </select>
+          <div className={styles.selectWrap}>
+            <select id="calendario-ministro" value={personaId} disabled={cargandoMinistros || errorMinistros} onChange={e => { setPersonaId(e.target.value); setHistorial([]); }}>
+              <option value="">{usuario?.rol_id === ROLES.COORDINADOR_MINISTROS ? 'Todos mis ministros' : 'Todos los ministros'}</option>
+              {ministros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+            </select>
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+          </div>
           {cargandoMinistros && <span role="status">Cargando ministros…</span>}
           {errorMinistros && <span role="alert">No se pudo cargar el selector. <button type="button" onClick={() => setIntentoMinistros(n => n + 1)}>Reintentar ministros</button></span>}
           {!cargandoMinistros && !errorMinistros && !ministros.length && <span>No hay ministros activos en tu directorio.</span>}

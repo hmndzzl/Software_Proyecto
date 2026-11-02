@@ -77,6 +77,8 @@ export function avisoCambioEstadoReserva(estadoId: number): { titulo: string; me
       return { titulo: 'Reserva rechazada', mensaje: 'La reserva fue rechazada.' };
     case ESTADOS_RESERVA.CANCELADA:
       return { titulo: 'Reserva cancelada', mensaje: 'La reserva fue cancelada.' };
+    case ESTADOS_RESERVA.PENDIENTE:
+      return { titulo: 'Solicitud reabierta', mensaje: 'La reserva vuelve a estar pendiente de aprobación.' };
     default:
       return { titulo: 'Reserva actualizada', mensaje: 'El estado de la reserva se actualizó.' };
   }

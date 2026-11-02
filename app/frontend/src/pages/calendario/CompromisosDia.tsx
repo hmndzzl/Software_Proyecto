@@ -42,7 +42,7 @@ export default function CompromisosDia({ items, onSeleccionar }: { items: Compro
             <ClockIcon />
             <span>{horario(item.dato)}</span>
           </div>
-          <ReservaEstadoBadge estadoId={item.dato.estado_reserva_id} />
+          <ReservaEstadoBadge estadoId={item.dato.estado_reserva_id} className={styles.cardBadge} />
         </div>
         <p className={styles.taskDesc}>{item.dato.titulo}</p>
         <div className={styles.placeRow}>

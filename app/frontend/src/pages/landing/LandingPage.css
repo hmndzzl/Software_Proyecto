@@ -98,7 +98,7 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .cinfo{display:flex;flex-direction:column;gap:22px;margin-top:32px}
 .landing .crow{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
 .landing .crow h3{font-family:'Cinzel',serif;font-size:var(--text-label);letter-spacing:.12em;color:var(--tierra-text);margin-bottom:4px}
-.landing .crow p{font-size:16px;color:var(--carbon)}
+.landing .crow p{font-size:16px;color:var(--carbon);overflow-wrap:anywhere}
 .landing .cmap{position:relative;margin-top:34px;height:220px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .landing .form{background:var(--crema);border:1px solid var(--line);border-radius:14px;padding:36px;box-shadow:0 1px 0 rgba(0,0,0,.02),0 6px 20px rgba(60,40,20,.05)}
 .landing .form h3{font-size:22px;margin-bottom:6px}

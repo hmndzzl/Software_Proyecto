@@ -1,6 +1,7 @@
 .shell {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background-color: var(--color-crema);
 }
@@ -22,6 +23,7 @@
   min-width: 0;
   height: 100%;
   overflow-y: auto;
+  scroll-padding-block-start: calc(var(--topbar-h) + 16px);
   display: flex;
   flex-direction: column;
   background-color: var(--color-crema);
@@ -61,4 +63,8 @@
     background: rgba(26, 26, 26, .45);
     cursor: pointer;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .sidebarColapsado { transition: none; }
 }

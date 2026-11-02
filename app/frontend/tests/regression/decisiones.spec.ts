@@ -26,7 +26,7 @@ test('reservas y mis reservas muestran autores y horas de Guatemala sin desborda
   await preparar(page);
   for (const ruta of ['/reservas', '/mis-reservas']) {
     await page.goto(ruta);
-    const abrir = page.getByRole('button', { name: 'Ver detalle', exact: true });
+    const abrir = page.getByRole('button', { name: '7', exact: true });
     await abrir.click();
     const dialog = page.getByRole('dialog', { name: 'Detalle de reserva #7' });
     await expect(dialog.getByText('Por Diego Calderon', { exact: true })).toBeVisible();
@@ -36,7 +36,7 @@ test('reservas y mis reservas muestran autores y horas de Guatemala sin desborda
     await expect(fechaDecision).toHaveAttribute('datetime', decisiones[0].fecha);
     await expect(dialog.getByText(/Fechas y horas de Guatemala/)).toHaveCount(0);
     await expect(dialog.getByText('Aprobada', { exact: true })).toHaveCSS('color', 'rgb(47, 122, 77)');
-    await expect(dialog.getByText('Devuelta a pendiente', { exact: true })).toHaveCSS('color', 'rgb(164, 116, 3)');
+    await expect(dialog.getByText('Devuelta a pendiente', { exact: true })).toHaveCSS('color', 'rgb(128, 91, 3)');
     await expect(dialog.getByText('Rechazada', { exact: true })).toHaveCSS('color', 'rgb(157, 47, 47)');
     await expect(dialog.getByText('20', { exact: true })).toBeVisible();
     for (const width of [320, 768, 1440]) {

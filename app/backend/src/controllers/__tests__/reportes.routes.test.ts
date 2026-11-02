@@ -197,6 +197,61 @@ describe('exportación protegida de reportes', () => {
     expect(pool.execute).toHaveBeenCalledTimes(1);
   });
 
+  it('rechaza cuando falta la fecha o no cumple el formato esperado', async () => {
+    cuentaActiva(ROLES.ADMIN);
+    await request(app).get('/api/reportes/reservas?hasta=2026-10-31&formato=csv').set('Authorization', token(ROLES.ADMIN)).expect(400);
+    cuentaActiva(ROLES.ADMIN);
+    await request(app).get('/api/reportes/reservas?desde=10-01-2026&hasta=2026-10-31&formato=csv').set('Authorization', token(ROLES.ADMIN)).expect(400);
+  });
+
+  it('usa los valores de respaldo cuando el espacio o el evento vienen vacíos y detecta otros prefijos peligrosos', async () => {
+    cuentaActiva(ROLES.ADMIN);
+    vi.mocked(pool.execute).mockResolvedValueOnce([[{
+      id: 8, fecha: '2026-10-07', hora_inicio: '08:00:00', hora_fin: '09:00:00',
+      espacio: null, evento: null, estado: '+SUMA(1,1)', solicitante: '@mencion',
+    }]] as never);
+    const respuesta = await request(app).get(rutaReservas).set('Authorization', token(ROLES.ADMIN)).expect(200);
+    expect(respuesta.text).toContain('Sin salón');
+    expect(respuesta.text).toContain('"\t+SUMA');
+    expect(respuesta.text).toContain('"\t@mencion');
+  });
+
+  it('genera un PDF de tareas con registros y responde con error si falla la consulta', async () => {
+    cuentaActiva(ROLES.SACERDOTE);
+    vi.mocked(pool.execute).mockResolvedValueOnce([[{
+      id: 2, fecha: '2026-10-07', hora_inicio: '08:00:00', hora_fin: '09:00:00', titulo: 'Preparar altar', asignado: 'Juan',
+    }]] as never);
+    const pdf = await request(app)
+      .get(rutaTareas.replace('formato=csv', 'formato=pdf'))
+      .set('Authorization', token(ROLES.SACERDOTE))
+      .buffer(true)
+      .parse((res, done) => {
+        const partes: Buffer[] = [];
+        res.on('data', (parte) => partes.push(parte));
+        res.on('end', () => done(null, Buffer.concat(partes)));
+      })
+      .expect(200);
+    expect(pdf.body.subarray(0, 4).toString()).toBe('%PDF');
+
+    cuentaActiva(ROLES.SACERDOTE);
+    vi.mocked(pool.execute).mockRejectedValueOnce(new Error('BD caída'));
+    await request(app).get(rutaTareas).set('Authorization', token(ROLES.SACERDOTE)).expect(500);
+  });
+
+  it('deniega acceso si el id de la sesión no es un entero positivo', async () => {
+    // El JWT trae un id válido (exigido por authMiddleware); el id inválido llega
+    // vía la sesión resuelta, que es lo que realmente usa verificarCuentaActual.
+    vi.mocked(obtenerPersonaSesion).mockResolvedValue({ id: -1, rol_id: ROLES.ADMIN, estado_cuenta: 'activa' });
+    const conSesionInvalida = `Bearer ${jwt.sign({ id: 7, rol_id: ROLES.ADMIN }, JWT_SECRET)}`;
+    await request(app).get(rutaReservas).set('Authorization', conSesionInvalida).expect(403);
+    expect(pool.execute).not.toHaveBeenCalled();
+  });
+
+  it('responde 500 si falla la verificación del estado de la cuenta', async () => {
+    vi.mocked(pool.execute).mockRejectedValueOnce(new Error('BD caída'));
+    await request(app).get(rutaReservas).set('Authorization', token(ROLES.ADMIN)).expect(500);
+  });
+
   it('limita las solicitudes repetidas por cuenta', async () => {
     vi.mocked(pool.execute).mockResolvedValue([[{ rol_id: ROLES.MINISTRO, estado_cuenta: 'activa' }]] as never);
     for (let i = 0; i < 60; i += 1) {

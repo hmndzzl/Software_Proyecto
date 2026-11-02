@@ -35,7 +35,7 @@ export default function TableFilters({ label = 'Filtros de tabla', ...filters }:
       </div>
       {filters.invalidRange && <p role="alert">La fecha inicial no puede ser posterior a la final.</p>}
       <p className={styles.summary} aria-live="polite">Mostrando {filters.count} de {filters.total} registros.</p>
-      {filters.count === 0 && filters.total > 0 && !filters.invalidRange && <p className={styles.summary}>No hay resultados para los filtros seleccionados.</p>}
+      {filters.count === 0 && filters.total > 0 && !filters.invalidRange && <div className={styles.summary} role="status"><p>No hay resultados para los filtros seleccionados.</p><Btn type="button" kind="ghost" size="sm" onClick={filters.clear}>Quitar filtros y ver todos</Btn></div>}
     </section>
   );
 }

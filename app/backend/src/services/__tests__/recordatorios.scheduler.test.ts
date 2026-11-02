@@ -1,22 +1,35 @@
 import { beforeEach, afterEach, it, expect, vi } from 'vitest';
-import { enviarRecordatorios } from '../recordatorios.service';
+import { enviarRecordatorios, enviarRecordatoriosTardios } from '../recordatorios.service';
 import { iniciarRecordatorios, INTERVALO_RECORDATORIOS_MS } from '../recordatorios.scheduler';
 
-vi.mock('../recordatorios.service', () => ({ enviarRecordatorios: vi.fn() }));
+vi.mock('../recordatorios.service', () => ({ enviarRecordatorios: vi.fn(), enviarRecordatoriosTardios: vi.fn() }));
 beforeEach(() => {
   vi.useFakeTimers();
   vi.mocked(enviarRecordatorios).mockReset().mockResolvedValue({ enviados: 0, omitidos: 0, errores: 0 });
+  vi.mocked(enviarRecordatoriosTardios).mockReset().mockResolvedValue({ enviados: 0, omitidos: 0, errores: 0 });
 });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 it('ejecuta al arrancar, cada 15 minutos y se detiene al cerrar', async () => {
   const detener = iniciarRecordatorios();
   expect(enviarRecordatorios).toHaveBeenCalledTimes(1);
+  expect(enviarRecordatoriosTardios).toHaveBeenCalledTimes(1);
   await vi.advanceTimersByTimeAsync(INTERVALO_RECORDATORIOS_MS);
   expect(enviarRecordatorios).toHaveBeenCalledTimes(2);
+  expect(enviarRecordatoriosTardios).toHaveBeenCalledTimes(1);
   detener();
   await vi.advanceTimersByTimeAsync(INTERVALO_RECORDATORIOS_MS * 2);
   expect(enviarRecordatorios).toHaveBeenCalledTimes(2);
+  expect(enviarRecordatoriosTardios).toHaveBeenCalledTimes(1);
+});
+
+it('registra un fallo de los recordatorios tardíos sin afectar el ciclo normal', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.mocked(enviarRecordatoriosTardios).mockRejectedValueOnce(new Error('BD sin conexión'));
+  const detener = iniciarRecordatorios();
+  await vi.waitFor(() => expect(log).toHaveBeenCalledWith('Error en recordatorios tardíos de servicios:', expect.any(Error)));
+  expect(enviarRecordatorios).toHaveBeenCalledTimes(1);
+  detener();
 });
 
 it('no solapa ciclos pendientes', async () => {

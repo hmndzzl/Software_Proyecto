@@ -10,10 +10,13 @@ import {
 } from '../controllers/persona.controller';
 import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
 import { ROLES } from '../config/roles';
+import { actualizarFotoPerfil, soloFotoPropia } from '../controllers/perfilFoto.controller';
+import { recibirFotoPerfil } from '../middlewares/perfilFoto.middleware';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.put('/:id/foto', soloFotoPropia, recibirFotoPerfil, actualizarFotoPerfil);
 
 // Rutas específicas ANTES de /:id para que Express no las confunda con parámetros
 router.get('/coordinadores-grupo', requireRole(ROLES.COORDINADOR_GRUPOS), getCoordinadoresGrupo);

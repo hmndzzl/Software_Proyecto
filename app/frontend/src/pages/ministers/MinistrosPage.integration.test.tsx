@@ -98,8 +98,10 @@ it('abre y cierra los periodos del ministro seleccionado desde el directorio', a
   fireEvent.click(within(fila).getByRole('button', { name: 'Periodos no disponibles' }));
   expect(await screen.findByRole('dialog', { name: 'Disponibilidad de Carla' })).toBeInTheDocument();
   await screen.findByText('No hay periodos registrados.');
+  const llamadasAntesDeCerrar = vi.mocked(apiClient.get).mock.calls.length;
   fireEvent.keyDown(document, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  await waitFor(() => expect(vi.mocked(apiClient.get).mock.calls.length).toBeGreaterThan(llamadasAntesDeCerrar));
 });
 
 it('muestra no disponible si hay un periodo o una ausencia activa aunque el interruptor siga encendido', async () => {

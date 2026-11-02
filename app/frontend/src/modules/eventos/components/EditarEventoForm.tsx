@@ -5,6 +5,7 @@ import styles from '../../../styles/Form.module.css';
 import { useToast } from '../../../context/ToastContext';
 import { getApiErrorMessage } from '../../../utils/apiError';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import BuscadorPersonas from '../../../components/ui/BuscadorPersonas';
 
 export default function EditarEventoForm({
   evento,
@@ -106,26 +107,18 @@ export default function EditarEventoForm({
           />
         </div>
 
-        <div className={styles.field}>
-          <label htmlFor="editar-evento-encargado" className={styles.label}>Encargado:</label>
-          <select
-            id="editar-evento-encargado"
-            disabled={guardando || eliminando}
-            className={styles.input}
-            value={encargadoId}
-            onChange={e => setEncargadoId(e.target.value)}
-          >
-            <option value="">-- Elige una persona --</option>
-            {personas.map(persona => (
-              <option key={persona.id} value={persona.id}>
-                {persona.nombre}
-              </option>
-            ))}
-          </select>
-          {personas.length === 0 && (
-            <p className={styles.fieldNote}>No se pudieron cargar las personas disponibles.</p>
-          )}
-        </div>
+        <BuscadorPersonas
+          id="editar-evento-encargado"
+          label="Encargado:"
+          personas={personas}
+          valor={encargadoId}
+          onChange={setEncargadoId}
+          disabled={guardando || eliminando}
+          placeholder="Escribe para buscar una persona…"
+        />
+        {personas.length === 0 && (
+          <p className={styles.fieldNote}>No se pudieron cargar las personas disponibles.</p>
+        )}
 
         <div className={styles.field}>
           <label className={styles.checkboxLabel}>

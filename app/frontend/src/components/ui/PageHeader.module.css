@@ -30,7 +30,9 @@
   letter-spacing: .05em;
   color: var(--color-carbon);
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.2;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .subtitle {
@@ -40,6 +42,7 @@
   margin-top: 6px;
   max-width: 640px;
   line-height: 1.5;
+  text-wrap: pretty;
 }
 
 .rule {
@@ -52,6 +55,7 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;

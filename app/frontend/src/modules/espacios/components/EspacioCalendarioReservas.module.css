@@ -26,14 +26,14 @@
 }
 
 .todayBtn {
-  background: var(--color-rojo);
-  color: var(--color-blanco);
+  background: var(--color-primary-bg);
+  color: var(--color-on-primary);
   border-color: var(--color-rojoDk);
 }
 
 .todayBtn:hover {
-  background: var(--color-rojoDk);
-  color: var(--color-blanco);
+  background: var(--color-primary-hover);
+  color: var(--color-on-primary);
 }
 
 .grid {

@@ -270,7 +270,8 @@ describe('tareas agrupadas y tarjeta de asignación', () => {
     const modal = screen.getByRole('dialog');
     await userEvent.click(within(modal).getByRole('button', { name: 'Ver listado completo (10)' }));
     expect(within(modal).getByLabelText('Buscar ministro asignado')).toBeInTheDocument();
-    await userEvent.click(within(modal).getByRole('button', { name: 'Volver a la tarjeta anterior' }));
+    expect(within(modal).queryByRole('button', { name: 'Volver a la tarjeta anterior' })).not.toBeInTheDocument();
+    await userEvent.click(within(modal).getByRole('button', { name: 'Volver al detalle de la tarea' }));
     expect(within(modal).getByText('Preparar la celebración')).toBeInTheDocument();
   });
 

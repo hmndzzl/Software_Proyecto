@@ -48,7 +48,7 @@ const CONTENIDO_INICIAL: ContenidoLanding = {
   valores: VALORES.map(({ titulo, texto }) => ({ titulo, descripcion: texto })),
   horarios_misa: [{ dias: 'Domingo', horas: ['08:00', '10:00', '12:00', '18:00'] }, { dias: 'Lunes a viernes', horas: ['07:00', '18:00'] }],
   horarios_oficina: [{ dias: 'Lunes a viernes', horario: '09:00 a 12:00' }, { dias: 'Sábados y Domingos', horario: 'Cerrado' }],
-  contacto: { titulo: 'Estamos aquí para acompañarte', direccion: '9a Calle A 9-34, Ciudad San Cristóbal, Mixco', correo: 'contacto@sanpedronolasco.gt', telefono: '+502 2443 3174' },
+  contacto: { titulo: 'Estamos aquí para acompañarte', direccion: '9a Calle A 9-34, Ciudad San Cristóbal, Mixco', correo: 'parroquiasanpedronolascocsc@gmail.com', telefono: '+502 2443 3174' },
   devocion: {
     titulo: 'Devoción a Nuestra Santísima Madre de la Merced',
     descripcion: 'Cómo honramos a la Madre de Dios y a los santos de la Orden.',
@@ -274,7 +274,7 @@ export default function LandingPage() {
               ))}
             </div>}
           </div>
-          <Modal open={tarjetaActual !== undefined} title={tarjetaActual?.titulo ?? ''} width={680} onClose={() => setTarjetaAbierta(null)}>
+          <Modal returnLabel="Volver a nuestra historia" open={tarjetaActual !== undefined} title={tarjetaActual?.titulo ?? ''} width={680} onClose={() => setTarjetaAbierta(null)}>
             <div className="qmodal">
               {tarjetaActual?.lema && <p className="qmodal-lema">“{tarjetaActual.lema}”</p>}
               {tarjetaActual?.detalle.split(/\n{2,}/).filter(Boolean).map((parrafo, indice) => <p key={indice}>{parrafo}</p>)}
@@ -320,7 +320,7 @@ export default function LandingPage() {
             <p>{parrafosOracion[0]}</p>
             <span className="oracion-more" aria-hidden="true">Leer oración completa →</span>
           </button>
-          <Modal open={oracionAbierta} title={contenido.devocion.oracion.titulo} width={680} onClose={() => setOracionAbierta(false)}>
+          <Modal returnLabel="Volver a devoción" open={oracionAbierta} title={contenido.devocion.oracion.titulo} width={680} onClose={() => setOracionAbierta(false)}>
             <div className="qmodal qmodal-oracion">
               {parrafosOracion.map((parrafo, indice) => <p key={indice}>{parrafo}</p>)}
             </div>

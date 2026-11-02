@@ -11,7 +11,7 @@
 ══════════════════════════════════ */
 .left {
   width: 48%;
-  background-color: var(--color-rojo);
+  background-color: var(--color-primary-bg);
   display: flex;
   flex-direction: column;
   padding: 56px 64px;
@@ -251,7 +251,7 @@
 
 /* En celular, presentación y formulario comparten el flujo para no superponerse. */
 @media (max-width: 600px), (max-width: 900px) and (max-height: 500px) {
-  .page { flex-direction: column; overflow-y: auto; background: var(--color-rojo); }
+  .page { flex-direction: column; overflow-y: auto; background: var(--color-primary-bg); }
   .left { width: 100%; flex-shrink: 0; padding: max(20px, env(safe-area-inset-top)) 24px 0; overflow: visible; }
   .leftContent { position: relative; z-index: auto; }
   .backLink, .leftKicker, .leftRule, .leftFooter,

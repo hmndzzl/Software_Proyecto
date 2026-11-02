@@ -127,7 +127,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"contacto\": {\r\n    \"direccion\": \"Ciudad de Guatemala\",\r\n    \"correo\": \"contacto@sanpedronolasco.gt\",\r\n    \"telefono\": \"+502 5555 1234\"\r\n  }\r\n}",
+          "raw": "{\r\n  \"contacto\": {\r\n    \"direccion\": \"Ciudad de Guatemala\",\r\n    \"correo\": \"parroquiasanpedronolascocsc@gmail.com\",\r\n    \"telefono\": \"+502 5555 1234\"\r\n  }\r\n}",
           "options": {
             "raw": {
               "language": "json"

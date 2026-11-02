@@ -69,6 +69,25 @@ describe('ReportesPage', () => {
     click.mockRestore();
   });
 
+  it('los botones de rango rápido fijan esta semana y este mes', () => {
+    rolActual = ROLES.COORDINADOR_MINISTROS;
+    render(<ReportesPage />);
+    const fechas = screen.getAllByLabelText(/Desde|Hasta/) as HTMLInputElement[];
+    fireEvent.click(screen.getByRole('button', { name: 'Este mes' }));
+    expect(fechas[0].value).toMatch(/^\d{4}-\d{2}-01$/);
+    fireEvent.click(screen.getByRole('button', { name: 'Esta semana' }));
+    expect(fechas[0].value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('muestra un error si la descarga falla', async () => {
+    rolActual = ROLES.COORDINADOR_MINISTROS;
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('red'));
+    render(<ReportesPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar PDF' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo descargar el reporte');
+    expect(screen.getByRole('button', { name: 'Descargar PDF' })).toBeEnabled();
+  });
+
   it('solicita Excel como descarga autenticada', async () => {
     rolActual = ROLES.COORDINADOR_MINISTROS;
     vi.mocked(apiClient.get).mockResolvedValue({ data: new Blob(['x']) });

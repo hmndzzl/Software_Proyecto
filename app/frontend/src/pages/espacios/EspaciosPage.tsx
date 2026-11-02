@@ -1,4 +1,5 @@
 import { useId, useState, useEffect, useRef } from 'react';
+import { useViewState } from '../../hooks/useViewState';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
 import EspacioCard, { Espacio } from '../../modules/espacios/components/EspacioCard';
@@ -22,9 +23,9 @@ export default function EspaciosPage() {
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError]       = useState('');
-  const [fecha, setFecha] = useState('');
-  const [horaInicio, setHoraInicio] = useState('');
-  const [horaFin, setHoraFin] = useState('');
+  const [fecha, setFecha] = useViewState('espacios:fecha', '');
+  const [horaInicio, setHoraInicio] = useViewState('espacios:inicio', '');
+  const [horaFin, setHoraFin] = useViewState('espacios:fin', '');
   const [validacion, setValidacion] = useState('');
   const [retryTick, setRetryTick] = useState(0);
   const [refreshTick, setRefreshTick] = useState(0);
@@ -164,7 +165,7 @@ export default function EspaciosPage() {
       </div>}
       {avisoActualizacion && consulta && <p className={styles.validation} role="alert">{avisoActualizacion}. Se conserva la última consulta; puedes volver a actualizar.</p>}
 
-      {cargando && <LoadingState label="Cargando espacios..." />}
+      {cargando && <LoadingState variant="cards" label="Cargando espacios..." />}
       {error    && <ErrorState message={error} onRetry={cargarEspacios} />}
 
       {!cargando && !error && espacios.length === 0 && (

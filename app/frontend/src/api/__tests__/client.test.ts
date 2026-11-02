@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import { getLoginError, registerClerkSession } from '../../auth/clerkSession';
 
@@ -34,6 +34,7 @@ vi.mock('axios', () => {
 });
 
 describe('apiClient', () => {
+  afterEach(() => vi.unstubAllGlobals());
   beforeEach(async () => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -63,6 +64,51 @@ describe('apiClient', () => {
   });
 
   describe('Response Interceptor', () => {
+    it('coordina la renovación con Web Locks entre pestañas', async () => {
+      localStorage.setItem('token', 'anterior');
+      const lock = vi.fn(async (_nombre: string, renovar: () => Promise<string>) => renovar());
+      vi.stubGlobal('navigator', { locks: { request: lock } });
+      vi.mocked(axios.post).mockResolvedValueOnce({ data: { token: 'nuevo' } });
+      await responseInterceptorError({ response: { status: 401 }, config: { headers: { Authorization: 'Bearer anterior' } } });
+      expect(lock).toHaveBeenCalledWith('parroquia:jwt-refresh', expect.any(Function));
+      expect(localStorage.getItem('token')).toBe('nuevo');
+    });
+    it('reutiliza el access renovado por otra pestaña sin consumir otra vez el refresh', async () => {
+      localStorage.setItem('token', 'renovado-por-otra-pestana');
+      const config = { headers: { Authorization: 'Bearer anterior' } };
+      await responseInterceptorError({ response: { status: 401 }, config });
+      expect(axios.post).not.toHaveBeenCalled();
+      expect(config.headers.Authorization).toBe('Bearer renovado-por-otra-pestana');
+    });
+    it('no renueva una sesión cerrada mientras esperaba el bloqueo', async () => {
+      localStorage.setItem('token', 'anterior');
+      vi.stubGlobal('navigator', { locks: { request: async (_nombre: string, renovar: () => Promise<string>) => {
+        localStorage.removeItem('token');
+        return renovar();
+      } } });
+      await expect(responseInterceptorError({ response: { status: 401 }, config: { headers: { Authorization: 'Bearer anterior' } } })).rejects.toThrow('cerrada');
+      expect(axios.post).not.toHaveBeenCalled();
+    });
+    it('una respuesta tardía de refresh no restaura una sesión cerrada', async () => {
+      localStorage.setItem('token', 'anterior');
+      vi.mocked(axios.post).mockImplementationOnce(async () => {
+        localStorage.clear();
+        return { data: { token: 'respuesta-tardia' } };
+      });
+      await expect(responseInterceptorError({ response: { status: 401 }, config: { headers: { Authorization: 'Bearer anterior' } } })).rejects.toThrow('cambió');
+      expect(localStorage.getItem('token')).toBeNull();
+      expect(window.location.href).toBe('/login');
+    });
+    it('un refresh antiguo no sobrescribe ni borra un nuevo inicio de sesión', async () => {
+      localStorage.setItem('token', 'anterior');
+      vi.mocked(axios.post).mockImplementationOnce(async () => {
+        localStorage.setItem('token', 'otra-sesion');
+        return { data: { token: 'respuesta-tardia' } };
+      });
+      await expect(responseInterceptorError({ response: { status: 401 }, config: { headers: { Authorization: 'Bearer anterior' } } })).rejects.toThrow('cambió');
+      expect(localStorage.getItem('token')).toBe('otra-sesion');
+      expect(window.location.href).toBe('');
+    });
     it('debería retornar res directo si hay éxito', () => {
       const res = { data: 'ok' };
       expect(responseInterceptorSuccess(res)).toBe(res);

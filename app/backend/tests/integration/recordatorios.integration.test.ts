@@ -8,6 +8,7 @@ describe('recordatorios anticipados con MariaDB real', () => {
   let container: StartedMariaDbContainer;
   let pool: Pool;
   let enviar: typeof import('../../src/services/recordatorios.service')['enviarRecordatorios'];
+  let enviarTardios: typeof import('../../src/services/recordatorios.service')['enviarRecordatoriosTardios'];
   let app: Awaited<typeof import('../../src/app')>['app'];
 
   beforeAll(async () => {
@@ -41,7 +42,7 @@ describe('recordatorios anticipados con MariaDB real', () => {
     await connection.end();
 
     vi.resetModules();
-    ({ enviarRecordatorios: enviar } = await import('../../src/services/recordatorios.service'));
+    ({ enviarRecordatorios: enviar, enviarRecordatoriosTardios: enviarTardios } = await import('../../src/services/recordatorios.service'));
     ({ app } = await import('../../src/app'));
     ({ default: pool } = await import('../../src/config/db'));
   });
@@ -125,6 +126,26 @@ describe('recordatorios anticipados con MariaDB real', () => {
       expect(ledger).toHaveLength(0);
       expect(notis).toHaveLength(0);
     } finally { await pool.query('DROP TRIGGER fallo_recordatorio'); silencio.mockRestore(); }
+    expect((await enviar(ahora)).enviados).toBe(1);
+  });
+
+  it('enviarRecordatoriosTardios cubre la ventana de 0 a 24 horas sin duplicar con la normal', async () => {
+    // "ahora" es 2026-10-23T12:00 Guatemala. Una tarea a 18h de distancia cae en la
+    // ventana tardía (0-24h), no en la normal (24-48h) — simula lo que se perdió si
+    // el servidor estuvo apagado durante toda su ventana de aviso anticipado.
+    await tarea('2026-10-24', '06:00:00');
+    expect(await enviarTardios(ahora)).toEqual({ enviados: 1, omitidos: 0, errores: 0 });
+    const [rows]: any = await pool.query('SELECT mensaje FROM notificacion');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].mensaje).toContain('recuperado tras una interrupción');
+    // La ventana normal (24-48h) no debe volver a tomarla ni duplicar el aviso.
+    expect((await enviar(ahora)).enviados).toBe(0);
+    expect((await enviarTardios(ahora)).enviados).toBe(0);
+  });
+
+  it('enviarRecordatoriosTardios no toca una tarea que cae en la ventana normal de 24 a 48 horas', async () => {
+    await tarea('2026-10-24', '12:00:00');
+    expect((await enviarTardios(ahora)).enviados).toBe(0);
     expect((await enviar(ahora)).enviados).toBe(1);
   });
 });

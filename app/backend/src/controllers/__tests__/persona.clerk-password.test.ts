@@ -7,7 +7,7 @@ import { HttpStatus } from '../../utils/httpStatus';
 import { ROLES } from '../../config/roles';
 import { editarPerfil } from '../persona.controller';
 
-vi.mock('../../config/db', () => ({ default: { execute: vi.fn() } }));
+vi.mock('../../config/db', () => ({ default: { execute: vi.fn(), getConnection: vi.fn() } }));
 vi.mock('bcryptjs', () => ({ default: { hash: vi.fn() } }));
 
 const { updateUser, getUser, createEmailAddress, deleteEmailAddress } = vi.hoisted(() => ({
@@ -29,18 +29,23 @@ describe('editarPerfil - sincronización de la contraseña con Clerk', () => {
   let res: Partial<Response>;
   let statusMock: any;
   let jsonMock: any;
+  const conn = { execute: vi.fn(), beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn() };
 
   const personaExistente = (clerkUserId: string | null) =>
     (pool.execute as any).mockResolvedValueOnce([[{ id: 4, nombre: 'Ana', correo: 'ana@test.com', rol_id: ROLES.MINISTRO, clerk_user_id: clerkUserId }]]);
 
   const actualizacionExitosa = () => {
-    (pool.execute as any)
-      .mockResolvedValueOnce([{ affectedRows: 1 }])
-      .mockResolvedValueOnce([[{ id: 4, nombre: 'Ana' }]]);
+    if (!req.body.password) vi.mocked(pool.execute).mockResolvedValueOnce([{ affectedRows: 1 }] as never);
+    vi.mocked(pool.execute).mockResolvedValueOnce([[{ id: 4, nombre: 'Ana' }]] as never);
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(pool.execute).mockReset();
+    vi.mocked(pool.getConnection).mockReset().mockResolvedValue(conn as never);
+    conn.execute.mockReset().mockResolvedValue([{}]);
+    updateUser.mockReset();
+    createEmailAddress.mockReset();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
@@ -58,10 +63,12 @@ describe('editarPerfil - sincronización de la contraseña con Clerk', () => {
     await editarPerfil(req as Request, res as Response);
 
     expect(updateUser).toHaveBeenCalledWith('user_abc', { password: 'NuevaClave-2026' });
-    expect(pool.execute).toHaveBeenCalledWith(
+    expect(conn.execute).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE persona SET password = ?'),
       ['hash_nuevo', 4]
     );
+    expect(conn.execute).toHaveBeenCalledWith(expect.stringContaining('UPDATE sesion_jwt SET revocada_en'), [4]);
+    expect(conn.commit).toHaveBeenCalledOnce();
     expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
   });
 
