@@ -49,6 +49,22 @@ ANEXOS
 Consultar Anexos/Descripcion_anexos.txt: contiene una entrada por archivo con descripción, etapa y procedencia.
 Incluye seis imágenes originales del repositorio, dos fotos recuperadas del Tercer Corte,
 el mapa visual recuperado del integrador y el SQL de diseño del Tercer Corte.
+Se añadieron cuatro fotografías de las pruebas de experiencia de usuario en NeuroLab,
+ubicadas en Anexos/Fotos/NeuroLab/ y descritas individualmente.
+
+DEMOSTRACIONES A PRODUCT OWNERS
+
+Se recuperaron catorce archivos de fotografía de los informes de los sprints 1–10, sin editar las imágenes.
+Son trece imágenes distintas: los informes de los sprints 8 y 9 reutilizan la misma fotografía.
+Ubicación: Anexos/Fotos/Demostraciones Product Owners/Sprint N/.
+Páginas de origen: Sprint 1: 11; Sprint 2: 14–15; Sprint 3: 23;
+Sprint 4: 17; Sprint 5: 24; Sprint 6: 32; Sprint 7: 37; Sprint 8: 57;
+Sprint 9: 32; Sprint 10: 53.
+Las descripciones individuales distinguen las demostraciones de las pruebas de NeuroLab.
+No se incorporaron las gráficas de métricas ni las capturas de interfaz de esas secciones como fotografías de pruebas.
+Los informes de los sprints 9 y 10 se consultaron temporalmente desde origin/main para extraer las imágenes.
+Sus copias temporales se retiraron de esta rama después de la revisión; los PDF se conservan en main.
+La procedencia y el commit consultado se registran en Descripcion_anexos.txt.
 
 TRAZABILIDAD DE LAS COPIAS
 

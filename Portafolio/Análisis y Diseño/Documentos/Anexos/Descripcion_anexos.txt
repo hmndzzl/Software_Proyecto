@@ -2,8 +2,9 @@ DESCRIPCIÓN DE ANEXOS
 
 Rutas relativas a esta carpeta Anexos.
 Las etapas se identifican por el contenido y ubicación de las evidencias en los informes.
-Se distinguen archivos originales del repositorio e imágenes recuperadas de PDF.
-Los archivos externos quedan pendientes por indicación del responsable.
+Las fotos de demostración documentan sesiones de revisión; por sí solas no acreditan resultados de pruebas ni cumplimiento de requisitos.
+Se distinguen archivos originales del repositorio, imágenes recuperadas de PDF y fotografías aportadas por el responsable.
+Se incorporaron cuatro fotografías externas de las pruebas en NeuroLab aportadas por el responsable. Los demás archivos externos siguen pendientes de recuperación.
 
 Archivo: Fotos/Lluvia-de-ideas-op5 - Pedro Caso.png
 Descripción: Propuestas para estructurar información de ministros: modelo relacional, fichas de habilidades, cálculo de descanso y panel de administración.
@@ -54,3 +55,94 @@ Archivo: Diseno de datos/parroquia_db.sql
 Descripción: Script SQL que acompaña el diseño de la base de datos del Tercer Corte. Se conserva como evidencia histórica; no se presenta como el esquema vigente en producción.
 Etapa: Diseño de persistencia y modelo de datos; Tercer Corte.
 Procedencia: docs/corte3/parroquia_db.sql (archivo original copiado sin cambios).
+
+Archivo: Fotos/NeuroLab/Sujeto-1.jpeg
+Descripción: Fotografía de un participante frente al monitor durante las pruebas en NeuroLab, con sensores conectados a la mano y un dispositivo en la muñeca; la pantalla muestra una secuencia gráfica.
+Etapa: Pruebas y evaluación de experiencia de usuario (UX) en NeuroLab durante la implementación del sistema.
+Procedencia: Fotografía aportada por el responsable, identificada por él como evidencia de las pruebas en NeuroLab. Archivo en el portafolio: Sujeto-1.jpeg. Copia sin modificaciones.
+
+Archivo: Fotos/NeuroLab/Sujeto-2.jpeg
+Descripción: Fotografía de un participante utilizando el panel principal de la plataforma parroquial durante las pruebas en NeuroLab, con sensores conectados a la mano y un dispositivo en la muñeca.
+Etapa: Pruebas y evaluación de experiencia de usuario (UX) en NeuroLab durante la implementación del sistema.
+Procedencia: Fotografía aportada por el responsable, identificada por él como evidencia de las pruebas en NeuroLab. Archivo en el portafolio: Sujeto-2.jpeg. Copia sin modificaciones.
+
+Archivo: Fotos/NeuroLab/Sujeto-3.jpeg
+Descripción: Fotografía de un participante interactuando con el módulo de reservas de la plataforma durante las pruebas en NeuroLab; se observan el formulario de solicitud y el listado de reservas.
+Etapa: Pruebas y evaluación de experiencia de usuario (UX) en NeuroLab durante la implementación del sistema.
+Procedencia: Fotografía aportada por el responsable, identificada por él como evidencia de las pruebas en NeuroLab. Archivo en el portafolio: Sujeto-3.jpeg. Copia sin modificaciones.
+
+Archivo: Fotos/NeuroLab/Sujeto-4.jpeg
+Descripción: Fotografía de un participante consultando la página pública de la Parroquia San Pedro Nolasco durante las pruebas en NeuroLab, con el equipo de sensores conectado.
+Etapa: Pruebas y evaluación de experiencia de usuario (UX) en NeuroLab durante la implementación del sistema.
+Procedencia: Fotografía aportada por el responsable, identificada por él como evidencia de las pruebas en NeuroLab. Archivo en el portafolio: Sujeto-4.jpeg. Copia sin modificaciones.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 1/Sprint-01-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 1 a Product Owner 2, incluida en la sección de presentación o retroalimentación del informe. La sección recoge observaciones sobre fechas y frecuencia de las tareas.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 1.
+Procedencia: docs/sprint1/Primer-Sprint-Scrum.pdf, página 11 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 2/Sprint-02-imagen-02.png
+Descripción: Fotografía de la demostración del incremento del Sprint 2 a Product Owner 1, incluida en la sección de presentación o retroalimentación del informe. La sección recoge observaciones sobre reservas, disponibilidad de salones y permisos de edición.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 2.
+Procedencia: docs/sprint2/Sprint2-Software.pdf, página 14 del PDF, imagen 2 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 2/Sprint-02-imagen-01.png
+Descripción: Fotografía de la demostración del incremento del Sprint 2 a Product Owner 2, incluida en la sección de presentación o retroalimentación del informe. La sección recoge observaciones sobre reservas, disponibilidad de salones y permisos de edición.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 2.
+Procedencia: docs/sprint2/Sprint2-Software.pdf, página 15 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 3/Sprint-03-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 3 a Product Owner 1, incluida en la sección de presentación o retroalimentación del informe. La sección recoge comentarios sobre el rediseño visual, la organización y los colores de la interfaz.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 3.
+Procedencia: docs/sprint3/Sprint3-Software.pdf, página 23 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 3/Sprint-03-imagen-02.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 3 a Product Owner 2, incluida en la sección de presentación o retroalimentación del informe. La sección recoge comentarios sobre el rediseño visual, la organización y los colores de la interfaz.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 3.
+Procedencia: docs/sprint3/Sprint3-Software.pdf, página 23 del PDF, imagen 2 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 4/Sprint-04-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 4 a Product Owner 1, incluida en la sección de presentación o retroalimentación del informe. La sección recoge comentarios sobre notificaciones, perfil y calendario.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 4.
+Procedencia: docs/sprint4/Sprint4-Software.pdf, página 17 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 4/Sprint-04-imagen-02.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 4 a Product Owner 2, incluida en la sección de presentación o retroalimentación del informe. La sección recoge comentarios sobre notificaciones, perfil y calendario.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 4.
+Procedencia: docs/sprint4/Sprint4-Software.pdf, página 17 del PDF, imagen 2 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 5/Sprint-05-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 5 a Product Owner 1, incluida en la sección de presentación o retroalimentación del informe. La sección recoge comentarios sobre la edición o rechazo de eventos previamente aprobados.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 5.
+Procedencia: docs/sprint5/Sprint5-Software.pdf, página 24 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 6/Sprint-06-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 6 a Product Owner 1, incluida en la sección de presentación o retroalimentación del informe. La sección recoge comentarios sobre la confirmación de asistencia.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 6.
+Procedencia: docs/sprint6/Sprint6-Software.pdf, página 32 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 7/Sprint-07-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 7 a los Product Owners, incluida en la sección de presentación o retroalimentación del informe. Se observa una demostración grupal con la plataforma proyectada en una pantalla.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 7.
+Procedencia: docs/sprint7/Sprint7-Software.pdf, página 37 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 7/Sprint-07-imagen-02.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 7 a los Product Owners, incluida en la sección de presentación o retroalimentación del informe. Se observa una demostración grupal con la plataforma proyectada en una pantalla.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 7.
+Procedencia: docs/sprint7/Sprint7-Software.pdf, página 37 del PDF, imagen 2 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 8/Sprint-08-imagen-01.jpg
+Descripción: Fotografía de la demostración del incremento del Sprint 8 a los Product Owners, incluida en la sección de presentación o retroalimentación del informe. La sección recoge una consulta sobre el rechazo automático de otras solicitudes al aceptar un cambio de turno.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 8.
+Procedencia: docs/sprint8/Sprint8-Software.pdf, página 57 del PDF, imagen 1 de esa página. Imagen extraída del informe sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 9/Sprint-09-imagen-01.jpg
+Descripción: Fotografía de una persona consultando la página pública de la plataforma en una computadora portátil, incluida en la sección de retroalimentación de Product Owners del Sprint 9. La sección comenta el acceso a la página inicial y la consistencia del formato de horarios.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 9.
+Procedencia: docs/sprint9/Sprint9-Software.pdf, página 32 del PDF, imagen 1. Informe consultado temporalmente desde origin/main, commit 5dd1fc4857486bf1e0957a947b1987dcb048ba45. Imagen extraída sin edición; no corresponde al archivo original de cámara.
+Observación: La imagen es idéntica a Fotos/Demostraciones Product Owners/Sprint 8/Sprint-08-imagen-01.jpg. Está reutilizada en ambos informes; no acredita por sí sola una sesión adicional en el Sprint 9.
+
+Archivo: Fotos/Demostraciones Product Owners/Sprint 10/Sprint-10-imagen-01.jpg
+Descripción: Fotografía de una demostración grupal con la plataforma proyectada en una pantalla, incluida en la sección de retroalimentación de Product Owners del Sprint 10. La sección recoge una revisión de los cinco roles, los permisos, la aprobación de reservas y ajustes de interfaz.
+Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 10.
+Procedencia: docs/sprint10/Sprint10-Software.pdf, página 53 del PDF, imagen 1. Informe consultado temporalmente desde origin/main, commit 5dd1fc4857486bf1e0957a947b1987dcb048ba45. Imagen extraída sin edición; no corresponde al archivo original de cámara.
