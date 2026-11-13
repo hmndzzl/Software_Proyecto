@@ -1,0 +1,98 @@
+ÍNDICE DE ANÁLISIS Y DISEÑO
+
+Todas las páginas indicadas corresponden a la numeración del archivo PDF, contando desde 1.
+Los ocho PDF se copiaron completos y sin modificaciones; se conservaron los originales del repositorio.
+
+DOCUMENTOS
+
+Avances Primer Corte.pdf
+Avance de investigación: brief, selección de usuarios, observación AEIOU, perfiles, guion y entrevistas.
+
+Primer Corte.pdf
+Informe final de investigación y definición del problema.
+Guion de entrevistas: páginas 15–17; entrevistas y su interpretación: 18–31;
+mapas de empatía: 32–33; insights y oportunidades: 34–36; definición: 37.
+Las entrevistas se conservan dentro del informe. Sus grabaciones y archivos originales externos están pendientes.
+
+Avances Segundo Corte.pdf
+Avance de ideación, oportunidades How Might We, Design Studio, storyboards y primeras historias de usuario.
+
+Segundo Corte.pdf
+Análisis funcional, historias, casos de uso, prioridades y requisitos no funcionales.
+Casos de uso: página 21. Sección titulada User Story Map y prioridades MVP/R1/R2: páginas 22–25.
+Bitácoras de entrevistas: páginas 30–32.
+
+Patrones de diseño.pdf
+Estudio de patrones y principios de desarrollo aplicados al diseño del sistema.
+
+Tercer Corte.pdf
+Validación de prototipos, feedback, requisitos, trazabilidad, diagramas de clases y paquetes y diseño de datos.
+Fotos de validación: página 6; feedback y enlace al prototipo ajustado: página 7.
+Incluye selección tecnológica; la persona 5 puede referenciar este documento para su propia sección.
+
+Diseño de Base de Datos.pdf
+Documento de diseño de datos del mismo sistema: entidades, dependencias, normalización, relaciones,
+DER, modelo relacional y DDL. Complementa el Tercer Corte y el SQL guardado en Anexos.
+
+Documento Integrador.pdf
+Consolidación del trabajo: investigación, análisis y diseño, además de evolución de implementación.
+Se conserva completo. Mapa visual de historias: página 13; enlace y prioridades: página 14.
+
+USER STORY MAP
+
+Abrir Anexos/Diagramas/User Story Map.jpg para consultar el mapa visual directamente.
+Es la imagen recuperada de Documento Integrador.pdf, página 13.
+En Segundo Corte.pdf, página 22, comienza la explicación textual; esa página no contiene el mapa visual.
+
+ANEXOS
+
+Consultar Anexos/Descripcion_anexos.txt: contiene una entrada por archivo con descripción, etapa y procedencia.
+Incluye seis imágenes originales del repositorio, dos fotos recuperadas del Tercer Corte,
+el mapa visual recuperado del integrador y el SQL de diseño del Tercer Corte.
+
+TRAZABILIDAD DE LAS COPIAS
+
+Avances Primer Corte.pdf
+  Origen en el repositorio: docs/Avances1/Avances  Proyecto - Grupo 3.pdf
+
+Primer Corte.pdf
+  Origen en el repositorio: docs/corte1/Primer Corte del Proyecto - Grupo 3.pdf
+
+Avances Segundo Corte.pdf
+  Origen en el repositorio: docs/avances2/Avances Segundo Corte del Proyecto - Grupo 3.pdf
+
+Segundo Corte.pdf
+  Origen en el repositorio: docs/corte2/Segundo Corte del Proyecto - Grupo 3.pdf
+
+Patrones de diseño.pdf
+  Origen en el repositorio: docs/Avances3/patrones-de-diseño-grupo3.pdf
+
+Tercer Corte.pdf
+  Origen en el repositorio: docs/corte3/Tercer Corte del Proyecto - Grupo 3.pdf
+
+Diseño de Base de Datos.pdf
+  Origen en el repositorio: docs/corte3/ProyectoDatos1-Grupo3.pdf
+
+Documento Integrador.pdf
+  Origen en el repositorio: docs/sprint4/Documento_Integrador_Software .pdf
+
+Anexos/Fotos/Lluvia-de-ideas-op5 - Pedro Caso.png
+  Origen en el repositorio: docs/avances2/Lluvia-de-ideas-op5 - Pedro Caso.png
+
+Anexos/Fotos/ideas-mas-votadas.png
+  Origen en el repositorio: docs/avances2/ideas-mas-votadas.png
+
+Anexos/Fotos/lluvia-ideas-op3.png
+  Origen en el repositorio: docs/avances2/lluvia-ideas-op3.png
+
+Anexos/Fotos/lluvia-ideas-op4-DiegoCalderon.png
+  Origen en el repositorio: docs/avances2/lluvia-ideas-op4-DiegoCalderon.png
+
+Anexos/Fotos/storyboard-op4.jpeg
+  Origen en el repositorio: docs/avances2/storyboard-op4.jpeg
+
+Anexos/Diagramas/UML-casos.png
+  Origen en el repositorio: docs/avances2/UML-casos.png
+
+Anexos/Diseno de datos/parroquia_db.sql
+  Origen en el repositorio: docs/corte3/parroquia_db.sql

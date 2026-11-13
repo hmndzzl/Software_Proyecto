@@ -1,0 +1,56 @@
+DESCRIPCIÓN DE ANEXOS
+
+Rutas relativas a esta carpeta Anexos.
+Las etapas se identifican por el contenido y ubicación de las evidencias en los informes.
+Se distinguen archivos originales del repositorio e imágenes recuperadas de PDF.
+Los archivos externos quedan pendientes por indicación del responsable.
+
+Archivo: Fotos/Lluvia-de-ideas-op5 - Pedro Caso.png
+Descripción: Propuestas para estructurar información de ministros: modelo relacional, fichas de habilidades, cálculo de descanso y panel de administración.
+Etapa: Ideación; Design Studio, oportunidad 5, Segundo Corte.
+Procedencia: docs/avances2/Lluvia-de-ideas-op5 - Pedro Caso.png (archivo original copiado sin cambios).
+
+Archivo: Fotos/ideas-mas-votadas.png
+Descripción: Selección de ideas votadas para las seis oportunidades identificadas por el equipo.
+Etapa: Ideación; selección y priorización de propuestas, Segundo Corte.
+Procedencia: docs/avances2/ideas-mas-votadas.png (archivo original copiado sin cambios).
+
+Archivo: Fotos/lluvia-ideas-op3.png
+Descripción: Propuestas de recordatorios de servicios mediante calendario, mensajes, correo, códigos QR y alertas.
+Etapa: Ideación; Design Studio, oportunidad 3, Segundo Corte.
+Procedencia: docs/avances2/lluvia-ideas-op3.png (archivo original copiado sin cambios).
+
+Archivo: Fotos/lluvia-ideas-op4-DiegoCalderon.png
+Descripción: Propuestas para consultar la disponibilidad y reservar salones, con alternativas de calendario, monitor, sensores y registro.
+Etapa: Ideación; Design Studio, oportunidad 4, Segundo Corte.
+Procedencia: docs/avances2/lluvia-ideas-op4-DiegoCalderon.png (archivo original copiado sin cambios).
+
+Archivo: Fotos/storyboard-op4.jpeg
+Descripción: Secuencia ilustrada de un coordinador que consulta y realiza una reserva de salón.
+Etapa: Ideación y representación de la solución; storyboard de la oportunidad 4, Segundo Corte.
+Procedencia: docs/avances2/storyboard-op4.jpeg (archivo original copiado sin cambios).
+
+Archivo: Diagramas/UML-casos.png
+Descripción: Diagrama de casos de uso para sacerdote, coordinadores, ministros y miembros de grupos: reservas, servicios, disponibilidad y calendarios.
+Etapa: Análisis funcional; modelado UML, Segundo Corte (página 21 del informe final).
+Procedencia: docs/avances2/UML-casos.png (archivo original copiado sin cambios).
+
+Archivo: Fotos/Validacion-prototipo-1.jpg
+Descripción: Fotografía de una persona utilizando un prototipo de la plataforma en una computadora portátil; aparece bajo «Prototipo 1 / Foto con usuario».
+Etapa: Prototipado y validación con usuarios; Design Thinking, Tercer Corte.
+Procedencia: docs/corte3/Tercer Corte del Proyecto - Grupo 3.pdf, página 6. Imagen extraída del PDF, sin edición; no es el archivo original de cámara.
+
+Archivo: Fotos/Validacion-prototipo-2.jpg
+Descripción: Fotografía de una persona utilizando un prototipo de la plataforma en una computadora portátil; aparece bajo «Prototipo 2 / Foto con usuario».
+Etapa: Prototipado y validación con usuarios; Design Thinking, Tercer Corte.
+Procedencia: docs/corte3/Tercer Corte del Proyecto - Grupo 3.pdf, página 6. Imagen extraída del PDF, sin edición; no es el archivo original de cámara.
+
+Archivo: Diagramas/User Story Map.jpg
+Descripción: Mapa visual de historias organizado por actividades y entregas MVP, R1 y R2.
+Etapa: Análisis y priorización de historias de usuario; consolidado en el documento integrador.
+Procedencia: docs/sprint4/Documento_Integrador_Software .pdf, página 13. Imagen extraída del PDF, sin edición. La explicación de prioridades también está en Segundo Corte.pdf, páginas 22–25.
+
+Archivo: Diseno de datos/parroquia_db.sql
+Descripción: Script SQL que acompaña el diseño de la base de datos del Tercer Corte. Se conserva como evidencia histórica; no se presenta como el esquema vigente en producción.
+Etapa: Diseño de persistencia y modelo de datos; Tercer Corte.
+Procedencia: docs/corte3/parroquia_db.sql (archivo original copiado sin cambios).
