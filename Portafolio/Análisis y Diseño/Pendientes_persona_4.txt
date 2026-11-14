@@ -1,0 +1,33 @@
+ESTADO DE LA PARTE DE PERSONA 4
+
+Preparado con los materiales disponibles en el repositorio y las fotografías aportadas:
+- Ocho documentos PDF completos de avances, cortes, diseño de datos, patrones y documento integrador.
+- Índice con procedencias y ubicación del User Story Map.
+- Treinta y cuatro anexos con su descripción, etapa y procedencia: incluyen cuatro fotografías de NeuroLab, catorce archivos de demostraciones a Product Owners y seis extractos PDF de entrevistas y validación.
+- Los informes de los sprints 8 y 9 reutilizan una fotografía; esa coincidencia está documentada.
+
+REVISIÓN DE SPRINTS 9 Y 10 COMPLETADA
+
+Se revisaron temporalmente los informes desde origin/main y se recuperaron sus fotografías.
+Las dos copias temporales de los informes se retiraron de esta rama después de la revisión.
+
+PENDIENTE POR INDICACIÓN DEL RESPONSABLE
+
+Recuperar los archivos externos de apoyo utilizados en análisis y diseño:
+fotos, videos, audios, entrevistas y respuestas de encuestas, si se utilizaron.
+No se ha asumido que todos esos tipos existan. Confirmar cuáles se utilizaron y conseguirlos.
+Se incorporaron las cuatro fotografías de NeuroLab aportadas por el responsable.
+Los demás archivos externos siguen pendientes de recuperación.
+Las dos fotos recuperadas de un PDF no sustituyen recuperar los originales que tenga el equipo.
+Las entrevistas, bitácoras y resultados de validación se conservaron en los informes y se extrajeron a seis PDF dentro de Anexos/Entrevistas/ y Anexos/Pruebas UX/.
+Los extractos no sustituyen las grabaciones o respuestas originales externas pendientes.
+
+Al obtener los archivos, copiarlos a Documentos/Anexos y añadir una entrada por cada uno en
+Descripcion_anexos.txt, indicando ruta relativa, descripción, etapa y procedencia.
+
+PARA INTEGRAR CON PERSONA 5
+
+La carpeta Análisis y Diseño ya está en la ruta prevista dentro de Portafolio.
+Se puede integrar esta parte conservando su estructura. Los apoyos externos siguen pendientes.
+Este trabajo cubre la sección de persona 4; las otras secciones del Portafolio y el ZIP final
+corresponden a los demás responsables. No se ha enviado ningún aviso al equipo.

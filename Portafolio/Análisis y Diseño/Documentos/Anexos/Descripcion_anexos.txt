@@ -146,3 +146,33 @@ Archivo: Fotos/Demostraciones Product Owners/Sprint 10/Sprint-10-imagen-01.jpg
 Descripción: Fotografía de una demostración grupal con la plataforma proyectada en una pantalla, incluida en la sección de retroalimentación de Product Owners del Sprint 10. La sección recoge una revisión de los cinco roles, los permisos, la aprobación de reservas y ajustes de interfaz.
 Etapa: Implementación; revisión y validación del incremento con Product Owners, Sprint 10.
 Procedencia: docs/sprint10/Sprint10-Software.pdf, página 53 del PDF, imagen 1. Informe consultado temporalmente desde origin/main, commit 5dd1fc4857486bf1e0957a947b1987dcb048ba45. Imagen extraída sin edición; no corresponde al archivo original de cámara.
+
+Archivo: Entrevistas/Guion de entrevistas.pdf
+Descripción: Guion de entrevistas para coordinadores de ministros, coordinadores de grupos, ministros y sacerdote o párroco.
+Etapa: Investigación y empatía; preparación de entrevistas, Primer Corte.
+Procedencia: Portafolio/Análisis y Diseño/Documentos/Primer Corte.pdf, páginas 15–17 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.
+
+Archivo: Entrevistas/Entrevistas a usuarios.pdf
+Descripción: Respuestas de entrevistas a sacerdotes, coordinadores y ministros, junto con las interpretaciones documentadas por el equipo.
+Etapa: Investigación y empatía; identificación de necesidades, Primer Corte.
+Procedencia: Portafolio/Análisis y Diseño/Documentos/Primer Corte.pdf, páginas 18–31 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.
+
+Archivo: Entrevistas/Bitacoras de entrevistas.pdf
+Descripción: Bitácoras de entrevistas por perfil con fechas, puntos tratados, observaciones y conclusiones.
+Etapa: Análisis y documentación de necesidades, Segundo Corte.
+Procedencia: Portafolio/Análisis y Diseño/Documentos/Segundo Corte.pdf, páginas 30–32 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.
+
+Archivo: Pruebas UX/Retroalimentacion de prototipos.pdf
+Descripción: Comentarios de dos usuarios sobre los prototipos, enlace al prototipo ajustado y tabla de cambios con su justificación.
+Etapa: Prototipado y validación con usuarios; Tercer Corte.
+Procedencia: Portafolio/Análisis y Diseño/Documentos/Tercer Corte.pdf, páginas 7–8 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.
+
+Archivo: Pruebas UX/Pruebas de usabilidad Sprint 7.pdf
+Descripción: Resultados y hallazgos de pruebas de usabilidad con tres participantes: tareas, tiempos, errores, dificultad y comentarios.
+Etapa: Implementación; evaluación de usabilidad, Sprint 7.
+Procedencia: docs/sprint7/Sprint7-Software.pdf, páginas 34–35 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.
+
+Archivo: Pruebas UX/Pruebas de usabilidad Sprint 8.pdf
+Descripción: Resultados y hallazgos de pruebas de creación de reservas con tres participantes: tiempos, errores, dificultad y comentarios. Se conserva literalmente lo documentado en el informe.
+Etapa: Implementación; evaluación de usabilidad, Sprint 8.
+Procedencia: docs/sprint8/Sprint8-Software.pdf, páginas 54–55 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.

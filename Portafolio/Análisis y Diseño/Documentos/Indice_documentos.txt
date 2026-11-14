@@ -12,7 +12,8 @@ Primer Corte.pdf
 Informe final de investigación y definición del problema.
 Guion de entrevistas: páginas 15–17; entrevistas y su interpretación: 18–31;
 mapas de empatía: 32–33; insights y oportunidades: 34–36; definición: 37.
-Las entrevistas se conservan dentro del informe. Sus grabaciones y archivos originales externos están pendientes.
+Las entrevistas se conservan dentro del informe y se extrajeron a Anexos/Entrevistas/.
+Sus grabaciones y archivos originales externos siguen pendientes.
 
 Avances Segundo Corte.pdf
 Avance de ideación, oportunidades How Might We, Design Studio, storyboards y primeras historias de usuario.
@@ -65,6 +66,17 @@ No se incorporaron las gráficas de métricas ni las capturas de interfaz de esa
 Los informes de los sprints 9 y 10 se consultaron temporalmente desde origin/main para extraer las imágenes.
 Sus copias temporales se retiraron de esta rama después de la revisión; los PDF se conservan en main.
 La procedencia y el commit consultado se registran en Descripcion_anexos.txt.
+
+ENTREVISTAS Y RESULTADOS DE VALIDACIÓN EXTRAÍDOS
+
+Se añadieron seis PDF con páginas completas de los informes, sin reescribir su contenido:
+- Anexos/Entrevistas/Guion de entrevistas.pdf: Primer Corte, páginas 15–17.
+- Anexos/Entrevistas/Entrevistas a usuarios.pdf: Primer Corte, páginas 18–31.
+- Anexos/Entrevistas/Bitacoras de entrevistas.pdf: Segundo Corte, páginas 30–32.
+- Anexos/Pruebas UX/Retroalimentacion de prototipos.pdf: Tercer Corte, páginas 7–8.
+- Anexos/Pruebas UX/Pruebas de usabilidad Sprint 7.pdf: informe del Sprint 7, páginas 34–35.
+- Anexos/Pruebas UX/Pruebas de usabilidad Sprint 8.pdf: informe del Sprint 8, páginas 54–55.
+Estos extractos son evidencia documental recuperada; no son grabaciones ni respuestas originales de encuestas.
 
 TRAZABILIDAD DE LAS COPIAS
 
