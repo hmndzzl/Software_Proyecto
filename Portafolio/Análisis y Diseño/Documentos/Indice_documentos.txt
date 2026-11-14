@@ -78,6 +78,21 @@ Se añadieron seis PDF con páginas completas de los informes, sin reescribir su
 - Anexos/Pruebas UX/Pruebas de usabilidad Sprint 8.pdf: informe del Sprint 8, páginas 54–55.
 Estos extractos son evidencia documental recuperada; no son grabaciones ni respuestas originales de encuestas.
 
+EVIDENCIAS ADICIONALES DE INVESTIGACIÓN, DISEÑO Y PRUEBAS
+
+- Anexos/Videos/Pruebas Tarea 5.mp4
+- Anexos/Pruebas automatizadas/Tarea 5 SW - G3.pdf
+- Anexos/Diagramas/Principios Lean Software.png
+- Anexos/Pruebas UX/Informe NeuroLab - hallazgos.pdf
+- Anexos/Investigacion/Mapas de empatia.pdf
+- Anexos/Ideacion/Design Studio - ideas y storyboards.pdf
+- Anexos/Diseno de interfaz/Evolucion del diseno Sprint 3.pdf
+- Anexos/Ideacion/Lean UX Canvas.pdf
+
+El informe de la tarea 5 acompaña al video. El informe de NeuroLab se convirtió a PDF,
+conservando su contenido, tablas e imágenes; el Word original permanece fuera del portafolio. Los extractos de diseño conservan las páginas completas de los informes.
+Principios Lean Software.png es material conceptual; Lean UX Canvas.pdf contiene los lienzos del proyecto.
+
 TRAZABILIDAD DE LAS COPIAS
 
 Avances Primer Corte.pdf

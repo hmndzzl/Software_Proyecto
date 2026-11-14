@@ -176,3 +176,43 @@ Archivo: Pruebas UX/Pruebas de usabilidad Sprint 8.pdf
 Descripción: Resultados y hallazgos de pruebas de creación de reservas con tres participantes: tiempos, errores, dificultad y comentarios. Se conserva literalmente lo documentado en el informe.
 Etapa: Implementación; evaluación de usabilidad, Sprint 8.
 Procedencia: docs/sprint8/Sprint8-Software.pdf, páginas 54–55 del PDF original, contando desde 1. Extracto de páginas completas, sin reescribir ni resumir su contenido; el informe original se conserva.
+
+Archivo: Videos/Pruebas Tarea 5.mp4
+Descripción: Video aportado por el responsable como evidencia de la tarea 5. El informe de esa entrega documenta pruebas automatizadas de integración y regresión con Playwright, Vitest, Supertest y Testcontainers, y su integración con GitHub Actions. Se incluye el PDF de la entrega para consultar el alcance y contexto; no se atribuyen al video resultados adicionales.
+Etapa: Implementación; pruebas automatizadas e integración continua, tarea 5.
+Procedencia: /Users/hugoml/Documents/U/A3/S2/Software2/Pruebas_Tarea5.mp4 (archivo copiado completo y sin modificaciones).
+
+Archivo: Pruebas automatizadas/Tarea 5 SW - G3.pdf
+Descripción: Entrega completa de la tarea 5: comparación y selección de herramientas de integración, regresión e integración continua, reflexión sobre la automatización y enlace al video. Acompaña a Videos/Pruebas Tarea 5.mp4.
+Etapa: Implementación; selección de herramientas y automatización de pruebas, tarea 5.
+Procedencia: /Users/hugoml/Documents/U/A3/S2/Software2/Tarea 5 SW - G3.pdf (archivo copiado completo y sin modificaciones).
+
+Archivo: Diagramas/Principios Lean Software.png
+Descripción: Mapa conceptual de los siete principios de Lean Software, con sus definiciones y herramientas. Es material de apoyo conceptual; no constituye por sí solo evidencia de aplicación de todos los principios al proyecto.
+Etapa: Apoyo metodológico; estudio de Lean Software. El archivo no permite determinar un sprint específico de uso.
+Procedencia: /Users/hugoml/Documents/U/A3/S1/Software/LEANSW.png (archivo copiado completo y sin modificaciones).
+
+Archivo: Pruebas UX/Informe NeuroLab - hallazgos.pdf
+Descripción: Informe de pruebas UX en NeuroLab: planificación, tareas, ejecución documentada, resultados de cinco participantes, mapas de calor, datos GSR, hallazgos y mejoras propuestas. PDF de 25 páginas convertido de la versión local con hallazgos de los cinco participantes, conservando el contenido, las tablas y las imágenes. No se duplica la versión parcial P04.
+Etapa: Implementación; evaluación UX en NeuroLab y mejora al proceso 2. Según el informe, pruebas realizadas el 19 de octubre de 2026.
+Procedencia: /Users/hugoml/Documents/U/A3/S1/Software/Proyecto/Software_Proyecto/Informe_pruebas_UX_Grupo_3_hallazgos.docx (Word original conservado fuera del portafolio; convertido a PDF sin cambios editoriales).
+
+Archivo: Investigacion/Mapas de empatia.pdf
+Descripción: Mapas de empatía elaborados para los perfiles de usuario del proyecto.
+Etapa: Investigación y empatía; Primer Corte.
+Procedencia: Portafolio/Análisis y Diseño/Documentos/Primer Corte.pdf, páginas 32–33 del PDF original. Extracto de páginas completas, sin reescribir ni resumir el contenido.
+
+Archivo: Ideacion/Design Studio - ideas y storyboards.pdf
+Descripción: Sección de Design Studio con lluvias de ideas y storyboards; completa las imágenes de ideación ya incluidas como archivos individuales.
+Etapa: Ideación y representación de propuestas de solución; Segundo Corte.
+Procedencia: Portafolio/Análisis y Diseño/Documentos/Segundo Corte.pdf, páginas 10–15 del PDF original. Extracto de páginas completas, sin reescribir ni resumir el contenido.
+
+Archivo: Diseno de interfaz/Evolucion del diseno Sprint 3.pdf
+Descripción: Comparación de las pantallas del diseño anterior y del rediseño, presentada en la muestra de incremento a Product Owners. La primera página también incluye la gráfica de velocidad que comparte espacio con el inicio de la sección; se conserva la página íntegra.
+Etapa: Implementación; revisión y evolución del diseño de interfaz, Sprint 3.
+Procedencia: docs/sprint3/Sprint3-Software.pdf, páginas 16–22 del PDF original. Extracto de páginas completas, sin reescribir ni resumir el contenido.
+
+Archivo: Ideacion/Lean UX Canvas.pdf
+Descripción: Lienzos de Lean UX incluidos en el informe: Lean UX Canvas, Proceso Completo y Lienzo Estratégico.
+Etapa: Diseño y mejora del proceso; documentación de Lean UX en Sprint 3.
+Procedencia: docs/sprint3/Sprint3-Software.pdf, páginas 25–25 del PDF original. Extracto de páginas completas, sin reescribir ni resumir el contenido.
